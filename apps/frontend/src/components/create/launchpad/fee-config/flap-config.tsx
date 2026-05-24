@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	DEFAULT_PLATFORM_CUT_BPS,
 	type FlapFeeConfig,
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function FlapConfig({ value, onChange }: Props) {
+	const { t } = useTranslation();
 	const vaultId = useId();
 	const validation = useMemo(() => validateFlap(value), [value]);
 	const platformCutVolumeBps = computePlatformCutVolumeBps(value.taxBps, value.platformCutBps);
@@ -107,7 +109,7 @@ export default function FlapConfig({ value, onChange }: Props) {
 						value={value.platformCutBps}
 						onChange={(e) => setPlatformCut(Number(e.target.value))}
 						className="flex-1 accent-accent"
-						aria-label="platform cut percentage"
+						aria-label={t("wizard.launchpad.flap.platformCutAria")}
 					/>
 					<div className="flex items-center h-11 border border-white/10 bg-black/40 px-2 w-[120px] focus-within:border-white/30">
 						<input
@@ -118,7 +120,7 @@ export default function FlapConfig({ value, onChange }: Props) {
 							value={value.platformCutBps / 100}
 							onChange={(e) => setPlatformCut(Number(e.target.value) * 100)}
 							className="w-full bg-transparent outline-none text-sm font-mono tabular-nums text-white text-right"
-							aria-label="platform cut percentage input"
+							aria-label={t("wizard.launchpad.flap.platformCutInputAria")}
 						/>
 						<span className="ml-1 text-neutral-500 font-mono text-sm">%</span>
 					</div>

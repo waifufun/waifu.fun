@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
+import { useTranslation } from "@/contexts/locale-context";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
 import StepLaunchpad from "@/components/create/step-launchpad";
 import StepMetadata from "@/components/create/step-metadata";
@@ -58,6 +59,7 @@ function isEndpointUnavailable(err: unknown): boolean {
 }
 
 function WizardInner() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const { state } = useWizard();
 	const { address: connectedAddress } = useAccount();
@@ -130,13 +132,13 @@ function WizardInner() {
 
 	const handleComplete = useCallback(async () => {
 		if (!connectedAddress) {
-			toast.error("connect an evm wallet to confirm launch on-chain");
+			toast.error(t("wizard.toast.connectEvmWallet"));
 			return;
 		}
 
 		setSigningLaunch(true);
 		try {
-			toast.info("sign to prove this wallet owns the agent launch. no gas is spent.");
+			toast.info(t("wizard.toast.signInfo"));
 			const nonce = await launchNonceOrFallback(connectedAddress);
 			const message = buildLaunchSiweMessage({ address: connectedAddress, nonce, origin: window.location.origin });
 			const signature = await signMessageAsync({ message });
@@ -144,8 +146,8 @@ function WizardInner() {
 			setProvisioning(true);
 			startProvisioning();
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "signature cancelled";
-			toast.error(message || "signature cancelled");
+			const message = err instanceof Error ? err.message : t("wizard.toast.signatureCancelled");
+			toast.error(message || t("wizard.toast.signatureCancelled"));
 		} finally {
 			setSigningLaunch(false);
 		}
@@ -158,7 +160,7 @@ function WizardInner() {
 				setAwaitingProvisionResponse(true);
 				const timeout = new Promise<ProvisionResult>((_, reject) => {
 					window.setTimeout(
-						() => reject(new Error("launch timed out; check your patron page")),
+						() => reject(new Error(t("wizard.toast.launchTimedOut"))),
 						PROVISION_RESPONSE_TIMEOUT_MS,
 					);
 				});
@@ -168,7 +170,7 @@ function WizardInner() {
 			result = {
 				ok: false,
 				reason: "server",
-				message: err instanceof Error ? err.message : "launch timed out; check your patron page",
+				message: err instanceof Error ? err.message : t("wizard.toast.launchTimedOut"),
 			};
 		} finally {
 			setAwaitingProvisionResponse(false);
@@ -186,7 +188,7 @@ function WizardInner() {
 				launchResult = {
 					ok: false,
 					reason: "server",
-					message: err instanceof Error ? err.message : "launch create failed",
+					message: err instanceof Error ? err.message : t("wizard.toast.launchCreateFailed"),
 				};
 			}
 		}
@@ -223,10 +225,10 @@ function WizardInner() {
 		// route to /patron with a contextual toast.
 		const message =
 			!result || result.reason === "not_wired" || result.reason === "network"
-				? "backend wiring coming soon. your config is saved."
+				? t("wizard.toast.backendWiringSoon")
 				: result.reason === "validation"
-					? `validation failed: ${result.message}`
-					: `provision failed: ${result.message}`;
+					? t("wizard.toast.validationFailed", { message: result.message })
+					: t("wizard.toast.provisionFailed", { message: result.message });
 
 		const isStub = !result || result.reason === "not_wired" || result.reason === "network";
 		if (isStub) {
@@ -251,7 +253,7 @@ function WizardInner() {
 				}}
 				onComplete={handleComplete}
 				provisioning={provisioning || signingLaunch}
-				completeLabel={signingLaunch ? "signing..." : "sign to confirm launch"}
+				completeLabel={signingLaunch ? t("wizard.shell.signing") : t("wizard.shell.signToConfirm")}
 			/>
 			{provisioning ? (
 				<ProvisioningLoader onDone={handleProvisioningDone} awaitingResponse={awaitingProvisionResponse} />

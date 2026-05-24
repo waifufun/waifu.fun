@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { DEFAULT_FLAP, DEFAULT_FOUR_MEME_REGULAR, DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
 import type { FlapFeeConfig, FourMemeTaxFeeConfig, LaunchpadDescriptor } from "@/lib/launchpad/types";
 import { useEffect } from "react";
@@ -10,6 +11,7 @@ import LaunchpadPicker from "./launchpad/launchpad-picker";
 import { useWizard } from "./wizard-state";
 
 export default function StepLaunchpad() {
+	const { t } = useTranslation();
 	const { state, patchLaunchpad } = useWizard();
 	const selectedId = state.launchpad.selectedId;
 	const feeConfig = state.launchpad.feeConfig;
@@ -69,7 +71,7 @@ export default function StepLaunchpad() {
 
 			{feeConfig === null && selectedId === null ? (
 				<p className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-					select flap above to configure fees.
+					{t("wizard.launchpad.selectFlap")}
 				</p>
 			) : null}
 		</div>

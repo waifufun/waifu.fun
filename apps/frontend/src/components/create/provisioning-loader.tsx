@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,29 +9,29 @@ import { CheckIcon } from "./wizard-icons";
 
 export type ProvisioningStage = "safe" | "runtime" | "x-oauth" | "policies" | "done";
 
-const STAGES: { id: Exclude<ProvisioningStage, "done">; label: string; sublabel: string; durationMs: number }[] = [
+const STAGES: { id: Exclude<ProvisioningStage, "done">; labelKey: string; sublabelKey: string; durationMs: number }[] = [
 	{
 		id: "safe",
-		label: "deploying safe",
-		sublabel: "1-of-2 multisig with steward key",
+		labelKey: "wizard.provisioning.stages.safeLabel",
+		sublabelKey: "wizard.provisioning.stages.safeSub",
 		durationMs: 1600,
 	},
 	{
 		id: "runtime",
-		label: "starting agent",
-		sublabel: "wiring eliza cloud, treasury, adapters",
+		labelKey: "wizard.provisioning.stages.runtimeLabel",
+		sublabelKey: "wizard.provisioning.stages.runtimeSub",
 		durationMs: 1500,
 	},
 	{
 		id: "x-oauth",
-		label: "wiring x oauth",
-		sublabel: "ready to post once you authorize",
+		labelKey: "wizard.provisioning.stages.xOauthLabel",
+		sublabelKey: "wizard.provisioning.stages.xOauthSub",
 		durationMs: 1200,
 	},
 	{
 		id: "policies",
-		label: "seeding policies",
-		sublabel: "pancake and venus with default caps",
+		labelKey: "wizard.provisioning.stages.policiesLabel",
+		sublabelKey: "wizard.provisioning.stages.policiesSub",
 		durationMs: 1300,
 	},
 ];
@@ -44,6 +45,7 @@ type Props = {
 };
 
 export default memo(function ProvisioningLoader({ onDone, awaitingResponse = false }: Props) {
+	const { t } = useTranslation();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [allDone, setAllDone] = useState(false);
 
@@ -77,7 +79,7 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 			className="fixed inset-0 z-50 bg-[#08080a]/95 backdrop-blur-xl flex items-center justify-center px-4"
 			aria-live="polite"
 			aria-busy={!allDone}
-			aria-label="provisioning agent"
+			aria-label={t("wizard.provisioning.aria")}
 		>
 			<div className="w-full max-w-[520px] block">
 				<header className="mb-10">
@@ -91,7 +93,7 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 								transition={{ duration: 0.3 }}
 								className="inline-block"
 							>
-								{showingExtension ? "still launching" : allDone ? "live" : "provisioning"}
+								{showingExtension ? t("wizard.provisioning.stillLaunching") : allDone ? t("wizard.provisioning.live") : t("wizard.provisioning.provisioning")}
 							</motion.span>
 						</AnimatePresence>
 					</p>
@@ -104,15 +106,15 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 							transition={TRANSITION}
 							className="mt-3 text-2xl md:text-3xl text-white tracking-tight leading-[1.1]"
 						>
-							{showingExtension ? "still launching." : allDone ? "alive." : "spinning up."}
+							{showingExtension ? t("wizard.provisioning.stillLaunchingTitle") : allDone ? t("wizard.provisioning.alive") : t("wizard.provisioning.spinningUp")}
 						</motion.h2>
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">
 						{showingExtension
-							? "still launching on bsc, this can take up to a minute."
+							? t("wizard.provisioning.stillLaunchingSub")
 							: allDone
-								? "taking you home."
-								: "~10-15 seconds."}
+								? t("wizard.provisioning.takingHome")
+								: t("wizard.provisioning.seconds")}
 					</p>
 
 					{/* Macro progress */}
@@ -149,7 +151,7 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 							<span className="h-1 w-1 bg-accent" />
 						</span>
 						<span>
-							waiting for the chain response
+							{t("wizard.provisioning.waiting")}
 							<BlinkingDots />
 						</span>
 					</motion.div>
@@ -166,6 +168,7 @@ const Stage = memo(function Stage({
 	stage: (typeof STAGES)[number];
 	status: "pending" | "active" | "complete";
 }) {
+	const { t } = useTranslation();
 	return (
 		<li
 			className={cn(
@@ -226,10 +229,10 @@ const Stage = memo(function Stage({
 						status === "complete" ? "text-neutral-400" : status === "active" ? "text-white" : "text-neutral-500",
 					)}
 				>
-					{stage.label}
+					{t(stage.labelKey)}
 					{status === "active" ? <BlinkingDots /> : null}
 				</p>
-				<p className="mt-0.5 text-[11px] font-mono text-neutral-500 leading-relaxed">{stage.sublabel}</p>
+				<p className="mt-0.5 text-[11px] font-mono text-neutral-500 leading-relaxed">{t(stage.sublabelKey)}</p>
 			</div>
 		</li>
 	);

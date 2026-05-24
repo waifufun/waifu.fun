@@ -359,38 +359,38 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			const { name, ticker, bio } = state.persona;
 			const trimmedName = name.trim();
 			const trimmedBio = bio.trim();
-			if (trimmedName.length < 2) return "name: 2-48 chars";
-			if (trimmedName.length > 48) return "name: 2-48 chars";
-			if (!/^[A-Z0-9]{2,10}$/.test(ticker.trim())) return "ticker: 2-10 uppercase letters or digits";
-			if (!trimmedBio) return "bio required";
-			if (trimmedBio.length > 240) return "bio too long";
+			if (trimmedName.length < 2) return "wizard.validation.nameLength";
+			if (trimmedName.length > 48) return "wizard.validation.nameLength";
+			if (!/^[A-Z0-9]{2,10}$/.test(ticker.trim())) return "wizard.validation.tickerFormat";
+			if (!trimmedBio) return "wizard.validation.bioRequired";
+			if (trimmedBio.length > 240) return "wizard.validation.bioTooLong";
 			return null;
 		}
 		case "metadata": {
 			const desc = state.flap.description.trim();
-			if (!desc) return "description required";
-			if (desc.length > 280) return "description too long (280 max)";
-			if (!state.flap.tokenImageDataUrl) return "upload a token image";
-			if (!state.flap.metaCid) return "upload to flap before continuing";
+			if (!desc) return "wizard.validation.descriptionRequired";
+			if (desc.length > 280) return "wizard.validation.descriptionTooLong";
+			if (!state.flap.tokenImageDataUrl) return "wizard.validation.uploadTokenImage";
+			if (!state.flap.metaCid) return "wizard.validation.uploadToFlapFirst";
 			return null;
 		}
 		case "tier": {
-			if (!state.launch.tierId) return "pick a launch tier";
+			if (!state.launch.tierId) return "wizard.validation.pickTier";
 			return null;
 		}
 		case "launchpad": {
-			if (!state.launchpad.selectedId) return "pick a launchpad";
+			if (!state.launchpad.selectedId) return "wizard.validation.pickLaunchpad";
 			const fee = state.launchpad.feeConfig;
-			if (!fee) return "configure launchpad fees";
+			if (!fee) return "wizard.validation.configureFees";
 			if (fee.kind === "four-meme-tax") {
 				const sum =
 					fee.allocation.founderBps + fee.allocation.holderBps + fee.allocation.burnBps + fee.allocation.liquidityBps;
 				const expected = 10_000 - fee.platformCutBps;
-				if (sum !== expected) return `allocations must sum to ${(expected / 100).toFixed(2)}%`;
+				if (sum !== expected) return `wizard.validation.allocationsMustSum|${(expected / 100).toFixed(2)}`;
 			}
 			if (fee.kind === "flap" && fee.recipient === "custom-vault") {
 				if (!/^0x[a-fA-F0-9]{40}$/.test(fee.customVaultAddress?.trim() ?? "")) {
-					return "vault address must be a valid 0x address";
+					return "wizard.validation.vaultAddressInvalid";
 				}
 			}
 			return null;
@@ -402,7 +402,7 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			// CTA in this state.
 			const owners = state.safe.owners ?? [];
 			const hasEvmOwner = owners.some((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim()));
-			if (!hasEvmOwner) return "link an EVM wallet to be a safe owner";
+			if (!hasEvmOwner) return "wizard.validation.linkEvmWallet";
 			return null;
 		}
 		case "review":

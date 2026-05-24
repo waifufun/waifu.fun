@@ -8,6 +8,7 @@
 import { useState } from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { TIERS, type TierId, type TierPreset, formatUsdMarketCap, tierDisplayName, totalBnb } from "./tier-data";
 
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function TierComparison({ selectedId }: Props) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -27,10 +29,10 @@ export function TierComparison({ selectedId }: Props) {
 				className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
 			>
 				<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">
-					compare all four tiers
+					{t("wizard.tier.compare")}
 				</span>
 				<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-400">
-					{open ? "hide" : "show"}
+					{open ? t("wizard.common.hide") : t("wizard.common.show")}
 				</span>
 			</button>
 			{open ? (
@@ -38,30 +40,30 @@ export function TierComparison({ selectedId }: Props) {
 					<table className="w-full text-[11px] tabular-nums">
 						<thead>
 							<tr className="text-left">
-								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">tier</th>
-								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">cap</th>
-								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">v2 buy</th>
+								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">{t("wizard.tier.tiers")}</th>
+								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">{t("wizard.tier.cap")}</th>
+								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">{t("wizard.tier.v2Buy")}</th>
 								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">
-									total bnb
+									{t("wizard.tier.totalBnb")}
 								</th>
 								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">
-									presaler
+									{t("wizard.tier.presaler")}
 								</th>
 								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">
-									circ mc
+									{t("wizard.tier.circulatingMc")}
 								</th>
 								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<span className="cursor-help underline decoration-dotted underline-offset-4">
-												fdv <span className="normal-case tracking-normal">(includes burned supply)</span>
+												{t("wizard.tier.fdv")} <span className="normal-case tracking-normal">{t("wizard.tier.includesBurnedSupply")}</span>
 											</span>
 										</TooltipTrigger>
-										<TooltipContent>fully diluted valuation uses 1b tokens, including burned supply.</TooltipContent>
+										<TooltipContent>{t("wizard.tier.fdvTooltipGeneric")}</TooltipContent>
 									</Tooltip>
 								</th>
-								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">burn</th>
-								<th className="pb-2 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">vesting</th>
+								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">{t("wizard.tier.burn")}</th>
+								<th className="pb-2 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">{t("wizard.tier.vesting")}</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-white/5">
@@ -78,11 +80,12 @@ export function TierComparison({ selectedId }: Props) {
 }
 
 function Row({ tier, active }: { tier: TierPreset; active: boolean }) {
+	const { t } = useTranslation();
 	return (
 		<tr className={cn("text-neutral-200 transition-colors", active ? "bg-accent/[0.06]" : "hover:bg-white/[0.02]")}>
 			<td className={cn("py-2 pr-3 font-mono", active ? "text-accent" : "text-neutral-300")}>
 				{tierDisplayName(tier.id)}
-				{active ? <span className="ml-1.5 text-[9px] uppercase tracking-[0.2em]">selected</span> : null}
+				{active ? <span className="ml-1.5 text-[9px] uppercase tracking-[0.2em]">{t("wizard.tier.selected")}</span> : null}
 			</td>
 			<td className="py-2 pr-3">{tier.cap} BNB</td>
 			<td className="py-2 pr-3">{tier.v2Buy} BNB</td>

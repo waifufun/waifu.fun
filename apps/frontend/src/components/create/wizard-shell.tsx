@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -62,7 +63,8 @@ type Props = {
 	completeLabel?: string;
 };
 
-export default function WizardShell({ stepContent, onComplete, provisioning, completeLabel = "provision." }: Props) {
+export default function WizardShell({ stepContent, onComplete, provisioning, completeLabel }: Props) {
+	const { t } = useTranslation();
 	const { step, stepIndex, goTo, next, prev, isFirst, isLast } = useWizardStep();
 	const { valid, reason } = useStepValid(step);
 	const { state } = useWizard();
@@ -112,29 +114,17 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 			<div className="mx-auto w-full max-w-[640px]">
 				<header className="mb-10">
 					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-						step {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
+						{t("wizard.shell.stepCounter", { current: String(stepIndex + 1).padStart(2, "0"), total: String(WIZARD_STEPS.length).padStart(2, "0") })}
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
-						{step === "persona" ? "who are they?" : null}
-						{step === "metadata" ? "how do they look on-chain?" : null}
-						{step === "tier" ? "how big do they launch?" : null}
-						{step === "launchpad" ? "where do they launch?" : null}
-						{step === "safe" ? "how do they spend?" : null}
-						{step === "review" ? "ready to wake them up?" : null}
+						{t(`wizard.shell.titles.${step}`)}
 					</h1>
 					<p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-[52ch]">
-						{step === "persona" ? "name, ticker, one-line bio. they carry this with them." : null}
-						{step === "metadata" ? "token image + description + socials. uploaded to flap's ipfs before mint." : null}
-						{step === "tier" ? "pick a tier. it sets the cap, the v2 buy, and the math the rest flows from." : null}
-						{step === "launchpad"
-							? "pick a launchpad and a fee model. waifu's cut comes out of the agent treasury."
-							: null}
-						{step === "safe" ? "treasury rules and adapters. defaults are sane. tweak from /patron later." : null}
-						{step === "review" ? "last look. costs gas plus a one-time $5 setup." : null}
+						{t(`wizard.shell.subtitles.${step}`)}
 					</p>
 				</header>
 
-				<nav className="mb-10" aria-label="wizard steps">
+				<nav className="mb-10" aria-label={t("wizard.shell.ariaSteps")}>
 					<ol
 						className={cn(
 							"grid gap-2",
@@ -150,7 +140,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 										type="button"
 										onClick={() => handleStepClick(s)}
 										aria-current={isCurrent ? "step" : undefined}
-										aria-label={`step ${i + 1}: ${STEP_LABELS[s]}`}
+										aria-label={t("wizard.shell.ariaStep", { number: String(i + 1), label: t(`wizard.shell.labels.${s}`) })}
 										className={cn(
 											"group w-full text-left flex flex-col gap-2 py-1 transition-opacity duration-300",
 											provisioning && "pointer-events-none opacity-60",
@@ -183,7 +173,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 													isCurrent ? "text-white" : "text-neutral-500",
 												)}
 											>
-												{STEP_LABELS[s]}
+												{t(`wizard.shell.labels.${s}`)}
 											</span>
 											{isComplete ? <CheckIcon className="h-3 w-3 text-accent" /> : null}
 										</div>
@@ -193,7 +183,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 						})}
 					</ol>
 					<div className="sr-only" aria-live="polite">
-						{Math.round(progressPct)} percent complete
+						{t("wizard.shell.progress", { pct: String(Math.round(progressPct)) })}
 					</div>
 				</nav>
 
@@ -203,11 +193,11 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 				 * entirely and go through /give-skill.
 				 */}
 				<div className="mb-8 border-l-2 border-[#00ff87] bg-[#0A0F0C] p-4">
-					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">manual fallback</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">{t("wizard.shell.manualFallbackLabel")}</p>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						you're launching by hand. that's fine. running your own agent already?{" "}
+						{t("wizard.shell.manualFallbackBefore")} {" "}
 						<a href="/give-skill" className="text-[#00ff87] hover:opacity-80 transition-opacity">
-							skip the wizard and give your agent the skill
+							{t("wizard.shell.manualFallbackLink")}
 						</a>
 						.
 					</p>
@@ -240,12 +230,14 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 						)}
 					>
 						<ArrowLeftIcon className="h-3.5 w-3.5" />
-						back
+						{t("wizard.common.back")}
 					</button>
 
 					<div className="flex items-center gap-3 min-h-[20px]">
 						{!valid && reason ? (
-							<p className="text-xs text-neutral-500 font-mono uppercase tracking-[0.2em] hidden sm:block">{reason}</p>
+							<p className="text-xs text-neutral-500 font-mono uppercase tracking-[0.2em] hidden sm:block">
+								{formatValidationReason(t, reason)}
+							</p>
 						) : null}
 						<button
 							type="button"
@@ -259,7 +251,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 								"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 							)}
 						>
-							<span>{isLast ? completeLabel : "next"}</span>
+							<span>{isLast ? (completeLabel ?? t("wizard.shell.defaultCompleteLabel")) : t("wizard.common.next")}</span>
 							<span
 								className={cn(
 									"inline-flex items-center justify-center h-7 w-7 bg-black/15",
@@ -285,27 +277,34 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 		case "persona": {
 			// invite code optional at frontend; backend validates if provided.
 			const { name, ticker, bio } = state.persona;
-			if (!name.trim()) return "pick a name";
-			if (name.length > 48) return "name too long";
-			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
-			if (bio.length > 240) return "bio too long";
+			if (!name.trim()) return "wizard.validation.pickName";
+			if (name.length > 48) return "wizard.validation.nameTooLong";
+			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "wizard.validation.tickerFormat";
+			if (bio.length > 240) return "wizard.validation.bioTooLong";
 			return null;
 		}
 		case "metadata": {
-			if (!state.flap.description.trim()) return "description required";
-			if (!state.flap.tokenImageDataUrl) return "upload a token image";
-			if (!state.flap.metaCid) return "upload to flap before continuing";
+			if (!state.flap.description.trim()) return "wizard.validation.descriptionRequired";
+			if (!state.flap.tokenImageDataUrl) return "wizard.validation.uploadTokenImage";
+			if (!state.flap.metaCid) return "wizard.validation.uploadToFlapFirst";
 			return null;
 		}
 		case "tier": {
-			if (!state.launch.tierId) return "pick a launch tier";
+			if (!state.launch.tierId) return "wizard.validation.pickTier";
 			return null;
 		}
 		case "launchpad": {
-			if (!state.launchpad.selectedId) return "pick a launchpad";
+			if (!state.launchpad.selectedId) return "wizard.validation.pickLaunchpad";
 			return null;
 		}
 		default:
 			return null;
 	}
+}
+
+function formatValidationReason(t: (key: string, params?: Record<string, string>) => string, reason: string): string {
+	if (reason.startsWith("wizard.validation.allocationsMustSum|")) {
+		return t("wizard.validation.allocationsMustSum", { pct: reason.split("|")[1] ?? "" });
+	}
+	return reason.startsWith("wizard.") ? t(reason) : reason;
 }

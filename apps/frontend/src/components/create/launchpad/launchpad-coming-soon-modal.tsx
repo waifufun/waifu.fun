@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { postWaitlistSignup } from "@/hooks/use-launchpads";
 import type { LaunchpadDescriptor } from "@/lib/launchpad/types";
 import { EASE_OUT_EXPO } from "@/lib/motion";
@@ -30,6 +31,7 @@ const CHAIN_LABEL: Record<string, string> = {
 };
 
 export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
+	const { t } = useTranslation();
 	const [email, setEmail] = useState("");
 	const [status, setStatus] = useState<Status>({ kind: "idle" });
 	const titleId = useId();
@@ -90,7 +92,7 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 				>
 					<button
 						type="button"
-						aria-label="close waitlist dialog"
+						aria-label={t("wizard.launchpad.closeWaitlistAria")}
 						onClick={onClose}
 						className="absolute inset-0 bg-[#050507]/80 backdrop-blur-sm cursor-default"
 					/>
@@ -118,7 +120,7 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 							<button
 								type="button"
 								onClick={onClose}
-								aria-label="close"
+								aria-label={t("wizard.common.close")}
 								className="-mr-1 -mt-1 inline-flex h-9 w-9 items-center justify-center border border-white/10 text-neutral-500 transition-all duration-200 hover:border-white/25 hover:text-white active:translate-y-[1px]"
 							>
 								<CloseIcon className="h-4 w-4" />
@@ -168,8 +170,8 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 								</p>
 								<p className="mt-1.5 text-xs text-neutral-400 leading-relaxed">
 									{status.email
-										? `we have ${status.email} saved for ${descriptor.displayName} updates.`
-										: "we'll email you when this adapter opens."}
+										? t("wizard.launchpad.emailSaved", { email: status.email, platform: descriptor.displayName })
+										: t("wizard.launchpad.emailFallback")}
 								</p>
 								<button
 									type="button"
@@ -194,7 +196,7 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 									required
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
-									placeholder="you@example.com"
+									placeholder={t("wizard.launchpad.emailPlaceholder")}
 									aria-describedby={helperId}
 									aria-invalid={status.kind === "error"}
 									className={cn(
@@ -224,7 +226,7 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 										"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 									)}
 								>
-									{status.kind === "submitting" ? "reserving spot" : "join waitlist"}
+									{status.kind === "submitting" ? t("wizard.launchpad.reservingSpot") : t("wizard.launchpad.joinWaitlist")}
 								</button>
 							</form>
 						)}

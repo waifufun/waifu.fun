@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { type FourMemeTaxFeeConfig, TAX_TIER_BPS } from "@/lib/launchpad/types";
 import { cn } from "@/lib/utils";
 
@@ -9,15 +10,16 @@ type Props = {
 };
 
 export function TaxRateSelector({ taxBps, onChange }: Props) {
+	const { t } = useTranslation();
 	return (
 		<section>
 			<header className="mb-3">
-				<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">trade tax</h2>
+				<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">{t("wizard.launchpad.tax.tradeTax")}</h2>
 				<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
-					applied to every buy and sell. tax flows on-chain through a CREATE2 splitter.
+					{t("wizard.launchpad.tax.tradeTaxHelp")}
 				</p>
 			</header>
-			<div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="trade tax tier">
+			<div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label={t("wizard.launchpad.flap.tradeTax")}>
 				{TAX_TIER_BPS.map((tier) => {
 					const active = taxBps === tier;
 					return (

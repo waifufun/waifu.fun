@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { useLinkedEoa } from "@/hooks/use-linked-eoa";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { shortenCid } from "@/lib/flap/metadata";
@@ -35,6 +36,7 @@ function shortAddr(addr?: string | null): string {
 }
 
 export default function StepReview() {
+	const { t } = useTranslation();
 	const { state, patchSafe } = useWizard();
 	const auth = useWaifuAuth();
 	const primaryAddress = auth.primaryChain === "evm" ? auth.primaryAddress : null;
@@ -87,7 +89,7 @@ export default function StepReview() {
 						{state.persona.avatarDataUrl ? (
 							<Image
 								src={state.persona.avatarDataUrl}
-								alt="agent avatar"
+								alt={t("wizard.review.avatarAlt")}
 								width={56}
 								height={56}
 								className="object-cover w-full h-full"
@@ -98,7 +100,7 @@ export default function StepReview() {
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
 							<h3 className="text-base text-white tracking-tight truncate">
-								{state.persona.name || <span className="text-neutral-600">unnamed</span>}
+								{state.persona.name || <span className="text-neutral-600">{t("wizard.review.unnamed")}</span>}
 							</h3>
 							{state.persona.ticker ? (
 								<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-400 border border-white/10 px-1.5 py-0.5">
@@ -109,39 +111,38 @@ export default function StepReview() {
 						{state.persona.bio ? (
 							<p className="mt-1 text-xs text-neutral-400 leading-relaxed line-clamp-2">{state.persona.bio}</p>
 						) : (
-							<p className="mt-1 text-xs text-neutral-600 italic">no bio</p>
+							<p className="mt-1 text-xs text-neutral-600 italic">{t("wizard.review.noBio")}</p>
 						)}
 					</div>
 				</div>
 
 				{/* Wave H: flap token preview */}
-				<Row label="flap token">
+				<Row label={t("wizard.review.flapToken")}>
 					<p className="text-sm text-neutral-200 font-mono tabular-nums" data-testid="vanity-address-display">
 						{state.vanity.predictedAddress
 							? formatVanityAddress(state.vanity.predictedAddress)
 							: state.vanity.submitted
-								? "mining vanity address…"
-								: "your token: 0x…7777"}
+								? t("wizard.review.vanityMining")
+								: t("wizard.review.vanityDefault")}
 					</p>
 					{state.vanity.predictedAddress && !hasVanitySuffix(state.vanity.predictedAddress) ? (
 						<p className="mt-1 text-[11px] font-mono text-yellow-400/80">
-							heads up: backend skipped vanity mining. address ships as-is.
+							{t("wizard.review.vanityWarning")}
 						</p>
 					) : null}
 					<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-						your agent token (deployed via flap portal) gets a create2-mined `0x…7777` suffix. token mints + curve
-						graduation happen atomically inside our bundle.
+						{t("wizard.review.flapBody")}
 					</p>
 					{state.flap.metaCid ? (
 						<p className="mt-2 text-[11px] font-mono text-neutral-500">
-							meta cid: <span className="text-neutral-300">{shortenCid(state.flap.metaCid)}</span>
+							{t("wizard.review.metaCid")} <span className="text-neutral-300">{shortenCid(state.flap.metaCid)}</span>
 						</p>
 					) : null}
 				</Row>
 
 				{/* W48: Launch Tier */}
 				{state.launch.tierId ? (
-					<Row label="tier">
+					<Row label={t("wizard.review.tier")}>
 						{(() => {
 							const t = getTier(state.launch.tierId);
 							if (!t) return null;
@@ -170,14 +171,14 @@ export default function StepReview() {
 
 				{/* Launchpad */}
 				{LAUNCHPAD_PICKER_ENABLED ? (
-					<Row label="launchpad">
+					<Row label={t("wizard.review.launchpad")}>
 						<p className="text-sm text-neutral-200">
-							{selectedLaunchpad ? LAUNCHPAD_LABEL[selectedLaunchpad] : "not selected"}
-							{selectedChain ? <span className="text-neutral-600"> on {CHAIN_LABEL[selectedChain]}</span> : null}
+							{selectedLaunchpad ? LAUNCHPAD_LABEL[selectedLaunchpad] : t("wizard.review.notSelected")}
+							{selectedChain ? <span className="text-neutral-600">{t("wizard.review.onChain", { chain: CHAIN_LABEL[selectedChain] })}</span> : null}
 						</p>
 						{feeConfig?.kind === "four-meme-regular" ? (
 							<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
-								regular curve. no creator tax routing, no agent treasury feed from trades.
+								{t("wizard.review.regularBlurb")}
 							</p>
 						) : null}
 						{/* Flap custom-vault recipient bypasses Split Vault entirely:
@@ -186,31 +187,31 @@ export default function StepReview() {
 						don't approve a launch under wrong fee expectations. */}
 						{feeConfig?.kind === "flap" && feeConfig.recipient === "custom-vault" ? (
 							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-								<p>trade tax: {taxVolumePct ?? "–"}%</p>
-								<p>└─ 100% routes direct to your custom vault. no platform cut on-chain.</p>
+								<p>{t("wizard.review.tradeTax", { pct: taxVolumePct ?? "–" })}</p>
+								<p>{t("wizard.review.customVaultRoute")}</p>
 							</div>
 						) : taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
 							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-								<p>trade tax: {taxVolumePct}%</p>
+								<p>{t("wizard.review.tradeTax", { pct: taxVolumePct })}</p>
 								<p>
-									└─ platform: {platformCutPct}% of tax ({platformVolumePct}%)
+									{t("wizard.review.platformLine", { pct: platformCutPct, volumePct: platformVolumePct })}
 								</p>
 								{feeConfig?.kind === "four-meme-tax" ? (
 									<>
 										<p>
-											└─ remainder: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+											{t("wizard.review.remainderLine", { pct: String(100 - Number(platformCutPct)), volumePct: treasuryVolumePct })}
 										</p>
 										<p className="mt-1">
-											remainder routes through your four.meme tax allocation (founder / holders / burn / liquidity).
+											{t("wizard.review.remainderRoute")}
 										</p>
 									</>
 								) : (
 									<p>
-										└─ treasury: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+										{t("wizard.review.treasuryLine", { pct: String(100 - Number(platformCutPct)), volumePct: treasuryVolumePct })}
 									</p>
 								)}
 								{feeConfig?.kind === "flap" && feeConfig.recipient === "agent-treasury" ? (
-									<p className="mt-1">Flap deploys a Split Vault for this routing at launch.</p>
+									<p className="mt-1">{t("wizard.review.splitVaultNote")}</p>
 								) : null}
 							</div>
 						) : null}
@@ -218,7 +219,7 @@ export default function StepReview() {
 				) : null}
 
 				{/* Safe */}
-				<Row label="safe">
+				<Row label={t("wizard.review.safe")}>
 					<div className="space-y-1">
 						{(state.safe.owners.length ? state.safe.owners : primaryAddress ? [primaryAddress] : []).map((owner) => (
 							<p key={owner} className="text-sm text-neutral-200 font-mono tabular-nums">
@@ -233,13 +234,12 @@ export default function StepReview() {
 						{state.safe.threshold || 1} of {Math.max(state.safe.owners.length || (primaryAddress ? 1 : 0), 1)}
 					</p>
 					<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-						you keep patron control over policy changes and launch timing. the agent gets constrained autonomy only
-						through enabled adapters, caps, allowlists, and slippage rules.
+						{t("wizard.review.safeBody")}
 					</p>
 				</Row>
 
 				{/* Tax */}
-				<Row label="tax split">
+				<Row label={t("wizard.review.taxSplit")}>
 					<p className="text-sm text-neutral-200 font-mono tabular-nums">
 						{state.safe.taxAgentBps / 100}% agent
 						<span className="text-neutral-600 mx-2">/</span>
@@ -248,9 +248,9 @@ export default function StepReview() {
 				</Row>
 
 				{/* Adapters */}
-				<Row label="adapters">
+				<Row label={t("wizard.review.adapters")}>
 					{adapters.length === 0 ? (
-						<p className="text-sm text-neutral-600">none enabled</p>
+						<p className="text-sm text-neutral-600">{t("wizard.review.noneEnabled")}</p>
 					) : (
 						<div className="flex items-center gap-2 flex-wrap">
 							{adapters.map((slug) => (
@@ -266,14 +266,12 @@ export default function StepReview() {
 				</Row>
 
 				{/* Cost */}
-				<Row label="cost">
+				<Row label={t("wizard.review.cost")}>
 					<p className="text-sm font-mono tabular-nums text-neutral-200">
-						gas <span className="text-neutral-500">+</span> $5.00 setup <span className="text-neutral-500">+</span> 0.03
-						BNB bundle tip
+						{t("wizard.review.costLine")}
 					</p>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
-						pulled from your primary Steward wallet at provision. bundle tip goes to the 48 club builder eoa for
-						priority inclusion when the puissant bundle ships.
+						{t("wizard.review.costBody")}
 					</p>
 					{linkedAddress ? (
 						<label className="mt-4 flex items-center gap-3 text-sm text-neutral-300">
@@ -283,7 +281,7 @@ export default function StepReview() {
 								onChange={(event) => patchSafe({ firstBuyFundingSource: event.target.checked ? linkedAddress : null })}
 								className="h-4 w-4 accent-[#00ff87]"
 							/>
-							<span>Use linked wallet for first-buy</span>
+							<span>{t("wizard.review.firstBuy")}</span>
 							<span className="font-mono text-neutral-500">{shortAddr(linkedAddress)}</span>
 						</label>
 					) : null}
@@ -291,11 +289,9 @@ export default function StepReview() {
 			</section>
 
 			<aside className="border border-accent/20 bg-accent/[0.03] p-4">
-				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">after provision</p>
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">{t("wizard.review.afterProvision")}</p>
 				<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-					you'll land on <span className="text-white">/patron/[id]</span> in the{" "}
-					<span className="font-mono text-white">ready_to_launch</span> state. from there: fund the safe, pick a
-					first-buy size, and launch the token whenever you're ready.
+					{t("wizard.review.afterProvisionBody")}
 				</p>
 			</aside>
 		</div>

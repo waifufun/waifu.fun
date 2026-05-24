@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { FourMemeTaxFeeConfig } from "@/lib/launchpad/types";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +36,14 @@ export function AllocationGrid({
 	onAllocationChange,
 	onRescale,
 }: Props) {
+	const { t } = useTranslation();
 	return (
 		<section>
 			<header className="flex items-baseline justify-between mb-3">
 				<div>
-					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">your allocation</h2>
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">{t("wizard.launchpad.tax.allocation")}</h2>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
-						split your {(expectedSum / 100).toFixed(2)}% across four destinations.
+						{t("wizard.launchpad.tax.allocationHelp", { pct: (expectedSum / 100).toFixed(2) })}
 					</p>
 				</div>
 				<span
@@ -61,8 +63,8 @@ export function AllocationGrid({
 					return (
 						<div key={f.key} className="grid grid-cols-[1fr_120px] gap-4 p-4 items-center">
 							<div className="min-w-0">
-								<p className="text-sm text-white tracking-tight">{f.label}</p>
-								<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">{f.description}</p>
+								<p className="text-sm text-white tracking-tight">{t(`wizard.launchpad.tax.${f.key}Label`)}</p>
+								<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">{t(`wizard.launchpad.tax.${f.key}Desc`)}</p>
 							</div>
 							<div
 								className={cn(
@@ -77,7 +79,7 @@ export function AllocationGrid({
 									step={0.5}
 									value={bps / 100}
 									onChange={(e) => onAllocationChange(f.key, Number(e.target.value))}
-									aria-label={`${f.label} percentage`}
+									aria-label={`${t(`wizard.launchpad.tax.${f.key}Label`)} percentage`}
 									className="w-full bg-transparent outline-none text-sm font-mono tabular-nums text-white text-right"
 								/>
 								<span className="ml-1 text-neutral-500 font-mono text-sm">%</span>
@@ -91,7 +93,7 @@ export function AllocationGrid({
 			<div
 				className="mt-3 relative h-2 w-full bg-white/5 overflow-hidden flex"
 				role="img"
-				aria-label="allocation breakdown"
+				aria-label={t("wizard.launchpad.tax.allocationBreakdown")}
 			>
 				{ALLOCATION_FIELDS.map((f, i) => {
 					const bps = allocation[f.key];
@@ -107,7 +109,7 @@ export function AllocationGrid({
 					onClick={onRescale}
 					className="mt-3 inline-flex h-9 items-center px-3 text-[11px] font-mono uppercase tracking-[0.2em] border border-white/15 text-neutral-300 hover:border-white/30 hover:text-white transition-colors"
 				>
-					rescale to fit
+					{t("wizard.launchpad.tax.rescale")}
 				</button>
 			) : null}
 		</section>
