@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { FlapMetadataUploadError, shortenCid, uploadFlapMetadata } from "@/lib/flap/metadata";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -30,6 +31,7 @@ type UploadStatus =
  * visual identity don't have to upload twice. They can override.
  */
 export default function StepMetadata() {
+	const { t } = useTranslation();
 	const { state, patchFlap } = useWizard();
 	const [status, setStatus] = useState<UploadStatus>(() =>
 		state.flap.metaCid && state.flap.metaUri
@@ -65,11 +67,11 @@ export default function StepMetadata() {
 		async (file: File) => {
 			setImageError(null);
 			if (!file.type.startsWith("image/")) {
-				setImageError("file must be an image");
+				setImageError(t("wizard.metadata.errors.fileMustBeImage"));
 				return;
 			}
 			if (file.size > MAX_IMAGE_BYTES) {
-				setImageError("image must be under 4 mb");
+				setImageError(t("wizard.metadata.errors.imageTooLarge4mb"));
 				return;
 			}
 			const dataUrl = await new Promise<string | null>((resolve) => {
@@ -79,20 +81,26 @@ export default function StepMetadata() {
 				reader.readAsDataURL(file);
 			});
 			if (!dataUrl) {
-				setImageError("could not read image");
+				setImageError(t("wizard.metadata.errors.couldNotReadImage"));
 				return;
 			}
 			const img = new window.Image();
 			img.onload = () => {
 				if (img.naturalWidth < MIN_IMAGE_PX || img.naturalHeight < MIN_IMAGE_PX) {
-					setImageError(`min ${MIN_IMAGE_PX}x${MIN_IMAGE_PX}; got ${img.naturalWidth}x${img.naturalHeight}`);
+					setImageError(
+						t("wizard.metadata.errors.minDimensions", {
+							min: String(MIN_IMAGE_PX),
+							width: String(img.naturalWidth),
+							height: String(img.naturalHeight),
+						}),
+					);
 					return;
 				}
 				// New image invalidates any prior CID.
 				patchFlap({ tokenImageDataUrl: dataUrl, metaCid: null, metaUri: null });
 				setStatus({ kind: "idle" });
 			};
-			img.onerror = () => setImageError("image failed to decode");
+			img.onerror = () => setImageError(t("wizard.metadata.errors.imageDecodeFailed"));
 			img.src = dataUrl;
 		},
 		[patchFlap],
@@ -128,16 +136,16 @@ export default function StepMetadata() {
 	const handleUpload = useCallback(async () => {
 		const image = state.flap.tokenImageDataUrl;
 		if (!image) {
-			setImageError("upload a token image first");
+			setImageError(t("wizard.metadata.errors.uploadImageFirst"));
 			return;
 		}
 		const desc = state.flap.description.trim();
 		if (!desc) {
-			setStatus({ kind: "error", message: "description required before upload" });
+			setStatus({ kind: "error", message: t("wizard.metadata.errors.descriptionRequired") });
 			return;
 		}
 		if (!state.persona.name.trim() || !state.persona.ticker.trim()) {
-			setStatus({ kind: "error", message: "go back to persona; name + ticker are required" });
+			setStatus({ kind: "error", message: t("wizard.metadata.errors.nameTickerRequired") });
 			return;
 		}
 
@@ -161,7 +169,7 @@ export default function StepMetadata() {
 					? err.message
 					: err instanceof Error
 						? err.message
-						: "flap upload failed";
+						: t("wizard.metadata.errors.flapUploadFailed");
 			setStatus({ kind: "error", message });
 		}
 	}, [
@@ -182,11 +190,10 @@ export default function StepMetadata() {
 		<div className="flex flex-col gap-10" data-testid="step-metadata">
 			<section>
 				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">
-					[wave h] · flap-native token metadata
+					{t("wizard.metadata.waveBadge")}
 				</p>
 				<p className="mt-2 text-sm text-neutral-400 leading-relaxed max-w-[58ch]">
-					flap mints your token via portal.newTokenV6 inside our atomic bundle. portal needs an ipfs cid for the token's
-					image + description. upload here; the rest of the wizard stays locked until it lands.
+					{t("wizard.metadata.intro")}
 				</p>
 			</section>
 
@@ -194,10 +201,10 @@ export default function StepMetadata() {
 			<section>
 				<div className="flex items-baseline justify-between">
 					<label htmlFor="flap-token-image" className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
-						token image
+						{t("wizard.metadata.imageLabel")}
 					</label>
 					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-						min {MIN_IMAGE_PX}px
+						{t("wizard.persona.minPx", { px: String(MIN_IMAGE_PX) })}
 					</span>
 				</div>
 
@@ -228,12 +235,12 @@ export default function StepMetadata() {
 							accept="image/png,image/jpeg,image/webp"
 							className="sr-only"
 							onChange={onChange}
-							aria-label="upload token image"
+							aria-label={t("wizard.metadata.uploadTokenAria")}
 						/>
 						{state.flap.tokenImageDataUrl ? (
 							<Image
 								src={state.flap.tokenImageDataUrl}
-								alt="token image preview"
+								alt={t("wizard.metadata.previewAlt")}
 								fill
 								sizes="160px"
 								className="object-cover"
@@ -243,18 +250,18 @@ export default function StepMetadata() {
 							<div className="flex flex-col items-center justify-center gap-2 px-4 text-center">
 								<UploadIcon className="h-5 w-5 text-neutral-500" />
 								<span className="text-[11px] text-neutral-500 leading-tight">
-									drop image
+									{t("wizard.persona.dropImage")}
 									<br />
-									or click
+									{t("wizard.persona.orClick")}
 								</span>
 							</div>
 						)}
 					</label>
 
 					<div className="text-xs text-neutral-500 leading-relaxed max-w-[44ch]">
-						<p>png, jpeg, webp. defaults to your persona avatar. override here if your token has its own look.</p>
+						<p>{t("wizard.metadata.imageHelp")}</p>
 						<p className="mt-2 text-[11px] text-neutral-600">
-							gets hashed onto ipfs via funcs.flap.sh/api/upload. nothing leaves your browser until you press upload.
+							{t("wizard.metadata.ipfsHelp")}
 						</p>
 						{imageError ? (
 							<p className="mt-3 text-xs text-red-400 font-mono" role="alert">
@@ -269,7 +276,7 @@ export default function StepMetadata() {
 			<section>
 				<div className="flex items-baseline justify-between">
 					<label htmlFor={descId} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
-						description
+						{t("wizard.metadata.descriptionLabel")}
 					</label>
 					<span className="text-[10px] font-mono tabular-nums tracking-[0.12em] text-neutral-600">
 						{state.flap.description.length}/{MAX_DESCRIPTION}
@@ -279,7 +286,7 @@ export default function StepMetadata() {
 					id={descId}
 					value={state.flap.description}
 					onChange={(e) => onChangeField("description", e.target.value.slice(0, MAX_DESCRIPTION))}
-					placeholder="one or two lines about the agent. shows up on flap, dex screeners, and waifu.fun."
+					placeholder={t("wizard.metadata.descriptionPlaceholder")}
 					rows={3}
 					className={cn(
 						"mt-2 w-full bg-white/[0.015] border border-white/10 px-4 py-3 text-sm text-white",
@@ -293,27 +300,27 @@ export default function StepMetadata() {
 			{/* Socials (optional) */}
 			<section>
 				<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
-					socials <span className="ml-2 text-neutral-600 lowercase tracking-normal">optional</span>
+					{t("wizard.metadata.socialsLabel")} <span className="ml-2 text-neutral-600 lowercase tracking-normal">{t("wizard.common.optional")}</span>
 				</p>
 				<div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
 					<SocialField
 						id={twitterId}
-						label="twitter"
-						placeholder="@waifudotfun"
+						label={t("wizard.metadata.twitterLabel")}
+						placeholder={t("wizard.metadata.twitterPlaceholder")}
 						value={state.flap.twitter}
 						onChange={(v) => onChangeField("twitter", v)}
 					/>
 					<SocialField
 						id={telegramId}
-						label="telegram"
-						placeholder="t.me/yourchannel"
+						label={t("wizard.metadata.telegramLabel")}
+						placeholder={t("wizard.metadata.telegramPlaceholder")}
 						value={state.flap.telegram}
 						onChange={(v) => onChangeField("telegram", v)}
 					/>
 					<SocialField
 						id={websiteId}
-						label="website"
-						placeholder="https://your.site"
+						label={t("wizard.metadata.websiteLabel")}
+						placeholder={t("wizard.metadata.websitePlaceholder")}
 						value={state.flap.website}
 						onChange={(v) => onChangeField("website", v)}
 					/>
@@ -335,7 +342,7 @@ export default function StepMetadata() {
 							)}
 							data-testid="flap-upload-button"
 						>
-							{uploading ? "uploading…" : uploadedOk ? "re-upload" : "upload to flap"}
+							{uploading ? t("wizard.metadata.uploading") : uploadedOk ? t("wizard.metadata.reupload") : t("wizard.metadata.uploadToFlap")}
 						</button>
 						{uploadedOk ? (
 							<span
@@ -343,7 +350,7 @@ export default function StepMetadata() {
 								data-testid="flap-cid-display"
 							>
 								<CheckIcon className="h-3 w-3" />
-								cid: {shortenCid(status.cid)}
+								{t("wizard.metadata.cid", { cid: shortenCid(status.cid) })}
 							</span>
 						) : null}
 					</div>
@@ -354,25 +361,24 @@ export default function StepMetadata() {
 							role="alert"
 							data-testid="flap-upload-error"
 						>
-							<p>upload failed: {status.message}</p>
+							<p>{t("wizard.metadata.uploadFailed", { message: status.message })}</p>
 							<button
 								type="button"
 								onClick={handleUpload}
 								className="mt-2 inline-flex items-center gap-1.5 underline underline-offset-2 hover:opacity-80"
 							>
-								retry →
+								{t("wizard.common.retry")} →
 							</button>
 						</div>
 					) : null}
 
 					{uploadedOk ? (
 						<p className="text-[11px] text-neutral-500 leading-relaxed">
-							stored. you can edit fields and re-upload as long as you do it before submission.
+							{t("wizard.metadata.stored")}
 						</p>
 					) : (
 						<p className="text-[11px] text-neutral-500 leading-relaxed">
-							upload before you advance. if flap is having a moment, retry. we don't fall back to our own infra, flap is
-							the source of truth.
+							{t("wizard.metadata.uploadBeforeAdvance")}
 						</p>
 					)}
 				</div>

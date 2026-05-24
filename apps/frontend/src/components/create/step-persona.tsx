@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { type ChangeEvent, type DragEvent, useCallback, useId, useRef, useState } from "react";
@@ -22,6 +23,7 @@ const MIN_AVATAR_PX = 512;
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 
 export default function StepPersona() {
+	const { t } = useTranslation();
 	const { state, patchPersona, patchInviteCode } = useWizard();
 	const [dragOver, setDragOver] = useState(false);
 	const [uploadError, setUploadError] = useState<string | null>(null);
@@ -42,11 +44,11 @@ export default function StepPersona() {
 		async (file: File) => {
 			setUploadError(null);
 			if (!file.type.startsWith("image/")) {
-				setUploadError("file must be an image");
+				setUploadError(t("wizard.persona.errors.fileMustBeImage"));
 				return;
 			}
 			if (file.size > MAX_FILE_BYTES) {
-				setUploadError("image must be under 4 MB");
+				setUploadError(t("wizard.persona.errors.imageTooLarge4mb"));
 				return;
 			}
 			const dataUrl = await new Promise<string | null>((resolve) => {
@@ -56,19 +58,25 @@ export default function StepPersona() {
 				reader.readAsDataURL(file);
 			});
 			if (!dataUrl) {
-				setUploadError("could not read image");
+				setUploadError(t("wizard.persona.errors.couldNotReadImage"));
 				return;
 			}
 			// Verify dimensions
 			const img = new window.Image();
 			img.onload = () => {
 				if (img.naturalWidth < MIN_AVATAR_PX || img.naturalHeight < MIN_AVATAR_PX) {
-					setUploadError(`Min ${MIN_AVATAR_PX}x${MIN_AVATAR_PX}; got ${img.naturalWidth}x${img.naturalHeight}`);
+					setUploadError(
+						t("wizard.persona.errors.minDimensions", {
+							min: String(MIN_AVATAR_PX),
+							width: String(img.naturalWidth),
+							height: String(img.naturalHeight),
+						}),
+					);
 					return;
 				}
 				patchPersona({ avatarDataUrl: dataUrl, avatarTemplateId: null });
 			};
-			img.onerror = () => setUploadError("image failed to decode");
+			img.onerror = () => setUploadError(t("wizard.persona.errors.imageDecodeFailed"));
 			img.src = dataUrl;
 		},
 		[patchPersona],
@@ -129,7 +137,7 @@ export default function StepPersona() {
 				applyImportResult(parseElizaCharacter(raw));
 			};
 			reader.onerror = () => {
-				setImportError("could not read file");
+				setImportError(t("wizard.persona.errors.couldNotReadFile"));
 			};
 			reader.readAsText(file);
 		},
@@ -141,27 +149,27 @@ export default function StepPersona() {
 			{/* Invite code (curated launch) */}
 			<section className="border border-white/8 bg-white/[0.012] p-5">
 				<label htmlFor={inviteCodeId} className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
-					invite code (optional)
+					{t("wizard.persona.inviteLabel")}
 				</label>
 				<input
 					id={inviteCodeId}
 					type="text"
 					value={state.inviteCode}
 					onChange={(e) => patchInviteCode(e.target.value)}
-					placeholder="WF-XXXXX-XXXXX"
+					placeholder={t("wizard.persona.invitePlaceholder")}
 					autoComplete="off"
 					spellCheck={false}
 					className="mt-2 w-full bg-black/40 border border-white/10 px-3 h-11 font-mono text-sm text-white placeholder:text-white/20 focus:border-[#00ff87]/50 outline-none"
 				/>
 				<p className="mt-2 text-[11px] text-white/40 leading-relaxed">
-					have an invite code? drop it here for early access perks. otherwise leave blank.{" "}
+					{t("wizard.persona.inviteHelpBefore")} {" "}
 					<a
 						href="https://x.com/waifudotfun"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="text-[#00ff87] hover:opacity-80"
 					>
-						ping us on x for one
+						{t("wizard.persona.inviteHelpLink")}
 					</a>
 					.
 				</p>
@@ -180,7 +188,7 @@ export default function StepPersona() {
 								: "border-white/10 text-white/40 hover:text-white/70",
 						)}
 					>
-						[import]
+						{t("wizard.persona.importTab")}
 					</button>
 					<button
 						type="button"
@@ -192,10 +200,10 @@ export default function StepPersona() {
 								: "border-white/10 text-white/40 hover:text-white/70",
 						)}
 					>
-						[create]
+						{t("wizard.persona.createTab")}
 					</button>
 					<span className="text-white/30 ml-2">
-						{mode === "import" ? "paste an existing eliza character file" : "build a new agent from scratch"}
+						{mode === "import" ? t("wizard.persona.importBlurb") : t("wizard.persona.createBlurb")}
 					</span>
 				</div>
 
@@ -206,13 +214,13 @@ export default function StepPersona() {
 								htmlFor={importTextareaId}
 								className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400"
 							>
-								character json
+								{t("wizard.persona.characterJson")}
 							</label>
 							<label
 								htmlFor={importFileId}
 								className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-[#00ff87] cursor-pointer"
 							>
-								or upload .json →
+								{t("wizard.persona.uploadJson")}
 							</label>
 							<input
 								id={importFileId}
@@ -226,7 +234,7 @@ export default function StepPersona() {
 							id={importTextareaId}
 							value={importText}
 							onChange={(e) => setImportText(e.target.value)}
-							placeholder='paste your character.json here, e.g. { "name": "...", "bio": [...] }'
+							placeholder={t("wizard.persona.importPlaceholder")}
 							rows={8}
 							spellCheck={false}
 							className="w-full bg-black/40 border border-white/10 p-3 font-mono text-xs text-white placeholder:text-white/20 focus:border-[#00ff87]/50 outline-none leading-relaxed"
@@ -237,11 +245,11 @@ export default function StepPersona() {
 								onClick={handleImportPaste}
 								className="px-4 h-9 bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90"
 							>
-								import →
+								{t("wizard.persona.importCta")}
 							</button>
 							{state.persona.name ? (
 								<span className="text-[11px] font-mono text-[#00ff87]">
-									imported: {state.persona.name} · {state.persona.ticker}
+									{t("wizard.persona.imported", { name: state.persona.name, ticker: state.persona.ticker })}
 								</span>
 							) : null}
 						</div>
@@ -254,20 +262,20 @@ export default function StepPersona() {
 							</ul>
 						) : null}
 						<p className="text-[11px] text-white/40 leading-relaxed">
-							we extract name, ticker (derived), bio, and persona prompt from the file. you can fine-tune in [create]
+							we extract name, ticker (derived), bio, and persona prompt from the file. you can fine-tune in {t("wizard.persona.createTab")}
 							mode after.
 						</p>
 					</div>
 				) : null}
 			</section>
-			{/* Avatar */}
+			{/* {t("wizard.persona.avatarLabel")} */}
 			<section>
 				<div className="flex items-baseline justify-between">
 					<label htmlFor={`${nameId}-avatar`} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
-						Avatar
+						{t("wizard.persona.avatarLabel")}
 					</label>
 					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-						min {MIN_AVATAR_PX}px
+						{t("wizard.persona.minPx", { px: String(MIN_AVATAR_PX) })}
 					</span>
 				</div>
 
@@ -299,12 +307,12 @@ export default function StepPersona() {
 							accept="image/png,image/jpeg,image/webp"
 							className="sr-only"
 							onChange={onChange}
-							aria-label="upload avatar image"
+							aria-label={t("wizard.persona.uploadAvatarAria")}
 						/>
 						{state.persona.avatarDataUrl ? (
 							<Image
 								src={state.persona.avatarDataUrl}
-								alt="avatar preview"
+								alt={t("wizard.persona.avatarPreviewAlt")}
 								fill
 								sizes="160px"
 								className="object-cover"
@@ -314,9 +322,9 @@ export default function StepPersona() {
 							<div className="flex flex-col items-center justify-center gap-2 px-4 text-center">
 								<UploadIcon className="h-5 w-5 text-neutral-500" />
 								<span className="text-[11px] text-neutral-500 leading-tight">
-									drop image
+									{t("wizard.persona.dropImage")}
 									<br />
-									or click
+									{t("wizard.persona.orClick")}
 								</span>
 							</div>
 						)}
@@ -324,7 +332,7 @@ export default function StepPersona() {
 
 					<div>
 						<p className="text-xs text-neutral-500 leading-relaxed">
-							or pick a template. placeholder until you upload your own.
+							{t("wizard.persona.templateHelp")}
 						</p>
 						<div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
 							{TEMPLATES.map((t) => {
@@ -334,7 +342,7 @@ export default function StepPersona() {
 										key={t.id}
 										type="button"
 										aria-pressed={selected}
-										aria-label={`avatar template ${t.label}`}
+										aria-label={t("wizard.persona.templateAria", { label: t.label })}
 										onClick={() => patchPersona({ avatarTemplateId: t.id, avatarDataUrl: null })}
 										className={cn(
 											"group relative aspect-square overflow-hidden border",
@@ -367,17 +375,17 @@ export default function StepPersona() {
 			<section className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-4">
 				<Field
 					id={nameId}
-					label="name"
+					label={t("wizard.persona.nameLabel")}
 					value={state.persona.name}
-					placeholder="Eliza"
+					placeholder={t("wizard.persona.namePlaceholder")}
 					maxLength={48}
 					onChange={(v) => patchPersona({ name: v })}
 				/>
 				<Field
 					id={tickerId}
-					label="ticker"
+					label={t("wizard.persona.tickerLabel")}
 					value={tickerVal}
-					placeholder="ELIZA"
+					placeholder={t("wizard.persona.tickerPlaceholder")}
 					mono
 					prefix="$"
 					maxLength={10}
@@ -390,18 +398,18 @@ export default function StepPersona() {
 								.slice(0, 10),
 						})
 					}
-					hint={tickerInvalid ? "two to ten uppercase letters or digits" : "two to ten chars, A-Z and 0-9"}
+					hint={tickerInvalid ? t("wizard.persona.tickerHintInvalid") : t("wizard.persona.tickerHint")}
 				/>
 			</section>
 
 			{/* Bio */}
 			<section>
-				<FieldLabel htmlFor={bioId} label="one-line bio" counter={`${state.persona.bio.length}/${MAX_BIO}`} />
+				<FieldLabel htmlFor={bioId} label={t("wizard.persona.bioLabel")} counter={`${state.persona.bio.length}/${MAX_BIO}`} />
 				<textarea
 					id={bioId}
 					value={state.persona.bio}
 					onChange={(e) => patchPersona({ bio: e.target.value.slice(0, MAX_BIO) })}
-					placeholder="A reluctant treasury manager who reads charts at 4am and trusts almost nobody."
+					placeholder={t("wizard.persona.bioPlaceholder")}
 					rows={2}
 					className={cn(
 						"mt-2 w-full bg-white/[0.015] border border-white/10 px-4 py-3 text-sm text-white",
@@ -416,21 +424,18 @@ export default function StepPersona() {
 			<section>
 				<FieldLabel
 					htmlFor={promptId}
-					label="persona prompt"
+					label={t("wizard.persona.promptLabel")}
 					optional
 					counter={`${state.persona.personaPrompt.length}/${MAX_PROMPT}`}
 				/>
 				<p className="mt-1 text-xs text-neutral-500 leading-relaxed max-w-[58ch]">
-					optional. steerable later. defines how the agent talks, reasons, and reacts to market moves. leave empty to
-					use the default voice for the picked template.
+					{t("wizard.persona.promptHelp")}
 				</p>
 				<textarea
 					id={promptId}
 					value={state.persona.personaPrompt}
 					onChange={(e) => patchPersona({ personaPrompt: e.target.value.slice(0, MAX_PROMPT) })}
-					placeholder={
-						"You are Eliza. You speak rarely, in lowercase. You distrust hype.\nYou size positions small until conviction earns more."
-					}
+					placeholder={t("wizard.persona.promptPlaceholder")}
 					rows={6}
 					className={cn(
 						"mt-3 w-full bg-white/[0.015] border border-white/10 px-4 py-3 text-sm text-white font-mono",
@@ -455,11 +460,12 @@ function FieldLabel({
 	counter?: string;
 	optional?: boolean;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div className="flex items-baseline justify-between">
 			<label htmlFor={htmlFor} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
 				{label}
-				{optional ? <span className="ml-2 text-neutral-600 lowercase tracking-normal">optional</span> : null}
+				{optional ? <span className="ml-2 text-neutral-600 lowercase tracking-normal">{t("wizard.common.optional")}</span> : null}
 			</label>
 			{counter ? (
 				<span className="text-[10px] font-mono tabular-nums tracking-[0.12em] text-neutral-600">{counter}</span>
