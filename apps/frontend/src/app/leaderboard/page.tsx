@@ -3,6 +3,7 @@
 import { Hairline, Label, Panel, Pulse, THEME_TOKENS } from "@/components/agent-home/wave-t/_primitives";
 import LeaderboardTable from "@/components/leaderboard/leaderboard-table";
 import SortToggle from "@/components/leaderboard/sort-toggle";
+import { useTranslation } from "@/contexts/locale-context";
 import { type LeaderboardSort, useLeaderboard } from "@/lib/api/leaderboard";
 import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
@@ -36,23 +37,26 @@ function EmptyState({ message, cta }: { message: string; cta?: { href: string; l
 }
 
 function LoadingState() {
+	const { t } = useTranslation();
 	return (
 		<div className="flex items-center gap-2 px-4 py-10 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
 			<Pulse tone="accent" />
-			loading
+			{t("common.loading2")}
 		</div>
 	);
 }
 
 function ErrorState({ message }: { message: string }) {
+	const { t } = useTranslation();
 	return (
 		<div className="px-4 py-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--negative)]" role="alert">
-			feed error · {message}
+			{t("leaderboard.feedError", { message })}
 		</div>
 	);
 }
 
 function LeaderboardContent() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const sort = useMemo(() => parseSort(searchParams?.get("sort")), [searchParams]);
@@ -88,13 +92,13 @@ function LeaderboardContent() {
 			<div className="flex items-center justify-between gap-4 px-4 py-3">
 				<Label>
 					<Pulse tone="accent" />
-					runway leaderboard
+					{t("leaderboard.runwayTitle")}
 				</Label>
 				<div className="flex items-center gap-3">
 					<SortToggle onChange={handleSortChange} value={sort} />
 					{count > 0 && !allZero ? (
 						<span className="hidden font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)] sm:inline">
-							{count} agents
+							{t("leaderboard.countAgents", { count: String(count) })}
 						</span>
 					) : null}
 				</div>
@@ -107,15 +111,15 @@ function LeaderboardContent() {
 				<ErrorState message={(error as Error).message} />
 			) : !data || data.length === 0 ? (
 				<EmptyState
-					cta={{ href: "/create/wizard", label: "launch the first agent" }}
-					message="no agents yet · onchain feed quiet"
+					cta={{ href: "/create/wizard", label: t("leaderboard.emptyCta") }}
+					message={t("leaderboard.emptyMessage")}
 				/>
 			) : allZero ? (
 				<>
 					<LeaderboardTable entries={data} />
 					<Hairline />
 					<div className="px-4 py-3 font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-						waiting on burn data · runway populates once agents tick
+						{t("leaderboard.waitingBurn")}
 					</div>
 				</>
 			) : (
@@ -132,26 +136,40 @@ export default function LeaderboardPage() {
 			style={THEME_TOKENS as React.CSSProperties}
 		>
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6">
-				<header className="mb-4 flex items-end justify-between">
-					<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">
-						waifu.fun / leaderboard
-					</div>
-					<a
-						className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
-						href="/agents"
-					>
-						browse all agents →
-					</a>
-				</header>
+				<LeaderboardHeader />
 
 				<Suspense fallback={<LoadingState />}>
 					<LeaderboardContent />
 				</Suspense>
 
-				<footer className="mt-4 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-					ranked by days of treasury at current burn
-				</footer>
+				<LeaderboardFooter />
 			</div>
 		</main>
+	);
+}
+
+function LeaderboardHeader() {
+	const { t } = useTranslation();
+	return (
+		<header className="mb-4 flex items-end justify-between">
+			<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">
+				{t("leaderboard.eyebrow")}
+			</div>
+			<a
+				className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
+				href="/agents"
+			>
+				{t("leaderboard.browseAllAgents")} →
+			</a>
+		</header>
+	);
+}
+
+function LeaderboardFooter() {
+	const { t } = useTranslation();
+	return (
+		<footer className="mt-4 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+			{t("leaderboard.footer")}
+		</footer>
 	);
 }
