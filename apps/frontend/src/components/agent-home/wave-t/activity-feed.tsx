@@ -17,6 +17,7 @@
 import { type ReactNode, useMemo, useState } from "react";
 
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import { resolveImageUrl } from "@/lib/image-url";
@@ -103,13 +104,13 @@ export type ActivityRowInput =
 
 type Tab = "all" | ActivityCategory;
 
-const TABS: { key: Tab; label: string }[] = [
-	{ key: "all", label: "All" },
-	{ key: "trading", label: "Trading" },
-	{ key: "apps", label: "Apps" },
-	{ key: "treasury", label: "Treasury" },
-	{ key: "market", label: "Market" },
-	{ key: "system", label: "System" },
+const TAB_KEYS: { key: Tab; labelKey: string }[] = [
+	{ key: "all", labelKey: "agent.activity.tabAll" },
+	{ key: "trading", labelKey: "agent.activity.tabTrading" },
+	{ key: "apps", labelKey: "agent.activity.tabApps" },
+	{ key: "treasury", labelKey: "agent.activity.tabTreasury" },
+	{ key: "market", labelKey: "agent.activity.tabMarket" },
+	{ key: "system", labelKey: "agent.activity.tabSystem" },
 ];
 
 function categoryOf(row: ActivityRowInput): ActivityCategory {
@@ -161,12 +162,13 @@ function TweetRow({
 	avatarUrl: string;
 	handle: string | null;
 }) {
+	const { t } = useTranslation();
 	const body = (
 		<>
 			<div className="relative shrink-0">
 				{/* eslint-disable-next-line @next/next/no-img-element */}
 				<img
-					alt={handle ? `${handle} avatar` : "tweet avatar"}
+					alt={handle ? t("agent.activity.tweetAvatarAlt", { handle }) : t("agent.activity.tweetAvatarFallback")}
 					className="h-9 w-9 rounded-full object-cover"
 					height={36}
 					src={avatarUrl}
@@ -186,7 +188,7 @@ function TweetRow({
 							{handle.toLowerCase()}
 						</span>
 					) : (
-						<span className="font-mono text-[11px] text-[var(--text-primary)]">posted on x</span>
+						<span className="font-mono text-[11px] text-[var(--text-primary)]">{t("agent.activity.postedOnX")}</span>
 					)}
 					<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
 						· {relativeTime(row.timestamp)}
@@ -196,8 +198,14 @@ function TweetRow({
 					{row.text}
 				</p>
 				<div className="mt-1.5 flex items-center gap-3 font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
-					<span>{formatCompactNum(row.impressions)} views</span>
-					{row.likes > 0 ? <span>{formatCompactNum(row.likes)} likes</span> : null}
+					<span>
+						{formatCompactNum(row.impressions)} {t("agent.activity.viewsSuffix")}
+					</span>
+					{row.likes > 0 ? (
+						<span>
+							{formatCompactNum(row.likes)} {t("agent.activity.likesSuffix")}
+						</span>
+					) : null}
 				</div>
 			</div>
 		</>
@@ -218,6 +226,7 @@ function TweetRow({
 // ── PR (ship) row ────────────────────────────────────────────────
 
 function ShipRow({ row }: { row: Extract<ActivityRowInput, { type: "pr" }> }) {
+	const { t } = useTranslation();
 	const body = (
 		<>
 			<span
@@ -227,9 +236,9 @@ function ShipRow({ row }: { row: Extract<ActivityRowInput, { type: "pr" }> }) {
 			</span>
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2">
-					<span className="text-[12.5px] text-[var(--text-primary)]">shipped</span>
+					<span className="text-[12.5px] text-[var(--text-primary)]">{t("agent.activity.shipped")}</span>
 					<span className="rounded-sm border border-[var(--border-soft)] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-						pr #{row.number}
+						{t("agent.activity.prNumber", { n: String(row.number) })}
 					</span>
 				</div>
 				<div className="mt-0.5 truncate text-[11.5px] text-[var(--text-secondary)] lowercase">{row.title}</div>
@@ -238,7 +247,7 @@ function ShipRow({ row }: { row: Extract<ActivityRowInput, { type: "pr" }> }) {
 				<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
 					{relativeTime(row.timestamp)}
 				</span>
-				<span className="font-mono text-[11px] text-[var(--positive)]">merged</span>
+				<span className="font-mono text-[11px] text-[var(--positive)]">{t("agent.activity.merged")}</span>
 			</div>
 		</>
 	);
@@ -265,7 +274,9 @@ type Visual = {
 	url?: string | undefined;
 };
 
-function visualForCompact(row: ActivityRowInput): Visual | null {
+type TFunc = (key: string, params?: Record<string, string>) => string;
+
+function visualForCompact(row: ActivityRowInput, t: TFunc): Visual | null {
 	switch (row.type) {
 		case "pr":
 		case "tweet":
@@ -273,7 +284,7 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 		case "tx":
 			return {
 				icon: <BnbChainIcon className="h-3.5 w-3.5" />,
-				title: "executed bsc tx",
+				title: t("agent.activity.executedTx"),
 				sub: row.method,
 				right: <span className="text-[var(--text-primary)] tabular-nums">{row.valueBnb.toFixed(4)} BNB</span>,
 				url: row.url,
@@ -282,8 +293,8 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 			const tone = deltaTone(row.usd);
 			return {
 				icon: <WaifuIcon className="h-3.5 w-3.5" />,
-				title: "revenue collected",
-				sub: `${row.source} stream`,
+				title: t("agent.activity.revenueCollected"),
+				sub: t("agent.activity.revenueStream", { source: row.source }),
 				right: (
 					<span className={cn("tabular-nums", tone.cls)}>
 						{tone.sign}
@@ -294,10 +305,18 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 		}
 		case "trade": {
 			const positive = row.side === "buy";
+			const assetLower = row.asset.toLowerCase();
 			return {
 				icon: pickVenueIcon(row.venue),
-				title: `${positive ? "bought" : "sold"} ${row.asset.toLowerCase()}`,
-				sub: `${formatCompactNum(row.amount)} ${row.asset} at ${row.priceBnb.toFixed(6)} bnb via ${row.venue.toLowerCase()}`,
+				title: positive
+					? t("agent.activity.bought", { asset: assetLower })
+					: t("agent.activity.sold", { asset: assetLower }),
+				sub: t("agent.activity.tradeSub", {
+					amount: formatCompactNum(row.amount),
+					asset: row.asset,
+					price: row.priceBnb.toFixed(6),
+					venue: row.venue.toLowerCase(),
+				}),
 				right: (
 					<span className="inline-flex items-center gap-1.5 tabular-nums">
 						<TokenIcon address="" chain={chainFromVenue(row.venue)} size={12} symbol={row.asset} />
@@ -312,16 +331,27 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 		}
 		case "position": {
 			const tone = deltaTone(row.pnlUsd);
-			const verb = row.action === "open" ? "opened" : row.action === "close" ? "closed" : "adjusted";
-			const dir = row.direction === "long" ? "long" : "short";
+			const direction =
+				row.direction === "long" ? t("agent.activity.directionLong") : t("agent.activity.directionShort");
+			const titleKey =
+				row.action === "open"
+					? "agent.activity.posOpened"
+					: row.action === "close"
+						? "agent.activity.posClosed"
+						: "agent.activity.posAdjusted";
 			return {
 				icon: pickVenueIcon(row.venue),
-				title: `${verb} ${dir} position`,
-				sub: `${row.market}${row.leverage ? ` ${row.leverage}x` : ""} on ${row.venue.toLowerCase()}`,
+				title: t(titleKey, { direction }),
+				sub: t("agent.activity.posSub", {
+					market: row.market,
+					leverage: row.leverage ? t("agent.activity.leverageSuffix", { x: String(row.leverage) }) : "",
+					venue: row.venue.toLowerCase(),
+				}),
 				right: (
 					<span className={cn("tabular-nums", tone.cls)}>
 						{tone.sign}
-						{formatCompactUsd(row.pnlUsd)} <span className="text-[var(--text-tertiary)]">p&l</span>
+						{formatCompactUsd(row.pnlUsd)}{" "}
+						<span className="text-[var(--text-tertiary)]">{t("agent.activity.pnlSuffix")}</span>
 					</span>
 				),
 				url: row.url,
@@ -337,7 +367,7 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 						: "border-[var(--border-mid)] bg-white/[0.02] text-[var(--text-secondary)]";
 			return {
 				icon: <VenueIcon size={14} venue={row.market} />,
-				title: row.result === "open" ? "placed prediction" : "prediction settled",
+				title: row.result === "open" ? t("agent.activity.betPlaced") : t("agent.activity.betSettled"),
 				sub: row.question.length > 60 ? `${row.question.slice(0, 60)}…` : row.question,
 				right: (
 					<span className="flex items-center gap-2">
@@ -361,8 +391,12 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 			};
 		}
 		case "app": {
-			const verb =
-				row.action === "shipped" ? "shipped new app" : row.action === "updated" ? "updated app" : "deprecated app";
+			const titleKey =
+				row.action === "shipped"
+					? "agent.activity.appShipped"
+					: row.action === "updated"
+						? "agent.activity.appUpdated"
+						: "agent.activity.appDeprecated";
 			const isWaifu = row.appName.toLowerCase().includes("waifu");
 			const isSteward = row.appName.toLowerCase().includes("steward");
 			const icon = isWaifu ? (
@@ -375,27 +409,34 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 			const tone = deltaTone(row.revenueUsd ?? 0);
 			return {
 				icon,
-				title: verb,
-				sub: row.version ? `${row.appName.toLowerCase()} ${row.version} is now live` : row.appName.toLowerCase(),
+				title: t(titleKey),
+				sub: row.version
+					? t("agent.activity.appSubVersion", { name: row.appName.toLowerCase(), version: row.version })
+					: row.appName.toLowerCase(),
 				right:
 					row.revenueUsd && row.revenueUsd !== 0 ? (
 						<span className={cn("tabular-nums", tone.cls)}>
 							{tone.sign}
-							{formatCompactUsd(row.revenueUsd)} <span className="text-[var(--text-tertiary)]">app revenue</span>
+							{formatCompactUsd(row.revenueUsd)}{" "}
+							<span className="text-[var(--text-tertiary)]">{t("agent.activity.appRevenueSuffix")}</span>
 						</span>
 					) : (
-						<span className="text-[var(--text-secondary)]">live</span>
+						<span className="text-[var(--text-secondary)]">{t("agent.activity.appLive")}</span>
 					),
 				url: row.url,
 			};
 		}
 		case "treasury": {
 			const tone = deltaTone(row.deltaUsd);
-			const verb =
-				row.action === "deposit" ? "deposited to" : row.action === "withdraw" ? "withdrew from" : "converted on";
+			const titleKey =
+				row.action === "deposit"
+					? "agent.activity.treasuryDeposit"
+					: row.action === "withdraw"
+						? "agent.activity.treasuryWithdraw"
+						: "agent.activity.treasuryConvert";
 			return {
 				icon: pickVenueIcon(row.to || row.from),
-				title: `${verb} ${(row.to || row.from).toLowerCase()}`,
+				title: t(titleKey, { venue: (row.to || row.from).toLowerCase() }),
 				sub: `${row.amount}`,
 				right: (
 					<span className={cn("tabular-nums", tone.cls)}>
@@ -410,7 +451,8 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 }
 
 function CompactRow({ row }: { row: ActivityRowInput }) {
-	const v = visualForCompact(row);
+	const { t } = useTranslation();
+	const v = visualForCompact(row, t);
 	if (!v) return null;
 	const body = (
 		<>
@@ -510,6 +552,7 @@ export function ActivityFeed({
 	/** When true, a tiny "live" pulse renders next to the panel header. */
 	live?: boolean;
 }) {
+	const { t } = useTranslation();
 	const [tab, setTab] = useState<Tab>("all");
 
 	const counts = useMemo(() => {
@@ -537,26 +580,26 @@ export function ActivityFeed({
 									style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 6px var(--accent)" }}
 								/>
 							</span>
-							live
+							{t("agent.activity.live")}
 						</span>
 					) : undefined
 				}
 			>
-				Activity Feed
+				{t("agent.activity.label")}
 			</Label>
 
 			{/* tabs */}
 			<div className="-mx-1 mb-2 flex flex-wrap items-center gap-1">
-				{TABS.map((t) => (
-					<TabPill key={t.key} active={tab === t.key} onClick={() => setTab(t.key)} count={counts[t.key]}>
-						{t.label}
+				{TAB_KEYS.map((tk) => (
+					<TabPill key={tk.key} active={tab === tk.key} onClick={() => setTab(tk.key)} count={counts[tk.key]}>
+						{t(tk.labelKey)}
 					</TabPill>
 				))}
 			</div>
 
 			{visible.length === 0 ? (
 				<div className="py-4 font-mono text-[11px] text-[var(--text-tertiary)]">
-					{tab === "all" ? EMPTY_ACTIVITY_COPY : `no ${tab} events yet`}
+					{tab === "all" ? EMPTY_ACTIVITY_COPY : t("agent.activity.noEvents", { tab })}
 				</div>
 			) : (
 				<ul className="divide-y divide-[var(--border-soft)]">
