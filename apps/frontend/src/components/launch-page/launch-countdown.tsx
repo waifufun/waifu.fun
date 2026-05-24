@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
+
 import { formatRemainingHumanized } from "./countdown-format";
 
 type Props = {
@@ -21,6 +23,7 @@ type Props = {
  * shortly after; the page itself reads `state` from on-chain to drive UI).
  */
 export function LaunchCountdown({ closeTimestampSec, className, compact = false, format = "blocks" }: Props) {
+	const { t } = useTranslation();
 	const target = useTargetMs(closeTimestampSec);
 	const [now, setNow] = useState(() => Date.now());
 
@@ -31,8 +34,8 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false,
 
 	if (target === null) {
 		return (
-			<div className={className ?? "text-sm text-zinc-400"} aria-label="round window not set">
-				round window not set
+			<div className={className ?? "text-sm text-zinc-400"} aria-label={t("launch.countdown.windowNotSetLabel")}>
+				{t("launch.countdown.windowNotSet")}
 			</div>
 		);
 	}
@@ -40,8 +43,11 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false,
 	const remainingMs = Math.max(0, target - now);
 	if (remainingMs <= 0) {
 		return (
-			<output className={className ?? "text-2xl font-semibold tabular-nums text-zinc-300"} aria-label="round closed">
-				{format === "humanized" ? "closed" : "round closed"}
+			<output
+				className={className ?? "text-2xl font-semibold tabular-nums text-zinc-300"}
+				aria-label={t("launch.countdown.roundClosedAria")}
+			>
+				{format === "humanized" ? t("launch.countdown.roundClosedShort") : t("launch.countdown.roundClosedLong")}
 			</output>
 		);
 	}
@@ -51,7 +57,19 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false,
 	const hours = Math.floor((totalSec % 86400) / 3600);
 	const minutes = Math.floor((totalSec % 3600) / 60);
 	const seconds = totalSec % 60;
-	const ariaText = `${days > 0 ? `${days} days ` : ""}${hours} hours ${minutes} minutes ${seconds} seconds remaining`;
+	const ariaText =
+		days > 0
+			? t("launch.countdown.ariaRemainingWithDays", {
+					days: String(days),
+					hours: String(hours),
+					minutes: String(minutes),
+					seconds: String(seconds),
+				})
+			: t("launch.countdown.ariaRemainingNoDays", {
+					hours: String(hours),
+					minutes: String(minutes),
+					seconds: String(seconds),
+				});
 
 	if (format === "humanized") {
 		const text = formatRemainingHumanized(remainingMs);
@@ -75,15 +93,15 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false,
 		<div className={className ?? "flex items-baseline gap-2"} role="timer" aria-live="off" aria-label={ariaText}>
 			{days > 0 ? (
 				<>
-					<TimeBlock value={days} label="days" />
+					<TimeBlock value={days} label={t("launch.countdown.labelDays")} />
 					<span className="text-zinc-500">:</span>
 				</>
 			) : null}
-			<TimeBlock value={hours} label="hours" />
+			<TimeBlock value={hours} label={t("launch.countdown.labelHours")} />
 			<span className="text-zinc-500">:</span>
-			<TimeBlock value={minutes} label="min" />
+			<TimeBlock value={minutes} label={t("launch.countdown.labelMin")} />
 			<span className="text-zinc-500">:</span>
-			<TimeBlock value={seconds} label="sec" />
+			<TimeBlock value={seconds} label={t("launch.countdown.labelSec")} />
 		</div>
 	);
 }

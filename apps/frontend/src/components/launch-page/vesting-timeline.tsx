@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { formatEther } from "viem";
 
+import { useTranslation } from "@/contexts/locale-context";
+
 type Props = {
 	vestingEnabled: boolean;
 	/** Unix seconds of TGE / Launched event. When null we render a static schedule. */
@@ -30,6 +32,7 @@ export function VestingTimeline({
 	claimed = 0n,
 	claimable = 0n,
 }: Props) {
+	const { t } = useTranslation();
 	const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
 	useEffect(() => {
@@ -41,10 +44,8 @@ export function VestingTimeline({
 	if (!vestingEnabled) {
 		return (
 			<div className="border border-white/10 bg-[#111114] p-4 text-sm text-zinc-300">
-				<div className="mb-1 font-medium text-zinc-100">100% at launch</div>
-				<div className="text-xs text-zinc-500">
-					all presale tokens unlock the moment the round closes and trading opens.
-				</div>
+				<div className="mb-1 font-medium text-zinc-100">{t("launch.vesting.fullAtLaunchTitle")}</div>
+				<div className="text-xs text-zinc-500">{t("launch.vesting.fullAtLaunchBody")}</div>
 			</div>
 		);
 	}
@@ -60,12 +61,16 @@ export function VestingTimeline({
 		<div className="space-y-3">
 			<div className="grid grid-cols-2 gap-2 text-sm">
 				<div className="border border-white/10 bg-[#111114] p-3">
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">tge</div>
-					<div className="mt-1 text-zinc-100">50% unlocked</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+						{t("launch.vesting.tgeLabel")}
+					</div>
+					<div className="mt-1 text-zinc-100">{t("launch.vesting.tgeUnlocked")}</div>
 				</div>
 				<div className="border border-white/10 bg-[#111114] p-3">
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">+24h</div>
-					<div className="mt-1 text-zinc-100">100% unlocked</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+						{t("launch.vesting.plus24hLabel")}
+					</div>
+					<div className="mt-1 text-zinc-100">{t("launch.vesting.plus24hUnlocked")}</div>
 				</div>
 			</div>
 			<div
@@ -75,7 +80,7 @@ export function VestingTimeline({
 				aria-valuemin={0}
 				aria-valuemax={100}
 				aria-valuenow={Math.round(totalUnlockedFrac * 100)}
-				aria-label={`${Math.round(totalUnlockedFrac * 100)}% unlocked`}
+				aria-label={t("launch.vesting.ariaUnlocked", { pct: String(Math.round(totalUnlockedFrac * 100)) })}
 			>
 				{launchSec ? (
 					<div
@@ -89,14 +94,12 @@ export function VestingTimeline({
 					</>
 				)}
 			</div>
-			<p className="text-xs text-zinc-500">
-				50% claimable at tge, the remaining 50% vests linearly over the first 24h post-launch.
-			</p>
+			<p className="text-xs text-zinc-500">{t("launch.vesting.linearNote")}</p>
 			{launchSec && allocation > 0n ? (
 				<dl className="grid grid-cols-3 gap-2 pt-1">
-					<Stat label="claimable" value={formatTokenAmount(claimable)} accent />
-					<Stat label="claimed" value={formatTokenAmount(claimed)} />
-					<Stat label="locked" value={formatTokenAmount(lockedDisplay)} />
+					<Stat label={t("launch.vesting.claimableLabel")} value={formatTokenAmount(claimable)} accent />
+					<Stat label={t("launch.vesting.claimedLabel")} value={formatTokenAmount(claimed)} />
+					<Stat label={t("launch.vesting.lockedLabel")} value={formatTokenAmount(lockedDisplay)} />
 				</dl>
 			) : null}
 		</div>
