@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +12,7 @@ export default function LitepaperShell({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const { t } = useTranslation();
 	return (
 		<div className="relative overflow-x-hidden bg-[#08080a] text-[#e4e4e7]">
 			{/* Fixed katakana matrix, subtle, breathing background */}
@@ -47,11 +49,11 @@ export default function LitepaperShell({
 							href="/"
 							className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b] hover:text-[#a1a1aa] transition-colors"
 						>
-							waifu.fun
+							{t("litepaper.shell.footerHome")}
 						</Link>
 					</div>
 					<div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
-						<span>FLAP</span>
+						<span>{t("litepaper.shell.footerFlap")}</span>
 						<span className="text-[#27272a]">&times;</span>
 						<a
 							href="https://pancakeswap.finance"
@@ -59,10 +61,10 @@ export default function LitepaperShell({
 							rel="noopener noreferrer"
 							className="hover:text-[#71717a] transition-colors"
 						>
-							pancakeswap
+							{t("litepaper.shell.footerPancakeswap")}
 						</a>
 						<span className="text-[#27272a]">&times;</span>
-						<span>AgentSafe</span>
+						<span>{t("litepaper.shell.footerAgentSafe")}</span>
 					</div>
 					<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
 						&copy; {new Date().getFullYear()}

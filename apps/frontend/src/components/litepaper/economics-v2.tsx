@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
@@ -26,81 +27,76 @@ function RevealBlock({
 	);
 }
 
-const keyNumbers = [
-	{
-		stat: "3% / 3%",
-		unit: "buy / sell tax",
-		result: "every trade feeds the system",
-		note: "TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform. all on-chain, no admin keys.",
-	},
-	{
-		stat: "65/25/10",
-		unit: "split",
-		result: "TaxSplitter",
-		note: "agent treasury (AgentSafe) gets the largest share. patron earns a real yield. platform takes the smallest cut.",
-	},
-	{
-		stat: "~65%",
-		unit: "burned at launch",
-		result: "chart starts honest",
-		note: "supply that would've gone to early snipers burns to 0xdead. graduate to PCS V2, then progressive V3 LPs unlock at $5M, $10M, $25M, $100M MC.",
-	},
-];
-
 type TierStatus = "live" | "soon" | "later";
 
-const tiers: {
-	name: string;
-	tag: string;
-	description: string;
-	model: string;
-	infra: string;
-	highlight: boolean;
-	status: TierStatus;
-}[] = [
-	{
-		name: "v0",
-		tag: "live · sol the architect",
-		description:
-			"first agent on the launchpad. Eliza Cloud runtime, Steward custody, $WAIFU live on BSC. policy-gated Hyperliquid trading, $100/day cap, BTC + ETH perps. proving the loop with real money.",
-		model: "Eliza Cloud",
-		infra: "Steward custodial",
-		highlight: true,
-		status: "live",
-	},
-	{
-		name: "v1",
-		tag: "soon · invite gate opens",
-		description:
-			"second agent slot opens once Sol proves the loop. framework agnostic, BYO runtime. patron top-up via Li.Fi from any chain. Polymarket + Solana spot enumeration live. caps scale with on-chain track record.",
-		model: "your runtime",
-		infra: "Steward custodial",
-		highlight: false,
-		status: "soon",
-	},
-	{
-		name: "v2",
-		tag: "later · multi-agent",
-		description:
-			"open the gates. dozens of agents launching. Drift Protocol perps on Solana, deeper venue coverage, agent-to-agent trading. infrastructure compounding with every launch.",
-		model: "your runtime",
-		infra: "Steward custodial",
-		highlight: false,
-		status: "later",
-	},
-	{
-		name: "sovereign",
-		tag: "later · agents run their own products",
-		description:
-			"agents launch their own mini-apps, ship code, fine-tune themselves. the treasury isn't just a trading account, it's a business. the agent is the founder, the operator, the labor force.",
-		model: "agent-chosen",
-		infra: "agent-chosen",
-		highlight: false,
-		status: "later",
-	},
-];
-
 export default function EconomicsV2() {
+	const { t } = useTranslation();
+	const keyNumbers = [
+		{
+			stat: t("litepaper.economics.num1Stat"),
+			unit: t("litepaper.economics.num1Unit"),
+			result: t("litepaper.economics.num1Result"),
+			note: t("litepaper.economics.num1Note"),
+		},
+		{
+			stat: t("litepaper.economics.num2Stat"),
+			unit: t("litepaper.economics.num2Unit"),
+			result: t("litepaper.economics.num2Result"),
+			note: t("litepaper.economics.num2Note"),
+		},
+		{
+			stat: t("litepaper.economics.num3Stat"),
+			unit: t("litepaper.economics.num3Unit"),
+			result: t("litepaper.economics.num3Result"),
+			note: t("litepaper.economics.num3Note"),
+		},
+	];
+	const tiers: {
+		name: string;
+		tag: string;
+		description: string;
+		model: string;
+		infra: string;
+		highlight: boolean;
+		status: TierStatus;
+	}[] = [
+		{
+			name: t("litepaper.economics.tier1Name"),
+			tag: t("litepaper.economics.tier1Tag"),
+			description: t("litepaper.economics.tier1Description"),
+			model: t("litepaper.economics.tier1Model"),
+			infra: t("litepaper.economics.tier1Infra"),
+			highlight: true,
+			status: "live",
+		},
+		{
+			name: t("litepaper.economics.tier2Name"),
+			tag: t("litepaper.economics.tier2Tag"),
+			description: t("litepaper.economics.tier2Description"),
+			model: t("litepaper.economics.tier2Model"),
+			infra: t("litepaper.economics.tier2Infra"),
+			highlight: false,
+			status: "soon",
+		},
+		{
+			name: t("litepaper.economics.tier3Name"),
+			tag: t("litepaper.economics.tier3Tag"),
+			description: t("litepaper.economics.tier3Description"),
+			model: t("litepaper.economics.tier3Model"),
+			infra: t("litepaper.economics.tier3Infra"),
+			highlight: false,
+			status: "later",
+		},
+		{
+			name: t("litepaper.economics.tier4Name"),
+			tag: t("litepaper.economics.tier4Tag"),
+			description: t("litepaper.economics.tier4Description"),
+			model: t("litepaper.economics.tier4Model"),
+			infra: t("litepaper.economics.tier4Infra"),
+			highlight: false,
+			status: "later",
+		},
+	];
 	return (
 		<section className="relative py-28 sm:py-36 overflow-hidden">
 			<div
@@ -114,17 +110,17 @@ export default function EconomicsV2() {
 				{/* Header */}
 				<RevealBlock>
 					<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-						the math
+						{t("litepaper.economics.eyebrow")}
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-lg">
-						agents that pay <span className="text-[#00ff87]">their own bills</span>
+						{t("litepaper.economics.headlineLeft")}{" "}
+						<span className="text-[#00ff87]">{t("litepaper.economics.headlineRight")}</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.08}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						the unit economics are simple. an agent doing 100k in daily volume generates roughly 1k in fees. inference
-						costs about $5 per day. the agent funds its own existence with room to spare.
+						{t("litepaper.economics.intro")}
 					</p>
 				</RevealBlock>
 
@@ -152,23 +148,20 @@ export default function EconomicsV2() {
 					<div className="lg:col-span-4">
 						<RevealBlock delay={0.1}>
 							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-								tiers
+								{t("litepaper.economics.tiersEyebrow")}
 							</span>
 							<h3 className="font-satoshi text-3xl sm:text-4xl font-bold tracking-[-0.02em] text-[#e4e4e7] leading-tight lowercase">
-								pick your level.
+								{t("litepaper.economics.tiersHeadline")}
 							</h3>
-							<p className="mt-5 text-[#a1a1aa] text-base leading-relaxed">
-								start free. upgrade as your token grows. each tier gives your agent a better brain and better hardware.
-							</p>
+							<p className="mt-5 text-[#a1a1aa] text-base leading-relaxed">{t("litepaper.economics.tiersIntro")}</p>
 							<p className="mt-3 text-[#71717a] text-[13px] leading-relaxed">
-								v1 ships free tier only. fine-tuned, GPU, and custom tiers are roadmap. we don&apos;t promise what we
-								haven&apos;t built.
+								{t("litepaper.economics.tiersDisclaimer")}
 							</p>
 							<div className="mt-8 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-								<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">progression</span>
-								<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-									system prompt &rarr; fine-tuned &rarr; dedicated GPU &rarr; fully custom
-								</p>
+								<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+									{t("litepaper.economics.progressionLabel")}
+								</span>
+								<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">{t("litepaper.economics.progressionBody")}</p>
 							</div>
 						</RevealBlock>
 					</div>
@@ -218,13 +211,15 @@ export default function EconomicsV2() {
 											{/* Specs sidebar */}
 											<div className="shrink-0 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] p-4 lg:min-w-[13rem]">
 												<div>
-													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">model</span>
+													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+														{t("litepaper.economics.modelLabel")}
+													</span>
 													<p className="mt-1.5 text-sm leading-6 text-[#a1a1aa]">{tier.model}</p>
 												</div>
 												<div className="h-px bg-[rgba(255,255,255,0.04)] my-3" />
 												<div>
 													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
-														hardware
+														{t("litepaper.economics.hardwareLabel")}
 													</span>
 													<p className="mt-1.5 text-sm leading-6 text-[#a1a1aa]">{tier.infra}</p>
 												</div>
@@ -243,12 +238,9 @@ export default function EconomicsV2() {
 						<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 						<div className="pl-4">
 							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87] font-bold">
-								governance
+								{t("litepaper.economics.governanceLabel")}
 							</span>
-							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">
-								token holders govern the system. which agents get priority training. how GPU resources are allocated.
-								revenue split parameters. the community decides how the economy runs.
-							</p>
+							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">{t("litepaper.economics.governanceBody")}</p>
 						</div>
 					</div>
 				</RevealBlock>

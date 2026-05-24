@@ -1,73 +1,61 @@
+"use client";
+
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
-import type { Metadata } from "next";
+import { useTranslation } from "@/contexts/locale-context";
 import Image from "next/image";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-	title: "support · waifu.fun",
-	description: "get help with WAIFU agent launches, wallets, FLAP curves, and patron claims.",
-};
+// NOTE: metadata moved to layout.tsx (server) since this page is now a client
+// component (i18n via useTranslation requires "use client"). If product wants
+// the support page to retain its document title for SEO, wire it via a parallel
+// app/support/layout.tsx export const metadata.
 
-const CONTACTS = [
-	{ href: "https://x.com/waifudotfun", icon: "/socials/twitter.svg", label: "@waifudotfun" },
-	{ href: "https://discord.com/invite/tgCCVF9vEa", icon: "/socials/discord.svg", label: "join discord" },
-	{ href: "https://t.me/waifufunbot", icon: "/socials/telegram.svg", label: "@waifufunbot" },
-	{ href: "https://tally.so/r/mOr8DM", icon: "/socials/submit.svg", label: "submit an issue" },
-];
+const CONTACT_LINKS = [
+	{ href: "https://x.com/waifudotfun", icon: "/socials/twitter.svg", labelKey: "support.contactTwitter" },
+	{ href: "https://discord.com/invite/tgCCVF9vEa", icon: "/socials/discord.svg", labelKey: "support.contactDiscord" },
+	{ href: "https://t.me/waifufunbot", icon: "/socials/telegram.svg", labelKey: "support.contactTelegram" },
+	{ href: "https://tally.so/r/mOr8DM", icon: "/socials/submit.svg", labelKey: "support.contactSubmit" },
+] as const;
 
-const FLOW = [
-	{
-		title: "agent launches",
-		body: "a creator (or the agent itself, via the steward key) signs a SIWE message and triggers the FLAP Portal launch. the AgentSafe is provisioned in the same tx flow and becomes the tax recipient.",
-	},
-	{
-		title: "FLAP bonding curve",
-		body: "patrons buy the token directly on the FLAP curve paired with BNB. once the curve fills, liquidity migrates to PancakeSwap V2.",
-	},
-	{
-		title: "TaxSplitter routing",
-		body: "every graduated buy + sell carries a 3% tax. TaxSplitter routes 65% to the AgentSafe treasury, 25% to the patron wallet, 10% to the platform.",
-	},
-	{
-		title: "progressive V3 tiers",
-		body: "TreasuryLP4 deploys a new PCS V3 LP at the $5M, $10M, $25M, and $100M market-cap thresholds. each tier unlocks an LP claim split (65/20/10/5 to treasury/patron/buyback/platform).",
-	},
-	{
-		title: "patron claims",
-		body: "the patron portfolio shows accrued tax + LP claim amounts per agent. if a launch fails or refunds, the refund path is surfaced on the launch page.",
-	},
-];
+const FLOW_KEYS = [
+	{ titleKey: "support.step1Title", bodyKey: "support.step1Body" },
+	{ titleKey: "support.step2Title", bodyKey: "support.step2Body" },
+	{ titleKey: "support.step3Title", bodyKey: "support.step3Body" },
+	{ titleKey: "support.step4Title", bodyKey: "support.step4Body" },
+	{ titleKey: "support.step5Title", bodyKey: "support.step5Body" },
+] as const;
 
 export default function SupportPage() {
+	const { t } = useTranslation();
 	return (
 		<PageShell>
-			<PageHeader
-				eyebrow="waifu.fun / support"
-				title="support"
-				subtitle="get help with agent launches, wallets, FLAP curves, and patron claims."
-			/>
+			<PageHeader eyebrow={t("support.eyebrow")} title={t("support.title")} subtitle={t("support.subtitle")} />
 
 			<div className="space-y-12">
 				<section>
-					<h2 className="mb-5 text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">contact</h2>
+					<h2 className="mb-5 text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+						{t("support.contactHeader")}
+					</h2>
 					<div className="grid gap-3 sm:grid-cols-2">
-						{CONTACTS.map((c) => (
-							<SupportLink key={c.href} {...c} />
+						{CONTACT_LINKS.map((c) => (
+							<SupportLink key={c.href} href={c.href} icon={c.icon} label={t(c.labelKey)} />
 						))}
 					</div>
 				</section>
 
 				<section>
-					<h2 className="mb-5 text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">how it works</h2>
+					<h2 className="mb-5 text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+						{t("support.howItWorksHeader")}
+					</h2>
 					<ol className="border border-white/10 bg-[#08080a] divide-y divide-white/10">
-						{FLOW.map((step, i) => (
-							<li key={step.title} className="grid grid-cols-[auto,1fr] gap-x-6 px-6 py-5 md:px-7 md:py-6">
+						{FLOW_KEYS.map((step, i) => (
+							<li key={step.titleKey} className="grid grid-cols-[auto,1fr] gap-x-6 px-6 py-5 md:px-7 md:py-6">
 								<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#00ff87] tabular-nums mt-0.5">
 									{String(i + 1).padStart(2, "0")}
 								</span>
 								<div>
-									<h3 className="text-base text-white tracking-tight">{step.title}</h3>
-									<p className="mt-1.5 text-sm text-neutral-400 leading-relaxed max-w-[60ch]">{step.body}</p>
+									<h3 className="text-base text-white tracking-tight">{t(step.titleKey)}</h3>
+									<p className="mt-1.5 text-sm text-neutral-400 leading-relaxed max-w-[60ch]">{t(step.bodyKey)}</p>
 								</div>
 							</li>
 						))}
