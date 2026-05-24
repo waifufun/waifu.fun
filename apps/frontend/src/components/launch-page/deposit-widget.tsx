@@ -8,6 +8,7 @@ import { bsc } from "wagmi/chains";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/contexts/locale-context";
 import { useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { VaultState } from "@/lib/launch-vault/abi";
 import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
@@ -53,6 +54,7 @@ export function DepositWidget({
 	sticky = "top",
 	className,
 }: Props) {
+	const { t } = useTranslation();
 	const { address, isConnected } = useAccount();
 	const chainId = useChainId();
 	const { switchChain } = useSwitchChain();
@@ -80,8 +82,8 @@ export function DepositWidget({
 	// Tier-specific subtitle copy + secondary CTA tooltip
 	const graduates = tier.v2BuyBnb > 0;
 	const subtitle = graduates
-		? `deposit bnb during the 24h window. allocations are pro-rata at close. graduates to pcs v2 lp (${tier.v2BuyBnb} bnb v2 buy).`
-		: "deposit bnb during the 24h window. allocations are pro-rata at close. seeds the pcs bonding curve directly.";
+		? t("launch.deposit.subtitleGraduates", { v2BuyBnb: String(tier.v2BuyBnb) })
+		: t("launch.deposit.subtitleNoGraduate");
 
 	return (
 		<Card
@@ -95,30 +97,30 @@ export function DepositWidget({
 			data-testid="deposit-widget"
 		>
 			<CardHeader className="border-b border-white/10 px-6 py-5">
-				<CardTitle className="text-base font-semibold text-zinc-100">join the round</CardTitle>
+				<CardTitle className="text-base font-semibold text-zinc-100">{t("launch.deposit.widgetTitle")}</CardTitle>
 				<p className="text-xs text-zinc-500">{subtitle}</p>
 			</CardHeader>
 			<CardContent className="space-y-5 px-6 py-6">
 				{!isConnected ? (
 					<div className="flex flex-col gap-3">
-						<p className="text-sm text-zinc-300">connect a wallet to join.</p>
+						<p className="text-sm text-zinc-300">{t("launch.deposit.connectPrompt")}</p>
 						<LinkedEoaCTA className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90 transition-colors">
-							connect wallet
+							{t("launch.deposit.connectCta")}
 						</LinkedEoaCTA>
 					</div>
 				) : wrongChain ? (
 					<div className="flex flex-col gap-3">
-						<p className="text-sm text-zinc-300">switch to bsc to join.</p>
+						<p className="text-sm text-zinc-300">{t("launch.deposit.switchPrompt")}</p>
 						<Button
 							type="button"
 							onClick={() => switchChain({ chainId: bsc.id })}
 							className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90 transition-colors"
 						>
-							switch network
+							{t("launch.deposit.switchCta")}
 						</Button>
 					</div>
 				) : !vault ? (
-					<p className="text-sm text-zinc-400">vault address not ready yet. give it a moment.</p>
+					<p className="text-sm text-zinc-400">{t("launch.deposit.vaultNotReady")}</p>
 				) : (
 					<>
 						<DepositForm
@@ -127,11 +129,11 @@ export function DepositWidget({
 							disabled={!roundOpen || capHit}
 							disabledReason={
 								windowElapsed && state === VaultState.OPEN
-									? "window elapsed. waiting on the bundle bot to close the round."
+									? t("launch.deposit.disabledWindowElapsed")
 									: !roundOpen
-										? "round closed. deposits locked."
+										? t("launch.deposit.disabledRoundClosed")
 										: capHit
-											? "cap reached. catch it on the secondary market."
+											? t("launch.deposit.disabledCapHit")
 											: undefined
 							}
 							remainingToCapWei={remainingToCap}
@@ -148,17 +150,19 @@ export function DepositWidget({
 							<div className="border-t border-white/5 pt-5">
 								<div className="mb-3 flex flex-col gap-2 text-sm">
 									<div className="flex justify-between">
-										<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">your deposit</span>
+										<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+											{t("launch.deposit.yourDepositLabel")}
+										</span>
 										<span className="tabular-nums text-zinc-100">
 											{formatEther(position.deposited).slice(0, 10)} bnb
 										</span>
 									</div>
 									<div className="flex justify-between">
 										<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-											projected allocation
+											{t("launch.deposit.projectedAllocationLabel")}
 										</span>
 										<span className="tabular-nums text-zinc-100">
-											{formatTokenAmount(allocation)} {tokenSymbol ?? "tokens"}
+											{formatTokenAmount(allocation)} {tokenSymbol ?? t("launch.deposit.tokensFallback")}
 										</span>
 									</div>
 								</div>
@@ -173,7 +177,7 @@ export function DepositWidget({
 										}}
 									/>
 								) : (
-									<p className="text-xs text-zinc-500">withdrawals are only allowed while the round is open.</p>
+									<p className="text-xs text-zinc-500">{t("launch.deposit.withdrawalsClosedNote")}</p>
 								)}
 							</div>
 						) : null}

@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/contexts/locale-context";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
 import {
 	deriveLaunchDisplayState,
@@ -55,7 +56,8 @@ const TONE_DOT_CLASS: Record<ReturnType<typeof displayStateTone>, string> = {
 };
 
 export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state, bonusPool }: Props) {
-	const name = meta?.tokenName ?? "agent launch";
+	const { t } = useTranslation();
+	const name = meta?.tokenName ?? t("launch.hero.agentLaunchFallback");
 	const symbol = meta?.tokenTicker ?? "–";
 	const image = meta?.tokenImageUrl ?? null;
 
@@ -89,16 +91,16 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 
 	const countdownLabel =
 		displayState === "presale"
-			? "closes in"
+			? t("launch.countdown.closesIn")
 			: displayState === "closed"
-				? "awaiting bundle"
+				? t("launch.countdown.awaitingBundle")
 				: displayState === "bundling"
-					? "bundling now"
+					? t("launch.countdown.bundlingNow")
 					: displayState === "launched"
-						? "live on dex"
+						? t("launch.countdown.liveOnDex")
 						: displayState === "refunding"
-							? "refunds open"
-							: "status";
+							? t("launch.countdown.refundsOpen")
+							: t("launch.countdown.status");
 
 	return (
 		<section className="border border-white/10 bg-[#08080a] p-5 md:p-8">
@@ -108,12 +110,12 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 						// eslint-disable-next-line @next/next/no-img-element
 						<img
 							src={image}
-							alt={`${name} logo`}
+							alt={t("launch.hero.logoAlt", { name })}
 							className="size-14 shrink-0 rounded-sm border border-white/10 object-cover md:size-20"
 						/>
 					) : (
 						<div className="flex size-14 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-[#111114] text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500 md:size-20">
-							no logo
+							{t("launch.hero.noLogo")}
 						</div>
 					)}
 					<div className="flex flex-col gap-2 min-w-0">
@@ -134,7 +136,11 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 							</span>
 							<Badge variant="default">{tier.label}</Badge>
 							<span className="flex items-center gap-1 text-xs text-zinc-400">
-								<Users className="size-3" /> {depositorCount.toString()} backer{depositorCount === 1n ? "" : "s"}
+								<Users className="size-3" />{" "}
+								{t("launch.hero.backerCount", {
+									count: depositorCount.toString(),
+									noun: depositorCount === 1n ? t("launch.hero.backerSingular") : t("launch.hero.backerPlural"),
+								})}
 							</span>
 						</div>
 						<p className="text-[11px] text-zinc-500 leading-relaxed max-w-[52ch]" data-testid="launch-state-headline">
@@ -142,12 +148,12 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 						</p>
 						{showVanity ? (
 							<div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] font-mono">
-								<span className="text-zinc-500">token:</span>
+								<span className="text-zinc-500">{t("launch.hero.tokenLabel")}</span>
 								<span className="tabular-nums text-zinc-200" data-testid="launch-token-address">
 									{formatVanityAddress(displayAddress)}
 								</span>
 								{displayState === "bundling" && !tokenAddress ? (
-									<span className="text-zinc-500 italic">mining…</span>
+									<span className="text-zinc-500 italic">{t("launch.hero.miningLabel")}</span>
 								) : null}
 								{tokenAddress ? (
 									<span className="flex items-center gap-2 text-[#00ff87]">
@@ -157,22 +163,22 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 												className="hover:opacity-80 underline-offset-2 hover:underline"
 												data-testid="launch-hero-trade-link"
 											>
-												trade on waifu →
+												{t("launch.hero.tradeOnWaifu")}
 											</Link>
 										) : null}
 										{bscscan ? (
 											<a href={bscscan} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
-												bscscan ↗
+												{t("launch.hero.bscscanLink")}
 											</a>
 										) : null}
 										{flap ? (
 											<a href={flap} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
-												flap ↗
+												{t("launch.hero.flapLink")}
 											</a>
 										) : null}
 										{pcs ? (
 											<a href={pcs} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
-												pcs v2 ↗
+												{t("launch.hero.pcsV2Link")}
 											</a>
 										) : null}
 									</span>

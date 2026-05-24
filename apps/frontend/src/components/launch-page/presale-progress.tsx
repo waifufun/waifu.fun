@@ -2,6 +2,7 @@
 
 import { formatEther } from "viem";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -18,16 +19,20 @@ type Props = {
  * Re-renders implicitly when the parent re-fetches via `use-launch-vault`.
  */
 export function PresaleProgress({ totalDeposited, capWei, bonusPool, className }: Props) {
+	const { t } = useTranslation();
 	const cap = capWei > 0n ? capWei : 0n;
 	const filledPct = cap === 0n ? 0 : clampPct(Number((totalDeposited * 10_000n) / cap) / 100);
 	const bonus = bonusPool ?? 0n;
 	const bonusPct = cap === 0n || bonus <= 0n ? 0 : clampPct(Number((bonus * 10_000n) / cap) / 100);
 
 	return (
-		<div className={cn("flex flex-col gap-2", className)} aria-label="presale progress">
+		<div className={cn("flex flex-col gap-2", className)} aria-label={t("launch.presaleProgress.ariaLabel")}>
 			<div className="flex items-baseline justify-between font-mono text-xs uppercase tracking-[0.18em] text-zinc-400">
 				<span>
-					{formatBnb(totalDeposited)} / {formatBnb(cap)} bnb
+					{t("launch.presaleProgress.amountLine", {
+						deposited: formatBnb(totalDeposited),
+						cap: formatBnb(cap),
+					})}
 				</span>
 				<span className="tabular-nums" data-testid="presale-progress-pct">
 					{filledPct.toFixed(1)}%
@@ -40,7 +45,7 @@ export function PresaleProgress({ totalDeposited, capWei, bonusPool, className }
 				aria-valuemin={0}
 				aria-valuemax={100}
 				aria-valuenow={Math.round(filledPct)}
-				aria-label={`${filledPct.toFixed(1)}% of presale cap filled`}
+				aria-label={t("launch.presaleProgress.ariaFilled", { pct: filledPct.toFixed(1) })}
 			>
 				<div
 					className="absolute inset-y-0 left-0 bg-[#00ff87] transition-[width] duration-500"
@@ -50,14 +55,14 @@ export function PresaleProgress({ totalDeposited, capWei, bonusPool, className }
 					<div
 						className="absolute inset-y-0 right-0 bg-[#ffb347]/70"
 						style={{ width: `${bonusPct}%` }}
-						title={`bonus pool: ${formatBnb(bonus)} bnb`}
+						title={t("launch.presaleProgress.bonusTitle", { bonus: formatBnb(bonus) })}
 					/>
 				) : null}
 			</div>
 			{bonus > 0n ? (
 				<div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.18em] text-[#ffb347]/80">
 					<span className="inline-block w-2 h-2 bg-[#ffb347]/70" aria-hidden />
-					bonus pool: {formatBnb(bonus)} bnb (added to bundle)
+					{t("launch.presaleProgress.bonusLegend", { bonus: formatBnb(bonus) })}
 				</div>
 			) : null}
 		</div>

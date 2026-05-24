@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { formatEther } from "viem";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/contexts/locale-context";
 import { useDepositorsFeed } from "@/hooks/use-launch-vault";
 import { useVaultEventsFallback } from "@/hooks/use-vault-events";
 import type { DepositorEvent } from "@/lib/launch-vault/api";
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function ActivityFeed({ launchId, vaultAddress }: Props) {
+	const { t } = useTranslation();
 	const apiFeed = useDepositorsFeed(launchId);
 	const apiEmpty = !apiFeed.isLoading && (apiFeed.data?.length ?? 0) === 0;
 	const fallback = useVaultEventsFallback(vaultAddress, apiEmpty);
@@ -31,16 +33,16 @@ export function ActivityFeed({ launchId, vaultAddress }: Props) {
 	return (
 		<Card className="border-white/10 bg-[#08080a] py-0">
 			<CardHeader className="flex flex-row items-center justify-between border-b border-white/10 px-6 py-5">
-				<CardTitle className="text-base font-semibold text-zinc-100">activity</CardTitle>
+				<CardTitle className="text-base font-semibold text-zinc-100">{t("launch.activity.title")}</CardTitle>
 				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-					last {events.length || 10}
+					{t("launch.activity.lastNLabel", { count: String(events.length || 10) })}
 				</span>
 			</CardHeader>
 			<CardContent className="px-0 py-0">
 				{isLoading && events.length === 0 ? (
 					<ActivityFeedSkeleton />
 				) : events.length === 0 ? (
-					<EmptyRow text="no deposits yet. be the first." />
+					<EmptyRow text={t("launch.activity.emptyText")} />
 				) : (
 					<ul className="divide-y divide-white/5">
 						{events.map((event, idx) => (
@@ -54,6 +56,7 @@ export function ActivityFeed({ launchId, vaultAddress }: Props) {
 }
 
 function EventRow({ event }: { event: DepositorEvent }) {
+	const { t } = useTranslation();
 	const isDeposit = event.kind === "deposit";
 	const amount = (() => {
 		try {
@@ -62,7 +65,7 @@ function EventRow({ event }: { event: DepositorEvent }) {
 			return event.amountWei;
 		}
 	})();
-	const ts = formatRelative(event.timestamp);
+	const ts = formatRelative(event.timestamp, t);
 	const short = shortAddr(event.address);
 	const explorerHref = event.txHash ? `https://bscscan.com/tx/${event.txHash}` : undefined;
 
@@ -81,8 +84,8 @@ function EventRow({ event }: { event: DepositorEvent }) {
 				</span>
 				<div className="flex flex-col">
 					<span className="text-sm text-zinc-100">
-						{isDeposit ? "deposit" : "withdraw"} <span className="text-zinc-500">·</span>{" "}
-						<span className="font-mono text-zinc-300">{short}</span>
+						{isDeposit ? t("launch.activity.deposit") : t("launch.activity.withdraw")}{" "}
+						<span className="text-zinc-500">·</span> <span className="font-mono text-zinc-300">{short}</span>
 					</span>
 					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">{ts}</span>
 				</div>
@@ -152,15 +155,15 @@ function formatAmount(value: string): string {
 	return num.toFixed(4);
 }
 
-function formatRelative(iso: string): string {
-	const t = Date.parse(iso);
-	if (!Number.isFinite(t)) return iso;
-	const diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
-	if (diffSec < 60) return `${diffSec}s ago`;
+function formatRelative(iso: string, t: (key: string, params?: Record<string, string>) => string): string {
+	const parsed = Date.parse(iso);
+	if (!Number.isFinite(parsed)) return iso;
+	const diffSec = Math.max(0, Math.floor((Date.now() - parsed) / 1000));
+	if (diffSec < 60) return t("launch.activity.secondsAgo", { n: String(diffSec) });
 	const diffMin = Math.floor(diffSec / 60);
-	if (diffMin < 60) return `${diffMin}m ago`;
+	if (diffMin < 60) return t("launch.activity.minutesAgo", { n: String(diffMin) });
 	const diffH = Math.floor(diffMin / 60);
-	if (diffH < 24) return `${diffH}h ago`;
+	if (diffH < 24) return t("launch.activity.hoursAgo", { n: String(diffH) });
 	const diffD = Math.floor(diffH / 24);
-	return `${diffD}d ago`;
+	return t("launch.activity.daysAgo", { n: String(diffD) });
 }

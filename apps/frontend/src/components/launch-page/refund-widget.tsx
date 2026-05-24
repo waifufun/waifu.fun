@@ -9,6 +9,7 @@ import { bsc } from "wagmi/chains";
 import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/contexts/locale-context";
 import { useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function RefundWidget({
 	className,
 	onUserStateChanged,
 }: Props) {
+	const { t } = useTranslation();
 	const { address, isConnected } = useAccount();
 	const chainId = useChainId();
 	const { switchChain } = useSwitchChain();
@@ -103,41 +105,43 @@ export function RefundWidget({
 			data-testid="refund-widget"
 		>
 			<CardHeader className="border-b border-red-400/10 px-6 py-5">
-				<CardTitle className="text-base font-semibold text-zinc-100">claim refund</CardTitle>
-				<p className="text-xs text-zinc-500">
-					this launch did not bundle. pull your principal plus your share of the bonus pool.
-				</p>
+				<CardTitle className="text-base font-semibold text-zinc-100">{t("launch.refund.widgetTitle")}</CardTitle>
+				<p className="text-xs text-zinc-500">{t("launch.refund.widgetSubtitle")}</p>
 			</CardHeader>
 			<CardContent className="space-y-5 px-6 py-6">
 				{!isConnected ? (
 					<div className="flex flex-col gap-3">
-						<p className="text-sm text-zinc-300">connect a wallet to claim your refund.</p>
+						<p className="text-sm text-zinc-300">{t("launch.refund.connectPrompt")}</p>
 						<LinkedEoaCTA className="bg-red-400/90 text-black hover:bg-red-400 transition-colors">
-							connect wallet
+							{t("launch.refund.connectCta")}
 						</LinkedEoaCTA>
 					</div>
 				) : wrongChain ? (
 					<div className="flex flex-col gap-3">
-						<p className="text-sm text-zinc-300">switch to bsc to claim.</p>
+						<p className="text-sm text-zinc-300">{t("launch.refund.switchPrompt")}</p>
 						<Button
 							type="button"
 							onClick={() => switchChain({ chainId: bsc.id })}
 							className="bg-red-400/90 text-black hover:bg-red-400 transition-colors"
 						>
-							switch network
+							{t("launch.refund.switchCta")}
 						</Button>
 					</div>
 				) : !vault ? (
-					<p className="text-sm text-zinc-400">vault address not ready yet. give it a moment.</p>
+					<p className="text-sm text-zinc-400">{t("launch.refund.vaultNotReady")}</p>
 				) : isRefunded ? (
 					<RefundSuccess txHash={txHash ?? null} onReset={reset_} />
 				) : (
 					<>
 						<div className="space-y-2 text-sm">
-							<Row label="your deposit" value={`${formatEther(principal).slice(0, 10)} bnb`} />
-							<Row label="bonus share" value={`${formatEther(bonusShare).slice(0, 10)} bnb`} />
+							<Row label={t("launch.refund.yourDepositLabel")} value={`${formatEther(principal).slice(0, 10)} bnb`} />
+							<Row label={t("launch.refund.bonusShareLabel")} value={`${formatEther(bonusShare).slice(0, 10)} bnb`} />
 							<div className="border-t border-white/5 pt-3">
-								<Row label="total refund" value={`${formatEther(refundAmount).slice(0, 10)} bnb`} emphasize />
+								<Row
+									label={t("launch.refund.totalRefundLabel")}
+									value={`${formatEther(refundAmount).slice(0, 10)} bnb`}
+									emphasize
+								/>
 							</div>
 						</div>
 
@@ -154,30 +158,28 @@ export function RefundWidget({
 							aria-disabled={isLocked || noDeposit}
 							aria-label={
 								noDeposit
-									? "no refund available, you have no deposit on this vault"
-									: `refund ${formatEther(refundAmount).slice(0, 10)} bnb`
+									? t("launch.refund.noRefundAria")
+									: t("launch.refund.refundCtaAria", { amount: formatEther(refundAmount).slice(0, 10) })
 							}
 							className="w-full bg-red-400/90 text-black hover:bg-red-400 transition-colors disabled:opacity-40"
 							data-testid="refund-button"
 						>
 							{isPending ? (
 								<>
-									<Loader2 className="size-4 animate-spin" /> sign in wallet
+									<Loader2 className="size-4 animate-spin" /> {t("launch.refund.signInWallet")}
 								</>
 							) : receipt.isLoading ? (
 								<>
-									<Loader2 className="size-4 animate-spin" /> confirming
+									<Loader2 className="size-4 animate-spin" /> {t("launch.refund.confirming")}
 								</>
 							) : noDeposit ? (
-								"no refund available"
+								t("launch.refund.noRefundAvailable")
 							) : (
-								`refund ${formatEther(refundAmount).slice(0, 10)} bnb`
+								t("launch.refund.refundCta", { amount: formatEther(refundAmount).slice(0, 10) })
 							)}
 						</Button>
 
-						<p className="text-[11px] text-zinc-500 leading-relaxed">
-							idempotent on-chain. a second call from the same address reverts. there is no deadline for refunds.
-						</p>
+						<p className="text-[11px] text-zinc-500 leading-relaxed">{t("launch.refund.idempotentNote")}</p>
 					</>
 				)}
 			</CardContent>
@@ -195,11 +197,12 @@ function Row({ label, value, emphasize }: { label: string; value: string; emphas
 }
 
 function RefundSuccess({ txHash, onReset }: { txHash: string | null; onReset: () => void }) {
+	const { t } = useTranslation();
 	return (
 		<div className="flex flex-col gap-3" data-testid="refund-success">
 			<div className="border border-[#00ff87]/30 bg-[#00ff87]/[0.05] px-3 py-3 text-sm text-[#d6ffe9]">
-				<p className="font-medium">refunded.</p>
-				<p className="text-xs text-zinc-300/90 mt-1">principal + bonus share returned to your wallet.</p>
+				<p className="font-medium">{t("launch.refund.successTitle")}</p>
+				<p className="text-xs text-zinc-300/90 mt-1">{t("launch.refund.successBody")}</p>
 			</div>
 			{txHash ? (
 				<a
@@ -209,7 +212,7 @@ function RefundSuccess({ txHash, onReset }: { txHash: string | null; onReset: ()
 					className="inline-flex items-center gap-1.5 text-xs text-zinc-300 hover:text-zinc-100 underline-offset-2 hover:underline"
 					data-testid="refund-tx-link"
 				>
-					view tx on bscscan
+					{t("launch.refund.viewTxBscscan")}
 					<ExternalLink className="size-3" aria-hidden />
 				</a>
 			) : null}
@@ -219,7 +222,7 @@ function RefundSuccess({ txHash, onReset }: { txHash: string | null; onReset: ()
 				onClick={onReset}
 				className="border-white/10 text-zinc-400 hover:bg-white/5"
 			>
-				dismiss
+				{t("launch.refund.dismissCta")}
 			</Button>
 		</div>
 	);

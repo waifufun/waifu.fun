@@ -7,6 +7,7 @@ import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { bsc } from "wagmi/chains";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onCompleted }: Props) {
+	const { t } = useTranslation();
 	const [amountStr, setAmountStr] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
@@ -54,11 +56,11 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 		e.preventDefault();
 		setError(null);
 		if (requestedWei <= 0n) {
-			setError("enter an amount.");
+			setError(t("launch.withdraw.enterAmountError"));
 			return;
 		}
 		if (requestedWei > deposited) {
-			setError("more than you deposited.");
+			setError(t("launch.withdraw.moreThanDepositedError"));
 			return;
 		}
 		writeContract({
@@ -83,11 +85,13 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 	return (
 		<form className="flex flex-col gap-3" onSubmit={onSubmit}>
 			<div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
-				<span>your deposit</span>
+				<span>{t("launch.withdraw.yourDepositLabel")}</span>
 				<span className="tabular-nums text-zinc-300">{formatEther(deposited).slice(0, 8)} bnb</span>
 			</div>
 			<label className="flex flex-col gap-2">
-				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">withdraw amount</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+					{t("launch.withdraw.withdrawAmountLabel")}
+				</span>
 				<input
 					type="text"
 					inputMode="decimal"
@@ -102,19 +106,16 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 			{requestedWei > 0n ? (
 				<div className="border border-orange-400/20 bg-orange-400/5 px-3 py-2 text-xs text-orange-200">
 					<div className="flex justify-between">
-						<span>refund</span>
+						<span>{t("launch.withdraw.refundLabel")}</span>
 						<span className="tabular-nums">{formatEther(refundWei).slice(0, 10)} bnb</span>
 					</div>
 					<div className="flex justify-between">
-						<span>{penaltyPct}% penalty</span>
+						<span>{t("launch.withdraw.penaltyLabel", { pct: String(penaltyPct) })}</span>
 						<span className="tabular-nums">{formatEther(penaltyWei).slice(0, 10)} bnb</span>
 					</div>
 				</div>
 			) : (
-				<p className="text-xs text-zinc-500">
-					withdrawing during the open window forfeits {penaltyPct}% to the bonus pool. it gets added to the bundle at
-					launch.
-				</p>
+				<p className="text-xs text-zinc-500">{t("launch.withdraw.penaltyNote", { pct: String(penaltyPct) })}</p>
 			)}
 
 			{error ? <p className="text-xs text-red-400">{error}</p> : null}
@@ -128,14 +129,14 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 				>
 					{isPending ? (
 						<>
-							<Loader2 className="size-4 animate-spin" /> sign in wallet
+							<Loader2 className="size-4 animate-spin" /> {t("launch.withdraw.signInWallet")}
 						</>
 					) : receipt.isLoading ? (
 						<>
-							<Loader2 className="size-4 animate-spin" /> confirming
+							<Loader2 className="size-4 animate-spin" /> {t("launch.withdraw.confirming")}
 						</>
 					) : (
-						`withdraw (−${penaltyPct}%)`
+						t("launch.withdraw.withdrawCta", { pct: String(penaltyPct) })
 					)}
 				</Button>
 				<Button
@@ -145,7 +146,7 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 					variant="outline"
 					className="flex-1 border-white/10 text-zinc-300 hover:bg-white/5"
 				>
-					withdraw all
+					{t("launch.withdraw.withdrawAllCta")}
 				</Button>
 			</div>
 		</form>

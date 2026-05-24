@@ -7,6 +7,7 @@ import { useBalance, useEstimateFeesPerGas, useWaitForTransactionReceipt, useWri
 import { bsc } from "wagmi/chains";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 
 type Props = {
@@ -40,6 +41,7 @@ export function DepositForm({
 	totalDepositedWei,
 	tokenSymbol,
 }: Props) {
+	const { t } = useTranslation();
 	const balance = useBalance({ address, chainId: bsc.id });
 	const fees = useEstimateFeesPerGas({ chainId: bsc.id });
 	const [amountStr, setAmountStr] = useState("");
@@ -99,19 +101,19 @@ export function DepositForm({
 		try {
 			valueWei = parseEther(amountStr.trim() || "0");
 		} catch {
-			setError("invalid amount");
+			setError(t("launch.deposit.invalidAmountError"));
 			return;
 		}
 		if (valueWei <= 0n) {
-			setError("enter an amount.");
+			setError(t("launch.deposit.enterAmountError"));
 			return;
 		}
 		if (max > 0n && valueWei > max) {
-			setError("not enough bnb. leave headroom for gas.");
+			setError(t("launch.deposit.notEnoughBnbError"));
 			return;
 		}
 		if (remaining > 0n && valueWei > remaining) {
-			setError("exceeds remaining cap. lower the amount.");
+			setError(t("launch.deposit.exceedsCapError"));
 			return;
 		}
 		writeContract({
@@ -135,9 +137,11 @@ export function DepositForm({
 	}
 
 	return (
-		<form className="flex flex-col gap-3" onSubmit={onSubmit} aria-label="deposit bnb to presale">
+		<form className="flex flex-col gap-3" onSubmit={onSubmit} aria-label={t("launch.deposit.formAria")}>
 			<label className="flex flex-col gap-2">
-				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">amount (bnb)</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+					{t("launch.deposit.amountLabel")}
+				</span>
 				<input
 					type="text"
 					inputMode="decimal"
@@ -145,7 +149,7 @@ export function DepositForm({
 					value={amountStr}
 					onChange={(e) => setAmountStr(sanitize(e.target.value))}
 					disabled={isLocked}
-					aria-label="deposit amount in bnb"
+					aria-label={t("launch.deposit.amountInputAria")}
 					className="border border-white/10 bg-[#0b0b0d] px-3 py-2 font-mono text-lg text-zinc-100 outline-none transition-colors duration-150 focus:border-[#00ff87]/40 focus:bg-[#0c0c0e] disabled:opacity-50"
 				/>
 			</label>
@@ -156,7 +160,7 @@ export function DepositForm({
 						type="button"
 						disabled={isLocked || max === 0n}
 						onClick={() => setFromBnb(bnb)}
-						aria-label={`set deposit to ${bnb} bnb`}
+						aria-label={t("launch.deposit.quickAmountAria", { amount: String(bnb) })}
 						className="border border-white/10 bg-[#0b0b0d] px-2 py-1 text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-400 transition-colors hover:border-[#00ff87]/40 hover:text-zinc-100 disabled:opacity-40"
 					>
 						{bnb}
@@ -166,31 +170,31 @@ export function DepositForm({
 					type="button"
 					disabled={isLocked || ceiling === 0n}
 					onClick={setMaxToCap}
-					aria-label="set deposit to max remaining cap"
+					aria-label={t("launch.deposit.maxToCapAria")}
 					className="border border-[#00ff87]/20 bg-[#0b0b0d] px-2 py-1 text-[10px] font-mono uppercase tracking-[0.18em] text-[#00ff87]/90 transition-colors hover:border-[#00ff87]/50 hover:text-[#00ff87] disabled:opacity-40"
 				>
-					max
+					{t("launch.deposit.maxLabel")}
 				</button>
 			</div>
 
 			<div className="flex flex-col gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
 				<div className="flex justify-between">
-					<span>balance</span>
+					<span>{t("launch.deposit.balanceLabel")}</span>
 					<span className="tabular-nums text-zinc-300">
 						{balance.data ? `${formatEther(balance.data.value).slice(0, 8)} bnb` : "–"}
 					</span>
 				</div>
 				<div className="flex justify-between">
-					<span>est. gas</span>
+					<span>{t("launch.deposit.gasEstimateLabel")}</span>
 					<span className="tabular-nums text-zinc-300" data-testid="deposit-gas-estimate">
 						{formatGas(gasCostWei)} bnb
 					</span>
 				</div>
 				{projectedTokens !== null ? (
 					<div className="flex justify-between">
-						<span>you&apos;ll get</span>
+						<span>{t("launch.deposit.youWillGetLabel")}</span>
 						<span className="tabular-nums text-[#00ff87]" data-testid="deposit-projected-tokens">
-							~{formatTokenAmount(projectedTokens)} {tokenSymbol ?? "tokens"}
+							~{formatTokenAmount(projectedTokens)} {tokenSymbol ?? t("launch.deposit.tokensFallback")}
 						</span>
 					</div>
 				) : null}
@@ -210,14 +214,14 @@ export function DepositForm({
 			>
 				{isPending ? (
 					<>
-						<Loader2 className="size-4 animate-spin" /> sign in wallet
+						<Loader2 className="size-4 animate-spin" /> {t("launch.deposit.signInWallet")}
 					</>
 				) : receipt.isLoading ? (
 					<>
-						<Loader2 className="size-4 animate-spin" /> confirming
+						<Loader2 className="size-4 animate-spin" /> {t("launch.deposit.confirming")}
 					</>
 				) : (
-					"deposit bnb"
+					t("launch.deposit.submitCta")
 				)}
 			</Button>
 		</form>
