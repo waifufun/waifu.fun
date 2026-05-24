@@ -19,6 +19,7 @@ export * from "./agent-wallet-registry.js";
 export * from "./agent-personas.js";
 export * from "./curve-state.js";
 export * from "./agent-events.js";
+export * from "./agent-identities.js";
 export * from "./patron-users.js";
 export * from "./patron-wallets.js";
 export * from "./patron-sessions.js";

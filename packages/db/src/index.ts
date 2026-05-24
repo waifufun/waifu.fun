@@ -2,6 +2,7 @@ export * from "./client.js";
 export * from "./repository.js";
 export * from "./schema/index.js";
 export * as schema from "./schema/index.js";
+export * as agentIdentityQueries from "./queries/agent-identities.js";
 export * as agentPersonaQueries from "./queries/agent-personas.js";
 export * as agentQueries from "./queries/agents.js";
 export * as agentEventQueries from "./queries/agent-events.js";

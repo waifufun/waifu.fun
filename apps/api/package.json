@@ -11,7 +11,7 @@
 	},
 	"scripts": {
 		"dev": "tsx watch --clear-screen=false src/index.ts",
-		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/redis build && bun run --filter @waifufun/flap build && bun run --filter @waifufun/launchpad build",
+		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/redis build && bun run --filter @waifufun/flap build && bun run --filter @waifufun/launchpad build && bun run --filter @waifufun/identity build",
 		"build": "tsup src/index.ts --format esm --target node22 --sourcemap --clean --out-dir dist",
 		"start": "node dist/index.js",
 		"test:int": "bun run --filter @waifufun/db build && node --env-file-if-exists=../../.env.test --import tsx --test test/db.int.test.ts",
@@ -30,6 +30,7 @@
 		"@waifufun/db": "workspace:*",
 		"@waifufun/flap": "workspace:*",
 		"@waifufun/fourmeme": "workspace:*",
+		"@waifufun/identity": "workspace:*",
 		"@waifufun/launchpad": "workspace:*",
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/metrics": "workspace:*",
