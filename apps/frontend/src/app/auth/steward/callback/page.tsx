@@ -132,9 +132,7 @@ function StewardCallbackInner() {
 							<h1 className="text-xl font-medium text-white tracking-tight">
 								{t("auth.stewardCallback.linkingTitle")}
 							</h1>
-							<p className="text-sm text-neutral-400 leading-relaxed">
-								{t("auth.stewardCallback.linkingBody")}
-							</p>
+							<p className="text-sm text-neutral-400 leading-relaxed">{t("auth.stewardCallback.linkingBody")}</p>
 						</div>
 					) : null}
 
@@ -147,9 +145,7 @@ function StewardCallbackInner() {
 								{t("auth.stewardCallback.connectedTitle")}
 							</h1>
 							<p className="text-sm text-neutral-400 leading-relaxed">
-								{usedFallback
-									? t("auth.stewardCallback.storedLocally")
-									: t("auth.stewardCallback.walletLinked")}
+								{usedFallback ? t("auth.stewardCallback.storedLocally") : t("auth.stewardCallback.walletLinked")}
 							</p>
 							<p className="text-xs text-neutral-500 mt-2">
 								{t("auth.stewardCallback.closingNote")}{" "}
@@ -172,9 +168,7 @@ function StewardCallbackInner() {
 							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-rose-400/30 bg-rose-400/10 text-rose-300">
 								<AlertTriangle className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">
-								{t("auth.stewardCallback.failedTitle")}
-							</h1>
+							<h1 className="text-xl font-medium text-white tracking-tight">{t("auth.stewardCallback.failedTitle")}</h1>
 							<p className="text-sm text-neutral-300 leading-relaxed font-mono break-words">
 								{errorMessage ?? t("auth.stewardCallback.unknownError")}
 							</p>

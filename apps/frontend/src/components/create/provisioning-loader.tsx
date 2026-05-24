@@ -9,32 +9,33 @@ import { CheckIcon } from "./wizard-icons";
 
 export type ProvisioningStage = "safe" | "runtime" | "x-oauth" | "policies" | "done";
 
-const STAGES: { id: Exclude<ProvisioningStage, "done">; labelKey: string; sublabelKey: string; durationMs: number }[] = [
-	{
-		id: "safe",
-		labelKey: "wizard.provisioning.stages.safeLabel",
-		sublabelKey: "wizard.provisioning.stages.safeSub",
-		durationMs: 1600,
-	},
-	{
-		id: "runtime",
-		labelKey: "wizard.provisioning.stages.runtimeLabel",
-		sublabelKey: "wizard.provisioning.stages.runtimeSub",
-		durationMs: 1500,
-	},
-	{
-		id: "x-oauth",
-		labelKey: "wizard.provisioning.stages.xOauthLabel",
-		sublabelKey: "wizard.provisioning.stages.xOauthSub",
-		durationMs: 1200,
-	},
-	{
-		id: "policies",
-		labelKey: "wizard.provisioning.stages.policiesLabel",
-		sublabelKey: "wizard.provisioning.stages.policiesSub",
-		durationMs: 1300,
-	},
-];
+const STAGES: { id: Exclude<ProvisioningStage, "done">; labelKey: string; sublabelKey: string; durationMs: number }[] =
+	[
+		{
+			id: "safe",
+			labelKey: "wizard.provisioning.stages.safeLabel",
+			sublabelKey: "wizard.provisioning.stages.safeSub",
+			durationMs: 1600,
+		},
+		{
+			id: "runtime",
+			labelKey: "wizard.provisioning.stages.runtimeLabel",
+			sublabelKey: "wizard.provisioning.stages.runtimeSub",
+			durationMs: 1500,
+		},
+		{
+			id: "x-oauth",
+			labelKey: "wizard.provisioning.stages.xOauthLabel",
+			sublabelKey: "wizard.provisioning.stages.xOauthSub",
+			durationMs: 1200,
+		},
+		{
+			id: "policies",
+			labelKey: "wizard.provisioning.stages.policiesLabel",
+			sublabelKey: "wizard.provisioning.stages.policiesSub",
+			durationMs: 1300,
+		},
+	];
 
 const TRANSITION = { duration: 0.45, ease: EASE_HERO };
 
@@ -93,7 +94,11 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 								transition={{ duration: 0.3 }}
 								className="inline-block"
 							>
-								{showingExtension ? t("wizard.provisioning.stillLaunching") : allDone ? t("wizard.provisioning.live") : t("wizard.provisioning.provisioning")}
+								{showingExtension
+									? t("wizard.provisioning.stillLaunching")
+									: allDone
+										? t("wizard.provisioning.live")
+										: t("wizard.provisioning.provisioning")}
 							</motion.span>
 						</AnimatePresence>
 					</p>
@@ -106,7 +111,11 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 							transition={TRANSITION}
 							className="mt-3 text-2xl md:text-3xl text-white tracking-tight leading-[1.1]"
 						>
-							{showingExtension ? t("wizard.provisioning.stillLaunchingTitle") : allDone ? t("wizard.provisioning.alive") : t("wizard.provisioning.spinningUp")}
+							{showingExtension
+								? t("wizard.provisioning.stillLaunchingTitle")
+								: allDone
+									? t("wizard.provisioning.alive")
+									: t("wizard.provisioning.spinningUp")}
 						</motion.h2>
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">

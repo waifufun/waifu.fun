@@ -29,7 +29,7 @@ export interface AgentLifecycleStatus {
 }
 
 const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
-const third-partyMarketStatuses = new Set(["migrated", "dex", "locked"]);
+const externalMarketStatuses = new Set(["migrated", "dex", "locked"]);
 
 type TokenLifecycleHints = IToken & { origin?: string; pool?: string | null };
 
@@ -51,7 +51,7 @@ function getLifecycleSignals(token: IToken) {
 		.trim()
 		.toLowerCase();
 	const isImported = isImportedToken(token);
-	const isStatusExternalMarket = third-partyMarketStatuses.has(normalizedStatus);
+	const isStatusExternalMarket = externalMarketStatuses.has(normalizedStatus);
 	const hasExternalPool = hasExternalPoolAddress(tokenWithHints?.pool);
 	const hasCompletedBondingCurve = Boolean(token?.curveCompleted) || curveProgress >= 100;
 	const volume24h = Number(token?.volume24h ?? 0);
@@ -340,9 +340,7 @@ export default function AgentProfile({
 					<div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] mt-auto">
 						{token?.creator && (
 							<div className="flex items-center gap-1.5">
-								<span className="font-mono uppercase tracking-wider text-zinc-700">
-									{t("token.profile.byLabel")}
-								</span>
+								<span className="font-mono uppercase tracking-wider text-zinc-700">{t("token.profile.byLabel")}</span>
 								<Link
 									href={`/profile/${token.creator}`}
 									className="font-mono text-zinc-500 hover:text-[#00ff87] transition-colors"

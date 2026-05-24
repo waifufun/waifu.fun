@@ -142,7 +142,7 @@ const getTradeSourceLabelKey = (source?: TradeSource): { key?: string; raw?: str
 	const sourceText = getTradeSourceText(source);
 
 	if (provider === "geckoterminal") return { key: "geckoterminal" };
-	if (kind === "third-party") return { key: "third-partyMarket" };
+	if (kind === "third-party") return { key: "externalMarket" };
 	if (sourceText === "portal") return { key: "portal" };
 	if (sourceText) return { raw: sourceText.replace(/[-_]+/g, " ") };
 
@@ -325,7 +325,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 
 	const tokenWithPool = token as IToken & { pool?: string };
 	const isMigratedToken = migratedStatuses.has(token.status);
-	const third-partyMarketUrl = getExternalMarketUrl(token);
+	const externalMarketUrl = getExternalMarketUrl(token);
 	const hasExternalMarket = Boolean(token.imported || tokenWithPool.pool || (token.curveCompleted && isMigratedToken));
 	const latestTradeDate = parseTradeDate(data[0]?.timestamp);
 	const hasHistoricalRows = data.some((trade) => hasHistoricalContext(trade));
@@ -361,11 +361,11 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					badge: t("token.trades.badge.third-party"),
 					title: t("token.trades.title.activity"),
 					description: latestTradeDate
-						? t("token.trades.summary.third-partyWithTime", { time: fromNow(latestTradeDate) })
+						? t("token.trades.summary.externalWithTime", { time: fromNow(latestTradeDate) })
 						: t("token.trades.summary.third-party"),
 					footer: latestTradeDate
-						? t("token.trades.footer.third-partyWithTime", { time: fromNow(latestTradeDate) })
-						: t("token.trades.footer.third-partyWithCount", { count: String(data.length) }),
+						? t("token.trades.footer.externalWithTime", { time: fromNow(latestTradeDate) })
+						: t("token.trades.footer.externalWithCount", { count: String(data.length) }),
 					icon: Radio,
 				}
 			: hasHistoricalRows
@@ -400,9 +400,9 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								{t("token.trades.unavailableBody", { ticker: token.ticker })}
 							</p>
 						</div>
-						{third-partyMarketUrl ? (
+						{externalMarketUrl ? (
 							<Link
-								href={third-partyMarketUrl}
+								href={externalMarketUrl}
 								target="_blank"
 								className="inline-flex items-center gap-1 self-start rounded-sm border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[#a1a1aa] transition-colors hover:border-[#00ff87]/25 hover:text-[#00ff87]"
 							>
@@ -415,9 +415,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 			);
 		}
 
-		return (
-			<div className="w-full p-4 py-8 text-center text-sm text-[#a1a1aa]">{t("token.trades.noTradesYet")}</div>
-		);
+		return <div className="w-full p-4 py-8 text-center text-sm text-[#a1a1aa]">{t("token.trades.noTradesYet")}</div>;
 	}
 
 	const SummaryIcon = summary.icon;
@@ -445,7 +443,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					</div>
 
 					<div className="flex shrink-0 items-center gap-2 self-start">
-						{third-partyMarketUrl ? (
+						{externalMarketUrl ? (
 							<Link
 								href={externalMarketUrl}
 								target="_blank"
@@ -477,9 +475,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								<TableHead className={headerClass}>{t("token.trades.headers.tokenAmount")}</TableHead>
 								<TableHead className={headerClass}>{t("token.trades.headers.quoteSide")}</TableHead>
 								<TableHead className={headerClass}>{t("token.trades.headers.price")}</TableHead>
-								<TableHead className={cn(headerClass, "w-12 text-right")}>
-									{t("token.trades.headers.date")}
-								</TableHead>
+								<TableHead className={cn(headerClass, "w-12 text-right")}>{t("token.trades.headers.date")}</TableHead>
 								<TableHead className="w-5 text-right" />
 							</TableRow>
 						</TableHeader>

@@ -145,12 +145,8 @@ function CallbackInner() {
 				</p>
 				{phase === "loading" ? (
 					<>
-						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">
-							{t("auth.oauthCallback.signingIn")}
-						</h1>
-						<p className="text-sm text-[#a1a1aa] leading-relaxed">
-							{t("auth.oauthCallback.verifyingWithSteward")}
-						</p>
+						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">{t("auth.oauthCallback.signingIn")}</h1>
+						<p className="text-sm text-[#a1a1aa] leading-relaxed">{t("auth.oauthCallback.verifyingWithSteward")}</p>
 						<div
 							className="h-px bg-gradient-to-r from-[#00ff87]/40 via-[#00ff87]/10 to-transparent"
 							aria-hidden="true"

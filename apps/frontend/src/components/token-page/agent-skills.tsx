@@ -170,9 +170,7 @@ export function SidebarSocials({ token }: { token: IToken }) {
 		<div className="relative rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4">
 			<div className="flex items-center gap-2 mb-3">
 				<Globe className="size-3.5 text-zinc-600" />
-				<span className="text-[10px] text-zinc-700 font-mono uppercase tracking-wider">
-					{t("token.skills.links")}
-				</span>
+				<span className="text-[10px] text-zinc-700 font-mono uppercase tracking-wider">{t("token.skills.links")}</span>
 			</div>
 			<div className="flex items-center gap-2">
 				{socials.map((social) => {

@@ -70,18 +70,10 @@ export default function MarketRibbon({
 					live={isLive}
 				/>
 				{token.volume24h ? (
-					<MetricChip
-						label={t("token.ribbon.vol")}
-						value={`$${abbreviateNumber(token.volume24h)}`}
-						icon={BarChart3}
-					/>
+					<MetricChip label={t("token.ribbon.vol")} value={`$${abbreviateNumber(token.volume24h)}`} icon={BarChart3} />
 				) : null}
 				{hasAggregateHolders && (
-					<MetricChip
-						label={t("token.ribbon.holders")}
-						value={abbreviateNumber(token.holders, true)}
-						icon={Users}
-					/>
+					<MetricChip label={t("token.ribbon.holders")} value={abbreviateNumber(token.holders, true)} icon={Users} />
 				)}
 			</div>
 

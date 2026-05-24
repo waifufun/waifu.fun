@@ -226,7 +226,9 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 										"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 									)}
 								>
-									{status.kind === "submitting" ? t("wizard.launchpad.reservingSpot") : t("wizard.launchpad.joinWaitlist")}
+									{status.kind === "submitting"
+										? t("wizard.launchpad.reservingSpot")
+										: t("wizard.launchpad.joinWaitlist")}
 								</button>
 							</form>
 						)}

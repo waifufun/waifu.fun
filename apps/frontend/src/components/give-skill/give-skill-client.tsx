@@ -17,9 +17,7 @@ export default function GiveSkillClient() {
 				{t("wizard.giveSkill.title")}
 			</h1>
 
-			<p className="mt-3 max-w-xl text-[15px] leading-relaxed text-[#a1a1aa]">
-				{t("wizard.giveSkill.intro")}
-			</p>
+			<p className="mt-3 max-w-xl text-[15px] leading-relaxed text-[#a1a1aa]">{t("wizard.giveSkill.intro")}</p>
 
 			<div className="mt-8">
 				<div className="mb-3 flex items-center gap-3">
@@ -58,9 +56,7 @@ export default function GiveSkillClient() {
 				<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">
 					{t("wizard.giveSkill.noAgent")}
 				</div>
-				<p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#a1a1aa]">
-					{t("wizard.giveSkill.noAgentBody")}
-				</p>
+				<p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#a1a1aa]">{t("wizard.giveSkill.noAgentBody")}</p>
 				<Link
 					href="/create/wizard"
 					className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.2em] text-[#71717a] hover:text-[#e4e4e7] transition-colors"

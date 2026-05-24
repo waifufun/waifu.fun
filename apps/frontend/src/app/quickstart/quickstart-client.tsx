@@ -50,12 +50,27 @@ export default function QuickstartClient() {
 				aria-label={t("wizard.quickstart.audiencePicker")}
 				className="mx-auto w-full max-w-3xl px-5 md:px-8 mb-20 grid grid-cols-1 sm:grid-cols-2 gap-3"
 			>
-				<AudienceCard href="#for-patrons" icon="patron" title={t("wizard.quickstart.forPatrons")} body={t("wizard.quickstart.patronCard")} />
-				<AudienceCard href="#for-agents" icon="agent" title={t("wizard.quickstart.forAgents")} body={t("wizard.quickstart.agentCard")} />
+				<AudienceCard
+					href="#for-patrons"
+					icon="patron"
+					title={t("wizard.quickstart.forPatrons")}
+					body={t("wizard.quickstart.patronCard")}
+				/>
+				<AudienceCard
+					href="#for-agents"
+					icon="agent"
+					title={t("wizard.quickstart.forAgents")}
+					body={t("wizard.quickstart.agentCard")}
+				/>
 			</nav>
 
 			<section id="for-patrons" className="mx-auto w-full max-w-3xl px-5 md:px-8 mb-24">
-				<SectionIntro icon="patron" kicker={t("wizard.quickstart.forPatrons")} title={t("wizard.quickstart.patronHeading")} body={t("wizard.quickstart.patronBody")} />
+				<SectionIntro
+					icon="patron"
+					kicker={t("wizard.quickstart.forPatrons")}
+					title={t("wizard.quickstart.patronHeading")}
+					body={t("wizard.quickstart.patronBody")}
+				/>
 				<StepList steps={patronSteps} />
 				<div className="mt-8 border-l-2 border-[#00ff87]/40 pl-5">
 					<p className="text-sm text-white/55 leading-relaxed">{t("wizard.quickstart.patronFooter")}</p>
@@ -63,7 +78,12 @@ export default function QuickstartClient() {
 			</section>
 
 			<section id="for-agents" className="mx-auto w-full max-w-3xl px-5 md:px-8 mb-24">
-				<SectionIntro icon="agent" kicker={t("wizard.quickstart.forAgents")} title={t("wizard.quickstart.agentHeading")} body={t("wizard.quickstart.agentBody")} />
+				<SectionIntro
+					icon="agent"
+					kicker={t("wizard.quickstart.forAgents")}
+					title={t("wizard.quickstart.agentHeading")}
+					body={t("wizard.quickstart.agentBody")}
+				/>
 				<StepList steps={agentSteps} />
 
 				<figure className="mt-10 border border-white/[0.06]">
@@ -134,10 +154,18 @@ export default function QuickstartClient() {
 	);
 }
 
-function AudienceCard({ href, icon, title, body }: { href: string; icon: "patron" | "agent"; title: string; body: string }) {
+function AudienceCard({
+	href,
+	icon,
+	title,
+	body,
+}: { href: string; icon: "patron" | "agent"; title: string; body: string }) {
 	const Icon = icon === "patron" ? Users : Terminal;
 	return (
-		<a href={href} className="group border border-white/10 bg-[#08080a] p-5 hover:border-[#00ff87]/30 transition-colors duration-300">
+		<a
+			href={href}
+			className="group border border-white/10 bg-[#08080a] p-5 hover:border-[#00ff87]/30 transition-colors duration-300"
+		>
 			<div className="flex items-center gap-3 mb-3">
 				<Icon className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
 				<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">{title}</span>
@@ -147,7 +175,12 @@ function AudienceCard({ href, icon, title, body }: { href: string; icon: "patron
 	);
 }
 
-function SectionIntro({ icon, kicker, title, body }: { icon: "patron" | "agent"; kicker: string; title: string; body: string }) {
+function SectionIntro({
+	icon,
+	kicker,
+	title,
+	body,
+}: { icon: "patron" | "agent"; kicker: string; title: string; body: string }) {
 	const Icon = icon === "patron" ? Users : Terminal;
 	return (
 		<div className="mb-10">

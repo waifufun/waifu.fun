@@ -162,7 +162,7 @@ export default function StepPersona() {
 					className="mt-2 w-full bg-black/40 border border-white/10 px-3 h-11 font-mono text-sm text-white placeholder:text-white/20 focus:border-[#00ff87]/50 outline-none"
 				/>
 				<p className="mt-2 text-[11px] text-white/40 leading-relaxed">
-					{t("wizard.persona.inviteHelpBefore")} {" "}
+					{t("wizard.persona.inviteHelpBefore")}{" "}
 					<a
 						href="https://x.com/waifudotfun"
 						target="_blank"
@@ -262,7 +262,8 @@ export default function StepPersona() {
 							</ul>
 						) : null}
 						<p className="text-[11px] text-white/40 leading-relaxed">
-							we extract name, ticker (derived), bio, and persona prompt from the file. you can fine-tune in {t("wizard.persona.createTab")}
+							we extract name, ticker (derived), bio, and persona prompt from the file. you can fine-tune in{" "}
+							{t("wizard.persona.createTab")}
 							mode after.
 						</p>
 					</div>
@@ -331,28 +332,26 @@ export default function StepPersona() {
 					</label>
 
 					<div>
-						<p className="text-xs text-neutral-500 leading-relaxed">
-							{t("wizard.persona.templateHelp")}
-						</p>
+						<p className="text-xs text-neutral-500 leading-relaxed">{t("wizard.persona.templateHelp")}</p>
 						<div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
-							{TEMPLATES.map((t) => {
-								const selected = state.persona.avatarTemplateId === t.id && !state.persona.avatarDataUrl;
+							{TEMPLATES.map((tpl) => {
+								const selected = state.persona.avatarTemplateId === tpl.id && !state.persona.avatarDataUrl;
 								return (
 									<button
-										key={t.id}
+										key={tpl.id}
 										type="button"
 										aria-pressed={selected}
-										aria-label={t("wizard.persona.templateAria", { label: t.label })}
-										onClick={() => patchPersona({ avatarTemplateId: t.id, avatarDataUrl: null })}
+										aria-label={t("wizard.persona.templateAria", { label: tpl.label })}
+										onClick={() => patchPersona({ avatarTemplateId: tpl.id, avatarDataUrl: null })}
 										className={cn(
 											"group relative aspect-square overflow-hidden border",
 											"transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
 											selected ? "border-accent" : "border-white/10 hover:border-white/30",
 										)}
-										style={{ background: t.gradient }}
-										title={`${t.label} (${t.tone})`}
+										style={{ background: tpl.gradient }}
+										title={`${tpl.label} (${tpl.tone})`}
 									>
-										<span className="sr-only">{t.label}</span>
+										<span className="sr-only">{tpl.label}</span>
 										{selected ? (
 											<span className="absolute inset-0 flex items-center justify-center bg-black/30">
 												<CheckIcon className="h-4 w-4 text-accent" />
@@ -404,7 +403,11 @@ export default function StepPersona() {
 
 			{/* Bio */}
 			<section>
-				<FieldLabel htmlFor={bioId} label={t("wizard.persona.bioLabel")} counter={`${state.persona.bio.length}/${MAX_BIO}`} />
+				<FieldLabel
+					htmlFor={bioId}
+					label={t("wizard.persona.bioLabel")}
+					counter={`${state.persona.bio.length}/${MAX_BIO}`}
+				/>
 				<textarea
 					id={bioId}
 					value={state.persona.bio}
@@ -428,9 +431,7 @@ export default function StepPersona() {
 					optional
 					counter={`${state.persona.personaPrompt.length}/${MAX_PROMPT}`}
 				/>
-				<p className="mt-1 text-xs text-neutral-500 leading-relaxed max-w-[58ch]">
-					{t("wizard.persona.promptHelp")}
-				</p>
+				<p className="mt-1 text-xs text-neutral-500 leading-relaxed max-w-[58ch]">{t("wizard.persona.promptHelp")}</p>
 				<textarea
 					id={promptId}
 					value={state.persona.personaPrompt}
@@ -465,7 +466,9 @@ function FieldLabel({
 		<div className="flex items-baseline justify-between">
 			<label htmlFor={htmlFor} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
 				{label}
-				{optional ? <span className="ml-2 text-neutral-600 lowercase tracking-normal">{t("wizard.common.optional")}</span> : null}
+				{optional ? (
+					<span className="ml-2 text-neutral-600 lowercase tracking-normal">{t("wizard.common.optional")}</span>
+				) : null}
 			</label>
 			{counter ? (
 				<span className="text-[10px] font-mono tabular-nums tracking-[0.12em] text-neutral-600">{counter}</span>

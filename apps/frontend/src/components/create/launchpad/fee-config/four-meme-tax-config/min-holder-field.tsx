@@ -29,7 +29,9 @@ export function MinHolderField({ value, onChange }: Props) {
 					onChange={(e) => onChange(e.target.value)}
 					className="flex-1 bg-transparent outline-none text-sm font-mono tabular-nums text-white"
 				/>
-				<span className="ml-2 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">{t("wizard.launchpad.tax.tokens")}</span>
+				<span className="ml-2 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
+					{t("wizard.launchpad.tax.tokens")}
+				</span>
 			</div>
 		</section>
 	);

@@ -132,8 +132,7 @@ function ConnectInner() {
 					{t("auth.oauthPanel.poweredBy")}
 				</p>
 				<p className="text-[11px] text-[#71717a] leading-relaxed">
-					{t("auth.oauthPanel.redirectNotePrefix")}{" "}
-					<span className="font-mono text-[#a1a1aa]">eliza.steward.fi</span>
+					{t("auth.oauthPanel.redirectNotePrefix")} <span className="font-mono text-[#a1a1aa]">eliza.steward.fi</span>
 					{t("auth.oauthPanel.redirectNoteSuffix")}
 				</p>
 			</footer>

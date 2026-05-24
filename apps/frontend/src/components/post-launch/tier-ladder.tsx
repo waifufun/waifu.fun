@@ -41,7 +41,9 @@ export function TierLadder({ treasuryLp }: Props) {
 	if (meta.isLoading || !meta.data) {
 		return (
 			<Card>
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t("post.tier.statusLabel")}</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+					{t("post.tier.statusLabel")}
+				</div>
 				<div className="mt-3 h-20 animate-pulse rounded-sm border border-white/5 bg-white/[0.02]" />
 			</Card>
 		);
@@ -77,7 +79,9 @@ export function TierLadder({ treasuryLp }: Props) {
 	return (
 		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label={t("post.tier.sectionAria")}>
 			<div className="flex items-center justify-between mb-4">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">{t("post.tier.statusLabel")}</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+					{t("post.tier.statusLabel")}
+				</div>
 				<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 tabular-nums">
 					{t("post.tier.mcPrefix")} {formatUsdFromChainlink(currentMcUsd)}
 				</div>

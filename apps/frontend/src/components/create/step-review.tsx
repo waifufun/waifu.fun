@@ -126,9 +126,7 @@ export default function StepReview() {
 								: t("wizard.review.vanityDefault")}
 					</p>
 					{state.vanity.predictedAddress && !hasVanitySuffix(state.vanity.predictedAddress) ? (
-						<p className="mt-1 text-[11px] font-mono text-yellow-400/80">
-							{t("wizard.review.vanityWarning")}
-						</p>
+						<p className="mt-1 text-[11px] font-mono text-yellow-400/80">{t("wizard.review.vanityWarning")}</p>
 					) : null}
 					<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
 						{t("wizard.review.flapBody")}
@@ -174,7 +172,11 @@ export default function StepReview() {
 					<Row label={t("wizard.review.launchpad")}>
 						<p className="text-sm text-neutral-200">
 							{selectedLaunchpad ? LAUNCHPAD_LABEL[selectedLaunchpad] : t("wizard.review.notSelected")}
-							{selectedChain ? <span className="text-neutral-600">{t("wizard.review.onChain", { chain: CHAIN_LABEL[selectedChain] })}</span> : null}
+							{selectedChain ? (
+								<span className="text-neutral-600">
+									{t("wizard.review.onChain", { chain: CHAIN_LABEL[selectedChain] })}
+								</span>
+							) : null}
 						</p>
 						{feeConfig?.kind === "four-meme-regular" ? (
 							<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
@@ -193,21 +195,23 @@ export default function StepReview() {
 						) : taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
 							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
 								<p>{t("wizard.review.tradeTax", { pct: taxVolumePct })}</p>
-								<p>
-									{t("wizard.review.platformLine", { pct: platformCutPct, volumePct: platformVolumePct })}
-								</p>
+								<p>{t("wizard.review.platformLine", { pct: platformCutPct, volumePct: platformVolumePct })}</p>
 								{feeConfig?.kind === "four-meme-tax" ? (
 									<>
 										<p>
-											{t("wizard.review.remainderLine", { pct: String(100 - Number(platformCutPct)), volumePct: treasuryVolumePct })}
+											{t("wizard.review.remainderLine", {
+												pct: String(100 - Number(platformCutPct)),
+												volumePct: treasuryVolumePct,
+											})}
 										</p>
-										<p className="mt-1">
-											{t("wizard.review.remainderRoute")}
-										</p>
+										<p className="mt-1">{t("wizard.review.remainderRoute")}</p>
 									</>
 								) : (
 									<p>
-										{t("wizard.review.treasuryLine", { pct: String(100 - Number(platformCutPct)), volumePct: treasuryVolumePct })}
+										{t("wizard.review.treasuryLine", {
+											pct: String(100 - Number(platformCutPct)),
+											volumePct: treasuryVolumePct,
+										})}
 									</p>
 								)}
 								{feeConfig?.kind === "flap" && feeConfig.recipient === "agent-treasury" ? (
@@ -267,9 +271,7 @@ export default function StepReview() {
 
 				{/* Cost */}
 				<Row label={t("wizard.review.cost")}>
-					<p className="text-sm font-mono tabular-nums text-neutral-200">
-						{t("wizard.review.costLine")}
-					</p>
+					<p className="text-sm font-mono tabular-nums text-neutral-200">{t("wizard.review.costLine")}</p>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
 						{t("wizard.review.costBody")}
 					</p>
@@ -289,10 +291,10 @@ export default function StepReview() {
 			</section>
 
 			<aside className="border border-accent/20 bg-accent/[0.03] p-4">
-				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">{t("wizard.review.afterProvision")}</p>
-				<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-					{t("wizard.review.afterProvisionBody")}
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">
+					{t("wizard.review.afterProvision")}
 				</p>
+				<p className="mt-2 text-sm text-neutral-300 leading-relaxed">{t("wizard.review.afterProvisionBody")}</p>
 			</aside>
 		</div>
 	);

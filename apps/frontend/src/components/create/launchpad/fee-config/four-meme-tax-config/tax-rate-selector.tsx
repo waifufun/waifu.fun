@@ -14,10 +14,10 @@ export function TaxRateSelector({ taxBps, onChange }: Props) {
 	return (
 		<section>
 			<header className="mb-3">
-				<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">{t("wizard.launchpad.tax.tradeTax")}</h2>
-				<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
-					{t("wizard.launchpad.tax.tradeTaxHelp")}
-				</p>
+				<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+					{t("wizard.launchpad.tax.tradeTax")}
+				</h2>
+				<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">{t("wizard.launchpad.tax.tradeTaxHelp")}</p>
 			</header>
 			<div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label={t("wizard.launchpad.flap.tradeTax")}>
 				{TAX_TIER_BPS.map((tier) => {

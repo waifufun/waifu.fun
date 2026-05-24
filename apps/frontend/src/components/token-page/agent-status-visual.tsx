@@ -162,9 +162,7 @@ export default function AgentStatusVisual({
 				<div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
 					<ActivityIndicator
 						label={t("token.statusVisual.statusLabel")}
-						value={
-							status.hasRecentActivity ? t("token.statusVisual.recentActivity") : t("token.statusVisual.quiet")
-						}
+						value={status.hasRecentActivity ? t("token.statusVisual.recentActivity") : t("token.statusVisual.quiet")}
 						icon={Activity}
 					/>
 

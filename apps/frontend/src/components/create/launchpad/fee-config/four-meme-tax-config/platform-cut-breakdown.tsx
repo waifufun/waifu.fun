@@ -26,7 +26,9 @@ export function PlatformCutBreakdown({ taxBps, platformCutBps, platformCutVolume
 			>
 				<div className="flex items-center gap-2">
 					<InfoIcon className="h-3.5 w-3.5 text-neutral-500" />
-					<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-300">{t("wizard.launchpad.tax.breakdownTitle")}</span>
+					<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-300">
+						{t("wizard.launchpad.tax.breakdownTitle")}
+					</span>
 				</div>
 				<ChevronDownIcon
 					className={cn("h-3.5 w-3.5 text-neutral-500 transition-transform duration-200", open && "rotate-180")}

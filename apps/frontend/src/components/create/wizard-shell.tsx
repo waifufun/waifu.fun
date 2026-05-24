@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from "./wizard-icons";
-import { STEP_LABELS, WIZARD_STEPS, type WizardStep, useStepValid, useWizard } from "./wizard-state";
+import { WIZARD_STEPS, type WizardStep, useStepValid, useWizard } from "./wizard-state";
 
 const TRANSITION = { duration: 0.32, ease: EASE_HERO };
 
@@ -114,7 +114,10 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 			<div className="mx-auto w-full max-w-[640px]">
 				<header className="mb-10">
 					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-						{t("wizard.shell.stepCounter", { current: String(stepIndex + 1).padStart(2, "0"), total: String(WIZARD_STEPS.length).padStart(2, "0") })}
+						{t("wizard.shell.stepCounter", {
+							current: String(stepIndex + 1).padStart(2, "0"),
+							total: String(WIZARD_STEPS.length).padStart(2, "0"),
+						})}
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
 						{t(`wizard.shell.titles.${step}`)}
@@ -140,7 +143,10 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 										type="button"
 										onClick={() => handleStepClick(s)}
 										aria-current={isCurrent ? "step" : undefined}
-										aria-label={t("wizard.shell.ariaStep", { number: String(i + 1), label: t(`wizard.shell.labels.${s}`) })}
+										aria-label={t("wizard.shell.ariaStep", {
+											number: String(i + 1),
+											label: t(`wizard.shell.labels.${s}`),
+										})}
 										className={cn(
 											"group w-full text-left flex flex-col gap-2 py-1 transition-opacity duration-300",
 											provisioning && "pointer-events-none opacity-60",
@@ -193,9 +199,11 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 				 * entirely and go through /give-skill.
 				 */}
 				<div className="mb-8 border-l-2 border-[#00ff87] bg-[#0A0F0C] p-4">
-					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">{t("wizard.shell.manualFallbackLabel")}</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">
+						{t("wizard.shell.manualFallbackLabel")}
+					</p>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						{t("wizard.shell.manualFallbackBefore")} {" "}
+						{t("wizard.shell.manualFallbackBefore")}{" "}
 						<a href="/give-skill" className="text-[#00ff87] hover:opacity-80 transition-opacity">
 							{t("wizard.shell.manualFallbackLink")}
 						</a>
@@ -251,7 +259,9 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 								"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 							)}
 						>
-							<span>{isLast ? (completeLabel ?? t("wizard.shell.defaultCompleteLabel")) : t("wizard.common.next")}</span>
+							<span>
+								{isLast ? (completeLabel ?? t("wizard.shell.defaultCompleteLabel")) : t("wizard.common.next")}
+							</span>
 							<span
 								className={cn(
 									"inline-flex items-center justify-center h-7 w-7 bg-black/15",

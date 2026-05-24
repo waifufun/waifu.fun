@@ -45,8 +45,12 @@ export function EconomicsPreview({ tier }: Props) {
 	return (
 		<div className="border border-accent/30 bg-accent/[0.02] p-5">
 			<div className="flex items-baseline justify-between gap-3 mb-4">
-				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">{t("wizard.tier.economicsTitle", { id: String(tier.id) })}</p>
-				<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">{t("wizard.tier.livePreview")}</p>
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">
+					{t("wizard.tier.economicsTitle", { id: String(tier.id) })}
+				</p>
+				<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+					{t("wizard.tier.livePreview")}
+				</p>
 			</div>
 
 			{/* big numbers row */}
@@ -57,14 +61,19 @@ export function EconomicsPreview({ tier }: Props) {
 					value={formatUsdMarketCap(tier.openFdvBnb)}
 					help={t("wizard.tier.headlineTooltip")}
 				/>
-				<Metric label={t("wizard.tier.presaler")} value={`${tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x`} />
+				<Metric
+					label={t("wizard.tier.presaler")}
+					value={`${tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x`}
+				/>
 				<Metric label={t("wizard.tier.totalBnb")} value={fmtBnb(totalBnb(tier))} />
 			</div>
 
 			{/* breakdown bar */}
 			<div className="mb-1.5 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
 				<span>{t("wizard.tier.presale", { amount: fmtBnb(tier.cap) })}</span>
-				<span>{t("wizard.tier.v2Buy")} {fmtBnb(tier.v2Buy)}</span>
+				<span>
+					{t("wizard.tier.v2Buy")} {fmtBnb(tier.v2Buy)}
+				</span>
 			</div>
 			<div className="relative h-1.5 w-full bg-white/5 overflow-hidden mb-5">
 				<div className="absolute inset-y-0 left-0 bg-accent" style={{ width: `${presaleShare * 100}%` }} />
@@ -83,7 +92,12 @@ export function EconomicsPreview({ tier }: Props) {
 			</dl>
 
 			<p className="mt-5 text-[11px] text-neutral-400 leading-relaxed">
-				{t("wizard.tier.summary", { multiple: tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1), vestingNote: tier.vesting === "none" ? t("wizard.tier.noVesting") : t("wizard.tier.withVesting"), burn: String(tier.burn), circulating: String(tier.circulatingSupplyM) })}
+				{t("wizard.tier.summary", {
+					multiple: tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1),
+					vestingNote: tier.vesting === "none" ? t("wizard.tier.noVesting") : t("wizard.tier.withVesting"),
+					burn: String(tier.burn),
+					circulating: String(tier.circulatingSupplyM),
+				})}
 			</p>
 		</div>
 	);

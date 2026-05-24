@@ -41,7 +41,9 @@ export function AllocationGrid({
 		<section>
 			<header className="flex items-baseline justify-between mb-3">
 				<div>
-					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">{t("wizard.launchpad.tax.allocation")}</h2>
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+						{t("wizard.launchpad.tax.allocation")}
+					</h2>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
 						{t("wizard.launchpad.tax.allocationHelp", { pct: (expectedSum / 100).toFixed(2) })}
 					</p>
@@ -64,7 +66,9 @@ export function AllocationGrid({
 						<div key={f.key} className="grid grid-cols-[1fr_120px] gap-4 p-4 items-center">
 							<div className="min-w-0">
 								<p className="text-sm text-white tracking-tight">{t(`wizard.launchpad.tax.${f.key}Label`)}</p>
-								<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">{t(`wizard.launchpad.tax.${f.key}Desc`)}</p>
+								<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
+									{t(`wizard.launchpad.tax.${f.key}Desc`)}
+								</p>
 							</div>
 							<div
 								className={cn(

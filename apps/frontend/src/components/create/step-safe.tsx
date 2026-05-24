@@ -147,20 +147,22 @@ export default function StepSafe() {
 						</span>
 						<div className="flex-1 min-w-0">
 							<p className="text-sm text-neutral-300 leading-relaxed">
-								{auth.primaryChain === "solana"
-									? t("wizard.safe.solanaWarning")
-									: t("wizard.safe.defaultIntro")}
+								{auth.primaryChain === "solana" ? t("wizard.safe.solanaWarning") : t("wizard.safe.defaultIntro")}
 							</p>
 						</div>
 					</div>
 
 					<dl className="mt-5 divide-y divide-white/5 border-t border-white/5">
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">{t("wizard.safe.primaryOwner")}</dt>
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+								{t("wizard.safe.primaryOwner")}
+							</dt>
 							<dd className="text-sm font-mono text-neutral-200 tabular-nums">{primaryLabel}</dd>
 						</div>
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-start">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">{t("wizard.safe.safeOwners")}</dt>
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+								{t("wizard.safe.safeOwners")}
+							</dt>
 							<dd className="space-y-2">
 								{owners.length ? (
 									owners.map((owner) => (
@@ -204,10 +206,10 @@ export default function StepSafe() {
 					<div className="mt-5 border-t border-white/5 pt-5 space-y-4">
 						<div className="flex items-center justify-between gap-3 flex-wrap">
 							<div>
-								<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">{t("wizard.safe.externalSigners")}</p>
-								<p className="mt-1 text-xs text-neutral-500">
-									{t("wizard.safe.externalHelper")}
+								<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+									{t("wizard.safe.externalSigners")}
 								</p>
+								<p className="mt-1 text-xs text-neutral-500">{t("wizard.safe.externalHelper")}</p>
 							</div>
 							<button
 								type="button"
@@ -233,7 +235,9 @@ export default function StepSafe() {
 											/>
 											<span className="font-mono tabular-nums">{shortAddr(wallet.address)}</span>
 											<span className="text-[11px] text-neutral-600">
-												{wallet.addedAt ? t("wizard.safe.linkedAt", { date: new Date(wallet.addedAt).toLocaleDateString() }) : t("wizard.safe.linkedRecently")}
+												{wallet.addedAt
+													? t("wizard.safe.linkedAt", { date: new Date(wallet.addedAt).toLocaleDateString() })
+													: t("wizard.safe.linkedRecently")}
 											</span>
 										</li>
 									);
@@ -247,10 +251,10 @@ export default function StepSafe() {
 						) : null}
 
 						<div className="pt-2 border-t border-white/5">
-							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">{t("wizard.safe.coOwners")}</p>
-							<p className="mt-1 text-xs text-neutral-500">
-								{t("wizard.safe.coOwnersHelper")}
+							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+								{t("wizard.safe.coOwners")}
 							</p>
+							<p className="mt-1 text-xs text-neutral-500">{t("wizard.safe.coOwnersHelper")}</p>
 							<div className="mt-3 flex gap-2">
 								<input
 									type="text"
@@ -300,8 +304,12 @@ export default function StepSafe() {
 
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
-					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">{t("wizard.safe.taxRouting")}</h2>
-					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">{t("wizard.safe.waveMDefault")}</span>
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+						{t("wizard.safe.taxRouting")}
+					</h2>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
+						{t("wizard.safe.waveMDefault")}
+					</span>
 				</header>
 
 				<div className="border border-white/8 bg-white/[0.012] p-5">
@@ -343,9 +351,9 @@ export default function StepSafe() {
 								</div>
 
 								<p className="mt-3 text-xs text-neutral-500 leading-relaxed">
-									{t("wizard.safe.waveMDefault")}. tax flows on-chain through a CREATE2 TaxSplitter to the platform Safe, the patron, and
-									the agent Safe. splits are locked per launch; expand &ldquo;advanced&rdquo; to audit the on-chain
-									config.
+									{t("wizard.safe.waveMDefault")}. tax flows on-chain through a CREATE2 TaxSplitter to the platform
+									Safe, the patron, and the agent Safe. splits are locked per launch; expand &ldquo;advanced&rdquo; to
+									audit the on-chain config.
 								</p>
 							</>
 						);
@@ -433,7 +441,9 @@ export default function StepSafe() {
 											{a.role}
 										</span>
 									</div>
-									<p className="mt-1.5 text-xs text-neutral-400 leading-relaxed">{a.slug === "pancake" ? t("wizard.safe.pancakeBlurb") : t("wizard.safe.venusBlurb")}</p>
+									<p className="mt-1.5 text-xs text-neutral-400 leading-relaxed">
+										{a.slug === "pancake" ? t("wizard.safe.pancakeBlurb") : t("wizard.safe.venusBlurb")}
+									</p>
 									<p className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
 										{t("wizard.safe.defaultCap", { cap: a.defaults })}
 									</p>
@@ -451,9 +461,7 @@ export default function StepSafe() {
 					})}
 				</ul>
 
-				<p className="mt-3 text-xs text-neutral-500 leading-relaxed max-w-[58ch]">
-					{t("wizard.safe.adaptersFooter")}
-				</p>
+				<p className="mt-3 text-xs text-neutral-500 leading-relaxed max-w-[58ch]">{t("wizard.safe.adaptersFooter")}</p>
 			</section>
 		</div>
 	);

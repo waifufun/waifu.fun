@@ -1,7 +1,6 @@
 "use client";
 
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
-import { useTranslation } from "@/contexts/locale-context";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
 import StepLaunchpad from "@/components/create/step-launchpad";
 import StepMetadata from "@/components/create/step-metadata";
@@ -16,6 +15,7 @@ import {
 	WizardStateProvider,
 	useWizard,
 } from "@/components/create/wizard-state";
+import { useTranslation } from "@/contexts/locale-context";
 import { useAuthRequired } from "@/hooks/use-auth-required";
 import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
 import { type CreateLaunchResult, createLaunch, requestLaunchNonce } from "@/lib/api/launches";
@@ -159,10 +159,7 @@ function WizardInner() {
 			if (provisionPromise.current) {
 				setAwaitingProvisionResponse(true);
 				const timeout = new Promise<ProvisionResult>((_, reject) => {
-					window.setTimeout(
-						() => reject(new Error(t("wizard.toast.launchTimedOut"))),
-						PROVISION_RESPONSE_TIMEOUT_MS,
-					);
+					window.setTimeout(() => reject(new Error(t("wizard.toast.launchTimedOut"))), PROVISION_RESPONSE_TIMEOUT_MS);
 				});
 				result = await Promise.race([provisionPromise.current, timeout]);
 			}

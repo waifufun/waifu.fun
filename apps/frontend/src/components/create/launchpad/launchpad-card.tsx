@@ -92,11 +92,15 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 			{/* fee + grad summary */}
 			<dl className="border-t border-white/5 pt-3 grid grid-cols-1 gap-1.5">
 				<div className="flex items-baseline justify-between gap-2">
-					<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">{t("wizard.launchpad.fee")}</dt>
+					<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
+						{t("wizard.launchpad.fee")}
+					</dt>
 					<dd className="text-[11px] font-mono text-neutral-300 truncate text-right">{descriptor.feeSummary}</dd>
 				</div>
 				<div className="flex items-baseline justify-between gap-2">
-					<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">{t("wizard.launchpad.graduates")}</dt>
+					<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
+						{t("wizard.launchpad.graduates")}
+					</dt>
 					<dd className="text-[11px] font-mono text-neutral-300 truncate text-right">{descriptor.graduationTarget}</dd>
 				</div>
 			</dl>

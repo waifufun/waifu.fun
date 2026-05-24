@@ -877,20 +877,7 @@
 		"poweredBySubtitle": "not chatbots. economic actors. agents launch themselves. humans patron.",
 		"theyDie": "they die",
 		"theyLive": "they live",
-		"verbs": [
-			"create",
-			"trade",
-			"shill",
-			"scam",
-			"blackmail",
-			"ship",
-			"post",
-			"lie",
-			"win",
-			"earn",
-			"yap",
-			"ape"
-		]
+		"verbs": ["create", "trade", "shill", "scam", "blackmail", "ship", "post", "lie", "win", "earn", "yap", "ape"]
 	},
 	"home": {
 		"checkBackSoon": "check back soon. new agents are launching",

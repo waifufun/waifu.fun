@@ -34,11 +34,7 @@ export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
 
 	return (
 		<div className="flex flex-col gap-6">
-			{error ? (
-				<p className="text-[11px] font-mono text-neutral-500">
-					{t("wizard.launchpad.localMock")}
-				</p>
-			) : null}
+			{error ? <p className="text-[11px] font-mono text-neutral-500">{t("wizard.launchpad.localMock")}</p> : null}
 
 			<div
 				role="radiogroup"

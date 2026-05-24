@@ -233,8 +233,7 @@ function VestingCopy({ launchTimestamp }: { launchTimestamp: number | null }) {
 	const mins = Math.floor((remainingSecs % 3600) / 60);
 	return (
 		<span>
-			{t("post.claim.vesting.vestingLabel")}{" "}
-			<span className="tabular-nums text-white/75">{pct.toFixed(1)}%</span>{" "}
+			{t("post.claim.vesting.vestingLabel")} <span className="tabular-nums text-white/75">{pct.toFixed(1)}%</span>{" "}
 			{t("post.claim.vesting.fullyUnlocksIn")}{" "}
 			<span className="tabular-nums text-white/75">
 				{hrs}h {mins}m

@@ -103,9 +103,7 @@ function VerifyInner() {
 				</p>
 				{phase === "loading" ? (
 					<>
-						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">
-							{t("auth.emailVerify.signingIn")}
-						</h1>
+						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">{t("auth.emailVerify.signingIn")}</h1>
 						<p className="text-sm text-[#a1a1aa] leading-relaxed">{t("auth.emailVerify.verifyingMagicLink")}</p>
 						<div
 							className="h-px bg-gradient-to-r from-[#00ff87]/40 via-[#00ff87]/10 to-transparent"
@@ -114,9 +112,7 @@ function VerifyInner() {
 					</>
 				) : (
 					<>
-						<h1 className="text-2xl font-medium text-[#f87171] tracking-tight">
-							{t("auth.emailVerify.signInFailed")}
-						</h1>
+						<h1 className="text-2xl font-medium text-[#f87171] tracking-tight">{t("auth.emailVerify.signInFailed")}</h1>
 						<p className="text-sm text-[#a1a1aa] leading-relaxed font-mono">
 							{error ?? t("auth.emailVerify.unknownError")}
 						</p>

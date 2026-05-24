@@ -192,9 +192,7 @@ export default function StepMetadata() {
 				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">
 					{t("wizard.metadata.waveBadge")}
 				</p>
-				<p className="mt-2 text-sm text-neutral-400 leading-relaxed max-w-[58ch]">
-					{t("wizard.metadata.intro")}
-				</p>
+				<p className="mt-2 text-sm text-neutral-400 leading-relaxed max-w-[58ch]">{t("wizard.metadata.intro")}</p>
 			</section>
 
 			{/* Token image */}
@@ -260,9 +258,7 @@ export default function StepMetadata() {
 
 					<div className="text-xs text-neutral-500 leading-relaxed max-w-[44ch]">
 						<p>{t("wizard.metadata.imageHelp")}</p>
-						<p className="mt-2 text-[11px] text-neutral-600">
-							{t("wizard.metadata.ipfsHelp")}
-						</p>
+						<p className="mt-2 text-[11px] text-neutral-600">{t("wizard.metadata.ipfsHelp")}</p>
 						{imageError ? (
 							<p className="mt-3 text-xs text-red-400 font-mono" role="alert">
 								{imageError}
@@ -300,7 +296,8 @@ export default function StepMetadata() {
 			{/* Socials (optional) */}
 			<section>
 				<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
-					{t("wizard.metadata.socialsLabel")} <span className="ml-2 text-neutral-600 lowercase tracking-normal">{t("wizard.common.optional")}</span>
+					{t("wizard.metadata.socialsLabel")}{" "}
+					<span className="ml-2 text-neutral-600 lowercase tracking-normal">{t("wizard.common.optional")}</span>
 				</p>
 				<div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
 					<SocialField
@@ -342,7 +339,11 @@ export default function StepMetadata() {
 							)}
 							data-testid="flap-upload-button"
 						>
-							{uploading ? t("wizard.metadata.uploading") : uploadedOk ? t("wizard.metadata.reupload") : t("wizard.metadata.uploadToFlap")}
+							{uploading
+								? t("wizard.metadata.uploading")
+								: uploadedOk
+									? t("wizard.metadata.reupload")
+									: t("wizard.metadata.uploadToFlap")}
 						</button>
 						{uploadedOk ? (
 							<span
@@ -373,13 +374,9 @@ export default function StepMetadata() {
 					) : null}
 
 					{uploadedOk ? (
-						<p className="text-[11px] text-neutral-500 leading-relaxed">
-							{t("wizard.metadata.stored")}
-						</p>
+						<p className="text-[11px] text-neutral-500 leading-relaxed">{t("wizard.metadata.stored")}</p>
 					) : (
-						<p className="text-[11px] text-neutral-500 leading-relaxed">
-							{t("wizard.metadata.uploadBeforeAdvance")}
-						</p>
+						<p className="text-[11px] text-neutral-500 leading-relaxed">{t("wizard.metadata.uploadBeforeAdvance")}</p>
 					)}
 				</div>
 			</section>
