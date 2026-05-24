@@ -37,6 +37,7 @@ import {
 } from "lightweight-charts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { ScrambleText } from "@/lib/motion-plus/scramble-text";
 import { cn } from "@/lib/utils";
 
@@ -134,6 +135,7 @@ export function PriceChart({
 	token: TokenMetrics;
 	initialSeries: CandleSeries;
 }) {
+	const { t } = useTranslation();
 	const [range, setRange] = useState<CandleRange>("1h");
 
 	// Per-range cache so swapping timeframes does not flash empty.
@@ -343,10 +345,10 @@ export function PriceChart({
 
 	const footerSourceLabel =
 		series.source === "geckoterminal"
-			? `live · geckoterminal · ${candleRangeWindowLabel(range)}`
+			? t("agent.priceChart.liveGeckoSuffix", { window: candleRangeWindowLabel(range) })
 			: series.source === "empty"
-				? "candles indexing"
-				: `synthetic · ${candleRangeWindowLabel(range)}`;
+				? t("agent.priceChart.candlesIndexing")
+				: t("agent.priceChart.syntheticSuffix", { window: candleRangeWindowLabel(range) });
 
 	return (
 		<Panel className="flex h-full min-h-[440px] flex-col" noPad>
@@ -354,7 +356,9 @@ export function PriceChart({
 				<div className="min-w-0">
 					<div className="flex items-baseline gap-2.5">
 						<span className="font-mono text-[15px] text-[var(--text-primary)]">{token.symbol || "–"}</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">/ usd</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+							{t("agent.priceChart.priceSymbolUsd")}
+						</span>
 					</div>
 					<div className="mt-1.5 flex flex-wrap items-end gap-3">
 						<div className="font-sans text-[34px] font-light leading-none text-[var(--text-primary)] tabular-nums md:text-[40px]">
@@ -385,7 +389,7 @@ export function PriceChart({
 							<ScrambleText duration={0.3} interval={0.04} chars="0123456789+-.">
 								{`${ticker24hUp ? "+" : ""}${token.change24h.toFixed(2)}%`}
 							</ScrambleText>
-							<span className="text-[var(--text-tertiary)]">24h</span>
+							<span className="text-[var(--text-tertiary)]">{t("agent.priceChart.24hSuffix")}</span>
 						</div>
 					</div>
 				</div>
@@ -408,7 +412,9 @@ export function PriceChart({
 						))}
 					</div>
 					{loading ? (
-						<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">loading</span>
+						<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+							{t("agent.priceChart.loading")}
+						</span>
 					) : null}
 				</div>
 			</header>
@@ -416,8 +422,8 @@ export function PriceChart({
 				<div aria-busy={loading} className="absolute inset-x-2 inset-y-1 min-h-[300px]" ref={containerRef} />
 				{isEmpty ? (
 					<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-						<span className="text-[var(--text-secondary)]">candles indexing</span>
-						<span>check back in a few minutes</span>
+						<span className="text-[var(--text-secondary)]">{t("agent.priceChart.candlesIndexing")}</span>
+						<span>{t("agent.priceChart.checkBackSoon")}</span>
 					</div>
 				) : null}
 				{hover && hasData ? <CrosshairTooltip hover={hover} /> : null}
@@ -429,7 +435,7 @@ export function PriceChart({
 				</span>
 				<span className="flex items-center gap-4">
 					<span>
-						<span className="text-[var(--text-tertiary)]">{range} chg</span>{" "}
+						<span className="text-[var(--text-tertiary)]">{t("agent.priceChart.rangeChgPrefix", { range })}</span>{" "}
 						<ScrambleText
 							as="span"
 							duration={0.25}
@@ -441,7 +447,7 @@ export function PriceChart({
 						</ScrambleText>
 					</span>
 					<span>
-						<span className="text-[var(--text-tertiary)]">{range} vol</span>{" "}
+						<span className="text-[var(--text-tertiary)]">{t("agent.priceChart.rangeVolPrefix", { range })}</span>{" "}
 						<span className="tabular-nums text-[var(--text-secondary)]">{formatCompactUsd(rangeVol)}</span>
 					</span>
 				</span>

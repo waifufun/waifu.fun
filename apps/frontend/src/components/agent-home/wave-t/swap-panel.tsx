@@ -26,6 +26,7 @@ import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 
 import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import type { TokenMetrics } from "@/lib/wave-t/token";
@@ -71,6 +72,7 @@ function TokenSelector({
 }
 
 export function SwapPanel({ token }: { token: TokenMetrics }) {
+	const { t } = useTranslation();
 	const [mode, setMode] = useState<Mode>("swap");
 	const [amount, setAmount] = useState<string>("");
 	const [slippage, setSlippage] = useState<number>(0.5);
@@ -112,7 +114,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			<Label
 				right={
 					<button
-						aria-label="swap settings"
+						aria-label={t("agent.swapPanel.settingsAria")}
 						className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
 						type="button"
 					>
@@ -120,7 +122,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 					</button>
 				}
 			>
-				swap
+				{t("agent.swapPanel.label")}
 			</Label>
 
 			{/* Mode tabs */}
@@ -137,7 +139,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 						onClick={() => setMode(m)}
 						type="button"
 					>
-						{m}
+						{m === "swap" ? t("agent.swapPanel.modeSwap") : t("agent.swapPanel.modeLimit")}
 					</button>
 				))}
 			</div>
@@ -145,9 +147,9 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			{/* From row */}
 			<div className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] p-3">
 				<div className="mb-1.5 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-					<span>from</span>
+					<span>{t("agent.swapPanel.from")}</span>
 					<span>
-						balance:{" "}
+						{t("agent.swapPanel.balancePrefix")}{" "}
 						<span className="text-[var(--text-secondary)]">
 							{fmtBalance(fromBalance)} {fromSymbol}
 						</span>
@@ -156,7 +158,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 				<div className="flex items-center gap-2">
 					<TokenSelector address={BNB_NATIVE_ADDRESS} symbol={fromSymbol} />
 					<input
-						aria-label="from amount"
+						aria-label={t("agent.swapPanel.fromAmountAria")}
 						className="ml-auto w-full bg-transparent text-right font-mono text-[22px] text-[var(--text-primary)] tabular-nums outline-none placeholder:text-[var(--text-tertiary)]"
 						inputMode="decimal"
 						onChange={(e) => setAmount(e.target.value)}
@@ -173,7 +175,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 							onClick={() => applyPercent(p)}
 							type="button"
 						>
-							{p === 100 ? "MAX" : `${p}%`}
+							{p === 100 ? t("agent.swapPanel.max") : `${p}%`}
 						</button>
 					))}
 				</div>
@@ -182,7 +184,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			{/* Direction button */}
 			<div className="-my-1.5 z-10 flex justify-center">
 				<button
-					aria-label="reverse swap direction"
+					aria-label={t("agent.swapPanel.reverseAria")}
 					aria-pressed={reversed}
 					className="rounded-full border border-[var(--border-mid)] bg-[var(--bg-panel)] p-1.5 text-[var(--text-secondary)] transition-transform duration-200 hover:text-[var(--accent)]"
 					onClick={() => setReversed((v) => !v)}
@@ -196,9 +198,9 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			{/* To row */}
 			<div className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] p-3">
 				<div className="mb-1.5 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-					<span>to (estimate)</span>
+					<span>{t("agent.swapPanel.to")}</span>
 					<span>
-						balance:{" "}
+						{t("agent.swapPanel.balancePrefix")}{" "}
 						<span className="text-[var(--text-secondary)]">
 							{fmtBalance(toBalance)} {toSymbol}
 						</span>
@@ -215,14 +217,14 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			{/* Route detail */}
 			<dl className="mt-3 space-y-1.5 rounded-md border border-[var(--border-soft)] bg-black/10 p-3 font-mono text-[10px] text-[var(--text-tertiary)]">
 				<div className="flex justify-between">
-					<dt>route</dt>
+					<dt>{t("agent.swapPanel.route")}</dt>
 					<dd className="flex items-center gap-1.5 text-[var(--text-secondary)]">
 						<VenueIcon size={14} venue="pancakeswap" />
-						<span>via PancakeSwap</span>
+						<span>{t("agent.swapPanel.viaPancakeswap")}</span>
 					</dd>
 				</div>
 				<div className="flex justify-between">
-					<dt>slippage</dt>
+					<dt>{t("agent.swapPanel.slippage")}</dt>
 					<dd>
 						<button
 							className="text-[var(--accent)] hover:underline"
@@ -234,7 +236,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 					</dd>
 				</div>
 				<div className="flex justify-between">
-					<dt>price impact</dt>
+					<dt>{t("agent.swapPanel.priceImpact")}</dt>
 					<dd
 						className={cn(
 							"tabular-nums",
@@ -245,7 +247,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 					</dd>
 				</div>
 				<div className="flex justify-between">
-					<dt>minimum received</dt>
+					<dt>{t("agent.swapPanel.minimumReceived")}</dt>
 					<dd className="tabular-nums text-[var(--text-secondary)]">
 						{minReceived > 0 ? `${fmtBalance(minReceived, minReceived > 1 ? 2 : 6)} ${toSymbol}` : "–"}
 					</dd>
@@ -263,17 +265,17 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 					rel="noopener noreferrer"
 					target="_blank"
 				>
-					trade on pancakeswap
+					{t("agent.swapPanel.tradeOnPancakeswap")}
 				</a>
 			) : (
 				<LinkedEoaCTA className="mt-4 w-full justify-center rounded-md bg-[var(--accent)] py-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#03110b] hover:bg-[var(--accent-dim)]">
-					connect wallet
+					{t("agent.swapPanel.connectWallet")}
 				</LinkedEoaCTA>
 			)}
 
 			<div className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 				<CheckCircle2Icon className="h-3 w-3 text-[var(--positive)]" />
-				best route on BNB Chain
+				{t("agent.swapPanel.bestRoute")}
 			</div>
 		</Panel>
 	);

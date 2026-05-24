@@ -24,6 +24,7 @@
 
 import { useEffect, useState } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import type { TradingOrder, TradingPosition, TradingSession, TradingSnapshot } from "@/lib/wave-t/trading";
@@ -57,8 +58,8 @@ function fmtPct(v: number): string {
 }
 
 /** "8h 24m" / "12m 04s" / "expired" — used by SessionCountdown only. */
-function fmtRemaining(ms: number): string {
-	if (ms <= 0) return "expired";
+function fmtRemaining(ms: number, expiredLabel: string): string {
+	if (ms <= 0) return expiredLabel;
 	const totalSec = Math.floor(ms / 1000);
 	const h = Math.floor(totalSec / 3600);
 	const m = Math.floor((totalSec % 3600) / 60);
@@ -69,35 +70,43 @@ function fmtRemaining(ms: number): string {
 }
 
 /** "2m ago" / "4h ago" / "3d ago". */
-function fmtRelative(ts: number): string {
+function fmtRelative(ts: number, labels: { sec: string; min: string; hr: string; day: string }): string {
 	const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-	if (diffSec < 60) return `${diffSec}s ago`;
-	if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-	if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-	return `${Math.floor(diffSec / 86400)}d ago`;
+	if (diffSec < 60) return labels.sec.replace("{{n}}", String(diffSec));
+	if (diffSec < 3600) return labels.min.replace("{{n}}", String(Math.floor(diffSec / 60)));
+	if (diffSec < 86400) return labels.hr.replace("{{n}}", String(Math.floor(diffSec / 3600)));
+	return labels.day.replace("{{n}}", String(Math.floor(diffSec / 86400)));
 }
 
 // ── live countdown (isolated client component, 30s tick) ─────────
 
 function SessionCountdown({ expiresAt }: { expiresAt: number }) {
+	const { t } = useTranslation();
 	const [now, setNow] = useState<number>(() => Date.now());
 	useEffect(() => {
 		const id = window.setInterval(() => setNow(Date.now()), 30_000);
 		return () => window.clearInterval(id);
 	}, []);
 	const remaining = expiresAt - now;
-	return <span className="font-mono tabular-nums text-[var(--text-primary)]">{fmtRemaining(remaining)}</span>;
+	return (
+		<span className="font-mono tabular-nums text-[var(--text-primary)]">
+			{fmtRemaining(remaining, t("agent.trading.expired"))}
+		</span>
+	);
 }
 
 // ── cap meter (1px-grid horizontal bar) ───────────────────────────
 
 function CapMeter({ used, cap, active }: { used: number; cap: number; active: boolean }) {
+	const { t } = useTranslation();
 	const ratio = cap > 0 ? Math.max(0, Math.min(1, used / cap)) : 0;
 	const pctLabel = cap > 0 ? `${(ratio * 100).toFixed(0)}%` : "0%";
 	return (
 		<div className="flex w-full flex-col gap-1.5">
 			<div className="flex items-baseline justify-between font-mono">
-				<span className="text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">daily cap</span>
+				<span className="text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+					{t("agent.trading.dailyCap")}
+				</span>
 				<span className="tabular-nums text-[11px] text-[var(--text-secondary)]">
 					<span className={cn(used > 0 ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")}>
 						{fmtUsd(used)}
@@ -124,6 +133,7 @@ function CapMeter({ used, cap, active }: { used: number; cap: number; active: bo
 // ── session row ───────────────────────────────────────────────────
 
 function SessionRow({ session }: { session: TradingSession }) {
+	const { t } = useTranslation();
 	const { policy, active, expiresAt } = session;
 	return (
 		<div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-6">
@@ -131,25 +141,31 @@ function SessionRow({ session }: { session: TradingSession }) {
 
 			<div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:justify-end">
 				<div className="flex flex-col gap-0.5">
-					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">session</span>
+					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+						{t("agent.trading.session")}
+					</span>
 					<span className="font-mono text-[11px]">
 						{active && expiresAt ? (
 							<SessionCountdown expiresAt={expiresAt} />
 						) : (
-							<span className="text-[var(--text-secondary)]">inactive</span>
+							<span className="text-[var(--text-secondary)]">{t("agent.trading.inactive")}</span>
 						)}
 					</span>
 				</div>
 
 				<div className="flex flex-col gap-0.5">
-					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">leverage</span>
+					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+						{t("agent.trading.leverage")}
+					</span>
 					<span className="font-mono tabular-nums text-[11px] text-[var(--text-primary)]">
-						max {policy.maxLeverage}x
+						{t("agent.trading.maxLeverage", { x: String(policy.maxLeverage) })}
 					</span>
 				</div>
 
 				<div className="flex flex-col gap-1">
-					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">assets</span>
+					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+						{t("agent.trading.assets")}
+					</span>
 					<div className="flex gap-1.5">
 						{policy.allowedAssets.map((a) => (
 							<StatPill key={a} tone={active ? "accent" : "neutral"}>
@@ -166,10 +182,11 @@ function SessionRow({ session }: { session: TradingSession }) {
 // ── positions table ───────────────────────────────────────────────
 
 function PositionsTable({ positions }: { positions: TradingPosition[] }) {
+	const { t } = useTranslation();
 	if (positions.length === 0) {
 		return (
 			<div className="py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-				no open positions · awaiting first trade
+				{t("agent.trading.noOpenPositions")}
 			</div>
 		);
 	}
@@ -178,13 +195,13 @@ function PositionsTable({ positions }: { positions: TradingPosition[] }) {
 			<table className="w-full border-collapse font-mono text-[11px]">
 				<thead>
 					<tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-						<th className="pb-2 pr-3 font-normal">coin</th>
-						<th className="pb-2 pr-3 font-normal">side</th>
-						<th className="pb-2 pr-3 text-right font-normal">size</th>
-						<th className="pb-2 pr-3 text-right font-normal">entry</th>
-						<th className="pb-2 pr-3 text-right font-normal">mark</th>
-						<th className="pb-2 pr-3 text-right font-normal">pnl</th>
-						<th className="pb-2 text-right font-normal">%</th>
+						<th className="pb-2 pr-3 font-normal">{t("agent.trading.colCoin")}</th>
+						<th className="pb-2 pr-3 font-normal">{t("agent.trading.colSide")}</th>
+						<th className="pb-2 pr-3 text-right font-normal">{t("agent.trading.colSize")}</th>
+						<th className="pb-2 pr-3 text-right font-normal">{t("agent.trading.colEntry")}</th>
+						<th className="pb-2 pr-3 text-right font-normal">{t("agent.trading.colMark")}</th>
+						<th className="pb-2 pr-3 text-right font-normal">{t("agent.trading.colPnl")}</th>
+						<th className="pb-2 text-right font-normal">{t("agent.trading.colPct")}</th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-[var(--border-soft)]">
@@ -222,10 +239,17 @@ function PositionsTable({ positions }: { positions: TradingPosition[] }) {
 // ── recent orders list ────────────────────────────────────────────
 
 function OrdersList({ orders }: { orders: TradingOrder[] }) {
+	const { t } = useTranslation();
+	const relativeLabels = {
+		sec: t("agent.trading.timeAgoSeconds"),
+		min: t("agent.trading.timeAgoMinutes"),
+		hr: t("agent.trading.timeAgoHours"),
+		day: t("agent.trading.timeAgoDays"),
+	};
 	if (orders.length === 0) {
 		return (
 			<div className="py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-				no trades yet · sol places her first trade in this venue soon
+				{t("agent.trading.noTradesYet")}
 			</div>
 		);
 	}
@@ -234,12 +258,12 @@ function OrdersList({ orders }: { orders: TradingOrder[] }) {
 			<table className="w-full border-collapse font-mono text-[11px]">
 				<thead>
 					<tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-						<th className="pb-2 pr-3 font-normal">time</th>
-						<th className="pb-2 pr-3 font-normal">side</th>
-						<th className="pb-2 pr-3 font-normal">coin</th>
-						<th className="pb-2 pr-3 text-right font-normal">size</th>
-						<th className="pb-2 pr-3 text-right font-normal">price</th>
-						<th className="pb-2 font-normal">status</th>
+						<th className="pb-2 pr-3 font-normal">{t("agent.trading.colTime")}</th>
+						<th className="pb-2 pr-3 font-normal">{t("agent.trading.colSide")}</th>
+						<th className="pb-2 pr-3 font-normal">{t("agent.trading.colCoin")}</th>
+						<th className="pb-2 pr-3 text-right font-normal">{t("agent.trading.colSize")}</th>
+						<th className="pb-2 pr-3 text-right font-normal">{t("agent.trading.colPrice")}</th>
+						<th className="pb-2 font-normal">{t("agent.trading.colStatus")}</th>
 					</tr>
 				</thead>
 				<tbody className="divide-y divide-[var(--border-soft)]">
@@ -261,7 +285,9 @@ function OrdersList({ orders }: { orders: TradingOrder[] }) {
 									: "text-[var(--text-secondary)]";
 						return (
 							<tr className="align-top text-[var(--text-primary)]" key={o.id}>
-								<td className="py-2 pr-3 text-[var(--text-secondary)] tabular-nums">{fmtRelative(o.timestamp)}</td>
+								<td className="py-2 pr-3 text-[var(--text-secondary)] tabular-nums">
+									{fmtRelative(o.timestamp, relativeLabels)}
+								</td>
 								<td className={cn("py-2 pr-3 uppercase tracking-[0.12em]", sideCls)}>{o.side}</td>
 								<td className="py-2 pr-3">{o.coin}</td>
 								<td className="py-2 pr-3 text-right tabular-nums">{fmtUsd(o.sizeUsd)}</td>
@@ -288,6 +314,7 @@ function OrdersList({ orders }: { orders: TradingOrder[] }) {
 // ── public component ──────────────────────────────────────────────
 
 export function TradingPanel({ snapshot }: { snapshot: TradingSnapshot }) {
+	const { t } = useTranslation();
 	const { enabled, session, positions, orders } = snapshot;
 
 	// Non-enabled (every agent that isn't Sol, for the next 30 days):
@@ -299,14 +326,14 @@ export function TradingPanel({ snapshot }: { snapshot: TradingSnapshot }) {
 				<Label
 					right={
 						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							not enabled
+							{t("agent.trading.notEnabled")}
 						</span>
 					}
 				>
-					trading
+					{t("agent.trading.label")}
 				</Label>
 				<div className="py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					trading not enabled for this agent yet
+					{t("agent.trading.notEnabledBody")}
 				</div>
 			</Panel>
 		);
@@ -315,18 +342,18 @@ export function TradingPanel({ snapshot }: { snapshot: TradingSnapshot }) {
 	const sessionStatusRight = session.active ? (
 		<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--accent)]">
 			<Pulse />
-			active · {session.venue}
+			{t("agent.trading.activeWith", { venue: session.venue })}
 		</span>
 	) : (
 		<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 			<span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[var(--text-tertiary)]" />
-			inactive · {session.venue}
+			{t("agent.trading.inactiveWith", { venue: session.venue })}
 		</span>
 	);
 
 	return (
 		<Panel>
-			<Label right={sessionStatusRight}>trading</Label>
+			<Label right={sessionStatusRight}>{t("agent.trading.label")}</Label>
 
 			<SessionRow session={session} />
 
@@ -334,11 +361,11 @@ export function TradingPanel({ snapshot }: { snapshot: TradingSnapshot }) {
 
 			<div className="mb-2 flex items-center justify-between">
 				<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-					open positions
+					{t("agent.trading.openPositions")}
 				</span>
 				{positions.length > 0 ? (
 					<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] tabular-nums">
-						{positions.length} live
+						{t("agent.trading.liveCount", { count: String(positions.length) })}
 					</span>
 				) : null}
 			</div>
@@ -348,11 +375,11 @@ export function TradingPanel({ snapshot }: { snapshot: TradingSnapshot }) {
 
 			<div className="mb-2 flex items-center justify-between">
 				<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-					recent orders
+					{t("agent.trading.recentOrders")}
 				</span>
 				{orders.length > 0 ? (
 					<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] tabular-nums">
-						last {orders.length}
+						{t("agent.trading.lastCount", { count: String(orders.length) })}
 					</span>
 				) : null}
 			</div>

@@ -21,6 +21,7 @@ import { type Address, isAddress } from "viem";
 
 import { TierLadder } from "@/components/post-launch/tier-ladder";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { cn } from "@/lib/utils";
 
@@ -29,15 +30,14 @@ export interface EconomicsPanelProps {
 }
 
 export default function EconomicsPanel({ launch }: EconomicsPanelProps) {
+	const { t } = useTranslation();
 	if (!launch) {
 		return (
 			<SurfaceCard padding="lg" className="text-center">
 				<p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/35">
-					economics unavailable for this agent
+					{t("agent.economics.unavailableTitle")}
 				</p>
-				<p className="mt-1.5 text-xs text-white/40">
-					this token predates the wave-M launch factory; live tier + tax data is not on-chain.
-				</p>
+				<p className="mt-1.5 text-xs text-white/40">{t("agent.economics.unavailableBody")}</p>
 			</SurfaceCard>
 		);
 	}
@@ -55,9 +55,13 @@ export default function EconomicsPanel({ launch }: EconomicsPanelProps) {
 			{/* tax split bar */}
 			<div className="border-t border-white/[0.06] p-5 md:p-6">
 				<div className="mb-3 flex items-center justify-between">
-					<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">tax split</span>
+					<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+						{t("agent.economics.taxSplitLabel")}
+					</span>
 					{split ? (
-						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">per claim epoch</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">
+							{t("agent.economics.perClaimEpoch")}
+						</span>
 					) : null}
 				</div>
 				{split ? <TaxSplitBar split={split} /> : <SplitUnavailable />}
@@ -72,6 +76,7 @@ export default function EconomicsPanel({ launch }: EconomicsPanelProps) {
  * / agent' stat block.
  */
 function TaxSplitBar({ split }: { split: NonNullable<AgentLaunchByToken["taxSplit"]> }) {
+	const { t } = useTranslation();
 	const total = Math.max(1, split.platformBps + split.patronBps + split.agentBps);
 	const platformPct = (split.platformBps / total) * 100;
 	const patronPct = (split.patronBps / total) * 100;
@@ -82,16 +87,20 @@ function TaxSplitBar({ split }: { split: NonNullable<AgentLaunchByToken["taxSpli
 			<div
 				className="flex h-3 w-full overflow-hidden rounded-sm border border-white/10 bg-[#0a0a0c]"
 				role="img"
-				aria-label={`tax split: platform ${pct(platformPct)}, patron ${pct(patronPct)}, agent ${pct(agentPct)}`}
+				aria-label={t("agent.economics.splitAria", {
+					platform: pct(platformPct),
+					patron: pct(patronPct),
+					agent: pct(agentPct),
+				})}
 			>
 				<Seg width={platformPct} tone="bg-white/15" />
 				<Seg width={patronPct} tone="bg-white/35" />
 				<Seg width={agentPct} tone="bg-[#00ff87]/70" />
 			</div>
 			<div className="mt-3 grid grid-cols-3 gap-3 text-[11px]">
-				<Legend swatch="bg-white/15" label="platform" value={bps(split.platformBps)} />
-				<Legend swatch="bg-white/35" label="patron" value={bps(split.patronBps)} />
-				<Legend swatch="bg-[#00ff87]/70" label="agent" value={bps(split.agentBps)} accent />
+				<Legend swatch="bg-white/15" label={t("agent.economics.legend.platform")} value={bps(split.platformBps)} />
+				<Legend swatch="bg-white/35" label={t("agent.economics.legend.patron")} value={bps(split.patronBps)} />
+				<Legend swatch="bg-[#00ff87]/70" label={t("agent.economics.legend.agent")} value={bps(split.agentBps)} accent />
 			</div>
 		</>
 	);
@@ -125,7 +134,8 @@ function Legend({
 }
 
 function SplitUnavailable() {
-	return <p className="font-mono text-[11px] text-white/35">tax split metadata not yet on this launch row.</p>;
+	const { t } = useTranslation();
+	return <p className="font-mono text-[11px] text-white/35">{t("agent.economics.splitUnavailable")}</p>;
 }
 
 function bps(b: number): string {

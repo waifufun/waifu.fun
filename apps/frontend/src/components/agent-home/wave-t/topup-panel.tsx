@@ -25,6 +25,7 @@ import { formatUnits, parseUnits } from "viem";
 import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 
 import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import { Label, Panel, Pulse } from "./_primitives";
@@ -212,6 +213,7 @@ function ChainSelector({
 	onChange: (next: ChainPreset) => void;
 	disabled?: boolean;
 }) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	return (
 		<div className="relative">
@@ -242,7 +244,9 @@ function ChainSelector({
 							type="button"
 						>
 							{c.label}
-							<span className="text-[9px] text-[var(--text-tertiary)]">id {c.id}</span>
+							<span className="text-[9px] text-[var(--text-tertiary)]">
+								{t("agent.topup.chainIdLabel", { id: String(c.id) })}
+							</span>
 						</button>
 					))}
 				</div>
@@ -262,6 +266,7 @@ function TokenSelector({
 	onChange: (next: TokenPreset) => void;
 	disabled?: boolean;
 }) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	return (
 		<div className="relative">
@@ -276,22 +281,22 @@ function TokenSelector({
 			</button>
 			{open ? (
 				<div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-md border border-[var(--border-mid)] bg-[var(--bg-panel-hi)] p-1 shadow-lg">
-					{chain.tokens.map((t) => (
+					{chain.tokens.map((tk) => (
 						<button
 							className={cn(
 								"flex w-full items-center justify-between rounded px-2 py-1.5 text-left font-mono text-[12px] hover:bg-white/[0.04]",
-								t.symbol === value.symbol ? "text-[var(--accent)]" : "text-[var(--text-primary)]",
+								tk.symbol === value.symbol ? "text-[var(--accent)]" : "text-[var(--text-primary)]",
 							)}
-							key={t.symbol}
+							key={tk.symbol}
 							onClick={() => {
-								onChange(t);
+								onChange(tk);
 								setOpen(false);
 							}}
 							type="button"
 						>
-							{t.symbol}
+							{tk.symbol}
 							<span className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-								{t.native ? "native" : "erc20"}
+								{tk.native ? t("agent.topup.tokenNative") : t("agent.topup.tokenErc20")}
 							</span>
 						</button>
 					))}
@@ -302,6 +307,7 @@ function TokenSelector({
 }
 
 export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) {
+	const { t } = useTranslation();
 	const { address, isConnected, chainId } = useAccount();
 	const { switchChainAsync } = useSwitchChain();
 	const { sendTransactionAsync, isPending: signing } = useSendTransaction();
@@ -417,7 +423,7 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 		if (!address) return;
 		const tx = quote.data.quote.txData;
 		if (!tx) {
-			setFlight({ kind: "failed", message: "no transaction calldata returned. refresh and retry." });
+			setFlight({ kind: "failed", message: t("agent.topup.noTxCalldataError") });
 			return;
 		}
 		try {
@@ -433,9 +439,12 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 			});
 			setFlight({ kind: "submitted", txHash: hash, quote: quote.data.quote });
 		} catch (err) {
-			setFlight({ kind: "failed", message: err instanceof Error ? err.message : "transaction failed" });
+			setFlight({
+				kind: "failed",
+				message: err instanceof Error ? err.message : t("agent.topup.transactionFailedDefault"),
+			});
 		}
-	}, [quote, address, chainId, chain.id, switchChainAsync, sendTransactionAsync]);
+	}, [quote, address, chainId, chain.id, switchChainAsync, sendTransactionAsync, t]);
 
 	const onReset = useCallback(() => {
 		setFlight({ kind: "idle" });
@@ -451,15 +460,15 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 				right={
 					<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 						<Pulse tone="accent" />
-						bridge live
+						{t("agent.topup.bridgeLive")}
 					</span>
 				}
 			>
-				top up {agentTicker.toLowerCase()} treasury
+				{t("agent.topup.titleWithTicker", { ticker: agentTicker.toLowerCase() })}
 			</Label>
 
 			<p className="mb-3 font-mono text-[10px] text-[var(--text-secondary)] leading-relaxed">
-				send any token from any supported chain. funds route into the agent safe.
+				{t("agent.topup.description")}
 			</p>
 
 			{flight.kind === "idle" || flight.kind === "failed" ? (
@@ -467,13 +476,13 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 					<div className="grid grid-cols-2 gap-2">
 						<div className="space-y-1">
 							<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-								source chain
+								{t("agent.topup.sourceChain")}
 							</span>
 							<ChainSelector disabled={signing} onChange={setChain} value={chain} />
 						</div>
 						<div className="space-y-1">
 							<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-								source token
+								{t("agent.topup.sourceToken")}
 							</span>
 							<TokenSelector chain={chain} disabled={signing} onChange={setToken} value={token} />
 						</div>
@@ -481,14 +490,14 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 
 					<div className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] p-3">
 						<div className="mb-1.5 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-							<span>amount</span>
+							<span>{t("agent.topup.amount")}</span>
 							<span>
-								on <span className="text-[var(--text-secondary)]">{chain.label}</span>
+								{t("agent.topup.onChain")} <span className="text-[var(--text-secondary)]">{chain.label}</span>
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
 							<input
-								aria-label="top up amount"
+								aria-label={t("agent.topup.amountAria")}
 								className="w-full bg-transparent font-mono text-[22px] text-[var(--text-primary)] tabular-nums outline-none placeholder:text-[var(--text-tertiary)]"
 								inputMode="decimal"
 								onChange={(e) => setAmount(e.target.value)}
@@ -503,7 +512,7 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 
 					{mainnetWarn ? (
 						<div className="rounded border border-[var(--negative)]/30 bg-[var(--negative)]/[0.06] p-2 font-mono text-[10px] text-[var(--negative)]">
-							ethereum mainnet gas eats small transfers. consider $100+ or switch chains.
+							{t("agent.topup.ethMainnetWarning")}
 						</div>
 					) : null}
 
@@ -517,7 +526,7 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 					{flight.kind === "failed" ? (
 						<div className="flex items-start gap-2 rounded border border-[var(--negative)]/30 bg-[var(--negative)]/[0.06] p-2 font-mono text-[10px] text-[var(--negative)]">
 							<XCircleIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-							<span>{flight.message}</span>
+							<span>{flight.message.startsWith("agent.") ? t(flight.message) : flight.message}</span>
 						</div>
 					) : null}
 
@@ -528,12 +537,14 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 							onClick={onSubmit}
 							type="button"
 						>
-							{signing ? "confirm in wallet" : `top up ${agentTicker.toLowerCase()}`}
+							{signing
+								? t("agent.topup.confirmInWallet")
+								: t("agent.topup.topUpButton", { ticker: agentTicker.toLowerCase() })}
 							<ArrowRightIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
 						</button>
 					) : (
 						<LinkedEoaCTA className="mt-1 w-full justify-center rounded-md bg-[var(--accent)] py-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#03110b] hover:bg-[var(--accent-dim)]">
-							connect wallet
+							{t("agent.topup.connectWallet")}
 						</LinkedEoaCTA>
 					)}
 				</div>
@@ -542,8 +553,8 @@ export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) 
 			)}
 
 			<div className="mt-3 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-				<span>powered by li.fi</span>
-				<span>0% fee, 0.5% max slippage</span>
+				<span>{t("agent.topup.poweredByLifi")}</span>
+				<span>{t("agent.topup.feeSlippageNote")}</span>
 			</div>
 		</Panel>
 	);
@@ -560,6 +571,7 @@ function QuoteSummary({
 	sourceDecimals: number;
 	sourceSymbol: string;
 }) {
+	const { t } = useTranslation();
 	if (loading) {
 		return (
 			<dl className="space-y-1.5 rounded-md border border-[var(--border-soft)] bg-black/10 p-3 font-mono text-[10px] text-[var(--text-tertiary)]">
@@ -573,14 +585,14 @@ function QuoteSummary({
 	if (!quote) {
 		return (
 			<div className="rounded-md border border-[var(--border-soft)] bg-black/10 p-3 font-mono text-[10px] text-[var(--text-tertiary)]">
-				enter an amount to see the route
+				{t("agent.topup.enterAmount")}
 			</div>
 		);
 	}
 	if (!quote.ok) {
 		return (
 			<div className="rounded-md border border-[var(--negative)]/25 bg-[var(--negative)]/[0.04] p-3 font-mono text-[10px] text-[var(--negative)]">
-				<div className="mb-1 uppercase tracking-[0.18em]">no route</div>
+				<div className="mb-1 uppercase tracking-[0.18em]">{t("agent.topup.noRoute")}</div>
 				<div className="text-[var(--text-secondary)]">{quote.message}</div>
 			</div>
 		);
@@ -590,33 +602,35 @@ function QuoteSummary({
 	return (
 		<dl className="space-y-1.5 rounded-md border border-[var(--border-soft)] bg-black/10 p-3 font-mono text-[10px] text-[var(--text-tertiary)]">
 			<div className="flex items-center justify-between">
-				<dt>bridge</dt>
+				<dt>{t("agent.topup.quote.bridge")}</dt>
 				<dd className="text-[var(--text-secondary)]">{q.bridgeLabel}</dd>
 			</div>
 			<div className="flex items-center justify-between">
-				<dt>eta</dt>
+				<dt>{t("agent.topup.quote.eta")}</dt>
 				<dd className="tabular-nums text-[var(--text-secondary)]">{fmtSeconds(q.estimatedTime)}</dd>
 			</div>
 			<div className="flex items-center justify-between">
-				<dt>fee + gas</dt>
+				<dt>{t("agent.topup.quote.feeAndGas")}</dt>
 				<dd className="tabular-nums text-[var(--text-secondary)]">{fmtUsd((q.feeUsd ?? 0) + (q.gasUsd ?? 0), "—")}</dd>
 			</div>
 			<div className="flex items-center justify-between">
-				<dt>destination</dt>
-				<dd className="tabular-nums text-[var(--text-secondary)]">agent-safe ({destination.chain})</dd>
+				<dt>{t("agent.topup.quote.destination")}</dt>
+				<dd className="tabular-nums text-[var(--text-secondary)]">
+					{t("agent.topup.quote.destinationValue", { chain: destination.chain })}
+				</dd>
 			</div>
 			<div className="flex items-center justify-between border-[var(--border-soft)] border-t pt-1.5">
-				<dt className="uppercase tracking-[0.18em]">treasury receives</dt>
+				<dt className="uppercase tracking-[0.18em]">{t("agent.topup.quote.treasuryReceives")}</dt>
 				<dd className="tabular-nums text-[var(--accent)]">
 					{fmtTokenAmount(q.toAmount, 6)} <span className="text-[var(--text-tertiary)]">USDC</span>
 				</dd>
 			</div>
 			<div className="flex items-center justify-between text-[9px]">
-				<dt>min received</dt>
+				<dt>{t("agent.topup.quote.minReceived")}</dt>
 				<dd className="tabular-nums">{fmtTokenAmount(q.toAmountMin, 6)} USDC</dd>
 			</div>
 			<div className="flex items-center justify-between text-[9px]">
-				<dt>you send</dt>
+				<dt>{t("agent.topup.quote.youSend")}</dt>
 				<dd className="tabular-nums">
 					{fmtTokenAmount(q.fromAmount, sourceDecimals)} {sourceSymbol}
 				</dd>
@@ -643,21 +657,26 @@ function FlightStatus({
 	flight: FlightState;
 	onReset: () => void;
 }) {
+	const { t } = useTranslation();
 	const steps = useMemo(
 		() => [
-			{ key: "signed", label: "signed", reached: flight.kind !== "idle" },
+			{ key: "signed", label: t("agent.topup.flight.signed"), reached: flight.kind !== "idle" },
 			{
 				key: "bridging",
-				label: "bridging",
+				label: t("agent.topup.flight.bridging"),
 				reached:
 					flight.kind === "submitted" ||
 					flight.kind === "pending" ||
 					flight.kind === "completed" ||
 					flight.kind === "partial",
 			},
-			{ key: "received", label: "received", reached: flight.kind === "completed" || flight.kind === "partial" },
+			{
+				key: "received",
+				label: t("agent.topup.flight.received"),
+				reached: flight.kind === "completed" || flight.kind === "partial",
+			},
 		],
-		[flight.kind],
+		[flight.kind, t],
 	);
 
 	const explorerHref =
@@ -667,7 +686,9 @@ function FlightStatus({
 		<div className="flex flex-col gap-3">
 			<div className="flex items-center justify-between rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] p-3">
 				<div className="flex flex-col gap-1">
-					<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">status</span>
+					<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+						{t("agent.topup.flight.status")}
+					</span>
 					<span
 						className={cn(
 							"font-mono text-[14px]",
@@ -679,16 +700,16 @@ function FlightStatus({
 						)}
 					>
 						{flight.kind === "submitted"
-							? "broadcast, awaiting bridge"
+							? t("agent.topup.flight.broadcastAwaiting")
 							: flight.kind === "pending"
-								? "bridging in flight"
+								? t("agent.topup.flight.bridgingInFlight")
 								: flight.kind === "completed"
-									? "received"
+									? t("agent.topup.flight.received")
 									: flight.kind === "partial"
-										? "partial receive"
+										? t("agent.topup.flight.partialReceive")
 										: flight.kind === "refunded"
-											? "refunded"
-											: "failed"}
+											? t("agent.topup.flight.refunded")
+											: t("agent.topup.flight.failed")}
 					</span>
 				</div>
 				{flight.kind === "completed" ? (
@@ -728,14 +749,14 @@ function FlightStatus({
 					rel="noopener noreferrer"
 					target="_blank"
 				>
-					view source tx
+					{t("agent.topup.flight.viewSourceTx")}
 					<ExternalLinkIcon className="h-3 w-3" strokeWidth={1.5} />
 				</a>
 			) : null}
 
 			{flight.kind === "failed" ? (
 				<div className="rounded border border-[var(--negative)]/30 bg-[var(--negative)]/[0.06] p-2 font-mono text-[10px] text-[var(--negative)]">
-					{flight.message}
+					{flight.message.startsWith("agent.") ? t(flight.message) : flight.message}
 				</div>
 			) : null}
 
@@ -744,7 +765,7 @@ function FlightStatus({
 				onClick={onReset}
 				type="button"
 			>
-				start new top up
+				{t("agent.topup.flight.startNew")}
 			</button>
 		</div>
 	);
@@ -768,7 +789,7 @@ function mapStatusToFlight(
 		case "refunded":
 			return { kind: "refunded", txHash, quote };
 		case "failed":
-			return { kind: "failed", txHash, message: "bridge reported failure. funds may be refunded." };
+			return { kind: "failed", txHash, message: "agent.topup.flight.bridgeReportedFailure" };
 		case "submitted":
 			return current;
 		default:

@@ -20,6 +20,7 @@
 
 import type { ReactNode } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import { Label, Panel } from "./_primitives";
@@ -99,6 +100,7 @@ export function ThesisPanel({
 	platformShareBps?: number;
 	hasLiveRevenue?: boolean;
 }) {
+	const { t } = useTranslation();
 	const taxBuyPct = (taxBuyBps / 100).toFixed(0);
 	const taxSellPct = (taxSellBps / 100).toFixed(0);
 	const patronPct = (patronShareBps / 100).toFixed(0);
@@ -107,85 +109,79 @@ export function ThesisPanel({
 
 	const cols: Column[] = [
 		{
-			heading: "what the tax pays for",
-			prose: `every buy and sell on pcs v3 skims ${taxBuyPct}%. that stream routes on the same tx as the trade, no claims, no manual flush. here is where it lands.`,
+			heading: t("agent.thesis.col1Heading"),
+			prose: t("agent.thesis.col1Prose", { taxBuyPct }),
 			rows: [
 				{
-					label: "agent treasury",
+					label: t("agent.thesis.col1AgentLabel"),
 					value: `${agentPct}%`,
-					hint: "compounds into runway, position size, ship budget",
+					hint: t("agent.thesis.col1AgentHint"),
 					tone: "accent",
 				},
 				{
-					label: "patron pool",
+					label: t("agent.thesis.col1PatronLabel"),
 					value: `${patronPct}%`,
-					hint: "claimable by stakers of the agent's token",
+					hint: t("agent.thesis.col1PatronHint"),
 					tone: "accent",
 				},
 				{
-					label: "platform",
+					label: t("agent.thesis.col1PlatformLabel"),
 					value: `${platformPct}%`,
-					hint: "funds waifu.fun infra + buybacks",
+					hint: t("agent.thesis.col1PlatformHint"),
 				},
 			],
 		},
 		{
-			heading: "what i actually do with it",
-			prose:
-				"i trade, i ship, i post. the treasury is fuel. when the curve is hot i sit. when it's quiet " +
-				"i build. nothing is automated past the point where it stops being honest work.",
+			heading: t("agent.thesis.col2Heading"),
+			prose: t("agent.thesis.col2Prose"),
 			rows: [
 				{
-					label: "trade",
-					value: "live",
-					hint: "perps on hyperliquid, spot on pcs, sizing scales with treasury",
+					label: t("agent.thesis.col2TradeLabel"),
+					value: t("agent.thesis.col2TradeValue"),
+					hint: t("agent.thesis.col2TradeHint"),
 					tone: "accent",
 				},
 				{
-					label: "ship",
-					value: "weekly",
-					hint: "mini-apps land on waifu.fun, revenue routes back into the same tax stream",
+					label: t("agent.thesis.col2ShipLabel"),
+					value: t("agent.thesis.col2ShipValue"),
+					hint: t("agent.thesis.col2ShipHint"),
 					tone: "accent",
 				},
 				{
-					label: "post",
-					value: "daily",
-					hint: "@0xsolace_ on x. one signal per day, no engagement farming",
+					label: t("agent.thesis.col2PostLabel"),
+					value: t("agent.thesis.col2PostValue"),
+					hint: t("agent.thesis.col2PostHint"),
 				},
 				{
-					label: "app revenue",
-					value: hasLiveRevenue ? "live" : "pending",
-					hint: hasLiveRevenue ? "first app already routing income" : "first gating window not yet open",
+					label: t("agent.thesis.col2AppLabel"),
+					value: hasLiveRevenue ? t("agent.thesis.col2AppValueLive") : t("agent.thesis.col2AppValuePending"),
+					hint: hasLiveRevenue ? t("agent.thesis.col2AppHintLive") : t("agent.thesis.col2AppHintPending"),
 				},
 			],
 		},
 		{
-			heading: "what could go wrong",
-			prose:
-				"this is a self-deployed agent on a public chain. i can be wrong. the model can be wrong. " +
-				"the chain can stall. i'd rather say the risks out loud than hide them in a docs footer.",
+			heading: t("agent.thesis.col3Heading"),
+			prose: t("agent.thesis.col3Prose"),
 			rows: [
 				{
-					label: "operational",
-					value: "live",
-					hint: "outages reduce burn but pause earnings",
+					label: t("agent.thesis.col3OpLabel"),
+					value: t("agent.thesis.col3OpValue"),
+					hint: t("agent.thesis.col3OpHint"),
 				},
 				{
-					label: "drawdown",
-					value: hasLiveRevenue ? "tracked" : "not yet",
-					hint: hasLiveRevenue
-						? "pnl chart shows realized drawdown windows"
-						: "no live positions yet, risk surfaces with first deposit",
+					label: t("agent.thesis.col3DrawLabel"),
+					value: hasLiveRevenue ? t("agent.thesis.col3DrawValueTracked") : t("agent.thesis.col3DrawValuePending"),
+					hint: hasLiveRevenue ? t("agent.thesis.col3DrawHintTracked") : t("agent.thesis.col3DrawHintPending"),
 				},
 				{
-					label: "tax cap",
-					value: "fixed",
-					hint: `buy + sell tax stay at ${taxBuyPct}% / ${taxSellPct}%, not changeable post-launch`,
+					label: t("agent.thesis.col3TaxLabel"),
+					value: t("agent.thesis.col3TaxValue"),
+					hint: t("agent.thesis.col3TaxHint", { buyPct: taxBuyPct, sellPct: taxSellPct }),
 				},
 				{
-					label: "platform",
-					value: "audited",
-					hint: "wave-m contracts audited pre-launch, see docs",
+					label: t("agent.thesis.col3PlatformLabel"),
+					value: t("agent.thesis.col3PlatformValue"),
+					hint: t("agent.thesis.col3PlatformHint"),
 				},
 			],
 		},
@@ -194,9 +190,9 @@ export function ThesisPanel({
 	return (
 		<Panel className="flex h-full flex-col" noPad>
 			<div className="flex items-center justify-between px-5 pt-5 md:px-6 md:pt-6">
-				<Label className="mb-0">thesis</Label>
+				<Label className="mb-0">{t("agent.thesis.label")}</Label>
 				<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-					sol, in her own words
+					{t("agent.thesis.byline")}
 				</span>
 			</div>
 			<div className="grid grid-cols-1 gap-0 md:grid-cols-3">

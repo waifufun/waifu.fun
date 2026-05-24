@@ -17,6 +17,7 @@
 import { useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import { Label, Panel } from "./_primitives";
@@ -46,6 +47,7 @@ function fmtDayTick(ms: number): string {
 }
 
 export function PnlChart({ series }: { series?: Point[] }) {
+	const { t } = useTranslation();
 	const hasData = Array.isArray(series) && series.length > 0;
 	const data = useMemo(() => series ?? [], [series]);
 	const total = useMemo(() => {
@@ -81,12 +83,12 @@ export function PnlChart({ series }: { series?: Point[] }) {
 						</span>
 					) : (
 						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							awaiting data
+							{t("agent.pnl.awaitingData")}
 						</span>
 					)
 				}
 			>
-				p&amp;l (30d)
+				{t("agent.pnl.label")}
 			</Label>
 
 			{hasData ? (
@@ -135,7 +137,7 @@ export function PnlChart({ series }: { series?: Point[] }) {
 									fontFamily: "var(--font-geist-mono, monospace)",
 									fontSize: 11,
 								}}
-								formatter={(v) => [fmtUsdSigned(Number(v)), "pnl"]}
+								formatter={(v) => [fmtUsdSigned(Number(v)), t("agent.pnl.tooltipLabel")]}
 								labelFormatter={(v) => new Date(Number(v)).toISOString().slice(0, 10)}
 							/>
 							<Area
@@ -152,17 +154,15 @@ export function PnlChart({ series }: { series?: Point[] }) {
 			) : (
 				<div className="flex h-[88px] flex-1 flex-col items-start justify-center gap-1 py-2">
 					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-						no pnl history yet
+						{t("agent.pnl.noHistoryTitle")}
 					</span>
-					<span className="font-mono text-[11px] text-[var(--text-tertiary)]/70">
-						snapshots accumulate hourly · 30d window unlocks at hour 720
-					</span>
+					<span className="font-mono text-[11px] text-[var(--text-tertiary)]/70">{t("agent.pnl.noHistoryBody")}</span>
 				</div>
 			)}
 
 			{hasData ? (
 				<footer className="mt-2 border-t border-[var(--border-soft)] pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					live pnl · 30 day window
+					{t("agent.pnl.livePnl")}
 				</footer>
 			) : null}
 		</Panel>

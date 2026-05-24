@@ -7,6 +7,7 @@
 
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import { Panel, Pulse } from "./_primitives";
@@ -26,9 +27,14 @@ type StatusCardProps = {
 };
 
 export function StatusCard({ status = "online", daysOperating, runwayDays, className }: StatusCardProps) {
+	const { t } = useTranslation();
 	const isOnline = status === "online";
 	const tone = isOnline ? "positive" : status === "degraded" ? "accent" : "negative";
-	const statusLabel = isOnline ? "Operational" : status === "degraded" ? "Degraded" : "Offline";
+	const statusLabel = isOnline
+		? t("agent.status.operational")
+		: status === "degraded"
+			? t("agent.status.degraded")
+			: t("agent.status.offline");
 	const statusColor =
 		status === "online" ? "var(--positive)" : status === "degraded" ? "var(--accent)" : "var(--negative)";
 
@@ -36,9 +42,11 @@ export function StatusCard({ status = "online", daysOperating, runwayDays, class
 		<Panel className={cn("h-full", className)}>
 			<div className="flex h-full flex-col justify-between gap-3">
 				<div className="flex items-center justify-between gap-3">
-					<span className="font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.22em]">Status</span>
+					<span className="font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.22em]">
+						{t("agent.status.label")}
+					</span>
 					<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums uppercase tracking-[0.18em]">
-						Day {daysOperating}
+						{t("agent.status.day", { count: String(daysOperating) })}
 					</span>
 				</div>
 
@@ -50,12 +58,12 @@ export function StatusCard({ status = "online", daysOperating, runwayDays, class
 						</span>
 					</div>
 					<div className="flex items-baseline gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]">
-						<span className="text-[var(--text-tertiary)]">runway</span>
+						<span className="text-[var(--text-tertiary)]">{t("agent.status.runwayLabel")}</span>
 						{runwayDays == null ? (
-							<span className="text-[var(--text-tertiary)]">not yet measured</span>
+							<span className="text-[var(--text-tertiary)]">{t("agent.status.runwayNotMeasured")}</span>
 						) : (
 							<span className="tabular-nums text-[var(--text-primary)]">
-								{runwayDays >= 365 ? ">365" : Math.round(runwayDays)} days
+								{t("agent.status.runwayDays", { value: runwayDays >= 365 ? ">365" : String(Math.round(runwayDays)) })}
 							</span>
 						)}
 					</div>

@@ -17,9 +17,12 @@
  * those exposed runtime-implementation detail that didn't matter to a
  * buyer choosing a tier, and Shadow's brief flagged them as leakage.
  */
+"use client";
+
 import { ExternalLink } from "lucide-react";
 
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 
 import SystemPromptReveal from "./system-prompt-reveal";
 import type { AgentData } from "./types";
@@ -29,6 +32,7 @@ export interface IdentityPanelProps {
 }
 
 export default function IdentityPanel({ agent }: IdentityPanelProps) {
+	const { t } = useTranslation();
 	const hasTraits = !!agent.traits && agent.traits.length > 0;
 	const hasTwitter = !!agent.twitterHandle;
 	const hasPrompt = !!agent.systemPrompt;
@@ -65,7 +69,9 @@ export default function IdentityPanel({ agent }: IdentityPanelProps) {
 
 			{hasPrompt ? (
 				<div className={hasTraits || hasTwitter ? "border-t border-white/[0.06] pt-5" : ""}>
-					<div className="mb-3 font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">brain</div>
+					<div className="mb-3 font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+						{t("agent.identity.brainLabel")}
+					</div>
 					<SystemPromptReveal systemPrompt={agent.systemPrompt as string} />
 				</div>
 			) : null}

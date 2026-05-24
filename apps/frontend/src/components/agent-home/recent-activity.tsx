@@ -1,12 +1,16 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import type { AgentTrade } from "./types";
 
 export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
+	const { t } = useTranslation();
 	if (!trades || trades.length === 0) {
 		return (
 			<div className="border border-white/10 bg-[#08080a] rounded-sm p-8 text-center">
-				<div className="text-sm text-white/40">no trades yet</div>
-				<div className="text-[11px] font-mono text-white/25 mt-1.5">this agent is waiting for its first move</div>
+				<div className="text-sm text-white/40">{t("agent.recentActivity.noTradesTitle")}</div>
+				<div className="text-[11px] font-mono text-white/25 mt-1.5">{t("agent.recentActivity.noTradesBody")}</div>
 			</div>
 		);
 	}
