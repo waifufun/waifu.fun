@@ -9,6 +9,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { LaunchCountdown } from "@/components/launch-page/launch-countdown";
+import { useTranslation } from "@/contexts/locale-context";
 import { useLaunchByToken } from "@/hooks/use-post-launch";
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function LiveLaunchBanner({ tokenAddress }: Props) {
+	const { t } = useTranslation();
 	const launch = useLaunchByToken(tokenAddress);
 	const data = launch.data;
 
@@ -36,10 +38,10 @@ export function LiveLaunchBanner({ tokenAddress }: Props) {
 				</span>
 				<div className="min-w-0">
 					<div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--accent)]">
-						{isOpen ? "round live" : "awaiting bundle"}
+						{isOpen ? t("agent.banner.roundLive") : t("agent.banner.awaitingBundle")}
 					</div>
 					<div className="mt-0.5 truncate text-sm text-[var(--text-primary)]/85">
-						{isOpen ? "deposit bnb before the window closes." : "v2 graduation in progress."}
+						{isOpen ? t("agent.banner.depositPrompt") : t("agent.banner.graduationInProgress")}
 					</div>
 				</div>
 			</div>

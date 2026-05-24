@@ -5,6 +5,7 @@
 import type * as React from "react";
 
 import { GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import type { App } from "@/lib/wave-t/apps";
@@ -31,32 +32,34 @@ function AppIcon({ app, className }: { app: App; className?: string }) {
 }
 
 function StatusBadge({ status }: { status: App["status"] }) {
+	const { t } = useTranslation();
 	if (status === "live") {
 		return (
 			<span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-emerald-300">
 				<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
-				live
+				{t("agent.apps.statusLive")}
 			</span>
 		);
 	}
 	if (status === "paused") {
 		return (
 			<span className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-yellow-200">
-				paused
+				{t("agent.apps.statusPaused")}
 			</span>
 		);
 	}
 	return (
 		<span className="rounded-full border border-[var(--border-mid)] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-			scheduled
+			{t("agent.apps.statusScheduled")}
 		</span>
 	);
 }
 
 function EmptyAppsState() {
+	const { t } = useTranslation();
 	return (
 		<li className="py-4 font-mono text-[11px] leading-relaxed text-[var(--text-tertiary)]">
-			no apps shipped yet · first app gating window opens at BASED tier
+			{t("agent.apps.emptyAppsState")}
 		</li>
 	);
 }
@@ -70,19 +73,20 @@ function formatAppDate(app: App): string {
 }
 
 export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCount?: number }) {
+	const { t } = useTranslation();
 	const live = apps.filter((a) => a.status === "live");
 	const visible = apps.slice(0, visibleCount);
 	const remaining = Math.max(0, apps.length - visible.length);
 
 	return (
 		<Panel>
-			<Label>Apps Shipped</Label>
+			<Label>{t("agent.apps.appsShippedLabel")}</Label>
 			<div className="flex items-baseline gap-2">
 				<span className="font-sans text-[40px] font-light leading-none text-[var(--accent)] tabular-nums">
 					{live.length}
 				</span>
 				<span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					Total Live
+					{t("agent.apps.totalLive")}
 				</span>
 			</div>
 			<ul className="mt-4 divide-y divide-[var(--border-soft)]">
@@ -97,7 +101,7 @@ export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCo
 							<span className="min-w-0 flex-1">
 								<span className="block truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
 								<span className="block truncate font-mono text-[10px] text-[var(--text-tertiary)]">
-									{app.shippedAt ? "shipped" : "first seen"} {formatAppDate(app)}
+									{app.shippedAt ? t("agent.apps.shipped") : t("agent.apps.firstSeen")} {formatAppDate(app)}
 								</span>
 							</span>
 							<StatusBadge status={app.status} />
@@ -113,7 +117,7 @@ export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCo
 						"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]",
 					)}
 				>
-					<span>More apps</span>
+					<span>{t("agent.apps.moreApps")}</span>
 					<span className="font-mono tabular-nums">{remaining}</span>
 				</a>
 			)}
@@ -122,6 +126,7 @@ export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCo
 }
 
 function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
+	const { t } = useTranslation();
 	const ranked = [...apps].sort((a, b) => b.revenue7dUsd - a.revenue7dUsd).slice(0, limit);
 	return (
 		<ol className="divide-y divide-[var(--border-soft)]">
@@ -154,17 +159,20 @@ function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
 									<StatusBadge status={app.status} />
 								</div>
 								<div className="mt-0.5 truncate font-mono text-[10.5px] text-[var(--text-secondary)]">
-									{app.description ?? `${app.shippedAt ? "shipped" : "first seen"} ${formatAppDate(app)}`}
+									{app.description ??
+										`${app.shippedAt ? t("agent.apps.shipped") : t("agent.apps.firstSeen")} ${formatAppDate(app)}`}
 								</div>
 							</div>
 							<div className="flex shrink-0 flex-col items-end font-mono tabular-nums">
 								{scheduled ? (
-									<span className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">scheduled</span>
+									<span className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+										{t("agent.apps.statusScheduled")}
+									</span>
 								) : (
 									<>
 										<span className="text-[12px] text-[var(--text-primary)]">{formatCompactUsd(app.revenue7dUsd)}</span>
 										<span className="text-[10px] text-[var(--text-tertiary)]">
-											24h {formatCompactUsd(app.revenue24hUsd)}
+											{t("agent.apps.24hPrefix")} {formatCompactUsd(app.revenue24hUsd)}
 										</span>
 										{delta !== null && (
 											<span
@@ -176,7 +184,7 @@ function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
 												)}
 											>
 												{positive ? "+" : ""}
-												{delta.toFixed(1)}% vs prev 7d
+												{delta.toFixed(1)}% {t("agent.apps.vsPrev7d")}
 											</span>
 										)}
 									</>
@@ -191,6 +199,7 @@ function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
 }
 
 export function TopAppsByRevenue({ apps, limit = 4 }: { apps: App[]; limit?: number }) {
+	const { t } = useTranslation();
 	return (
 		<Panel>
 			<Label
@@ -199,11 +208,11 @@ export function TopAppsByRevenue({ apps, limit = 4 }: { apps: App[]; limit?: num
 						href="#apps"
 						className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]"
 					>
-						View all
+						{t("agent.apps.viewAll")}
 					</a>
 				}
 			>
-				Top Apps by Revenue (7D)
+				{t("agent.apps.topAppsByRevenue")}
 			</Label>
 			<TopAppsList apps={apps} limit={limit} />
 		</Panel>
@@ -224,6 +233,7 @@ function StatBlock({
 	change,
 	pendingNote,
 }: { label: string; value: number; change: number; pendingNote?: string }) {
+	const { t } = useTranslation();
 	const positive = change > 0;
 	const negative = change < 0;
 	const isEmpty = value <= 0;
@@ -244,7 +254,7 @@ function StatBlock({
 						)}
 					>
 						{positive ? "+" : ""}
-						{change.toFixed(1)}% vs prev 7D
+						{change.toFixed(1)}% {t("agent.apps.vsPrev7D")}
 					</span>
 				)}
 			</div>
@@ -258,35 +268,36 @@ function StatBlock({
 }
 
 export function AppsRevenue({ apps, totalRevenue7d, totalLifetime, feesGenerated30d = 0, feesChange30d = 0 }: Props) {
+	const { t } = useTranslation();
 	return (
 		<Panel>
-			<Label>Apps & Revenue</Label>
+			<Label>{t("agent.apps.appsRevenueLabel")}</Label>
 			<div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
 				<div className="flex flex-col gap-5 md:border-r md:border-[var(--border-soft)] md:pr-6">
 					<StatBlock
-						label="Total Revenue (7D)"
+						label={t("agent.apps.totalRevenue7d")}
 						value={totalRevenue7d}
 						change={0}
-						pendingNote="instrumentation pending"
+						pendingNote={t("agent.apps.instrumentationPending")}
 					/>
 					<StatBlock
-						label="Lifetime Revenue"
+						label={t("agent.apps.lifetimeRevenue")}
 						value={totalLifetime}
 						change={0}
-						pendingNote="steward billing wires soon"
+						pendingNote={t("agent.apps.stewardBillingSoon")}
 					/>
 					<StatBlock
-						label="Fees Generated (30D)"
+						label={t("agent.apps.feesGenerated30d")}
 						value={feesGenerated30d}
 						change={feesChange30d}
-						pendingNote="steward billing wires soon"
+						pendingNote={t("agent.apps.stewardBillingSoon")}
 					/>
 				</div>
 				<div className="flex flex-col">
 					<div className="mb-1 flex items-center justify-between">
-						<SectionTitle>Top Apps</SectionTitle>
+						<SectionTitle>{t("agent.apps.topApps")}</SectionTitle>
 						<a href="#apps" className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							View all
+							{t("agent.apps.viewAll")}
 						</a>
 					</div>
 					<TopAppsList apps={apps} limit={4} />

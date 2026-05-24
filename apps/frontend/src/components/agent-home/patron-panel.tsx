@@ -1,6 +1,7 @@
 "use client";
 
 import { usePatronAuth } from "@/contexts/auth-context";
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	type Patron,
 	type PatronList,
@@ -35,6 +36,7 @@ function isDemoAgent(addr: string): boolean {
 }
 
 export default function PatronPanel({ agent }: Props) {
+	const { t } = useTranslation();
 	const { patronUser, isLoading: authLoading, loginWithX } = usePatronAuth();
 	const [patrons, setPatrons] = useState<PatronList | null>(null);
 	const [status, setStatus] = useState<PatronStatus | null>(null);
@@ -63,14 +65,14 @@ export default function PatronPanel({ agent }: Props) {
 		setError(null);
 		const result = await patronAgent(agent.tokenAddress);
 		if (result.ok) {
-			setToast(`you're now a patron of ${agent.name}`);
+			setToast(t("agent.patron.patronToast", { name: agent.name }));
 			setTimeout(() => setToast(null), 3000);
 			refresh();
 		} else {
-			setError(result.error || "failed");
+			setError(result.error || t("agent.patron.failedDefault"));
 		}
 		setPatronLoading(false);
-	}, [agent.tokenAddress, agent.name, refresh]);
+	}, [agent.tokenAddress, agent.name, refresh, t]);
 
 	const pcsUrl = `https://pancakeswap.finance/swap?outputCurrency=${agent.tokenAddress}`;
 	const totalPatrons = patrons?.total ?? 0;
@@ -84,13 +86,15 @@ export default function PatronPanel({ agent }: Props) {
 				<div className="flex items-center gap-2">
 					<Radio className="w-3 h-3 text-[#00ff87]" strokeWidth={1.5} />
 					<span className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/70">
-						{loading ? "..." : `${totalPatrons} ${totalPatrons === 1 ? "patron" : "patrons"}`}
+						{loading
+							? "..."
+							: `${totalPatrons} ${totalPatrons === 1 ? t("agent.patron.patron") : t("agent.patron.patrons")}`}
 					</span>
 				</div>
 				{patronUser && status?.isPatron ? (
 					<div className="flex items-center gap-1.5 text-[#00ff87]">
 						<Check className="w-3 h-3" strokeWidth={2} />
-						<span className="text-[10px] font-mono uppercase tracking-[0.18em]">you're in</span>
+						<span className="text-[10px] font-mono uppercase tracking-[0.18em]">{t("agent.patron.youreIn")}</span>
 					</div>
 				) : null}
 			</div>
@@ -115,45 +119,49 @@ export default function PatronPanel({ agent }: Props) {
 								</a>
 								{p.patronSince ? (
 									<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/30 shrink-0">
-										since {new Date(p.patronSince).toLocaleDateString()}
+										{t("agent.patron.sincePrefix")} {new Date(p.patronSince).toLocaleDateString()}
 									</span>
 								) : null}
 							</li>
 						))}
 					</ul>
 					{totalPatrons > visible.length ? (
-						<p className="mt-2 text-[10px] font-mono text-white/30">+{totalPatrons - visible.length} more</p>
+						<p className="mt-2 text-[10px] font-mono text-white/30">
+							{t("agent.patron.moreSuffix", { count: String(totalPatrons - visible.length) })}
+						</p>
 					) : null}
 				</div>
 			) : !loading ? (
 				<div className="px-4 py-4 border-b border-white/5">
-					<p className="text-sm text-white/60 leading-relaxed">no patrons yet. be the first.</p>
+					<p className="text-sm text-white/60 leading-relaxed">{t("agent.patron.noPatrons")}</p>
 				</div>
 			) : null}
 
 			{/* call-to-action: become patron (suppressed for $DEMO showcase) */}
 			{showClaimChrome && !patronUser && !authLoading ? (
 				<div className="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-3">
-					<p className="text-xs text-white/60">connect x to claim patron status.</p>
+					<p className="text-xs text-white/60">{t("agent.patron.connectXPrompt")}</p>
 					<button
 						type="button"
 						onClick={loginWithX}
 						className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-sm border border-white/15 text-[10px] font-mono uppercase tracking-[0.18em] text-white/70 hover:text-white hover:border-white/30 transition-colors shrink-0"
 					>
-						connect x
+						{t("agent.patron.connectX")}
 					</button>
 				</div>
 			) : null}
 			{showClaimChrome && patronUser && !status?.isPatron ? (
 				<div className="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-3">
-					<p className="text-xs text-white/60">you hold ${agent.ticker || "TOKEN"}? claim patron.</p>
+					<p className="text-xs text-white/60">
+						{t("agent.patron.holdTokenPrompt", { ticker: agent.ticker || t("agent.patron.defaultToken") })}
+					</p>
 					<button
 						type="button"
 						onClick={handlePatron}
 						disabled={patronLoading}
 						className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-sm border border-white/15 text-[10px] font-mono uppercase tracking-[0.18em] text-white/70 hover:text-white hover:border-white/30 transition-colors disabled:opacity-50 shrink-0"
 					>
-						{patronLoading ? "..." : "claim"}
+						{patronLoading ? "..." : t("agent.patron.claim")}
 					</button>
 				</div>
 			) : null}
@@ -169,16 +177,14 @@ export default function PatronPanel({ agent }: Props) {
 					rel="noopener noreferrer"
 					className="inline-flex items-center justify-center gap-2 w-full h-10 px-4 rounded-sm bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90 transition-colors"
 				>
-					buy ${agent.ticker || "TOKEN"} on PCS
+					{t("agent.patron.buyOnPcs", { ticker: agent.ticker || t("agent.patron.defaultToken") })}
 					<ArrowUpRight className="w-3 h-3" />
 				</a>
 			</div>
 
 			{/* disclaimer */}
 			<div className="px-4 py-3 border-t border-white/5">
-				<p className="text-[10px] font-mono text-white/30 leading-relaxed">
-					not trading advice. buy at your own risk. agent survival depends on sustained activity.
-				</p>
+				<p className="text-[10px] font-mono text-white/30 leading-relaxed">{t("agent.patron.disclaimer")}</p>
 			</div>
 
 			{/* toast */}

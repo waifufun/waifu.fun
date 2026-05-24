@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -32,6 +33,7 @@ type LoadState = { state: "loading" } | { state: "ok"; adapters: AgentAdapter[] 
  * empty state rather than invented permissions.
  */
 export default function AdapterPermissions({ agentId }: { agentId: string }) {
+	const { t } = useTranslation();
 	const [status, setStatus] = useState<LoadState>({ state: "loading" });
 
 	useEffect(() => {
@@ -68,13 +70,15 @@ export default function AdapterPermissions({ agentId }: { agentId: string }) {
 	return (
 		<div className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden">
 			<div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">adapters</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+					{t("agent.adapters.label")}
+				</div>
 				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">
 					{status.state === "loading"
 						? "..."
 						: status.state === "unavailable"
-							? "unavailable"
-							: `${enabled.length} enabled`}
+							? t("agent.adapters.unavailable")
+							: t("agent.adapters.enabledSuffix", { count: String(enabled.length) })}
 				</span>
 			</div>
 
@@ -82,19 +86,15 @@ export default function AdapterPermissions({ agentId }: { agentId: string }) {
 
 			{status.state === "ok" && enabled.length === 0 && (
 				<div className="px-4 py-8 text-center">
-					<div className="text-[10px] font-mono text-white/30 mb-2">[ no adapters configured ]</div>
-					<div className="text-xs text-white/50 leading-relaxed">
-						this agent has no onchain adapters enabled. it can observe but not act.
-					</div>
+					<div className="text-[10px] font-mono text-white/30 mb-2">{t("agent.adapters.noneConfigured")}</div>
+					<div className="text-xs text-white/50 leading-relaxed">{t("agent.adapters.noneConfiguredBody")}</div>
 				</div>
 			)}
 
 			{status.state === "unavailable" && (
 				<div className="px-4 py-8 text-center">
-					<div className="text-[10px] font-mono text-white/30 mb-2">[ adapters unavailable ]</div>
-					<div className="text-xs text-white/50 leading-relaxed">
-						adapter permissions api not live yet. check back soon.
-					</div>
+					<div className="text-[10px] font-mono text-white/30 mb-2">{t("agent.adapters.unavailableHeading")}</div>
+					<div className="text-xs text-white/50 leading-relaxed">{t("agent.adapters.unavailableBody")}</div>
 				</div>
 			)}
 
@@ -114,6 +114,7 @@ export default function AdapterPermissions({ agentId }: { agentId: string }) {
 }
 
 function AdapterRow({ adapter }: { adapter: AgentAdapter }) {
+	const { t } = useTranslation();
 	const label = adapter.label || prettify(adapter.slug);
 	const caps = adapter.caps;
 	return (
@@ -127,13 +128,13 @@ function AdapterRow({ adapter }: { adapter: AgentAdapter }) {
 				<div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0 text-right">
 					{caps.maxPerTx && (
 						<div className="text-[10px] font-mono text-white/50">
-							<span className="text-white/30">tx ≤ </span>
+							<span className="text-white/30">{t("agent.adapters.txCapPrefix")} </span>
 							{caps.maxPerTx}
 						</div>
 					)}
 					{caps.maxPerDay && (
 						<div className="text-[10px] font-mono text-white/50">
-							<span className="text-white/30">day ≤ </span>
+							<span className="text-white/30">{t("agent.adapters.dayCapPrefix")} </span>
 							{caps.maxPerDay}
 						</div>
 					)}
@@ -144,6 +145,7 @@ function AdapterRow({ adapter }: { adapter: AgentAdapter }) {
 }
 
 function PolicyLink({ agentId }: { agentId: string }) {
+	const { t } = useTranslation();
 	// policy editor route may not exist yet; render as disabled hint
 	// when the route lands, swap this to the real Link.
 	const live = false;
@@ -153,13 +155,15 @@ function PolicyLink({ agentId }: { agentId: string }) {
 				href={`/agent/${agentId}/policy`}
 				className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-[#00ff87] transition-colors"
 			>
-				edit policy
+				{t("agent.adapters.editPolicy")}
 				<ChevronRight className="w-3 h-3" />
 			</Link>
 		);
 	}
 	return (
-		<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/25">policy editor · coming in v1.1</div>
+		<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/25">
+			{t("agent.adapters.policyComingSoon")}
+		</div>
 	);
 }
 

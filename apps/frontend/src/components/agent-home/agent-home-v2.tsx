@@ -42,10 +42,13 @@
  *     shapes respectively. Different grid shapes alternate top-to-
  *     bottom so the page reads with rhythm instead of repetition.
  */
+"use client";
+
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type * as React from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import type { AgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
@@ -245,9 +248,7 @@ export default function AgentHomeV2({
 					<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
 				</div>
 
-				<footer className="mt-6 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					{`live data / ${liveApps} apps shipped`}
-				</footer>
+				<AgentFooter liveApps={liveApps} />
 			</div>
 		</main>
 	);
@@ -291,6 +292,7 @@ function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null
 }
 
 function TopBar() {
+	const { t } = useTranslation();
 	return (
 		<div className="flex items-center justify-between">
 			<Link
@@ -298,8 +300,18 @@ function TopBar() {
 				className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white/85"
 			>
 				<ArrowLeft className="h-3 w-3" strokeWidth={1.5} />
-				all agents
+				{t("agent.topBar.allAgents")}
 			</Link>
 		</div>
+	);
+}
+
+function AgentFooter({ liveApps }: { liveApps: number }) {
+	const { t } = useTranslation();
+	const key = liveApps === 1 ? "agent.footer.liveDataSingular" : "agent.footer.liveDataPlural";
+	return (
+		<footer className="mt-6 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+			{t(key, { count: String(liveApps) })}
+		</footer>
 	);
 }

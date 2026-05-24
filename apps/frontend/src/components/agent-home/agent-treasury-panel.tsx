@@ -20,6 +20,7 @@ import { useCallback, useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import { type TokenSpec, type TreasuryHolding, useAgentTreasury } from "@/hooks/use-agent-treasury";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ export default function AgentTreasuryPanel({
 	launch,
 	extraTokens = [],
 }: AgentTreasuryPanelProps) {
+	const { t } = useTranslation();
 	const agentSafe = launch?.agentSafe ?? null;
 	const safeValid = !!agentSafe && isAddress(agentSafe);
 	const treasuryLp = launch?.treasuryLp ?? null;
@@ -102,7 +104,7 @@ export default function AgentTreasuryPanel({
 	if (!safeValid) {
 		return (
 			<SurfaceCard padding="md">
-				<div className="font-mono text-[11px] text-white/40">agent safe not yet configured for this launch</div>
+				<div className="font-mono text-[11px] text-white/40">{t("agent.safe.notConfigured")}</div>
 			</SurfaceCard>
 		);
 	}
@@ -114,30 +116,30 @@ export default function AgentTreasuryPanel({
 				<div className="flex flex-col gap-1 min-w-0">
 					<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
 						<Shield className="h-3 w-3" strokeWidth={1.5} />
-						agent safe
+						{t("agent.safe.agentSafe")}
 						{threshold && owners.length > 0 ? (
 							<span className="text-white/30">
-								· {threshold}/{owners.length} multisig
+								{t("agent.safe.multisigSuffix", { threshold: String(threshold), total: String(owners.length) })}
 							</span>
 						) : null}
 					</div>
 					<AddressLine address={agentSafe as string} />
 				</div>
-				<ScanLink address={agentSafe as string} label="bscscan" />
+				<ScanLink address={agentSafe as string} label={t("agent.safe.bscscanLabel")} />
 			</div>
 
 			{/* Holdings list */}
 			<div className="divide-y divide-white/[0.06]">
 				{holdings.length === 0 && !snapshot.isLoading ? (
 					<div className="px-5 py-6 text-center font-mono text-[11px] text-white/35 md:px-6">
-						no holdings on chain yet
+						{t("agent.safe.noHoldings")}
 					</div>
 				) : null}
 				{snapshot.isLoading && holdings.length === 0 ? (
 					<div className="px-5 py-6 md:px-6">
 						<div
 							className="h-6 w-40 animate-pulse rounded-sm bg-white/[0.04]"
-							aria-label="loading treasury composition"
+							aria-label={t("agent.safe.loadingComposition")}
 						/>
 					</div>
 				) : null}
@@ -151,10 +153,18 @@ export default function AgentTreasuryPanel({
 				<div className="border-t border-white/[0.06] bg-[#06060a] px-5 py-3 md:px-6">
 					<div className="grid gap-2 md:grid-cols-2">
 						{taxSplitter ? (
-							<SisterContractRow label="tax splitter" intent="routes platform/patron/agent" address={taxSplitter} />
+							<SisterContractRow
+								label={t("agent.safe.taxSplitterLabel")}
+								intent={t("agent.safe.taxSplitterIntent")}
+								address={taxSplitter}
+							/>
 						) : null}
 						{treasuryLp ? (
-							<SisterContractRow label="treasury lp" intent="multi-tier liquidity holder" address={treasuryLp} />
+							<SisterContractRow
+								label={t("agent.safe.treasuryLpLabel")}
+								intent={t("agent.safe.treasuryLpIntent")}
+								address={treasuryLp}
+							/>
 						) : null}
 					</div>
 				</div>
@@ -164,6 +174,7 @@ export default function AgentTreasuryPanel({
 }
 
 function HoldingRow({ holding }: { holding: TreasuryHolding }) {
+	const { t } = useTranslation();
 	const isNative = holding.kind === "native";
 	const tokenAddress = !isNative ? holding.address : null;
 	return (
@@ -173,13 +184,13 @@ function HoldingRow({ holding }: { holding: TreasuryHolding }) {
 				<div className="flex flex-col min-w-0">
 					<span className="font-mono text-[12px] text-white/85 truncate">{holding.symbol}</span>
 					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35 truncate">
-						{isNative ? "native · bnb chain" : "erc-20"}
+						{isNative ? t("agent.safe.nativeChain") : t("agent.safe.erc20")}
 					</span>
 				</div>
 			</div>
 			<div className="flex items-center gap-3">
 				<span className="font-mono text-[14px] tabular-nums text-white/90">{fmtBalance(holding.formatted)}</span>
-				{tokenAddress ? <ScanLink address={tokenAddress} label="token" /> : null}
+				{tokenAddress ? <ScanLink address={tokenAddress} label={t("agent.safe.openTokenAria")} /> : null}
 			</div>
 		</div>
 	);
@@ -218,6 +229,7 @@ function shortenAddress(address: string): string {
 }
 
 function AddressLine({ address }: { address: string }) {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 	const onCopy = useCallback(async () => {
 		try {
@@ -238,7 +250,7 @@ function AddressLine({ address }: { address: string }) {
 			<button
 				type="button"
 				onClick={onCopy}
-				aria-label={copied ? "copied" : "copy safe address"}
+				aria-label={copied ? t("agent.safe.copiedAria") : t("agent.safe.copySafeAria")}
 				className={cn(
 					"inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border transition-colors duration-200",
 					copied
@@ -253,6 +265,7 @@ function AddressLine({ address }: { address: string }) {
 }
 
 function ScanLink({ address, label, compact }: { address: string; label?: string; compact?: boolean }) {
+	const { t } = useTranslation();
 	const cls = compact
 		? "inline-flex h-6 w-6 items-center justify-center rounded-sm border border-white/10 text-white/35 transition-colors hover:border-white/25 hover:text-white/75"
 		: "inline-flex h-7 w-7 items-center justify-center rounded-sm border border-white/10 text-white/35 transition-colors hover:border-white/25 hover:text-white/75";
@@ -261,7 +274,7 @@ function ScanLink({ address, label, compact }: { address: string; label?: string
 			href={`https://bscscan.com/address/${address}`}
 			target="_blank"
 			rel="noopener noreferrer"
-			aria-label={label ? `open ${label} on bscscan` : "open on bscscan"}
+			aria-label={label ? t("agent.safe.openLabelAria", { label }) : t("agent.safe.openOnBscscan")}
 			className={cls}
 		>
 			<ExternalLink className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} strokeWidth={1.5} />

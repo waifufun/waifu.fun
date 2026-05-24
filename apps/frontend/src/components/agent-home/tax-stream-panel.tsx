@@ -32,6 +32,7 @@ import { useBalance } from "wagmi";
 import { bsc } from "wagmi/chains";
 
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,7 @@ function bpsToPct(bps: number | null | undefined): string {
 }
 
 export default function TaxStreamPanel({ launch }: TaxStreamPanelProps) {
+	const { t } = useTranslation();
 	const taxSplitter = launch?.taxSplitter ?? null;
 	const agentSafe = launch?.agentSafe ?? null;
 	const split = launch?.taxSplit ?? null;
@@ -82,7 +84,7 @@ export default function TaxStreamPanel({ launch }: TaxStreamPanelProps) {
 	if (!splitterValid && !safeValid) {
 		return (
 			<SurfaceCard padding="md">
-				<div className="font-mono text-[11px] text-white/40">tax routing not yet configured for this launch</div>
+				<div className="font-mono text-[11px] text-white/40">{t("agent.taxStream.notConfigured")}</div>
 			</SurfaceCard>
 		);
 	}
@@ -94,11 +96,17 @@ export default function TaxStreamPanel({ launch }: TaxStreamPanelProps) {
 		<SurfaceCard padding="none" className="overflow-hidden">
 			<header className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4 md:px-6">
 				<div className="flex flex-col gap-0.5 min-w-0">
-					<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">tax stream</span>
+					<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+						{t("agent.taxStream.label")}
+					</span>
 					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/30">
 						{split
-							? `${bpsToPct(split.platformBps)} platform · ${bpsToPct(split.patronBps)} patron · ${bpsToPct(split.agentBps)} agent`
-							: "split metadata not on this launch row"}
+							? t("agent.taxStream.splitTemplate", {
+									platform: bpsToPct(split.platformBps),
+									patron: bpsToPct(split.patronBps),
+									agent: bpsToPct(split.agentBps),
+								})
+							: t("agent.taxStream.splitMetadataMissing")}
 					</span>
 				</div>
 				{splitterValid ? (
@@ -107,9 +115,9 @@ export default function TaxStreamPanel({ launch }: TaxStreamPanelProps) {
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
-						aria-label="open tax splitter on bscscan"
+						aria-label={t("agent.taxStream.openSplitterAria")}
 					>
-						splitter
+						{t("agent.taxStream.splitterLabel")}
 						<ExternalLink className="h-3 w-3" strokeWidth={1.5} />
 					</a>
 				) : null}
@@ -117,21 +125,21 @@ export default function TaxStreamPanel({ launch }: TaxStreamPanelProps) {
 
 			<div className="divide-y divide-white/[0.06]">
 				<StreamStat
-					label="splitter pending"
-					hint="awaiting next split() · anyone can call it"
+					label={t("agent.taxStream.splitterPending")}
+					hint={t("agent.taxStream.splitterPendingHint")}
 					value={splitterBalance.isLoading ? "…" : `${fmtBnb(splitterWei)} bnb`}
 					tone={splitterWei > 0n ? "active" : "idle"}
 				/>
 				<StreamStat
-					label="agent share accrued"
-					hint="bnb held in agent safe (post-split)"
+					label={t("agent.taxStream.agentShareAccrued")}
+					hint={t("agent.taxStream.agentShareHint")}
 					value={safeBalance.isLoading ? "…" : `${fmtBnb(safeWei)} bnb`}
 					tone={safeWei > 0n ? "active" : "idle"}
 				/>
 			</div>
 
 			<footer className="border-t border-white/[0.06] bg-[#06060a] px-5 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-white/30 md:px-6">
-				live readouts · 60s refresh · cumulative split history pending indexer
+				{t("agent.taxStream.footer")}
 			</footer>
 		</SurfaceCard>
 	);
