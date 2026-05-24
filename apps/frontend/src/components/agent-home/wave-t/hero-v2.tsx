@@ -43,6 +43,7 @@ import { CheckCircle2Icon } from "lucide-react";
 import { useId, useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { resolveImageUrl } from "@/lib/image-url";
 import { AnimateNumber } from "@/lib/motion-plus/animate-number";
 import { Typewriter } from "@/lib/motion-plus/typewriter";
@@ -118,6 +119,7 @@ function CharacterColumn({
 	version: string;
 	livePulse: boolean;
 }) {
+	const { t } = useTranslation();
 	const portrait = resolveImageUrl(identity.image) ?? FALLBACK_PORTRAIT;
 	const displayName = (identity.name || "unknown").toLowerCase();
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
@@ -135,7 +137,7 @@ function CharacterColumn({
 		<div className="flex flex-col gap-4 p-4 sm:gap-5 sm:p-5 md:flex-row md:items-start md:gap-6 md:p-6 lg:gap-7 lg:p-8">
 			<div className="relative shrink-0 self-start">
 				<img
-					alt={`${displayName} portrait`}
+					alt={t("agent.hero.portraitAlt", { name: displayName })}
 					className={cn(
 						// mobile: comfortable readable size, not header-sized.
 						"h-[148px] w-[148px] rounded-md object-cover",
@@ -172,7 +174,7 @@ function CharacterColumn({
 					</h1>
 					{verified ? (
 						<CheckCircle2Icon
-							aria-label="Verified agent"
+							aria-label={t("agent.hero.verifiedAria")}
 							className="h-[18px] w-[18px] md:h-[22px] md:w-[22px] lg:h-[26px] lg:w-[26px]"
 							strokeWidth={2}
 							style={{ color: "var(--accent)" }}
@@ -215,7 +217,7 @@ function CharacterColumn({
 				<div className="mt-1 flex flex-wrap items-center gap-1.5">
 					{ticker ? <StatPill tone="accent">{ticker}</StatPill> : null}
 					<StatPill tone="neutral">{version}</StatPill>
-					<StatPill tone="neutral">bnb chain</StatPill>
+					<StatPill tone="neutral">{t("agent.hero.bnbChain")}</StatPill>
 					{identity.tokenAddress ? <ContractAddressChip address={identity.tokenAddress} /> : null}
 				</div>
 			</div>
@@ -253,8 +255,13 @@ function DataColumn({
 	followers: number | null;
 	followersSource: TwitterStats["source"];
 }) {
+	const { t } = useTranslation();
 	const sourceLabel =
-		treasurySource === "aggregated" ? "nav aggregated" : treasurySource === "agentSafe" ? "agent safe" : "sol burner";
+		treasurySource === "aggregated"
+			? t("agent.hero.navSource.aggregated")
+			: treasurySource === "agentSafe"
+				? t("agent.hero.navSource.agentSafe")
+				: t("agent.hero.navSource.burner");
 
 	const pnlEmpty = pnl24hUsd === 0;
 	const pnlTone: "positive" | "negative" | "neutral" = pnlEmpty ? "neutral" : pnl24hUsd > 0 ? "positive" : "negative";
@@ -264,7 +271,12 @@ function DataColumn({
 
 	const statusDotTone: "positive" | "accent" | "negative" =
 		status === "online" ? "positive" : status === "degraded" ? "accent" : "negative";
-	const statusLabel = status === "online" ? "operational" : status === "degraded" ? "degraded" : "offline";
+	const statusLabel =
+		status === "online"
+			? t("agent.hero.statusOperational")
+			: status === "degraded"
+				? t("agent.hero.statusDegraded")
+				: t("agent.hero.statusOffline");
 	const statusColor =
 		status === "online" ? "var(--positive)" : status === "degraded" ? "var(--accent)" : "var(--negative)";
 
@@ -279,7 +291,7 @@ function DataColumn({
 			<div className="flex flex-col gap-4 p-4 sm:gap-5 sm:p-5 md:p-6 lg:p-8 lg:pb-6">
 				<div className="flex items-center justify-between gap-3">
 					<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">
-						treasury value
+						{t("agent.hero.treasuryLabel")}
 					</span>
 					<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
 						{livePulse ? <Pulse tone="accent" /> : null}
@@ -321,10 +333,10 @@ function DataColumn({
 					{livePulse ? (
 						<>
 							<Pulse tone="accent" />
-							<span>live · ticks every 10s</span>
+							<span>{t("agent.hero.livePulse", { seconds: "10" })}</span>
 						</>
 					) : (
-						<span>build snapshot</span>
+						<span>{t("agent.hero.buildSnapshot")}</span>
 					)}
 				</div>
 			</div>
@@ -333,14 +345,14 @@ function DataColumn({
 
 			{/* Band 2: PnL + Runway + Followers + Days strip. */}
 			<div className="grid grid-cols-2 divide-x divide-y divide-[var(--border-soft)] lg:grid-cols-4 lg:divide-y-0">
-				<DataCell label="24h pnl">
+				<DataCell label={t("agent.hero.pnl24hLabel")}>
 					<div className="flex items-baseline gap-2">
 						<span
 							className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight"
 							style={{ color: pnlColor }}
 						>
 							{pnlEmpty ? (
-								<span className="text-[13px] text-[var(--text-tertiary)]">no history</span>
+								<span className="text-[13px] text-[var(--text-tertiary)]">{t("agent.hero.noHistory")}</span>
 							) : (
 								<>
 									{pnlSign}
@@ -358,7 +370,7 @@ function DataColumn({
 					</div>
 					<div className="font-mono text-[10px] tabular-nums tracking-tight" style={{ color: pnlColor }}>
 						{pnlEmpty ? (
-							<span className="text-[var(--text-tertiary)]">snapshots backfill</span>
+							<span className="text-[var(--text-tertiary)]">{t("agent.hero.pnlBackfill")}</span>
 						) : (
 							<span>
 								{pnlSign}
@@ -368,36 +380,38 @@ function DataColumn({
 					</div>
 				</DataCell>
 
-				<DataCell label="runway">
+				<DataCell label={t("agent.hero.runwayLabel")}>
 					<div className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight text-[var(--text-primary)]">
 						{runwayDays == null ? (
-							<span className="text-[13px] text-[var(--text-tertiary)]">unmeasured</span>
+							<span className="text-[13px] text-[var(--text-tertiary)]">{t("agent.hero.runwayUnmeasured")}</span>
 						) : (
 							<>
 								{runwayDays >= 365 ? ">365" : Math.round(runwayDays)}
-								<span className="ml-1 text-[12px] text-[var(--text-tertiary)]">d</span>
+								<span className="ml-1 text-[12px] text-[var(--text-tertiary)]">{t("agent.hero.daysSuffix")}</span>
 							</>
 						)}
 					</div>
 					<div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-						{runwayDays == null ? "burn rate idle" : "at current burn"}
+						{runwayDays == null ? t("agent.hero.burnRateIdle") : t("agent.hero.runwayCaption")}
 					</div>
 				</DataCell>
 
-				<DataCell label="followers">
+				<DataCell label={t("agent.hero.followersLabel")}>
 					<div className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight text-[var(--accent)]">
 						{followers == null ? (
-							<span className="text-[13px] text-[var(--text-tertiary)]">no data yet</span>
+							<span className="text-[13px] text-[var(--text-tertiary)]">{t("agent.hero.followersNoData")}</span>
 						) : (
 							formatCompactCount(followers)
 						)}
 					</div>
 					<div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-						{followers == null ? "twitter handle quiet" : `twitter · ${followersSource}`}
+						{followers == null
+							? t("agent.hero.followersQuiet")
+							: t("agent.hero.followersSource", { source: followersSource })}
 					</div>
 				</DataCell>
 
-				<DataCell label="day">
+				<DataCell label={t("agent.hero.dayLabel")}>
 					<div className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight text-[var(--text-primary)]">
 						{daysOperating}
 					</div>
