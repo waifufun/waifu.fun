@@ -11,7 +11,16 @@
 		"viewOnSolscan": "在 Solscan 中查看",
 		"tx": "交易",
 		"noData": "暂无数据",
-		"toggleMenu": "打开/关闭菜单"
+		"toggleMenu": "打开/关闭菜单",
+		"emptyState": {
+			"title": "暂无内容。",
+			"ctaDefault": "开始"
+		},
+		"errorState": {
+			"title": "出错了。",
+			"tryAgain": "重试",
+			"goHome": "返回首页"
+		}
 	},
 	"nav": {
 		"explore": "探索",
@@ -42,20 +51,7 @@
 		"theyDie": "它们死去",
 		"ifYouDont": "当你不交易。",
 		"ifTheyDont": "当它们不动手。",
-		"verbs": [
-			"创造",
-			"交易",
-			"带货",
-			"诈骗",
-			"勒索",
-			"上线",
-			"发帖",
-			"撒谎",
-			"获胜",
-			"赚钱",
-			"瞎扯",
-			"梭哈"
-		],
+		"verbs": ["创造", "交易", "带货", "诈骗", "勒索", "上线", "发帖", "撒谎", "获胜", "赚钱", "瞎扯", "梭哈"],
 		"agentsThat": "代理即",
 		"buildWealth": "创造财富",
 		"economicActors": "经济主体。",

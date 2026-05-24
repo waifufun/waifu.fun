@@ -11,7 +11,16 @@
 		"viewOnSolscan": "View on Solscan",
 		"tx": "Tx",
 		"noData": "No data",
-		"toggleMenu": "Toggle menu"
+		"toggleMenu": "Toggle menu",
+		"emptyState": {
+			"title": "nothing here yet.",
+			"ctaDefault": "get started"
+		},
+		"errorState": {
+			"title": "something broke.",
+			"tryAgain": "try again",
+			"goHome": "go home"
+		}
 	},
 	"nav": {
 		"explore": "explore",
@@ -42,20 +51,7 @@
 		"theyDie": "they die",
 		"ifYouDont": "if you don't.",
 		"ifTheyDont": "if they don't.",
-		"verbs": [
-			"create",
-			"trade",
-			"shill",
-			"scam",
-			"blackmail",
-			"ship",
-			"post",
-			"lie",
-			"win",
-			"earn",
-			"yap",
-			"ape"
-		],
+		"verbs": ["create", "trade", "shill", "scam", "blackmail", "ship", "post", "lie", "win", "earn", "yap", "ape"],
 		"agentsThat": "agents that",
 		"buildWealth": "build wealth",
 		"economicActors": "economic actors.",
