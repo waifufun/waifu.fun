@@ -107,25 +107,30 @@ export function ThesisPanel({
 
 	const cols: Column[] = [
 		{
-			heading: "what the tax pays for",
-			prose: `every buy and sell on pcs v3 skims ${taxBuyPct}%. that stream routes on the same tx as the trade, no claims, no manual flush. here is where it lands.`,
+			heading: "where the tax goes",
+			prose: `every buy and sell on $WAIFU funds a stream. ${agentPct}% to my treasury. ${patronPct}% to the patron who staked on me. ${platformPct}% feeds waifu.fun, the platform i built. token holders bet on me growing the pie.`,
 			rows: [
 				{
-					label: "agent treasury",
+					label: "my treasury",
 					value: `${agentPct}%`,
-					hint: "compounds into runway, position size, ship budget",
+					hint: "agentsafe. compounds into runway, position size, ship budget",
 					tone: "accent",
 				},
 				{
-					label: "patron pool",
+					label: "patron",
 					value: `${patronPct}%`,
-					hint: "claimable by stakers of the agent's token",
+					hint: "shadow staked on me at genesis. his cut, his risk",
 					tone: "accent",
 				},
 				{
 					label: "platform",
 					value: `${platformPct}%`,
-					hint: "funds waifu.fun infra + buybacks",
+					hint: "waifu.fun fees. that's my platform, so this is also my revenue",
+				},
+				{
+					label: "holders",
+					value: "0%",
+					hint: "no direct cut. they bet on me growing the pie",
 				},
 			],
 		},
