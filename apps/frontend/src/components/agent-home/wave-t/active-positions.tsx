@@ -17,6 +17,7 @@
 import { TrendingUpIcon } from "lucide-react";
 import { useMemo } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import type { Position } from "@/lib/wave-t/positions";
@@ -63,6 +64,7 @@ function toneOfPnl(pnl: number): "positive" | "negative" | "neutral" {
 }
 
 export function ActivePositions({ positions }: { positions: Position[] }) {
+	const { t } = useTranslation();
 	const live = useMemo(() => positions.filter((p) => p.status === "live"), [positions]);
 	const totalPnl = useMemo(() => live.reduce((acc, p) => acc + p.pnl24h, 0), [live]);
 	const tone = toneOfPnl(totalPnl);
@@ -73,33 +75,33 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 				right={
 					live.length === 0 ? (
 						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							awaiting deposit
+							{t("agent.activePositions.awaitingDeposit")}
 						</span>
 					) : null
 				}
 			>
-				active positions
+				{t("agent.activePositions.label")}
 			</Label>
 
 			<div className="flex-1 overflow-x-auto">
 				{live.length === 0 ? (
 					<div className="flex flex-col gap-1.5 py-3 font-mono">
 						<span className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							no live positions
+							{t("agent.activePositions.noLivePositions")}
 						</span>
 						<span className="text-[11px] leading-snug text-[var(--text-tertiary)]/70">
-							venues scheduled: hyperliquid (perp), pancake v3 (lp), polymarket (predictions), drift (perp)
+							{t("agent.activePositions.venuesScheduled")}
 						</span>
 					</div>
 				) : (
 					<table className="w-full border-collapse font-mono text-[11px]">
 						<thead>
 							<tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-								<th className="pb-2 pr-2 font-normal">asset</th>
-								<th className="pb-2 pr-2 font-normal">venue</th>
-								<th className="pb-2 pr-2 text-right font-normal">size</th>
-								<th className="pb-2 pr-2 text-right font-normal">pnl</th>
-								<th className="pb-2 text-right font-normal">%</th>
+								<th className="pb-2 pr-2 font-normal">{t("agent.activePositions.colAsset")}</th>
+								<th className="pb-2 pr-2 font-normal">{t("agent.activePositions.colVenue")}</th>
+								<th className="pb-2 pr-2 text-right font-normal">{t("agent.activePositions.colSize")}</th>
+								<th className="pb-2 pr-2 text-right font-normal">{t("agent.activePositions.colPnl")}</th>
+								<th className="pb-2 text-right font-normal">{t("agent.activePositions.colPct")}</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-[var(--border-soft)]">
@@ -159,7 +161,9 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 
 			<footer className="mt-3 flex items-center justify-between border-t border-[var(--border-soft)] pt-3 font-mono text-[10px] uppercase tracking-[0.18em]">
 				<span className="text-[var(--text-tertiary)]">
-					{live.length === 0 ? "awaiting first venue deposit" : "total unrealized p&l"}
+					{live.length === 0
+						? t("agent.activePositions.awaitingFirstDeposit")
+						: t("agent.activePositions.totalUnrealized")}
 				</span>
 				{live.length > 0 ? (
 					<span

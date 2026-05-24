@@ -23,6 +23,7 @@
 import { type CSSProperties, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector } from "recharts";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 import { formatCompactNum, formatCompactUsd } from "@/lib/wave-t/format";
@@ -77,7 +78,11 @@ function slicesByAsset(holdings: ChainHolding[], navUsd: number): Slice[] {
 	}));
 }
 
-function slicesByChain(holdings: ChainHolding[], navUsd: number): Slice[] {
+function slicesByChain(
+	holdings: ChainHolding[],
+	navUsd: number,
+	labels: { oneAsset: string; manyAssets: string },
+): Slice[] {
 	const grouped = new Map<string, { chainName: string; valueUsd: number; rows: ChainHolding[] }>();
 	for (const h of holdings) {
 		if (h.valueUsd <= 0) continue;
@@ -93,7 +98,7 @@ function slicesByChain(holdings: ChainHolding[], navUsd: number): Slice[] {
 	return sorted.slice(0, 7).map(([chain, group], i) => ({
 		key: `chain-${chain}`,
 		label: group.chainName.toLowerCase(),
-		sub: `${group.rows.length} ${group.rows.length === 1 ? "asset" : "assets"}`,
+		sub: `${group.rows.length} ${group.rows.length === 1 ? labels.oneAsset : labels.manyAssets}`,
 		balance: 0,
 		valueUsd: group.valueUsd,
 		pct: navUsd > 0 ? (group.valueUsd / navUsd) * 100 : 0,
@@ -103,7 +108,11 @@ function slicesByChain(holdings: ChainHolding[], navUsd: number): Slice[] {
 	}));
 }
 
-function slicesByWallet(holdings: ChainHolding[], navUsd: number): Slice[] {
+function slicesByWallet(
+	holdings: ChainHolding[],
+	navUsd: number,
+	labels: { singleWallet: string; burner: string },
+): Slice[] {
 	// Aggregate by wallet role across every (chain, asset) row that
 	// carries a wallets[] breakdown. When wallets are absent (legacy
 	// burner stub), fall back to a single "burner" pseudo-bucket.
@@ -133,8 +142,8 @@ function slicesByWallet(holdings: ChainHolding[], navUsd: number): Slice[] {
 		return [
 			{
 				key: "wallet-burner",
-				label: "burner",
-				sub: "single-wallet",
+				label: labels.burner,
+				sub: labels.singleWallet,
 				balance: 0,
 				valueUsd: total,
 				pct: navUsd > 0 ? (total / navUsd) * 100 : 0,
@@ -158,9 +167,14 @@ function slicesByWallet(holdings: ChainHolding[], navUsd: number): Slice[] {
 	}));
 }
 
-function slicesFor(mode: ViewMode, holdings: ChainHolding[], navUsd: number): Slice[] {
-	if (mode === "chain") return slicesByChain(holdings, navUsd);
-	if (mode === "wallet") return slicesByWallet(holdings, navUsd);
+function slicesFor(
+	mode: ViewMode,
+	holdings: ChainHolding[],
+	navUsd: number,
+	labels: { oneAsset: string; manyAssets: string; singleWallet: string; burner: string },
+): Slice[] {
+	if (mode === "chain") return slicesByChain(holdings, navUsd, labels);
+	if (mode === "wallet") return slicesByWallet(holdings, navUsd, labels);
 	return slicesByAsset(holdings, navUsd);
 }
 
@@ -205,11 +219,24 @@ function SliceShape(props: SectorShapeProps) {
 }
 
 export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot }) {
+	const { t } = useTranslation();
 	const [mode, setMode] = useState<ViewMode>("asset");
 	const [activeKey, setActiveKey] = useState<string | null>(null);
 	const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
-	const slices = useMemo(() => slicesFor(mode, snapshot.holdings, snapshot.navUsd), [mode, snapshot]);
+	const sliceLabels = useMemo(
+		() => ({
+			oneAsset: t("agent.holdings.oneAsset"),
+			manyAssets: t("agent.holdings.manyAssets"),
+			singleWallet: t("agent.holdings.singleWallet"),
+			burner: t("agent.holdings.burner"),
+		}),
+		[t],
+	);
+	const slices = useMemo(
+		() => slicesFor(mode, snapshot.holdings, snapshot.navUsd, sliceLabels),
+		[mode, snapshot, sliceLabels],
+	);
 	const hasData = slices.length > 0;
 	const activeSlice = activeKey ? (slices.find((s) => s.key === activeKey) ?? null) : null;
 	const expandedSlice = expandedKey ? (slices.find((s) => s.key === expandedKey) ?? null) : null;
@@ -234,15 +261,27 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 			<Label
 				right={
 					<div className="flex items-center gap-1">
-						<ViewPill active={mode === "asset"} label="asset" onClick={() => setMode("asset")} />
-						<ViewPill active={mode === "chain"} label="chain" onClick={() => setMode("chain")} />
+						<ViewPill
+							active={mode === "asset"}
+							label={t("agent.holdings.viewAsset")}
+							onClick={() => setMode("asset")}
+						/>
+						<ViewPill
+							active={mode === "chain"}
+							label={t("agent.holdings.viewChain")}
+							onClick={() => setMode("chain")}
+						/>
 						{hasWalletBreakdown ? (
-							<ViewPill active={mode === "wallet"} label="wallet" onClick={() => setMode("wallet")} />
+							<ViewPill
+								active={mode === "wallet"}
+								label={t("agent.holdings.viewWallet")}
+								onClick={() => setMode("wallet")}
+							/>
 						) : null}
 					</div>
 				}
 			>
-				holdings allocation
+				{t("agent.holdings.label")}
 			</Label>
 
 			<div className="flex flex-1 items-start gap-4">
@@ -312,10 +351,10 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 					) : (
 						<li className="flex flex-col gap-1">
 							<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-								no priced assets yet
+								{t("agent.holdings.noPriced")}
 							</span>
 							<span className="font-mono text-[11px] leading-snug text-[var(--text-tertiary)]/70">
-								agent-safe + agent-hot + patron wallets populate this view once funded
+								{t("agent.holdings.noPricedBody")}
 							</span>
 						</li>
 					)}
@@ -328,13 +367,13 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 			{expandedSlice?.sources[0]?.wallets && expandedSlice.sources[0].wallets.length > 1 ? (
 				<div className="mt-3 border-t border-[var(--border-soft)] pt-3">
 					<div className="mb-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-						<span>{expandedSlice.label.toLowerCase()} · per wallet</span>
+						<span>{t("agent.holdings.perWallet", { label: expandedSlice.label.toLowerCase() })}</span>
 						<button
 							className="text-[var(--text-tertiary)] hover:text-[var(--accent)]"
 							onClick={() => setExpandedKey(null)}
 							type="button"
 						>
-							close
+							{t("agent.holdings.close")}
 						</button>
 					</div>
 					<ul className="flex flex-col">
