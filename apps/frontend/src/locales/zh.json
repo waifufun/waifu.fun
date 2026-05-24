@@ -502,7 +502,8 @@
 			"summary": "presalers who clear the cap exit at roughly {{multiple}}x when v2 opens. {{vestingNote}} {{burn}}% of supply burns at graduation, leaving {{circulating}}m circulating.",
 			"noVesting": "no vesting, all unlocked at open.",
 			"withVesting": "the rest unlocks 50% at open, 50% over 24h.",
-			"headlineTooltip": "fully diluted valuation includes burned supply. circulating mc is the headline number."
+			"headlineTooltip": "fully diluted valuation includes burned supply. circulating mc is the headline number.",
+			"presaler": "预售者"
 		},
 		"launchpad": {
 			"selectLaunchpad": "select launchpad",

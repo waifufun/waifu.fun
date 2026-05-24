@@ -19,7 +19,7 @@ export function TaxRateSelector({ taxBps, onChange }: Props) {
 					{t("wizard.launchpad.tax.tradeTaxHelp")}
 				</p>
 			</header>
-			<div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="{t("wizard.launchpad.tax.tradeTax")} tier">
+			<div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label={t("wizard.launchpad.flap.tradeTax")}>
 				{TAX_TIER_BPS.map((tier) => {
 					const active = taxBps === tier;
 					return (

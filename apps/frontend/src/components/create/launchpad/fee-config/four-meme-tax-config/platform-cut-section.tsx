@@ -14,21 +14,23 @@ type Props = {
 export function PlatformCutSection({ taxBps, platformCutBps, platformCutVolumeBps, onChange }: Props) {
 	const { t } = useTranslation();
 	const platformCutId = useId();
-	const {t("wizard.common.reset")}ToDefault = () => onChange(DEFAULT_PLATFORM_CUT_BPS);
+	const resetToDefault = () => onChange(DEFAULT_PLATFORM_CUT_BPS);
+	const remainingVolumePct = ((taxBps - platformCutVolumeBps) / 100).toFixed(2);
 
 	return (
 		<section>
 			<header className="flex items-baseline justify-between mb-3">
 				<div>
-					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">{t("wizard.launchpad.tax.platformCut")}</h2>
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+						{t("wizard.launchpad.tax.platformCut")}
+					</h2>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed">
-						waifu's slice of the tax stream. taken off the top before your allocation. default{" "}
-						{DEFAULT_PLATFORM_CUT_BPS / 100}%.
+						{t("wizard.launchpad.tax.platformCutHelp", { defaultPct: String(DEFAULT_PLATFORM_CUT_BPS / 100) })}
 					</p>
 				</div>
 				<button
 					type="button"
-					onClick={{t("wizard.common.reset")}ToDefault}
+					onClick={resetToDefault}
 					className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 hover:text-white transition-colors"
 				>
 					{t("wizard.common.reset")}
@@ -44,7 +46,7 @@ export function PlatformCutSection({ taxBps, platformCutBps, platformCutVolumeBp
 					value={platformCutBps}
 					onChange={(e) => onChange(Number(e.target.value))}
 					className="flex-1 accent-accent"
-					aria-label="{t("wizard.launchpad.tax.platformCut")} percentage"
+					aria-label={t("wizard.launchpad.flap.platformCutAria")}
 				/>
 				<div className="flex items-center h-11 border border-white/10 bg-black/40 px-2 w-[120px] focus-within:border-white/30">
 					<input
@@ -55,17 +57,18 @@ export function PlatformCutSection({ taxBps, platformCutBps, platformCutVolumeBp
 						value={platformCutBps / 100}
 						onChange={(e) => onChange(Number(e.target.value) * 100)}
 						className="w-full bg-transparent outline-none text-sm font-mono tabular-nums text-white text-right"
-						aria-label="{t("wizard.launchpad.tax.platformCut")} percentage input"
+						aria-label={t("wizard.launchpad.flap.platformCutInputAria")}
 					/>
 					<span className="ml-1 text-neutral-500 font-mono text-sm">%</span>
 				</div>
 			</div>
 			<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed">
-				at {(taxBps / 100).toFixed(0)}% tax and {(platformCutBps / 100).toFixed(0)}% {t("wizard.launchpad.tax.platformCut")}, waifu earns{" "}
-				<span className="font-mono text-white tabular-nums">{(platformCutVolumeBps / 100).toFixed(2)}%</span> of trade
-				volume. you keep the remaining{" "}
-				<span className="font-mono text-white tabular-nums">{((taxBps - platformCutVolumeBps) / 100).toFixed(2)}%</span>{" "}
-				to allocate.
+				{t("wizard.launchpad.tax.platformSummary", {
+					tax: (taxBps / 100).toFixed(0),
+					cut: (platformCutBps / 100).toFixed(0),
+					volume: (platformCutVolumeBps / 100).toFixed(2),
+					remaining: remainingVolumePct,
+				})}
 			</p>
 		</section>
 	);
