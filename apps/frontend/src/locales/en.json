@@ -33,11 +33,25 @@
 		"portfolio": "portfolio",
 		"leaderboard": "leaderboard",
 		"docs": "docs",
-		"launchAgent": "launch agent"
+		"launchAgent": "launch agent",
+		"search": {
+			"placeholder": "search agents by name, ticker, or contract...",
+			"triggerAria": "Search",
+			"comingSoon": "coming soon",
+			"comingSoonBody": "agent search is wiring up. for now, browse the directory.",
+			"browseAgentsCta": "browse agents"
+		}
 	},
 	"layout": {
 		"devnetBanner": "this is a development environment connected to testnet. nothing here is real.",
-		"devnet": "devnet"
+		"devnet": "devnet",
+		"grainOverlayTitle": "Decorative grain overlay",
+		"scamNotice": {
+			"title": "High-Risk Warning",
+			"bodyBefore": "This token has been flagged as potentially fraudulent or part of a scam. Trading it carries a ",
+			"bodyEmphasis": "very high risk of loss",
+			"bodyAfter": ". Proceed with extreme caution, and make sure to do your own thorough research before buying."
+		}
 	},
 	"home": {
 		"noAgentsFound": "no agents found",

@@ -33,11 +33,25 @@
 		"portfolio": "仓位",
 		"leaderboard": "排行榜",
 		"docs": "文档",
-		"launchAgent": "发布代理"
+		"launchAgent": "发布代理",
+		"search": {
+			"placeholder": "按名称、代币或合约地址搜索代理...",
+			"triggerAria": "搜索",
+			"comingSoon": "即将上线",
+			"comingSoonBody": "代理搜索正在接入。目前请浏览代理目录。",
+			"browseAgentsCta": "浏览代理"
+		}
 	},
 	"layout": {
 		"devnetBanner": "这是连接测试网的开发环境，内容均非真实。",
-		"devnet": "测试网"
+		"devnet": "测试网",
+		"grainOverlayTitle": "装饰性颗粒蒙层",
+		"scamNotice": {
+			"title": "高风险警告",
+			"bodyBefore": "此代币被标记为可能属于欺诈或骗局。交易它存在",
+			"bodyEmphasis": "极高的损失风险",
+			"bodyAfter": "。请务必谨慎，并在买入前完成自己的徹底调查。"
+		}
 	},
 	"home": {
 		"noAgentsFound": "暂无代理",
