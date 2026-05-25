@@ -168,6 +168,18 @@ export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
 			accentColor: "negative",
 			category: "treasury",
 		}),
+	"hl.deposit": (p) =>
+		withDefaults(
+			"hl.deposit",
+			`deposited ${str(p, "amount") ?? "?"} ${(str(p, "asset") ?? "USDC").toUpperCase()} to hyperliquid`,
+			{ iconKey: "ArrowDownToLine", accentColor: "positive", category: "treasury" },
+		),
+	"hl.withdrawal": (p) =>
+		withDefaults(
+			"hl.withdrawal",
+			`withdrew ${str(p, "amount") ?? "?"} ${(str(p, "asset") ?? "USDC").toUpperCase()} from hyperliquid`,
+			{ iconKey: "ArrowUpFromLine", category: "treasury" },
+		),
 	"safe.tx.proposed": (p) =>
 		withDefaults("safe.tx.proposed", `safe tx proposed ${shortAddress(str(p, "safeTxHash", "txHash"))}`, {
 			iconKey: "Shield",
