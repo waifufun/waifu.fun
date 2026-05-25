@@ -1,0 +1,14 @@
+{
+  "name": "@waifufun/mini-app-persona-pix",
+  "version": "0.0.1",
+  "private": true,
+  "description": "persona pix mini app — character-consistent image gen for waifu.fun agents (scaffold)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
