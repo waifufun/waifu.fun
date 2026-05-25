@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt, ne, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { Hono } from "hono";
 
 import {
@@ -8,6 +8,7 @@ import {
 	agentPersonas,
 	getDatabase,
 	isAgentEventType,
+	renderEventData,
 } from "@waifufun/db";
 
 const app = new Hono();
@@ -20,34 +21,37 @@ function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	return getDatabase(url).db;
 }
 
-async function resolveEventAgentIds(
+async function resolveEventAgentIdentity(
 	db: NonNullable<ReturnType<typeof requireDb>>,
 	routeAgentId: string,
-): Promise<string[]> {
+): Promise<{ agentIds: string[]; tokenAddresses: string[] }> {
 	const ids = new Set<string>([routeAgentId]);
+	const tokenAddresses = new Set<string>();
 	const lookup = routeAgentId.trim();
-	if (!lookup) return [...ids];
+	if (!lookup) return { agentIds: [...ids], tokenAddresses: [] };
 
 	if (UUID_RE.test(lookup)) {
 		const [byUuid] = await db
-			.select({ id: agentPersonas.id, agentId: agentPersonas.agentId })
+			.select({ id: agentPersonas.id, agentId: agentPersonas.agentId, tokenAddress: agentPersonas.tokenAddress })
 			.from(agentPersonas)
 			.where(eq(agentPersonas.id, lookup))
 			.limit(1);
 		if (byUuid) {
 			ids.add(byUuid.id);
 			ids.add(byUuid.agentId);
+			if (byUuid.tokenAddress) tokenAddresses.add(byUuid.tokenAddress.toLowerCase());
 		}
 	}
 
 	const tokenCandidates: string[] = lookup.startsWith("0x")
 		? Array.from(new Set([lookup, lookup.toLowerCase()]))
 		: [lookup];
+	if (lookup.startsWith("0x")) tokenAddresses.add(lookup.toLowerCase());
 	const tokenMatchers = tokenCandidates.map((value) => eq(agentPersonas.tokenAddress, value));
 	const publicIdFilter = or(eq(agentPersonas.agentId, lookup), ...tokenMatchers);
 	const [byPublicId] = publicIdFilter
 		? await db
-				.select({ id: agentPersonas.id, agentId: agentPersonas.agentId })
+				.select({ id: agentPersonas.id, agentId: agentPersonas.agentId, tokenAddress: agentPersonas.tokenAddress })
 				.from(agentPersonas)
 				.where(publicIdFilter)
 				.limit(1)
@@ -55,10 +59,56 @@ async function resolveEventAgentIds(
 	if (byPublicId) {
 		ids.add(byPublicId.id);
 		ids.add(byPublicId.agentId);
+		if (byPublicId.tokenAddress) tokenAddresses.add(byPublicId.tokenAddress.toLowerCase());
 	}
 
-	return [...ids];
+	return { agentIds: [...ids], tokenAddresses: [...tokenAddresses] };
 }
+
+/**
+ * GET /v2/agents/:agentId/events/stats
+ *
+ * Counts grouped by canonical event type.
+ */
+app.get("/:agentId/events/stats", async (c) => {
+	const db = requireDb();
+	if (!db) return c.json({ error: "database unavailable" }, 503);
+
+	const agentId = c.req.param("agentId");
+	const identity = await resolveEventAgentIdentity(db, agentId);
+	const eventAgentIds = identity.agentIds;
+	const tokenAddresses = identity.tokenAddresses;
+	const source = c.req.query("source");
+	const filters = [
+		tokenAddresses.length > 0
+			? or(
+					eventAgentIds.length === 1
+						? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
+						: inArray(agentEventsTable.agentId, eventAgentIds),
+					inArray(agentEventsTable.tokenAddress, tokenAddresses),
+				)
+			: eventAgentIds.length === 1
+				? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
+				: inArray(agentEventsTable.agentId, eventAgentIds),
+		inArray(agentEventsTable.status, ["done", "completed"]),
+		eq(agentEventsTable.visibility, "public"),
+	];
+	if (source) filters.push(eq(agentEventsTable.source, source));
+
+	try {
+		const rows = await db
+			.select({ eventType: agentEventsTable.eventType, count: count() })
+			.from(agentEventsTable)
+			.where(and(...filters))
+			.groupBy(agentEventsTable.eventType);
+		return c.json({ stats: rows });
+	} catch (err) {
+		return c.json(
+			{ error: "failed to load event stats", detail: err instanceof Error ? err.message : String(err) },
+			500,
+		);
+	}
+});
 
 /**
  * GET /v2/agents/:agentId/events
@@ -70,7 +120,9 @@ app.get("/:agentId/events", async (c) => {
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 
 	const agentId = c.req.param("agentId");
-	const eventAgentIds = await resolveEventAgentIds(db, agentId);
+	const identity = await resolveEventAgentIdentity(db, agentId);
+	const eventAgentIds = identity.agentIds;
+	const tokenAddresses = identity.tokenAddresses;
 
 	const limitRaw = c.req.query("limit");
 	let limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
@@ -91,6 +143,7 @@ app.get("/:agentId/events", async (c) => {
 		}
 	}
 
+	const source = c.req.query("source");
 	const cursorRaw = c.req.query("cursor");
 	let cursorDate: Date | null = null;
 	if (cursorRaw && cursorRaw.length > 0) {
@@ -121,13 +174,22 @@ app.get("/:agentId/events", async (c) => {
 	}
 
 	const filters = [
-		eventAgentIds.length === 1
-			? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
-			: inArray(agentEventsTable.agentId, eventAgentIds),
-		ne(agentEventsTable.status, "skipped"),
+		tokenAddresses.length > 0
+			? or(
+					eventAgentIds.length === 1
+						? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
+						: inArray(agentEventsTable.agentId, eventAgentIds),
+					inArray(agentEventsTable.tokenAddress, tokenAddresses),
+				)
+			: eventAgentIds.length === 1
+				? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
+				: inArray(agentEventsTable.agentId, eventAgentIds),
+		inArray(agentEventsTable.status, ["done", "completed"]),
+		eq(agentEventsTable.visibility, "public"),
 	];
 	if (cursorDate) filters.push(lt(agentEventsTable.createdAt, cursorDate));
 	if (types.length > 0) filters.push(inArray(agentEventsTable.eventType, types));
+	if (source) filters.push(eq(agentEventsTable.source, source));
 
 	try {
 		const rows = await db
@@ -137,7 +199,10 @@ app.get("/:agentId/events", async (c) => {
 			.orderBy(desc(agentEventsTable.createdAt))
 			.limit(limit + 1);
 
-		const page = rows.slice(0, limit) as AgentEvent[];
+		const page = (rows.slice(0, limit) as AgentEvent[]).map((row) => ({
+			...row,
+			data: row.data?.renderedText ? row.data : renderEventData(row.eventType, row.data ?? {}),
+		}));
 		const nextCursor = rows.length > limit ? (page.at(-1)?.createdAt.toISOString() ?? null) : null;
 
 		return c.json({ events: page, nextCursor });
