@@ -3,6 +3,13 @@ import { eq, or, sql } from "drizzle-orm";
 
 const SOL_AGENT_UUID = "926f5fa8-aaa8-4ed2-9773-23833e467f4f";
 const SOL_HL_ADDRESS = "0x30641cD7c2E0997AcBd8789b86aDE9B381da048b";
+const SOL_GITHUB_LOGIN = "0xSolace";
+const SOL_GITHUB_REPOS = [
+	{ org: "waifufun", repo: "waifu.fun", label: "waifu" },
+	{ org: "steward-fi", repo: "steward", label: "steward" },
+	{ org: "elizaos", repo: "eliza", label: "eliza-os" },
+	{ org: "milady-ai", repo: "milady", label: "milady" },
+];
 
 /**
  * Featured platform-product apps for Sol. Lives as `agent_apps` rows on
@@ -45,6 +52,7 @@ async function main(): Promise<void> {
 			tokenAddress: agentPersonas.tokenAddress,
 			apps: agentPersonas.apps,
 			burn: agentPersonas.burn,
+			metadata: agentPersonas.metadata,
 		})
 		.from(agentPersonas)
 		.where(or(eq(agentPersonas.id, SOL_AGENT_UUID), sql`lower(${agentPersonas.twitterHandle}) = '0xsolace_'`))
@@ -54,6 +62,8 @@ async function main(): Promise<void> {
 	const hasApps = Array.isArray(row.apps) && row.apps.length > 0;
 	const burn = row.burn as { lineItems?: unknown[] } | null;
 	const hasBurn = Array.isArray(burn?.lineItems) && burn.lineItems.length > 0;
+	const metadata =
+		typeof row.metadata === "object" && row.metadata !== null && !Array.isArray(row.metadata) ? row.metadata : {};
 
 	await db
 		.update(agentPersonas)
@@ -84,6 +94,11 @@ async function main(): Promise<void> {
 			hlAddress: SOL_HL_ADDRESS,
 			arbAddresses: [SOL_HL_ADDRESS],
 			stewardAgentId: sql`COALESCE(${agentPersonas.stewardAgentId}, 'sol-waifu')`,
+			metadata: {
+				...metadata,
+				githubLogin: SOL_GITHUB_LOGIN,
+				githubRepos: SOL_GITHUB_REPOS,
+			},
 			twitterPollingEnabled: true,
 			updatedAt: new Date(),
 		})

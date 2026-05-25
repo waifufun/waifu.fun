@@ -247,6 +247,31 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				...(url ? { url } : {}),
 			};
 		}
+		case "commit.pushed": {
+			const text = renderedText(event);
+			const commitUrl = asString(payload.url);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "app",
+				timestamp: event.createdAt,
+				action: "updated",
+				appName: text ?? asString(payload.repoLabel, asString(payload.repo, "github")),
+				version: asString(payload.sha).slice(0, 7),
+				...(commitUrl ? { url: commitUrl } : {}),
+			};
+		}
+		case "pr.merged": {
+			const text = renderedText(event);
+			const number = asNumber(payload.number, 0);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "pr",
+				timestamp: event.createdAt,
+				title: text ?? asString(payload.title, "merged pull request"),
+				number,
+				url: asString(payload.url),
+			};
+		}
 		case "trade.open":
 		case "trade.close":
 		case "trade.fill":

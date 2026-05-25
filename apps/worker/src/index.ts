@@ -3,6 +3,7 @@ import { Worker } from "bullmq";
 import { createDbRepository, getDatabase } from "@waifufun/db";
 import { closeRedisConnection, createRedisConnection } from "@waifufun/queue";
 
+import { startGitHubListener } from "./lib/github-listener.js";
 import { startHyperliquidListener } from "./lib/hl-listener.js";
 import { logger } from "./lib/logger.js";
 import { startMetricsServer } from "./lib/metrics-server.js";
@@ -17,6 +18,7 @@ interface BootedWorker {
 
 const workers: BootedWorker[] = [];
 let metricsServer: ReturnType<typeof startMetricsServer> | undefined;
+let githubListener: ReturnType<typeof startGitHubListener> | undefined;
 let hyperliquidListener: ReturnType<typeof startHyperliquidListener> | undefined;
 
 async function bootWorkers(context: WorkerContext): Promise<void> {
@@ -102,6 +104,12 @@ async function main(): Promise<void> {
 			pollIntervalMs: Number.isFinite(pollIntervalMs) ? pollIntervalMs : 10_000,
 		});
 	}
+
+	if (process.env.GITHUB_LISTENER_DISABLED !== "1") {
+		githubListener = startGitHubListener(context, {
+			token: process.env.GITHUB_TOKEN,
+		});
+	}
 }
 
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
@@ -111,6 +119,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 		[
 			...workers.map(({ worker }) => worker.close()),
 			metricsServer ? new Promise<void>((resolve) => metricsServer?.close(() => resolve())) : undefined,
+			githubListener?.stop(),
 			hyperliquidListener?.stop(),
 		].filter((item): item is Promise<void> => item !== undefined),
 	);
