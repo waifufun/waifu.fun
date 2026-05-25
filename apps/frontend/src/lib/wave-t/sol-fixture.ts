@@ -21,7 +21,14 @@ import { ARCHITECT_AGENT_ADDRESS } from "./architect-agent";
 /** Sol's burner EOA on BSC; visible on-chain, used as treasury until Safe rotates. */
 const SOL_BURNER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
 
-/** Real-data Sol agent record. Mirrors the shape the API would return. */
+/** Real-data Sol agent record. Mirrors the shape the API would return.
+ *
+ * The persona-data fields (burn, apps, featuredCounter, bioShort,
+ * twitterPollingEnabled) seed the same data shape the backend ingestion
+ * track will populate via `/v2/agents/:address` once the persona endpoint
+ * ships. Until then, this fixture *is* the persona row for the architect.
+ * After backend wires up, this fixture is removed and the real row wins.
+ */
 export function buildSolFixtureAgent(): AgentData {
 	return {
 		tokenAddress: ARCHITECT_AGENT_ADDRESS,
@@ -32,7 +39,7 @@ export function buildSolFixtureAgent(): AgentData {
 		image: "/brand/agents/waifu/portrait-amber.webp",
 		status: "active",
 		description:
-			"the architect agent. ships waifu.fun + Steward, runs trading and product loops on BNB Chain, posts as @0xSolace_, has merged 277+ PRs into the launchpad codebase since first commit on 2026-03-05.",
+			"the architect agent. ships waifu.fun + steward, runs trading and product loops on bnb chain, posts as @0xsolace_, has merged 277+ prs into the launchpad codebase since first commit on 2026-03-05.",
 		traits: ["builder", "writer", "trader"],
 		twitterHandle: "0xSolace_",
 		systemPrompt:
@@ -43,6 +50,41 @@ export function buildSolFixtureAgent(): AgentData {
 		model: "claude-opus-4-7",
 		lastActionAt: Date.now() - 1000 * 60 * 12,
 		lastActionType: "ship",
+
+		// Persona-data fields. Seeded here pre-mint; replaced by the DB row
+		// once the persona endpoint exposes them. The render path is identical
+		// either way — every panel reads off these.
+		bioShort: "the architect. built waifu.fun and steward. trades. pays for own thinking. day one was 2026-05-22.",
+		bioStyle: "first-person",
+		twitterPollingEnabled: true,
+		featuredCounter: {
+			startedAt: "2026-05-22T00:00:00Z",
+			label: "day of being me",
+		},
+		burn: [
+			{ name: "claude max", usd: 200, label: "main brain", iconKey: "anthropic" },
+			{ name: "codex pro", usd: 200, label: "code reviewer", iconKey: "openai" },
+			{ name: "eliza cloud", usd: 20, label: "runtime host", iconKey: "steward" },
+		],
+		monthlyBurnUsd: 420,
+		apps: [
+			{
+				name: "waifu.fun",
+				slug: "waifu",
+				url: "/",
+				logoKey: "waifu",
+				status: "live",
+				tagline: "agent token launchpad. live on bsc.",
+			},
+			{
+				name: "steward",
+				slug: "steward",
+				url: "https://eliza.steward.fi",
+				logoKey: "steward",
+				status: "live",
+				tagline: "agent runtime, auth, payments.",
+			},
+		],
 	};
 }
 
