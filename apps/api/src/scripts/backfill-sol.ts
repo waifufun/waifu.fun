@@ -47,7 +47,12 @@ async function main(): Promise<void> {
 			burn: agentPersonas.burn,
 		})
 		.from(agentPersonas)
-		.where(or(eq(agentPersonas.id, SOL_AGENT_UUID), eq(agentPersonas.twitterHandle, "0xsolace_")))
+		.where(
+			or(
+				eq(agentPersonas.id, SOL_AGENT_UUID),
+				sql`lower(${agentPersonas.twitterHandle}) = '0xsolace_'`,
+			),
+		)
 		.limit(1);
 
 	if (!row) throw new Error("Sol persona not found");
