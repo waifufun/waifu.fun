@@ -10,14 +10,13 @@ import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
-import { fetchAppsForAgent } from "@/lib/wave-t/apps";
-import { isArchitectAgentAddress } from "@/lib/wave-t/architect-agent";
+import { type App, fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
+import { fetchNavHistory, selectPnlSeries } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
-import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTradingSnapshot } from "@/lib/wave-t/trading";
 import { fetchTweets } from "@/lib/wave-t/voice";
@@ -318,21 +317,22 @@ async function fetchLaunch(address: string): Promise<AgentLaunchByToken | null> 
 }
 
 /**
- * Build the Wave T activity feed. Combines the architect agent's ship log,
- * tweets and on-chain transfers into one chronological stream. Non-Sol
- * agents skip the ship/tweets path and just surface their on-chain
- * activity.
+ * Build the Wave T activity feed. Composes ship log (when the agent has
+ * github repos wired), tweets (when twitterPolling is enabled), and
+ * on-chain history into one chronological stream. Each source is
+ * presence-gated on agent fields, never on identity.
  */
 async function buildAgentActivity(opts: {
-	isSolAgent: boolean;
 	tokenAddress: string;
+	includeShipLog: boolean;
+	includeTweets: boolean;
 }): Promise<ActivityRowInput[]> {
 	const [ship, tweets, onchain] = await Promise.all([
-		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
-		opts.isSolAgent ? fetchTweets(opts.tokenAddress) : Promise.resolve([]),
-		opts.isSolAgent
-			? Promise.resolve({ txs: [] })
-			: fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
+		opts.includeShipLog
+			? fetchShipLog()
+			: Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
+		opts.includeTweets ? fetchTweets(opts.tokenAddress) : Promise.resolve([]),
+		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
 	]);
 
 	const foundation = buildActivity({ prs: ship.items, tweets });
@@ -388,7 +388,6 @@ export default async function AgentPage({
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
 	// a sane empty default, so we never throw out of Promise.all.
-	const isSolAgent = isArchitectAgentAddress(address);
 	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
 	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
 		candles: [],
@@ -410,13 +409,14 @@ export default async function AgentPage({
 	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
 	const appsP = fetchAppsForAgent(address).catch(() => []);
-	const tradingP = fetchTradingSnapshot(address).catch(() => ({
-		enabled: false,
-		session: null,
-		positions: [],
-		orders: [],
-	}));
-	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
+	// PnL chart series. Pulled from /v2/agents/:address/nav-history; the
+	// selector computes deltas relative to the first snapshot. Returns []
+	// (→ empty state) when nav-history has fewer than two points. Modular:
+	// any agent with nav snapshots gets a chart, anyone without gets the
+	// honest "no pnl history yet" panel. No mock data.
+	const navHistoryP = fetchNavHistory(address, "30d", "1h").catch(() => []);
+	// Trading snapshot fetched post-await because the proxy gate now
+	// reads `agent.stewardAgentId` (presence-based, not identity-based).
 	// ERC-8004 identity. Returns null when the agent has no on-chain
 	// identity (the default for most agents). When present, the hero
 	// shows a verified badge and the page renders a provenance panel.
@@ -434,9 +434,8 @@ export default async function AgentPage({
 		twitterStats,
 		positions,
 		apps,
-		activity,
-		trading,
 		identity,
+		navHistory,
 	] = await Promise.all([
 		agentP,
 		tradesP,
@@ -449,10 +448,32 @@ export default async function AgentPage({
 		twitterStatsP,
 		positionsP,
 		appsP,
-		activityP,
-		tradingP,
 		identityP,
+		navHistoryP,
 	]);
+
+	const pnlSeries = selectPnlSeries(navHistory);
+
+	// Trading gate: presence of `stewardAgentId` on the persona.
+	const trading = await fetchTradingSnapshot(address, {
+		stewardAgentId: agent?.stewardAgentId ?? null,
+	}).catch(() => ({ enabled: false, session: null, positions: [], orders: [] }));
+
+	// Presence-based gates. Modular for any agent: persona populates these
+	// fields, the page renders. No identity branches.
+	//   - ship log fetch: enabled when persona.metadata.githubRepos[] is non-empty
+	//   - tweet fetch: enabled when persona.twitterPollingEnabled === true
+	// Architect-fixture fallback: when the DB row is absent pre-mint, the
+	// fixture supplies both fields so the architect surface still renders.
+	const personaMeta = (agent?.metadata as { githubRepos?: unknown } | null) ?? null;
+	const githubRepos = Array.isArray(personaMeta?.githubRepos) ? personaMeta.githubRepos : [];
+	const includeShipLog = githubRepos.length > 0;
+	const includeTweets = agent?.twitterPollingEnabled === true;
+	const activity = await buildAgentActivity({
+		tokenAddress: address,
+		includeShipLog,
+		includeTweets,
+	}).catch(() => [] as ActivityRowInput[]);
 
 	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
 	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
@@ -462,28 +483,23 @@ export default async function AgentPage({
 	// the Hero falls back to holdings.navUsd in that case.
 	const agentSafeBalance = await fetchAgentSafeBalance(launch?.agentSafe ?? null);
 
-	let renderAgent = agent;
-	let renderTrades = trades;
-	let renderLaunch = launch;
-
-	if (!renderAgent) {
-		// Until $WAIFU mints, the architect agent is not seeded in the DB.
-		// Fall back to a fixture so /agent/sol renders Sol's surface instead
-		// of the generic not-found state. Real DB record wins when present.
-		if (isSolAgent) {
-			renderAgent = buildSolFixtureAgent();
-			renderTrades = buildSolFixtureTrades();
-			renderLaunch = buildSolFixtureLaunch();
-		} else {
-			notFound();
-		}
+	if (!agent) {
+		// The persona endpoint is now the source of truth. If the row is
+		// missing the agent does not exist as far as the page is concerned.
+		notFound();
 	}
+
+	// Merge persona-declared apps (legacy jsonb shape, kept for forward
+	// compatibility) with the apps registry table. The persona endpoint
+	// now returns the merged + sorted list directly; mergeAgentApps remains
+	// as a safety net in case the API ever splits them again.
+	const mergedApps = mergeAgentApps(agent, apps);
 
 	return (
 		<AgentHomeV2
-			agent={renderAgent}
-			trades={renderTrades}
-			launch={renderLaunch}
+			agent={agent}
+			trades={trades}
+			launch={launch}
 			token={token}
 			candles={candles}
 			holdings={holdings}
@@ -492,10 +508,75 @@ export default async function AgentPage({
 			twitterStats={twitterStats}
 			positions={positions}
 			activity={activity}
-			apps={apps}
+			apps={mergedApps}
 			agentSafeBalance={agentSafeBalance}
 			trading={trading}
 			identity={identity}
+			pnlSeries={pnlSeries}
 		/>
 	);
+}
+
+/**
+ * Merge persona-declared featured apps into the apps registry list.
+ *
+ * `agent.apps` (persona endpoint) typically holds platform products that
+ * the agent runs (e.g. waifu.fun, steward) and want to surface as
+ * featured rows. `registryApps` (from `/v2/agents/:address/apps`) holds
+ * revenue-generating mini-apps from the apps registry. Both render via
+ * the same `<AppsShipped>` panel; persona-featured rows sort first.
+ *
+ * Dedup on `slug`: if a persona row and a registry row share an `appId`,
+ * the persona row's metadata wins for `featured`/`tagline` only.
+ */
+function mergeAgentApps(agent: AgentData, registryApps: App[]): App[] {
+	const personaApps = agent.apps ?? [];
+	if (personaApps.length === 0) return registryApps;
+
+	const registryBySlug = new Map<string, App>();
+	for (const app of registryApps) {
+		registryBySlug.set(app.appId, app);
+	}
+
+	const merged: App[] = [];
+	for (const p of personaApps) {
+		const slug = p.slug ?? p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+		const existing = registryBySlug.get(slug);
+		const meta: Record<string, unknown> = {
+			featured: true,
+			...(p.tagline ? { tagline: p.tagline } : {}),
+			kind: "platform-product",
+		};
+		if (existing) {
+			merged.push({
+				...existing,
+				metadata: { ...((existing.metadata as Record<string, unknown> | null) ?? {}), ...meta },
+			});
+			registryBySlug.delete(slug);
+		} else {
+			merged.push({
+				id: `persona-${slug}`,
+				agentTokenAddress: agent.tokenAddress,
+				appId: slug,
+				name: p.name,
+				description: p.tagline ?? null,
+				icon: null,
+				appUrl: p.url ?? null,
+				status: p.status ?? "live",
+				shippedAt: null,
+				revenueLifetimeUsd: 0,
+				revenue24hUsd: 0,
+				revenue7dUsd: typeof p.revenueUsd === "number" ? p.revenueUsd : 0,
+				revenue7dDeltaPct: null,
+				metadata: meta,
+				createdAt: "",
+				updatedAt: "",
+			});
+		}
+	}
+	// Tail: any registry apps not also in persona
+	for (const app of registryBySlug.values()) {
+		merged.push(app);
+	}
+	return merged;
 }

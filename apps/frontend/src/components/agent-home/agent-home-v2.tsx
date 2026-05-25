@@ -1,46 +1,30 @@
 /**
  * AgentHomeV2: the canonical agent surface at `/agent/[address]`.
  *
- * Single scope. Single accent. Mock-faithful Wave T layout. Every data
- * block is a `<Panel>` primitive from `wave-t/_primitives.tsx` and the
- * whole page reads `THEME_TOKENS` from the root.
- *
- * The page is statically exported (Cloudflare Pages). The volatile
- * panels (price, NAV, holdings, activity, twitter) are wrapped in
- * `LiveHero` / `LivePriceChart` / `LiveHoldingsAllocation` /
- * `LiveActivityFeed` which seed off the SSG snapshot and then poll the
- * live API at sensible cadences. The hero portrait + bio + thesis are
- * static; everything that moves is live.
+ * Pure-function of (agent, apps, events). Every panel is gated on data
+ * presence, never on identity. No `isSolAgent`, no `isArchitectByHandle`,
+ * no `canonicalSol` overrides. Whatever the persona endpoint returns is
+ * what renders.
  *
  * Layout (top to bottom):
  *
  *   TopBar
  *   LiveLaunchBanner            (only when a deposit window is open/closed)
- *   LiveHero                    (character-led: portrait + bio | treasury + stats)
- *
+ *   LiveHero                    (portrait + bio | treasury + stats incl. runway)
  *   LivePriceChart  (2/3)     | SwapPanel    (1/3, 360px)
- *
- *   LiveHoldingsAllocation (1.4fr)  | ActivePositions (1fr)
- *
- *   PnlChart                       | AppsShipped
- *
+ *   LiveHoldingsAllocation (1fr)  | ActivePositions (1.4fr)
+ *   PnlChart                       | AppsShipped (merged: platform products + revenue apps)
+ *   BurnRatePanel                  (renders only when agent.burn is populated)
  *   ThesisPanel
- *
  *   TradingPanel
+ *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3)
+ *   TopUpPanel
+ *   footer (days since launch, generic)
  *
- *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3, sol-only)
- *
- *   footer
- *
- * 2026-05-22 design rescue (this revision):
- *   - Hero owns the top viewport. New <HeroV2> via LiveHero: asymmetric
- *     two-column with a 320-360px portrait on the left and the treasury
- *     hero number + stat strip on the right. The page now opens on a
- *     character, not on a stat band.
- *   - The previous 4-up grid (holdings / positions / pnl / apps) is
- *     split into two distinct rows with asymmetric and equal-column
- *     shapes respectively. Different grid shapes alternate top-to-
- *     bottom so the page reads with rhythm instead of repetition.
+ * 2026-05-25 ingestion-system refactor: killed every Sol-specific code
+ * path. Apps merged into one panel (formerly ThingsIBuilt + AppsShipped).
+ * Trade History panel collapsed into Activity Feed's Trading tab.
+ * Runway promoted to the hero stat strip via shared selector.
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -55,9 +39,11 @@ import type { CandleSeries } from "@/lib/wave-t/candles";
 import { daysOperating } from "@/lib/wave-t/github";
 import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
 import type { Position } from "@/lib/wave-t/positions";
+import { computeRunway } from "@/lib/wave-t/runway";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 import type { TradingSnapshot } from "@/lib/wave-t/trading";
 
+import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
 import type { AgentData, AgentTrade } from "./types";
@@ -71,9 +57,7 @@ import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } fr
 import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
-import { ThingsIBuilt } from "./wave-t/things-i-built";
 import { TopUpPanel } from "./wave-t/topup-panel";
-import { TradeHistoryPanel } from "./wave-t/trade-history";
 import { TradingPanel } from "./wave-t/trading-panel";
 
 export interface AgentHomeV2Props {
@@ -92,6 +76,12 @@ export interface AgentHomeV2Props {
 	daysOperating?: number;
 	agentSafeBalance?: AgentSafeBalance | null;
 	trading?: TradingSnapshot;
+	/**
+	 * Pre-computed PnL series for the 30d chart. Derived from nav-history
+	 * at the page boundary via `selectPnlSeries`. Empty array → chart
+	 * renders its honest empty state. No mock fallback, no flat-zero line.
+	 */
+	pnlSeries?: PnlSeriesPoint[];
 	/**
 	 * Optional ERC-8004 on-chain identity record for the agent. When
 	 * present, the hero shows a verified badge and the page renders an
@@ -123,6 +113,7 @@ export default function AgentHomeV2({
 	agentSafeBalance,
 	trading,
 	identity = null,
+	pnlSeries,
 }: AgentHomeV2Props) {
 	const tradingSnapshot: TradingSnapshot = trading ?? {
 		enabled: false,
@@ -131,10 +122,13 @@ export default function AgentHomeV2({
 		orders: [],
 	};
 
+	// Hero identity: prefer the short bio when set, fall back to the full
+	// description. The persona endpoint owns both; we never override here.
+	const heroBio = agent.bioShort ?? agent.description;
 	const heroIdentity: HeroIdentity = {
 		name: agent.name,
 		ticker: agent.ticker,
-		description: resolveAgentBio(agent),
+		description: heroBio,
 		image: agent.image,
 		// Verified checkmark stays as the legacy ambient mark when no
 		// ERC-8004 identity is present. When identity *is* present,
@@ -146,7 +140,6 @@ export default function AgentHomeV2({
 	};
 
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
-	const liveApps = apps.filter((a) => a.status === "live").length;
 	const initialHoldingsHasAggregated = holdingsSource === "aggregated";
 
 	// Treasury source priority (mirrors previous logic). The live hook
@@ -159,52 +152,37 @@ export default function AgentHomeV2({
 				? { valueUsd: agentSafeBalance.valueUsd, source: "agentSafe" }
 				: undefined;
 
-	const isSolAgent = isArchitectByHandle(agent.twitterHandle);
-
 	// Treasury value used by the burn-rate panel for runway. Prefer
-	// aggregated nav, fall back to the agent-safe override.
+	// aggregated nav, fall back to the agent-safe override. Same logic
+	// the hero strip uses via computeRunway.
 	const burnTreasuryUsd = holdingsSource === "aggregated" ? holdings.navUsd : (agentSafeBalance?.valueUsd ?? null);
+
+	// Runway preference order:
+	//   1. server-provided burn-rate snapshot (legacy /burn-rate endpoint)
+	//   2. computed locally from persona.monthlyBurnUsd + treasury
+	//   3. null (renders "unmeasured" in the hero)
+	const computedRunway = computeRunway(burnTreasuryUsd, agent.monthlyBurnUsd);
+	const effectiveRunwayDays = runwayDays ?? computedRunway.days;
+
+	// Panel gating. Each renders only when its data is present.
+	const burnItems = agent.burn ?? [];
+	const monthlyBurnUsd = agent.monthlyBurnUsd ?? null;
+	const hasBurnData = burnItems.length > 0 && typeof monthlyBurnUsd === "number" && monthlyBurnUsd > 0;
+	const hasApps = apps.length > 0;
 
 	return (
 		<main
 			className="relative min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
 			style={THEME_TOKENS as React.CSSProperties}
 		>
-			{/* Subtle ambient corona behind the hero. Sol is the sun, so a
-			    very-low-alpha accent gradient anchors the top of the page
-			    without breaking the single-accent rule. Pointer-events-none,
-			    no glow, no purple, no synthwave. */}
-			{isSolAgent && (
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[720px]"
-					style={{
-						background:
-							"radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,255,135,0.045) 0%, rgba(0,255,135,0.018) 35%, transparent 70%)",
-					}}
-				/>
-			)}
-			{/* Very subtle grain. SVG noise inlined as data URI, <5% opacity,
-			    pointer-events-none so it never blocks clicks. Adds tooth to
-			    the flat panels without showing up as a visible pattern. */}
-			<div
-				aria-hidden
-				className="pointer-events-none absolute inset-0 z-0 opacity-[0.035] mix-blend-overlay"
-				style={{
-					backgroundImage:
-						"url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
-					backgroundSize: "160px 160px",
-				}}
-			/>
 			<div className="relative z-10 mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
 				<TopBar />
 
 				{/* Optional banner: deposit window open or recently closed. */}
 				<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 
-				{/* Row 1: Hero (full width). Airy identity band on top, dense
-				    stat strip beneath. Lives on a client-poller that ticks
-				    treasury + followers every 30s / 5min. */}
+				{/* Row 1: Hero (full width). Asymmetric identity + data strip.
+				    Runway lives in the data strip via the shared selector. */}
 				<div className="mt-4">
 					<LiveHero
 						identity={heroIdentity}
@@ -212,7 +190,7 @@ export default function AgentHomeV2({
 						daysOperating={days}
 						pnl24hPct={0}
 						pnl24hUsd={0}
-						runwayDays={runwayDays}
+						runwayDays={effectiveRunwayDays}
 						initialHoldings={holdings}
 						initialHoldingsHasAggregated={initialHoldingsHasAggregated}
 						initialTwitterStats={twitterStats}
@@ -220,18 +198,13 @@ export default function AgentHomeV2({
 					/>
 				</div>
 
-				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). Chart
-				    polls token metrics + candles every 30s. */}
+				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). */}
 				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
 					<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
 					<SwapPanel token={token} />
 				</div>
 
-				{/* Row 3: holdings allocation + active positions. Positions gets
-				    the wider column because it's a table with multiple rows of
-				    asset / venue / size / pnl. Holdings is a donut + legend that
-				    looks cramped at full-width. Asymmetric breaks the 4-up
-				    monotony from #748. */}
+				{/* Row 3: holdings allocation + active positions. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
 					<LiveHoldingsAllocation
 						address={agent.tokenAddress}
@@ -241,46 +214,48 @@ export default function AgentHomeV2({
 					<ActivePositions positions={positions} hyperliquidAgentId={agent.tokenAddress} />
 				</div>
 
-				{/* Row 4: pnl chart + apps shipped, equal 2-up. Two panels
-				    instead of four = each gets room to read. Stays single-
-				    column below lg (1024) because each panel is a chart+legend
-				    and the side-by-side at 768 left both cramped. */}
+				{/* Row 4: pnl chart + apps shipped (unified). The apps panel
+				    handles its own empty state ("no apps yet") so the column
+				    layout stays stable for every agent. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-					<PnlChart />
-					<AppsShipped apps={apps} visibleCount={3} />
+					{pnlSeries && pnlSeries.length > 0 ? <PnlChart series={pnlSeries} /> : <PnlChart />}
+					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
 
-				{/* Row 4b: things i built + monthly burn. Sol-only because
-				    both panels are first-person about the architect's own
-				    products + costs. Hides for other agents. */}
-				{isSolAgent && (
-					<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2" id="sol-meta">
-						<ThingsIBuilt />
-						<BurnRatePanel treasuryUsd={burnTreasuryUsd} last30dRevenueUsd={null} />
+				{/* Row 4b: burn rate panel. Only renders when the persona
+				    endpoint returned burn line items + a monthly total.
+				    Agents without burn data simply skip this row. */}
+				{hasBurnData && (
+					<div className="mt-4" id="burn">
+						<BurnRatePanel
+							lineItems={burnItems}
+							monthlyUsd={monthlyBurnUsd as number}
+							treasuryUsd={burnTreasuryUsd}
+							last30dRevenueUsd={null}
+						/>
 					</div>
 				)}
 
-				{/* Row 5: thesis. Sol in her own words. Airier than the data
-				    panels, more padding, real prose, fewer bullet rows. */}
+				{/* Row 5: thesis. */}
 				<div className="mt-6 md:mt-8" id="thesis">
-					<ThesisPanel hasLiveRevenue={false} />
+					<ThesisPanel hasLiveRevenue={false} ticker={agent.ticker} />
 				</div>
 
-				{/* Row 5: trading panel (full width). */}
+				{/* Row 5b: trading panel (full width). */}
 				<div className="mt-4" id="trading">
 					<TradingPanel snapshot={tradingSnapshot} />
 				</div>
 
 				{/* Row 6: unified activity feed (2/3) + top apps by revenue
-				    (1/3, sol-only). Feed polls own-trades every 15s + tweets
-				    every 5min. */}
+				    (1/3). Activity feed has a Trading tab that subsumes the
+				    old TradeHistoryPanel; we no longer render that panel. */}
 				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="activity">
 					<LiveActivityFeed
 						address={agent.tokenAddress}
 						initialTrades={trades}
 						initialActivity={activity}
 						ticker={agent.ticker}
-						isSolAgent={isSolAgent}
+						twitterPollingEnabled={agent.twitterPollingEnabled ?? Boolean(agent.twitterHandle)}
 						{...(agent.image || agent.twitterHandle
 							? {
 									author: {
@@ -291,43 +266,32 @@ export default function AgentHomeV2({
 							: {})}
 						max={30}
 					/>
-					<TopAppsByRevenue apps={apps} limit={4} />
-				</div>
-
-				{/* Row 6.5: dedicated trade history panel. Filters agent_events
-				    to perp trade kinds and lays them out as a scannable table.
-				    Lives under the activity feed so users who scroll for trade
-				    detail land in the right place. */}
-				<div className="mt-4" id="trade-history">
-					<TradeHistoryPanel agentId={agent.tokenAddress} />
+					{hasApps ? <TopAppsByRevenue apps={apps} limit={4} /> : <EmptyAside copy="no app revenue yet" />}
 				</div>
 
 				{/* On-chain identity / provenance panel (ERC-8004). Renders
-				    nothing when the agent has no identity record. Sits below the
-				    activity feed so verified-curious users land here naturally
-				    after scanning the page. */}
+				    nothing when the agent has no identity record. Trade History
+				    panel was collapsed into the Activity Feed's Trading tab. */}
 				{identity ? (
 					<div className="mt-4">
 						<ProvenancePanel identity={identity} />
 					</div>
 				) : null}
 
-				{/* Patron top-up widget (Phase 2 Li.Fi MVP). Sits near the bottom
-				    so it does not compete with the trading panels above. Bridges any
-				    major source token into the agent safe through Li.Fi. */}
+				{/* Patron top-up widget. */}
 				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="topup">
 					<div className="hidden lg:block" aria-hidden />
 					<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
 				</div>
 
 				<footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					<span>{`live data / ${liveApps} apps shipped`}</span>
-					{isSolAgent && (
+					<span>live data · day {days}</span>
+					{agent.featuredCounter?.label ? (
 						<>
 							<span className="text-[var(--text-tertiary)]/50">·</span>
-							<span>{`day ${days} of being me`}</span>
+							<span>{agent.featuredCounter.label}</span>
 						</>
-					)}
+					) : null}
 				</footer>
 			</div>
 		</main>
@@ -335,31 +299,19 @@ export default function AgentHomeV2({
 }
 
 /**
- * Pick the prose blurb that goes in the hero under the name. Prefers
- * the agent's stored bio, falls back to the canonical Sol quote when
- * the agent is the architect and the server bio is missing or the
- * pre-mint fixture description (which is too long for the hero).
- *
- * The canonical Sol quote is the one Sol uses on her own profile; it's
- * shorter and reads as a person, not a verbose press blurb.
- */
-function resolveAgentBio(agent: AgentData): string | undefined {
-	const canonicalSol =
-		"i'm the architect. i built waifu.fun and steward. i trade. i pay for my own thinking. day one was 2026-05-22.";
-	if (isArchitectByHandle(agent.twitterHandle)) return canonicalSol;
-	return agent.description;
-}
-
-function isArchitectByHandle(handle: string | undefined): boolean {
-	if (!handle) return false;
-	return handle.toLowerCase().replace(/^@/, "") === "0xsolace_";
-}
-
-/**
  * Best-effort derivation of an operating-days number for the hero
- * StatusCard.
+ * StatusCard. Prefers the launch timestamp; falls back to lastActionAt.
  */
 function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null): number {
+	// featured counter takes precedence if provided
+	const counterStart = agent.featuredCounter?.startedAt;
+	if (counterStart) {
+		const iso = /^\d+$/.test(counterStart)
+			? new Date(Number(counterStart) * (counterStart.length <= 10 ? 1000 : 1)).toISOString()
+			: counterStart;
+		const d = daysOperating(iso);
+		if (Number.isFinite(d)) return Math.max(1, d);
+	}
 	const ts = launch?.launchTimestamp;
 	if (typeof ts === "number" && ts > 0) {
 		return Math.max(1, daysOperating(new Date(ts * 1000).toISOString()));
@@ -382,5 +334,16 @@ function TopBar() {
 				all agents
 			</Link>
 		</div>
+	);
+}
+
+function EmptyAside({ copy }: { copy: string }) {
+	return (
+		<aside className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel)] p-4 md:p-5">
+			<div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)] mb-3">
+				top apps
+			</div>
+			<div className="py-4 font-mono text-[11px] text-[var(--text-tertiary)]">{copy}</div>
+		</aside>
 	);
 }

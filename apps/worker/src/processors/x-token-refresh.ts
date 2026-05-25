@@ -140,6 +140,8 @@ export function createXTokenRefreshProcessor(context: WorkerContext) {
 							failureCount,
 							lastError: error instanceof Error ? error.message : String(error),
 						},
+						source: "x-token-refresh",
+						sourceEventId: `x-token-refresh:${account.agentId}:${Date.now()}`,
 						status: "pending",
 					});
 				}

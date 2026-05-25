@@ -1,39 +1,20 @@
 /**
- * Hero v2 — character-led design rescue (2026-05-22).
+ * Hero v2 — character-led agent surface.
  *
- * The previous hero (`./hero.tsx`) treated sol as a header thumbnail:
- * a 176px portrait, a 14px bio, and a four-cell stat strip beneath
- * that read as the page's emotional anchor. The page looked like
- * "agent index entry #4", not "sol's profile".
+ * Asymmetric two-column at md+: a square portrait on the left, the
+ * treasury hero number + stat strip on the right (24h PNL, runway,
+ * followers, chain). Below md the columns stack.
  *
- * This rescue inverts the hierarchy. Asymmetric two-column at md+:
- *
- *   ┌──────────────────────────────┬─────────────────────────────┐
- *   │                              │  TREASURY                   │
- *   │                              │  $729,481                   │
- *   │       [ portrait 360px ]     │  source · pulse · sparkline │
- *   │                              ├─────────────────────────────┤
- *   │                              │  24H PNL │ runway │ status  │
- *   │  sol  ✓  @0xsolace_          │  followers          chain   │
- *   │  bio prose, sol-voice, ≤52ch ├─────────────────────────────┤
- *   │  $SUKI  v0.1.0  bnb chain    │  share watermark · day N    │
- *   └──────────────────────────────┴─────────────────────────────┘
- *
- * Below md the columns stack: portrait + name + bio first, then the
- * treasury/stats block.
- *
- * Live-data behavior is unchanged. The wrapper (`LiveHero` in
- * `./live-wrappers.tsx`) still feeds in polled nav, twitter stats,
- * etc.
+ * Live-data behavior owned by the wrapper (`LiveHero` in
+ * `./live-wrappers.tsx`); this component is the static shell.
  *
  * Visual contract (locked to .impeccable.md):
  *   - single #00ff87 accent (CSS var --accent)
  *   - mono numbers everywhere, satoshi for name/bio
  *   - lowercase voice, no em-dashes
- *   - <Panel> wraps the whole hero so it grouped consistently with
- *     the rest of the cockpit grammar
- *   - portrait stays square (not circle) to preserve "ID card" feel
- *     and avoid lucide-egg-avatar territory
+ *   - <Panel> wraps the whole hero so it groups consistently with the
+ *     rest of the cockpit grammar
+ *   - portrait stays square (not circle) to preserve the "ID card" feel
  */
 
 "use client";
@@ -197,7 +178,10 @@ function CharacterColumn({
 				{description ? (
 					<Typewriter
 						as="p"
-						speed="fast"
+						// 15ms/char — roughly 2x the 'fast' preset (30ms). The long
+						// hero bio felt sluggish at 'fast'; this stays snappy without
+						// turning into a blur. Tuned by eye, not by stopwatch.
+						speed={15}
 						cursorBlinkRepeat={2}
 						cursorStyle={{
 							backgroundColor: "var(--accent)",

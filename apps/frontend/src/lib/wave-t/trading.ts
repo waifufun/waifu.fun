@@ -29,7 +29,9 @@
  * with that shape directly so this module reduces to a single `fetch`.
  */
 
-import { isSolAgentAddress } from "./sol-agent";
+// Trading proxy used to be gated on `isSolAgentAddress`. Now gated on
+// the presence of a `stewardAgentId` on the persona — any agent with a
+// Steward session can fetch its snapshot. See `fetchTradingSnapshot`.
 
 /** Steward session, scoped to a single venue (Hyperliquid in Phase 1). */
 export type TradingSession = {
@@ -136,19 +138,20 @@ function proxyBase(): string {
 /**
  * Fetch the trading snapshot for an agent.
  *
- * Behavior:
- *   - Non-sol agents: returns `{ enabled: false, ... }` immediately so
- *     the panel renders "trading not enabled for this agent yet".
- *   - Sol: attempts the proxy endpoint. On 404 (proxy not deployed yet)
- *     or any failure, returns an honest "session inactive" snapshot
- *     that still surfaces the Phase 1 policy as reference. The panel
- *     can then render the empty cap meter + scheduled asset pills
- *     without inventing positions.
+ * Gate: presence of `stewardAgentId` on the persona. Agents without a
+ * Steward session get `{ enabled: false, ... }` immediately so the panel
+ * renders "trading not enabled for this agent yet". Agents with a session
+ * attempt the proxy endpoint; on failure we return an honest "session
+ * inactive" snapshot so the panel still shows the policy shape without
+ * inventing positions.
  *
  * Server-side safe. Used from `app/agent/[address]/page.tsx`.
  */
-export async function fetchTradingSnapshot(address: string): Promise<TradingSnapshot> {
-	if (!isSolAgentAddress(address)) {
+export async function fetchTradingSnapshot(
+	address: string,
+	opts: { stewardAgentId?: string | null } = {},
+): Promise<TradingSnapshot> {
+	if (!opts.stewardAgentId) {
 		return EMPTY_SNAPSHOT;
 	}
 

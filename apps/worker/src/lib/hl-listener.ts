@@ -25,7 +25,7 @@
 
 import { and, desc, eq } from "drizzle-orm";
 
-import { agentEvents, agentPersonas, agentWalletRegistry } from "@waifufun/db";
+import { agentEvents, agentPersonas, agentWalletRegistry, renderEventData } from "@waifufun/db";
 
 import type { WorkerContext } from "./types.js";
 
@@ -247,21 +247,29 @@ async function insertTradeEvent(
 		payload: Record<string, unknown>;
 		data: Record<string, unknown>;
 		txHash: string | null;
+		sourceEventId: string;
+		occurredAt?: Date;
 	},
 ): Promise<void> {
 	try {
-		await context.db.insert(agentEvents).values({
-			agentId: params.agentId,
-			eventType: params.eventType,
-			data: params.data,
-			payload: params.payload,
-			type: params.legacyType,
-			status: "done",
-			chainId: ARBITRUM_CHAIN_ID,
-			tokenAddress: params.agentTokenAddress,
-			txHash: params.txHash,
-			processedAt: new Date(),
-		});
+		await context.db
+			.insert(agentEvents)
+			.values({
+				agentId: params.agentId,
+				eventType: params.eventType,
+				data: params.data,
+				source: "hl-listener",
+				sourceEventId: params.sourceEventId,
+				occurredAt: params.occurredAt ?? new Date(),
+				payload: params.payload,
+				type: params.legacyType,
+				status: "done",
+				chainId: ARBITRUM_CHAIN_ID,
+				tokenAddress: params.agentTokenAddress,
+				txHash: params.txHash,
+				processedAt: new Date(),
+			})
+			.onConflictDoNothing();
 	} catch (err) {
 		context.logger.warn({ err, eventType: params.eventType }, "failed to insert HL trade event");
 	}
@@ -317,20 +325,19 @@ async function processFills(
 			rawHash: fill.hash ?? null,
 			time: fill.time ?? null,
 		};
-		const data = {
-			...payload,
-			template: liq ? "trade.liquidation" : "trade.fill",
-			renderedText: liq ? renderLiquidation(fill) : renderFill(fill),
-		};
+		const eventType = liq ? "trade.liquidation" : "trade.fill";
+		const data = renderEventData(eventType, payload);
 
 		await insertTradeEvent(context, {
 			agentId: wallet.agentId,
 			agentTokenAddress: wallet.agentTokenAddress,
-			eventType: liq ? "trade.liquidation" : "trade.fill",
+			eventType,
 			legacyType: liq ? "trade.liquidation" : "trade.fill",
 			payload,
 			data,
 			txHash: fill.hash ?? null,
+			sourceEventId: `hl:${tid}`,
+			occurredAt: typeof fill.time === "number" ? new Date(fill.time) : undefined,
 		});
 	}
 }
@@ -393,8 +400,9 @@ async function processPositions(
 				eventType: "trade.open",
 				legacyType: "trade.open",
 				payload,
-				data: { ...payload, template: "trade.open", renderedText: renderOpen(after, margin) },
+				data: renderEventData("trade.open", payload),
 				txHash: null,
+				sourceEventId: `hl:${wallet.address}:${coin}:open:${Date.now()}`,
 			});
 			continue;
 		}
@@ -426,12 +434,9 @@ async function processPositions(
 				eventType: "trade.close",
 				legacyType: "trade.close",
 				payload,
-				data: {
-					...payload,
-					template: "trade.close",
-					renderedText: renderClose(coin, side, pnl ?? 0, pnlPct),
-				},
+				data: renderEventData("trade.close", payload),
 				txHash: null,
+				sourceEventId: `hl:${wallet.address}:${coin}:close:${Date.now()}`,
 			});
 			continue;
 		}
