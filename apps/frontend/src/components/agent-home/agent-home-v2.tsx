@@ -46,6 +46,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type * as React from "react";
 
+import type { Erc8004IdentityRecord } from "@/lib/erc8004/types";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import type { AgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
@@ -58,6 +59,7 @@ import type { TokenMetrics } from "@/lib/wave-t/token";
 import type { TradingSnapshot } from "@/lib/wave-t/trading";
 
 import LiveLaunchBanner from "./live-launch-banner";
+import { ProvenancePanel } from "./provenance-panel";
 import type { AgentData, AgentTrade } from "./types";
 import { THEME_TOKENS } from "./wave-t/_primitives";
 import { ActivePositions } from "./wave-t/active-positions";
@@ -90,6 +92,13 @@ export interface AgentHomeV2Props {
 	daysOperating?: number;
 	agentSafeBalance?: AgentSafeBalance | null;
 	trading?: TradingSnapshot;
+	/**
+	 * Optional ERC-8004 on-chain identity record for the agent. When
+	 * present, the hero shows a verified badge and the page renders an
+	 * `<ProvenancePanel>`. When null/undefined, nothing renders (no
+	 * 'not verified' copy — absence is the honest default).
+	 */
+	identity?: Erc8004IdentityRecord | null;
 }
 
 /**
@@ -113,6 +122,7 @@ export default function AgentHomeV2({
 	daysOperating: daysOperatingOverride,
 	agentSafeBalance,
 	trading,
+	identity = null,
 }: AgentHomeV2Props) {
 	const tradingSnapshot: TradingSnapshot = trading ?? {
 		enabled: false,
@@ -126,9 +136,13 @@ export default function AgentHomeV2({
 		ticker: agent.ticker,
 		description: resolveAgentBio(agent),
 		image: agent.image,
+		// Verified checkmark stays as the legacy ambient mark when no
+		// ERC-8004 identity is present. When identity *is* present,
+		// HeroIdentity.erc8004 supersedes it with the rich badge.
 		verified: true,
 		twitterHandle: agent.twitterHandle,
 		tokenAddress: launch?.token ?? agent.tokenAddress,
+		...(identity ? { erc8004: identity } : {}),
 	};
 
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
@@ -287,6 +301,16 @@ export default function AgentHomeV2({
 				<div className="mt-4" id="trade-history">
 					<TradeHistoryPanel agentId={agent.tokenAddress} />
 				</div>
+
+				{/* On-chain identity / provenance panel (ERC-8004). Renders
+				    nothing when the agent has no identity record. Sits below the
+				    activity feed so verified-curious users land here naturally
+				    after scanning the page. */}
+				{identity ? (
+					<div className="mt-4">
+						<ProvenancePanel identity={identity} />
+					</div>
+				) : null}
 
 				{/* Patron top-up widget (Phase 2 Li.Fi MVP). Sits near the bottom
 				    so it does not compete with the trading panels above. Bridges any
