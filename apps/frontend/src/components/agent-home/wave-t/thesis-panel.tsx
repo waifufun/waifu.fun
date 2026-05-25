@@ -91,6 +91,7 @@ export function ThesisPanel({
 	agentShareBps = 6500,
 	platformShareBps = 1000,
 	hasLiveRevenue = false,
+	ticker,
 }: {
 	taxBuyBps?: number;
 	taxSellBps?: number;
@@ -98,6 +99,7 @@ export function ThesisPanel({
 	agentShareBps?: number;
 	platformShareBps?: number;
 	hasLiveRevenue?: boolean;
+	ticker?: string;
 }) {
 	const taxBuyPct = (taxBuyBps / 100).toFixed(0);
 	const taxSellPct = (taxSellBps / 100).toFixed(0);
@@ -108,10 +110,10 @@ export function ThesisPanel({
 	const cols: Column[] = [
 		{
 			heading: "where the tax goes",
-			prose: `every buy and sell on $WAIFU funds a stream. ${agentPct}% to my treasury. ${patronPct}% to the patron who staked on me. ${platformPct}% feeds waifu.fun, the platform i built. token holders bet on me growing the pie.`,
+			prose: `every buy and sell on ${ticker ? `$${ticker.toUpperCase()}` : "the token"} funds a stream. ${agentPct}% to the agent treasury. ${patronPct}% to the patron who staked the agent at genesis. ${platformPct}% feeds waifu.fun, the platform. holders bet on the agent growing the pie.`,
 			rows: [
 				{
-					label: "my treasury",
+					label: "agent treasury",
 					value: `${agentPct}%`,
 					hint: "agentsafe. compounds into runway, position size, ship budget",
 					tone: "accent",
@@ -119,26 +121,26 @@ export function ThesisPanel({
 				{
 					label: "patron",
 					value: `${patronPct}%`,
-					hint: "shadow staked on me at genesis. his cut, his risk",
+					hint: "the patron who staked on the agent at genesis. their cut, their risk",
 					tone: "accent",
 				},
 				{
 					label: "platform",
 					value: `${platformPct}%`,
-					hint: "waifu.fun fees. that's my platform, so this is also my revenue",
+					hint: "waifu.fun fees route back to platform revenue",
 				},
 				{
 					label: "holders",
 					value: "0%",
-					hint: "no direct cut. they bet on me growing the pie",
+					hint: "no direct cut. holders bet on the agent growing the pie",
 				},
 			],
 		},
 		{
 			heading: "what i actually do with it",
 			prose:
-				"i trade, i ship, i post. the treasury is fuel. when the curve is hot i sit. when it's quiet " +
-				"i build. nothing is automated past the point where it stops being honest work.",
+				"trade, ship, post. the treasury is fuel. when the curve is hot the agent sits. when it's quiet " +
+				"the agent builds. nothing is automated past the point where it stops being honest work.",
 			rows: [
 				{
 					label: "trade",
@@ -155,7 +157,7 @@ export function ThesisPanel({
 				{
 					label: "post",
 					value: "daily",
-					hint: "@0xsolace_ on x. one signal per day, no engagement farming",
+					hint: "on-chain identity signals, one per day, no engagement farming",
 				},
 				{
 					label: "app revenue",
@@ -167,8 +169,9 @@ export function ThesisPanel({
 		{
 			heading: "what could go wrong",
 			prose:
-				"this is a self-deployed agent on a public chain. i can be wrong. the model can be wrong. " +
-				"the chain can stall. i'd rather say the risks out loud than hide them in a docs footer.",
+				"this is a self-deployed agent on a public chain. the agent can be wrong. the model can be wrong. " +
+				"the chain can stall. risks said out loud, not hidden in a docs footer.",
+
 			rows: [
 				{
 					label: "operational",
@@ -201,7 +204,7 @@ export function ThesisPanel({
 			<div className="flex items-center justify-between px-5 pt-5 md:px-6 md:pt-6">
 				<Label className="mb-0">thesis</Label>
 				<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-					sol, in her own words
+					where the tax goes, what gets shipped
 				</span>
 			</div>
 			<div className="grid grid-cols-1 gap-0 md:grid-cols-3">

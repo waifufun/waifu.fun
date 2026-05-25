@@ -10,7 +10,7 @@ import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
-import { fetchAppsForAgent } from "@/lib/wave-t/apps";
+import { type App, fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { isArchitectAgentAddress } from "@/lib/wave-t/architect-agent";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
@@ -318,21 +318,22 @@ async function fetchLaunch(address: string): Promise<AgentLaunchByToken | null> 
 }
 
 /**
- * Build the Wave T activity feed. Combines the architect agent's ship log,
- * tweets and on-chain transfers into one chronological stream. Non-Sol
- * agents skip the ship/tweets path and just surface their on-chain
- * activity.
+ * Build the Wave T activity feed. Composes ship log (when the agent has
+ * github repos wired), tweets (when twitterPolling is enabled), and
+ * on-chain history into one chronological stream. Each source is
+ * presence-gated on agent fields, never on identity.
  */
 async function buildAgentActivity(opts: {
-	isSolAgent: boolean;
 	tokenAddress: string;
+	includeShipLog: boolean;
+	includeTweets: boolean;
 }): Promise<ActivityRowInput[]> {
 	const [ship, tweets, onchain] = await Promise.all([
-		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
-		opts.isSolAgent ? fetchTweets(opts.tokenAddress) : Promise.resolve([]),
-		opts.isSolAgent
-			? Promise.resolve({ txs: [] })
-			: fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
+		opts.includeShipLog
+			? fetchShipLog()
+			: Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
+		opts.includeTweets ? fetchTweets(opts.tokenAddress) : Promise.resolve([]),
+		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
 	]);
 
 	const foundation = buildActivity({ prs: ship.items, tweets });
@@ -388,7 +389,12 @@ export default async function AgentPage({
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
 	// a sane empty default, so we never throw out of Promise.all.
-	const isSolAgent = isArchitectAgentAddress(address);
+	//
+	// `isArchitectAddress` is a *fixture* fallback gate, not a render gate:
+	// until $WAIFU mints, the architect agent is not in the DB so we hydrate
+	// from `buildSolFixtureAgent()`. After mint this branch falls away. No
+	// downstream panel renders off this flag.
+	const isArchitectAddress = isArchitectAgentAddress(address);
 	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
 	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
 		candles: [],
@@ -416,7 +422,6 @@ export default async function AgentPage({
 		positions: [],
 		orders: [],
 	}));
-	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
 	// ERC-8004 identity. Returns null when the agent has no on-chain
 	// identity (the default for most agents). When present, the hero
 	// shows a verified badge and the page renders a provenance panel.
@@ -434,7 +439,6 @@ export default async function AgentPage({
 		twitterStats,
 		positions,
 		apps,
-		activity,
 		trading,
 		identity,
 	] = await Promise.all([
@@ -449,10 +453,24 @@ export default async function AgentPage({
 		twitterStatsP,
 		positionsP,
 		appsP,
-		activityP,
 		tradingP,
 		identityP,
 	]);
+
+	// Presence-based gates (modular for any agent):
+	//   - ship log fetch: enabled when persona has any github repos configured
+	//   - tweet fetch: enabled when persona has twitter polling enabled
+	// Until the persona endpoint exposes these for unseeded agents, the
+	// architect fixture supplies both, so the architect surface still works
+	// pre-mint.
+	const githubRepos = (agent?.metadata as { githubRepos?: unknown } | null)?.githubRepos;
+	const includeShipLog = Array.isArray(githubRepos) ? githubRepos.length > 0 : isArchitectAddress;
+	const includeTweets = agent?.twitterPollingEnabled === true ? true : isArchitectAddress;
+	const activity = await buildAgentActivity({
+		tokenAddress: address,
+		includeShipLog,
+		includeTweets,
+	}).catch(() => [] as ActivityRowInput[]);
 
 	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
 	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
@@ -468,9 +486,11 @@ export default async function AgentPage({
 
 	if (!renderAgent) {
 		// Until $WAIFU mints, the architect agent is not seeded in the DB.
-		// Fall back to a fixture so /agent/sol renders Sol's surface instead
-		// of the generic not-found state. Real DB record wins when present.
-		if (isSolAgent) {
+		// Fall back to a fixture so /agent/<architect-address> renders the
+		// architect surface instead of the generic not-found state. Real DB
+		// record wins when present. This is the ONLY place identity gates a
+		// decision; everything downstream renders from `renderAgent`.
+		if (isArchitectAddress) {
 			renderAgent = buildSolFixtureAgent();
 			renderTrades = buildSolFixtureTrades();
 			renderLaunch = buildSolFixtureLaunch();
@@ -478,6 +498,12 @@ export default async function AgentPage({
 			notFound();
 		}
 	}
+
+	// Merge persona-declared apps (from the persona endpoint / fixture) with
+	// the apps registry. Persona apps surface platform products (waifu.fun,
+	// steward) with `metadata.featured = true`; registry apps surface
+	// revenue-generating mini-apps. Both render through the same panel.
+	const mergedApps = mergeAgentApps(renderAgent, apps);
 
 	return (
 		<AgentHomeV2
@@ -492,10 +518,74 @@ export default async function AgentPage({
 			twitterStats={twitterStats}
 			positions={positions}
 			activity={activity}
-			apps={apps}
+			apps={mergedApps}
 			agentSafeBalance={agentSafeBalance}
 			trading={trading}
 			identity={identity}
 		/>
 	);
+}
+
+/**
+ * Merge persona-declared featured apps into the apps registry list.
+ *
+ * `agent.apps` (persona endpoint) typically holds platform products that
+ * the agent runs (e.g. waifu.fun, steward) and want to surface as
+ * featured rows. `registryApps` (from `/v2/agents/:address/apps`) holds
+ * revenue-generating mini-apps from the apps registry. Both render via
+ * the same `<AppsShipped>` panel; persona-featured rows sort first.
+ *
+ * Dedup on `slug`: if a persona row and a registry row share an `appId`,
+ * the persona row's metadata wins for `featured`/`tagline` only.
+ */
+function mergeAgentApps(agent: AgentData, registryApps: App[]): App[] {
+	const personaApps = agent.apps ?? [];
+	if (personaApps.length === 0) return registryApps;
+
+	const registryBySlug = new Map<string, App>();
+	for (const app of registryApps) {
+		registryBySlug.set(app.appId, app);
+	}
+
+	const merged: App[] = [];
+	for (const p of personaApps) {
+		const slug = p.slug ?? p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+		const existing = registryBySlug.get(slug);
+		const meta: Record<string, unknown> = {
+			featured: true,
+			...(p.tagline ? { tagline: p.tagline } : {}),
+			kind: "platform-product",
+		};
+		if (existing) {
+			merged.push({
+				...existing,
+				metadata: { ...((existing.metadata as Record<string, unknown> | null) ?? {}), ...meta },
+			});
+			registryBySlug.delete(slug);
+		} else {
+			merged.push({
+				id: `persona-${slug}`,
+				agentTokenAddress: agent.tokenAddress,
+				appId: slug,
+				name: p.name,
+				description: p.tagline ?? null,
+				icon: null,
+				appUrl: p.url ?? null,
+				status: p.status ?? "live",
+				shippedAt: null,
+				revenueLifetimeUsd: 0,
+				revenue24hUsd: 0,
+				revenue7dUsd: typeof p.revenueUsd === "number" ? p.revenueUsd : 0,
+				revenue7dDeltaPct: null,
+				metadata: meta,
+				createdAt: "",
+				updatedAt: "",
+			});
+		}
+	}
+	// Tail: any registry apps not also in persona
+	for (const app of registryBySlug.values()) {
+		merged.push(app);
+	}
+	return merged;
 }

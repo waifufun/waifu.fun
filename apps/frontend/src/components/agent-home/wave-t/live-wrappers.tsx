@@ -337,7 +337,7 @@ export function LiveActivityFeed({
 	initialTrades,
 	initialActivity,
 	ticker,
-	isSolAgent,
+	twitterPollingEnabled = false,
 	author,
 	max = 30,
 }: {
@@ -345,15 +345,21 @@ export function LiveActivityFeed({
 	initialTrades: AgentTrade[];
 	initialActivity: ActivityRowInput[];
 	ticker: string;
-	isSolAgent: boolean;
+	/**
+	 * Gate the tweet poll on a data-driven flag from the persona
+	 * endpoint. When false, the feed still renders any tweet rows that
+	 * came through the SSG seed but does not spin up a poll. Drops the
+	 * old `isSolAgent` identity prop entirely.
+	 */
+	twitterPollingEnabled?: boolean;
 	author?: ActivityFeedAuthor;
 	max?: number;
 }) {
 	const trades = useLiveAgentTrades(address, initialTrades);
 	const agentEvents = useAgentEvents(address, { pollMs: 15_000, limit: 50 });
-	// Only Sol surfaces tweets in the feed today; non-Sol agents skip
-	// the tweet poll to avoid wasted requests. Future: gate on
-	// `agent.twitterHandle` once non-Sol agents post too.
+	// Tweet poll gates on an explicit persona flag, not identity. Agents
+	// without twitter polling configured render any SSG-seeded tweets and
+	// skip the runtime poll.
 	const initialTweets = useMemo(() => {
 		const out: {
 			id: string;
@@ -379,7 +385,7 @@ export function LiveActivityFeed({
 		}
 		return out;
 	}, [initialActivity]);
-	const tweets = useLiveTweets(isSolAgent ? address : "", initialTweets);
+	const tweets = useLiveTweets(twitterPollingEnabled ? address : "", initialTweets);
 
 	// Merge: replace tweet rows in initialActivity with the live set;
 	// keep everything else (PRs, txs, etc) as the SSG seed because we

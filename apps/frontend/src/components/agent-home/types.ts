@@ -80,6 +80,17 @@ export interface AgentData {
 	bioStyle?: "first-person" | "third-person" | null;
 	bioShort?: string | null;
 	twitterPollingEnabled?: boolean;
+	/** Free-form persona metadata jsonb. Holds things like githubRepos[]. */
+	metadata?: Record<string, unknown> | null;
+	/** Steward session id; presence enables the Steward trading proxy. */
+	stewardAgentId?: string | null;
+	/** Multi-chain wallets surfaced by the persona endpoint. */
+	hlAddress?: string | null;
+	arbAddresses?: string[] | null;
+	solanaAddresses?: string[] | null;
+	/** Long bio (the canonical description). bioShort overrides at the hero. */
+	bio?: string | null;
+	thesis?: unknown;
 }
 
 export interface AgentTrade {
