@@ -4,12 +4,14 @@
 
 import type * as React from "react";
 
+import { ArrowUpRight } from "lucide-react";
+
 import { GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
 import type { App } from "@/lib/wave-t/apps";
 import { formatCompactUsd } from "@/lib/wave-t/format";
-import { Label, Panel, SectionTitle } from "./_primitives";
+import { Label, Panel, Pulse, SectionTitle } from "./_primitives";
 
 type IconComponent = (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 
@@ -23,6 +25,21 @@ const APP_ICONS: Record<string, IconComponent> = {
 	"trading-perps": GithubIcon,
 	predictions: GithubIcon,
 };
+
+/**
+ * Read the optional metadata bag on an App row. Lets producers attach
+ * `tagline` / `kind` / `featured` without bloating the typed App shape.
+ * Unknown keys are ignored.
+ */
+function appMeta(app: App): { tagline?: string; kind?: string; featured?: boolean } {
+	const m = app.metadata as Record<string, unknown> | null | undefined;
+	if (!m || typeof m !== "object") return {};
+	const out: { tagline?: string; kind?: string; featured?: boolean } = {};
+	if (typeof m.tagline === "string") out.tagline = m.tagline;
+	if (typeof m.kind === "string") out.kind = m.kind;
+	if (m.featured === true) out.featured = true;
+	return out;
+}
 
 function AppIcon({ app, className }: { app: App; className?: string }) {
 	if (app.icon) return <img src={app.icon} alt="" className={cn("rounded-full object-cover", className)} />;
@@ -56,7 +73,7 @@ function StatusBadge({ status }: { status: App["status"] }) {
 function EmptyAppsState() {
 	return (
 		<li className="py-4 font-mono text-[11px] leading-relaxed text-[var(--text-tertiary)]">
-			no apps shipped yet · first app gating window opens at BASED tier
+			no apps yet · onchain feed quiet
 		</li>
 	);
 }
@@ -69,40 +86,76 @@ function formatAppDate(app: App): string {
 	return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
-export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCount?: number }) {
+export function AppsShipped({ apps, visibleCount = 4 }: { apps: App[]; visibleCount?: number }) {
 	const live = apps.filter((a) => a.status === "live");
-	const visible = apps.slice(0, visibleCount);
-	const remaining = Math.max(0, apps.length - visible.length);
+	// Featured apps (e.g. platform products) sort to the top so they own
+	// the panel's first impression. Within each group, render order is
+	// preserved from the backend so the producer keeps control.
+	const sorted = [...apps].sort((a, b) => Number(appMeta(b).featured) - Number(appMeta(a).featured));
+	const visible = sorted.slice(0, visibleCount);
+	const remaining = Math.max(0, sorted.length - visible.length);
 
 	return (
 		<Panel>
-			<Label>Apps Shipped</Label>
+			<Label>apps shipped</Label>
 			<div className="flex items-baseline gap-2">
 				<span className="font-sans text-[40px] font-light leading-none text-[var(--accent)] tabular-nums">
 					{live.length}
 				</span>
 				<span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					Total Live
+					total live
 				</span>
 			</div>
 			<ul className="mt-4 divide-y divide-[var(--border-soft)]">
 				{visible.length === 0 ? (
 					<EmptyAppsState />
 				) : (
-					visible.map((app) => (
-						<li key={app.appId} className="flex items-center gap-3 py-2">
-							<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-								<AppIcon app={app} className="h-3 w-3" />
-							</span>
-							<span className="min-w-0 flex-1">
-								<span className="block truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
-								<span className="block truncate font-mono text-[10px] text-[var(--text-tertiary)]">
-									{app.shippedAt ? "shipped" : "first seen"} {formatAppDate(app)}
-								</span>
-							</span>
-							<StatusBadge status={app.status} />
-						</li>
-					))
+					visible.map((app) => {
+						const meta = appMeta(app);
+						const hasUrl = Boolean(app.appUrl);
+						const tagline = meta.tagline ?? app.description ?? null;
+						const isExternal = hasUrl && app.appUrl!.startsWith("http");
+						const RowTag: "a" | "li" = hasUrl ? "a" : "li";
+						const rowProps = hasUrl
+							? {
+									href: app.appUrl!,
+									target: isExternal ? "_blank" : undefined,
+									rel: isExternal ? "noopener noreferrer" : undefined,
+								}
+							: {};
+						return (
+							<li key={app.appId}>
+								<RowTag
+									{...(rowProps as Record<string, unknown>)}
+									className={cn(
+										"group flex items-center gap-3 py-2",
+										hasUrl && "transition-colors hover:bg-white/[0.015]",
+									)}
+								>
+									<span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+										<AppIcon app={app} className="h-3.5 w-3.5" />
+									</span>
+									<span className="min-w-0 flex-1">
+										<span className="flex items-center gap-2">
+											<span className="truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
+											{meta.featured && app.status === "live" ? <Pulse tone="accent" /> : null}
+										</span>
+										<span className="block truncate font-mono text-[10px] text-[var(--text-tertiary)]">
+											{tagline ?? `${app.shippedAt ? "shipped" : "first seen"} ${formatAppDate(app)}`}
+										</span>
+									</span>
+									{hasUrl ? (
+										<span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--accent)]">
+											view
+											<ArrowUpRight className="h-3 w-3" strokeWidth={1.5} />
+										</span>
+									) : (
+										<StatusBadge status={app.status} />
+									)}
+								</RowTag>
+							</li>
+						);
+					})
 				)}
 			</ul>
 			{remaining > 0 && (
@@ -113,7 +166,7 @@ export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCo
 						"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]",
 					)}
 				>
-					<span>More apps</span>
+					<span>more apps</span>
 					<span className="font-mono tabular-nums">{remaining}</span>
 				</a>
 			)}
