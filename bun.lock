@@ -31,6 +31,7 @@
         "@waifufun/db": "workspace:*",
         "@waifufun/flap": "workspace:*",
         "@waifufun/fourmeme": "workspace:*",
+        "@waifufun/identity": "workspace:*",
         "@waifufun/launchpad": "workspace:*",
         "@waifufun/logger": "workspace:*",
         "@waifufun/metrics": "workspace:*",
@@ -470,6 +471,14 @@
       "version": "0.1.0",
       "dependencies": {
         "viem": "^2.23.5",
+      },
+    },
+    "packages/identity": {
+      "name": "@waifufun/identity",
+      "version": "0.1.0",
+      "devDependencies": {
+        "tsx": "^4.21.0",
+        "typescript": "^5.7.3",
       },
     },
     "packages/launchpad": {
@@ -2575,6 +2584,8 @@
     "@waifufun/fourmeme": ["@waifufun/fourmeme@workspace:packages/fourmeme"],
 
     "@waifufun/frontend": ["@waifufun/frontend@workspace:apps/frontend"],
+
+    "@waifufun/identity": ["@waifufun/identity@workspace:packages/identity"],
 
     "@waifufun/launch-indexer": ["@waifufun/launch-indexer@workspace:apps/launch-indexer"],
 
