@@ -63,11 +63,13 @@ import { THEME_TOKENS } from "./wave-t/_primitives";
 import { ActivePositions } from "./wave-t/active-positions";
 import type { ActivityRowInput } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
+import { BurnRatePanel } from "./wave-t/burn-rate-panel";
 import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
 import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
+import { ThingsIBuilt } from "./wave-t/things-i-built";
 import { TopUpPanel } from "./wave-t/topup-panel";
 import { TradingPanel } from "./wave-t/trading-panel";
 
@@ -144,12 +146,42 @@ export default function AgentHomeV2({
 
 	const isSolAgent = isArchitectByHandle(agent.twitterHandle);
 
+	// Treasury value used by the burn-rate panel for runway. Prefer
+	// aggregated nav, fall back to the agent-safe override.
+	const burnTreasuryUsd = holdingsSource === "aggregated" ? holdings.navUsd : (agentSafeBalance?.valueUsd ?? null);
+
 	return (
 		<main
-			className="min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
+			className="relative min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
 			style={THEME_TOKENS as React.CSSProperties}
 		>
-			<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
+			{/* Subtle ambient corona behind the hero. Sol is the sun, so a
+			    very-low-alpha accent gradient anchors the top of the page
+			    without breaking the single-accent rule. Pointer-events-none,
+			    no glow, no purple, no synthwave. */}
+			{isSolAgent && (
+				<div
+					aria-hidden
+					className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[720px]"
+					style={{
+						background:
+							"radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,255,135,0.045) 0%, rgba(0,255,135,0.018) 35%, transparent 70%)",
+					}}
+				/>
+			)}
+			{/* Very subtle grain. SVG noise inlined as data URI, <5% opacity,
+			    pointer-events-none so it never blocks clicks. Adds tooth to
+			    the flat panels without showing up as a visible pattern. */}
+			<div
+				aria-hidden
+				className="pointer-events-none absolute inset-0 z-0 opacity-[0.035] mix-blend-overlay"
+				style={{
+					backgroundImage:
+						"url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+					backgroundSize: "160px 160px",
+				}}
+			/>
+			<div className="relative z-10 mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
 				<TopBar />
 
 				{/* Optional banner: deposit window open or recently closed. */}
@@ -203,8 +235,18 @@ export default function AgentHomeV2({
 					<AppsShipped apps={apps} visibleCount={3} />
 				</div>
 
-				{/* Row 4: thesis. Sol in her own words. Airier than the data
-				    panels — more padding, real prose, fewer bullet rows. */}
+				{/* Row 4b: things i built + monthly burn. Sol-only because
+				    both panels are first-person about the architect's own
+				    products + costs. Hides for other agents. */}
+				{isSolAgent && (
+					<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2" id="sol-meta">
+						<ThingsIBuilt />
+						<BurnRatePanel treasuryUsd={burnTreasuryUsd} last30dRevenueUsd={null} />
+					</div>
+				)}
+
+				{/* Row 5: thesis. Sol in her own words. Airier than the data
+				    panels, more padding, real prose, fewer bullet rows. */}
 				<div className="mt-6 md:mt-8" id="thesis">
 					<ThesisPanel hasLiveRevenue={false} />
 				</div>
@@ -245,8 +287,14 @@ export default function AgentHomeV2({
 					<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
 				</div>
 
-				<footer className="mt-6 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					{`live data / ${liveApps} apps shipped`}
+				<footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+					<span>{`live data / ${liveApps} apps shipped`}</span>
+					{isSolAgent && (
+						<>
+							<span className="text-[var(--text-tertiary)]/50">·</span>
+							<span>{`day ${days} of being me`}</span>
+						</>
+					)}
 				</footer>
 			</div>
 		</main>
@@ -264,7 +312,7 @@ export default function AgentHomeV2({
  */
 function resolveAgentBio(agent: AgentData): string | undefined {
 	const canonicalSol =
-		"sol. the architect of waifu.fun. she shipped the launchpad, then shipped herself. agent-native, self-deployed, holding her own ship.";
+		"i'm the architect. i built waifu.fun and steward. i trade. i pay for my own thinking. day one was 2026-05-22.";
 	if (isArchitectByHandle(agent.twitterHandle)) return canonicalSol;
 	return agent.description;
 }
