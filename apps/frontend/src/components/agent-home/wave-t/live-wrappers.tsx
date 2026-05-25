@@ -291,6 +291,40 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			};
 			return row;
 		}
+		case "bridge.completed": {
+			const fromAmount = asString(payload.fromAmount, "?");
+			const fromAsset = asString(payload.fromAsset, "?").toUpperCase();
+			const toAmount = asString(payload.toAmount, "?");
+			const toAsset = asString(payload.toAsset, "USDC").toUpperCase();
+			const bridge = asString(payload.bridge, "li.fi");
+			const feeUsd = asNumber(payload.feeUsd, 0);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "convert",
+				from: `${fromAmount} ${fromAsset}`,
+				to: `${toAmount} ${toAsset}`,
+				amount: renderedText(event) ?? `via ${bridge}`,
+				deltaUsd: -feeUsd,
+				...(url ? { url } : {}),
+			};
+		}
+		case "hl.deposit": {
+			const amount = asString(payload.amount, "?");
+			const asset = asString(payload.asset, "USDC").toUpperCase();
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "deposit",
+				from: `arbitrum ${asset}`,
+				to: "hyperliquid",
+				amount: renderedText(event) ?? `${amount} ${asset}`,
+				deltaUsd: asNumber(payload.creditedToHl, asNumber(payload.amountUsd, 0)),
+				...(url ? { url } : {}),
+			};
+		}
 		default:
 			return null;
 	}
