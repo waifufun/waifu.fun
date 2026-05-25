@@ -14,6 +14,7 @@
 
 "use client";
 
+import { ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
@@ -97,6 +98,67 @@ export type ActivityRowInput =
 			amount: string;
 			deltaUsd: number;
 			url?: string;
+	  }
+	| {
+			id: string;
+			type: "wallet";
+			timestamp: string;
+			walletType: string;
+			walletAddress: string;
+			chainId?: string | null;
+			status?: string;
+			renderedText?: string;
+			url?: string;
+	  }
+	| {
+			id: string;
+			type: "policy";
+			timestamp: string;
+			count: number;
+			walletAddress: string;
+			summary: string;
+			chainId?: string | null;
+			status?: string;
+			renderedText?: string;
+			url?: string;
+	  }
+	| {
+			/**
+			 * Rich perp / leverage trade row used for Hyperliquid (and any
+			 * future perp venue). Distinct from the existing `trade` row which
+			 * targets BSC spot swaps quoted in BNB.
+			 */
+			id: string;
+			type: "perpTrade";
+			kind: "open" | "close" | "fill" | "liquidation";
+			timestamp: string;
+			venue: string;
+			asset: string;
+			side: "long" | "short";
+			size?: number;
+			notionalUsd?: number;
+			marginUsd?: number;
+			entryPriceUsd?: number;
+			fillPriceUsd?: number;
+			leverage?: number | null;
+			pnlUsd?: number;
+			pnlPct?: number | null;
+			renderedText?: string;
+			url?: string;
+	  }
+	| {
+			id: string;
+			type: "tradeSession";
+			timestamp: string;
+			venue: string;
+			dailyCapUsd?: number;
+			perOrderCapUsd?: number;
+			leverageCap?: number;
+			allowedAssets?: string[];
+			chainId?: string | null;
+			status?: string;
+			renderedText?: string;
+			url?: string;
 	  };
 
 // ── Tab definitions ──────────────────────────────────────────────
@@ -118,12 +180,20 @@ function categoryOf(row: ActivityRowInput): ActivityCategory {
 			return "trading";
 		case "position":
 			return "trading";
+		case "perpTrade":
+			return "trading";
 		case "bet":
 			return "market";
 		case "app":
 			return "apps";
 		case "treasury":
 			return "treasury";
+		case "wallet":
+			return "system";
+		case "policy":
+			return "system";
+		case "tradeSession":
+			return "trading";
 		case "revenue":
 			return "treasury";
 		case "tx":
@@ -148,6 +218,26 @@ function deltaTone(delta: number): { cls: string; sign: string } {
 function pickVenueIcon(venue: string): ReactNode {
 	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
 	return <BnbChainIcon className="h-3.5 w-3.5" />;
+}
+
+function chainLabel(chainId?: string | null): string {
+	switch (String(chainId ?? "")) {
+		case "56":
+			return "bsc";
+		case "42161":
+			return "arbitrum";
+		case "8453":
+			return "base";
+		case "1":
+			return "ethereum";
+		default:
+			return "chain";
+	}
+}
+
+function shortAddress(value: string): string {
+	if (value.length <= 12) return value;
+	return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
 // ── Tweet row (distinct visual) ──────────────────────────────────
@@ -327,6 +417,75 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 				url: row.url,
 			};
 		}
+		case "perpTrade": {
+			const asset = row.asset.toLowerCase();
+			if (row.kind === "liquidation") {
+				return {
+					icon: pickVenueIcon(row.venue),
+					title: `🚨 liquidated ${asset} ${row.side}`,
+					sub:
+						row.renderedText ??
+						`liquidated at ${formatCompactUsd(row.fillPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+					right: (
+						<span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--negative)]">
+							margin call
+						</span>
+					),
+					url: row.url,
+				};
+			}
+			if (row.kind === "open") {
+				const lev = row.leverage ? ` ${row.leverage}x` : "";
+				return {
+					icon: pickVenueIcon(row.venue),
+					title: `opened ${asset} ${row.side}`,
+					sub:
+						row.renderedText ??
+						`${formatCompactUsd(row.marginUsd ?? row.notionalUsd ?? 0)}${lev} at ${formatCompactUsd(row.entryPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+					right: (
+						<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
+							{formatCompactUsd(row.notionalUsd ?? 0)}
+						</span>
+					),
+					url: row.url,
+				};
+			}
+			if (row.kind === "close") {
+				const pnl = row.pnlUsd ?? 0;
+				const tone = deltaTone(pnl);
+				const pct =
+					row.pnlPct === null || row.pnlPct === undefined
+						? null
+						: `${row.pnlPct > 0 ? "+" : ""}${row.pnlPct.toFixed(2)}%`;
+				return {
+					icon: pickVenueIcon(row.venue),
+					title: `closed ${asset} ${row.side}`,
+					sub: row.renderedText ?? `closed on ${row.venue.toLowerCase()}`,
+					right: (
+						<span className={cn("tabular-nums", tone.cls)}>
+							{tone.sign}
+							{formatCompactUsd(pnl)}
+							{pct ? <span className="ml-1 text-[var(--text-tertiary)]">{pct}</span> : null}
+						</span>
+					),
+					url: row.url,
+				};
+			}
+			// fill
+			return {
+				icon: pickVenueIcon(row.venue),
+				title: `filled ${row.side} ${asset}`,
+				sub:
+					row.renderedText ??
+					`${formatCompactNum(row.size ?? 0)} ${asset} at ${formatCompactUsd(row.fillPriceUsd ?? 0)}`,
+				right: (
+					<span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
+						{formatCompactUsd((row.fillPriceUsd ?? 0) * (row.size ?? 0))}
+					</span>
+				),
+				url: row.url,
+			};
+		}
 		case "bet": {
 			const tone = deltaTone(row.pnlUsd);
 			const chipCls =
@@ -403,6 +562,38 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 						{formatCompactUsd(row.deltaUsd)}
 					</span>
 				),
+				url: row.url,
+			};
+		}
+		case "wallet":
+			return {
+				icon: <WalletCards className="h-3.5 w-3.5" />,
+				title: "provisioned wallet",
+				sub: row.renderedText ?? `${row.walletType.toLowerCase()} at ${shortAddress(row.walletAddress)}`,
+				right: <span className="text-[var(--positive)]">{chainLabel(row.chainId)}</span>,
+				url: row.url,
+			};
+		case "policy":
+			return {
+				icon: <ShieldCheck className="h-3.5 w-3.5" />,
+				title: "applied wallet policy",
+				sub: row.renderedText ?? row.summary,
+				right: <span className="text-[var(--positive)] tabular-nums">{row.count} policies</span>,
+				url: row.url,
+			};
+		case "tradeSession": {
+			const caps = [
+				row.dailyCapUsd ? `${formatCompactUsd(row.dailyCapUsd)}/day` : null,
+				row.perOrderCapUsd ? `${formatCompactUsd(row.perOrderCapUsd)}/order` : null,
+				row.leverageCap ? `${row.leverageCap}x max` : null,
+			]
+				.filter(Boolean)
+				.join(", ");
+			return {
+				icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
+				title: `opened ${row.venue.toLowerCase()} session`,
+				sub: row.renderedText ?? caps,
+				right: <span className="text-[var(--positive)]">live</span>,
 				url: row.url,
 			};
 		}

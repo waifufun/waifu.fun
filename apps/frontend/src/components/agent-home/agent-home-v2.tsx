@@ -69,6 +69,7 @@ import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
+import { TradeHistoryPanel } from "./wave-t/trade-history";
 import { TradingPanel } from "./wave-t/trading-panel";
 
 export interface AgentHomeV2Props {
@@ -191,7 +192,7 @@ export default function AgentHomeV2({
 						initial={holdings}
 						initialHasAggregated={initialHoldingsHasAggregated}
 					/>
-					<ActivePositions positions={positions} />
+					<ActivePositions positions={positions} hyperliquidAgentId={agent.tokenAddress} />
 				</div>
 
 				{/* Row 4: pnl chart + apps shipped, equal 2-up. Two panels
@@ -235,6 +236,14 @@ export default function AgentHomeV2({
 						max={30}
 					/>
 					<TopAppsByRevenue apps={apps} limit={4} />
+				</div>
+
+				{/* Row 6.5: dedicated trade history panel. Filters agent_events
+				    to perp trade kinds and lays them out as a scannable table.
+				    Lives under the activity feed so users who scroll for trade
+				    detail land in the right place. */}
+				<div className="mt-4" id="trade-history">
+					<TradeHistoryPanel agentId={agent.tokenAddress} />
 				</div>
 
 				{/* Patron top-up widget (Phase 2 Li.Fi MVP). Sits near the bottom

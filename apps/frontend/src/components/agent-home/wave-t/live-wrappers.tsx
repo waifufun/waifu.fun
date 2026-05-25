@@ -22,6 +22,7 @@
 import { useMemo } from "react";
 
 import type { AgentTrade } from "@/components/agent-home/types";
+import { type AgentEvent, useAgentEvents } from "@/lib/hooks/use-agent-events";
 import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 import type { CandleSeries } from "@/lib/wave-t/candles";
@@ -129,6 +130,172 @@ export function LivePriceChart({
 	return <PriceChart token={token} initialSeries={initialSeries} />;
 }
 
+function asString(value: unknown, fallback = ""): string {
+	if (typeof value === "string") return value;
+	if (typeof value === "number" && Number.isFinite(value)) return String(value);
+	return fallback;
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function explorerTxUrl(chainId: string | null, txHash: string | null): string | undefined {
+	if (!txHash) return undefined;
+	switch (String(chainId ?? "")) {
+		case "56":
+			return `https://bscscan.com/tx/${txHash}`;
+		case "42161":
+			return `https://arbiscan.io/tx/${txHash}`;
+		case "8453":
+			return `https://basescan.org/tx/${txHash}`;
+		case "1":
+			return `https://etherscan.io/tx/${txHash}`;
+		default:
+			return undefined;
+	}
+}
+
+function renderedText(event: AgentEvent): string | undefined {
+	return typeof event.data?.renderedText === "string" ? event.data.renderedText.toLowerCase() : undefined;
+}
+
+function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
+	const payload = event.payload ?? {};
+	const url = explorerTxUrl(event.chainId, event.txHash);
+	switch (event.eventType) {
+		case "treasury.transfer": {
+			const amountUsd = asNumber(payload.amountUsd, 0);
+			const amount = renderedText(event) ?? `${asString(payload.amount)} ${asString(payload.asset, "bnb")}`.trim();
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "convert",
+				from: asString(payload.fromLabel, asString(payload.from, "agentsafe")),
+				to: asString(payload.toLabel, asString(payload.to, "steward wallet")),
+				amount,
+				deltaUsd: amountUsd,
+				...(url ? { url } : {}),
+			};
+		}
+		case "credits.topped_up": {
+			const creditsAdded = asNumber(payload.creditsAdded, 0);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "deposit",
+				from: asString(payload.fromAsset, "bnb"),
+				to: `${asString(payload.provider, "eliza cloud")} credit`,
+				amount: renderedText(event) ?? `+${creditsAdded} ${asString(payload.currency, "usd")} credit`,
+				deltaUsd: creditsAdded,
+				...(url ? { url } : {}),
+			};
+		}
+		case "wallet.provisioned": {
+			const text = renderedText(event);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "wallet",
+				timestamp: event.createdAt,
+				walletType: asString(payload.walletType, "steward-managed"),
+				walletAddress: asString(payload.walletAddress, "wallet"),
+				chainId: event.chainId,
+				status: event.status,
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+		}
+		case "policy.applied": {
+			const policies = Array.isArray(payload.policies) ? payload.policies : [];
+			const text = renderedText(event);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "policy",
+				timestamp: event.createdAt,
+				count: policies.length || asNumber(payload.n, 0),
+				walletAddress: asString(payload.walletAddress, "wallet"),
+				summary: policies
+					.map((p) => asString((p as { type?: unknown }).type))
+					.filter(Boolean)
+					.join(", "),
+				chainId: event.chainId,
+				status: event.status,
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+		}
+		case "trade.session.opened": {
+			const allowedAssets = Array.isArray(payload.allowedAssets)
+				? payload.allowedAssets.map((asset) => asString(asset)).filter(Boolean)
+				: undefined;
+			const text = renderedText(event);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "tradeSession",
+				timestamp: event.createdAt,
+				venue: asString(payload.venue, "trading"),
+				dailyCapUsd: asNumber(payload.dailyCapUsd, 0),
+				perOrderCapUsd: asNumber(payload.perOrderCapUsd, 0),
+				leverageCap: asNumber(payload.leverageCap, 0),
+				...(allowedAssets ? { allowedAssets } : {}),
+				chainId: event.chainId,
+				status: event.status,
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+		}
+		case "trade.open":
+		case "trade.close":
+		case "trade.fill":
+		case "trade.liquidation": {
+			const kind: "open" | "close" | "fill" | "liquidation" =
+				event.eventType === "trade.open"
+					? "open"
+					: event.eventType === "trade.close"
+						? "close"
+						: event.eventType === "trade.fill"
+							? "fill"
+							: "liquidation";
+			const rawSide = asString(payload.side, "long").toLowerCase();
+			const side: "long" | "short" = rawSide === "short" || rawSide === "sell" || rawSide === "a" ? "short" : "long";
+			const asset = asString(payload.asset, asString(payload.coin, asString(payload.symbol, "asset"))).toUpperCase();
+			const pnlPctRaw = payload.pnlPct;
+			const pnlPct =
+				typeof pnlPctRaw === "number" && Number.isFinite(pnlPctRaw)
+					? pnlPctRaw
+					: typeof pnlPctRaw === "string" && pnlPctRaw.length > 0
+						? Number(pnlPctRaw)
+						: null;
+			const text = renderedText(event);
+			const row: ActivityRowInput = {
+				id: `agent-event-${event.id}`,
+				type: "perpTrade",
+				kind,
+				timestamp: event.createdAt,
+				venue: asString(payload.venue, "hyperliquid"),
+				asset,
+				side,
+				size: asNumber(payload.size, asNumber(payload.amount, 0)),
+				notionalUsd: asNumber(payload.notionalUsd, 0),
+				marginUsd: asNumber(payload.marginUsd, 0),
+				entryPriceUsd: asNumber(payload.entryPrice, asNumber(payload.entryPriceUsd, 0)),
+				fillPriceUsd: asNumber(payload.price, asNumber(payload.fillPriceUsd, 0)),
+				leverage: asNumber(payload.leverage, 0) || null,
+				pnlUsd: asNumber(payload.pnlUsd, asNumber(payload.closedPnl, 0)),
+				pnlPct: pnlPct !== null && Number.isFinite(pnlPct) ? pnlPct : null,
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+			return row;
+		}
+		default:
+			return null;
+	}
+}
+
 // ── Activity feed ──────────────────────────────────────────────
 
 export function LiveActivityFeed({
@@ -149,6 +316,7 @@ export function LiveActivityFeed({
 	max?: number;
 }) {
 	const trades = useLiveAgentTrades(address, initialTrades);
+	const agentEvents = useAgentEvents(address, { pollMs: 15_000, limit: 50 });
 	// Only Sol surfaces tweets in the feed today; non-Sol agents skip
 	// the tweet poll to avoid wasted requests. Future: gate on
 	// `agent.twitterHandle` once non-Sol agents post too.
@@ -194,10 +362,11 @@ export function LiveActivityFeed({
 			impressions: t.impressions,
 			likes: t.likes,
 		}));
-		const merged = [...nonTweet, ...tweetRows];
+		const eventRows = agentEvents.events.map(eventToActivityRow).filter((row): row is ActivityRowInput => Boolean(row));
+		const merged = [...nonTweet, ...tweetRows, ...eventRows];
 		merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 		return mergeActivityWithTrades({ activity: merged, trades, ticker });
-	}, [initialActivity, tweets, trades, ticker]);
+	}, [initialActivity, tweets, agentEvents.events, trades, ticker]);
 
 	return <ActivityFeed rows={rows} max={max} {...(author ? { author } : {})} live />;
 }
