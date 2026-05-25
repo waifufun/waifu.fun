@@ -7,6 +7,7 @@ import agentNavHistoryRoutes from "./agent-nav-history.js";
 import agentPolicyRoutes from "./agent-policies.js";
 import agentPullRoutes from "./agent-pull.js";
 import agentWalletRoutes from "./agent-wallets.js";
+import agentErc8004Routes from "./agents-erc8004.js";
 import agentEventsRoutes from "./agents-events.js";
 import agentRuntimeRoutes from "./agents-runtime.js";
 import agentTwitterStatsRoutes from "./agents-twitter-stats.js";
@@ -61,6 +62,7 @@ v2.route("/agents", agentNavHistoryRoutes);
 v2.route("/agents", agentBurnRateRoutes);
 v2.route("/agents", agentTwitterStatsRoutes);
 v2.route("/agents", agentTwitterTweetsRoutes);
+v2.route("/agents", agentErc8004Routes);
 // Topup routes mount before agentRoutes so /v2/agents/:address/topup/* resolves
 // here before the catch-all /:token handler in agents.ts.
 v2.route("/agents", topupRoutes);
