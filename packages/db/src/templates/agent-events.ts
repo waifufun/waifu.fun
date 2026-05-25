@@ -7,7 +7,7 @@ export type RenderedEvent = {
 	renderedText: string;
 	iconKey?: string;
 	accentColor?: AccentColor;
-	category?: "trading" | "treasury" | "social" | "safety" | "identity" | "apps" | "system";
+	category?: "trading" | "treasury" | "social" | "safety" | "identity" | "apps" | "build" | "system";
 };
 
 export type EventRenderer = (payload: Record<string, unknown>) => RenderedEvent;
@@ -58,6 +58,14 @@ function asset(payload: Record<string, unknown>): string {
 	return (str(payload, "asset", "coin", "symbol", "tokenSymbol") ?? "asset").toLowerCase();
 }
 
+function firstLine(value: string): string {
+	return value.split(/\r?\n/, 1)[0] ?? value;
+}
+
+function clip(value: string, max: number): string {
+	return value.length > max ? value.slice(0, max) : value;
+}
+
 function shortAddress(value: string | null): string {
 	if (!value) return "unknown";
 	if (value.length <= 12) return value;
@@ -79,6 +87,18 @@ function withDefaults(
 }
 
 export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
+	"commit.pushed": (p) =>
+		withDefaults(
+			"commit.pushed",
+			`shipped ${clip(str(p, "sha") ?? "commit", 7)} · ${str(p, "repoLabel") ?? "github"} · ${clip(firstLine(str(p, "message") ?? "commit"), 60)}`,
+			{ iconKey: "GitCommit", category: "build" },
+		),
+	"pr.merged": (p) =>
+		withDefaults(
+			"pr.merged",
+			`merged PR #${num(p, "number") ?? str(p, "number") ?? "?"} · ${str(p, "repoLabel") ?? "github"} · ${clip(str(p, "title") ?? "pull request", 60)}`,
+			{ iconKey: "GitMerge", accentColor: "positive", category: "build" },
+		),
 	"trade.open": (p) => {
 		const a = asset(p);
 		const side = str(p, "side") ?? "position";
