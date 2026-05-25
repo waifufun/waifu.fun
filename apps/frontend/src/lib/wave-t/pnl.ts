@@ -11,7 +11,6 @@
  * without get the empty state. No identity gating.
  */
 
-
 export type NavHistoryPoint = { t: string; nav: number };
 export type PnlSeriesPoint = { t: number; pnl: number };
 

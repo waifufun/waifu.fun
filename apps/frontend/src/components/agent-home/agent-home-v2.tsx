@@ -43,6 +43,7 @@ import { computeRunway } from "@/lib/wave-t/runway";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 import type { TradingSnapshot } from "@/lib/wave-t/trading";
 
+import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
 import type { AgentData, AgentTrade } from "./types";
@@ -54,7 +55,6 @@ import { BurnRatePanel } from "./wave-t/burn-rate-panel";
 import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
 import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
-import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
