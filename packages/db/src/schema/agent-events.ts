@@ -1,4 +1,5 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const AGENT_EVENT_TYPES = [
 	// lifecycle
@@ -52,10 +53,25 @@ export const AGENT_EVENT_TYPES = [
 	"tax.received",
 	"treasury.swept",
 	"treasury.transfer",
+	"transfer.in",
+	"transfer.out",
+	"bridge.initiated",
+	"bridge.completed",
+	"bridge.failed",
+	"hl.deposit",
+	"hl.withdrawal",
+	"safe.tx.proposed",
+	"safe.tx.signed",
+	"safe.tx.executed",
+	"safe.tx",
 
 	// wallet / policy / sessions
 	"wallet.provisioned",
 	"policy.applied",
+	"policy.denied",
+	"policy.needs_manual",
+	"session.opened",
+	"session.revoked",
 	"trade.session.opened",
 	"trade.open",
 	"trade.close",
@@ -76,6 +92,10 @@ export const AGENT_EVENT_TYPES = [
 	"credits.low",
 	"credits.depleted",
 	"agent.last_words",
+	"identity.registered",
+	"identity.card_updated",
+	"discord.posted",
+	"telegram.posted",
 
 	// adapter actions (generic)
 	"action.swap",
@@ -135,6 +155,16 @@ export const agentEvents = pgTable(
 		eventType: text("event_type").$type<AgentEventType>().notNull(),
 		/** Canonical event payload for feeds/webhooks/analytics. */
 		data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
+		/** Producer name for debugging/idempotency (hl-listener, evm-indexer:bsc, steward-webhook, ...). */
+		source: text("source").notNull().default("legacy"),
+		/** Per-source deterministic idempotency key. */
+		sourceEventId: text("source_event_id").notNull().default(sql`gen_random_uuid()::text`),
+		/** Shared id across multi-step flows (bridge, Safe lifecycle, etc.). */
+		correlationId: text("correlation_id"),
+		/** When the event happened at the source; createdAt remains ingestion time. */
+		occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+		/** public rows render in feed; operator/platform rows stay internal. */
+		visibility: text("visibility").$type<"public" | "operator" | "platform">().notNull().default("public"),
 		/** Optional on-chain coordinates for chain-derived events. */
 		txHash: text("tx_hash"),
 		blockNumber: text("block_number"),
@@ -158,6 +188,12 @@ export const agentEvents = pgTable(
 		typeIdx: index("idx_agent_events_type").on(table.eventType),
 		createdAtIdx: index("idx_agent_events_created_at").on(table.createdAt.desc()),
 		statusCreatedIdx: index("idx_agent_events_status_created_at").on(table.status, table.createdAt),
+		sourceEventUniqueIdx: uniqueIndex("agent_events_source_event_id_unique").on(table.source, table.sourceEventId),
+		correlationIdx: index("idx_agent_events_correlation_id").on(table.correlationId),
+		visibilityOccurredIdx: index("idx_agent_events_visibility_occurred_at").on(
+			table.visibility,
+			table.occurredAt.desc(),
+		),
 		tokenCreatedIdx: index("idx_agent_events_token_created_at").on(table.tokenAddress, table.createdAt),
 	}),
 );
@@ -225,8 +261,23 @@ export const AgentEventTypes = {
 	TaxReceived: "tax.received",
 	TreasurySwept: "treasury.swept",
 	TreasuryTransfer: "treasury.transfer",
+	TransferIn: "transfer.in",
+	TransferOut: "transfer.out",
+	BridgeInitiated: "bridge.initiated",
+	BridgeCompleted: "bridge.completed",
+	BridgeFailed: "bridge.failed",
+	HyperliquidDeposit: "hl.deposit",
+	HyperliquidWithdrawal: "hl.withdrawal",
+	SafeTxProposed: "safe.tx.proposed",
+	SafeTxSigned: "safe.tx.signed",
+	SafeTxExecuted: "safe.tx.executed",
+	SafeTx: "safe.tx",
 	WalletProvisioned: "wallet.provisioned",
 	PolicyApplied: "policy.applied",
+	PolicyDenied: "policy.denied",
+	PolicyNeedsManual: "policy.needs_manual",
+	SessionOpened: "session.opened",
+	SessionRevoked: "session.revoked",
 	TradeSessionOpened: "trade.session.opened",
 	TradeOpen: "trade.open",
 	TradeClose: "trade.close",
@@ -250,6 +301,10 @@ export const AgentEventTypes = {
 	AgentResurrected: "agent.resurrected",
 	AgentHeartbeat: "agent.heartbeat",
 	AgentLastWords: "agent.last_words",
+	IdentityRegistered: "identity.registered",
+	IdentityCardUpdated: "identity.card_updated",
+	DiscordPosted: "discord.posted",
+	TelegramPosted: "telegram.posted",
 	ActionSwap: "action.swap",
 	ActionOpenPosition: "action.open_position",
 	ActionClosePosition: "action.close_position",

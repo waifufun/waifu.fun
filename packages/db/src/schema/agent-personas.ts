@@ -4,6 +4,7 @@ import {
 	index,
 	integer,
 	jsonb,
+	numeric,
 	pgEnum,
 	pgTable,
 	text,
@@ -103,6 +104,36 @@ export const agentPersonas = pgTable(
 		/** App-layer validated: bsc | solana | base | ethereum. */
 		chain: text("chain"),
 
+		// Data-driven agent home / ingestion attribution (agent ingestion system) -----
+		featured: boolean("featured").notNull().default(false),
+		apps: jsonb("apps")
+			.$type<
+				Array<{ name: string; slug: string; url?: string; logoKey?: string; status?: string; revenue?: unknown }>
+			>()
+			.default([]),
+		burn: jsonb("burn")
+			.$type<{
+				lineItems?: Array<{ name: string; usd: number; label?: string; iconKey?: string }>;
+				monthlyUsd?: number;
+			}>()
+			.default({}),
+		monthlyBurnUsd: numeric("monthly_burn_usd"),
+		featuredCounter: jsonb("featured_counter").$type<{
+			startedAt: string;
+			label?: string;
+			displayName?: string;
+			suffix?: string;
+		}>(),
+		bioShort: text("bio_short"),
+		bioStyle: text("bio_style").$type<"first-person" | "third-person">().default("first-person"),
+		thesis: jsonb("thesis"),
+		hlAddress: text("hl_address"),
+		arbAddresses: jsonb("arb_addresses").$type<string[]>().default([]),
+		solanaAddresses: jsonb("solana_addresses").$type<string[]>().default([]),
+		stewardAgentId: text("steward_agent_id"),
+		elizaCloudAgentId: text("eliza_cloud_agent_id"),
+		twitterPollingEnabled: boolean("twitter_polling_enabled").notNull().default(false),
+
 		// Legacy compatibility (W6.5) ----------------------------------------
 		/** v1/hackathon-era agents kept queryable but hidden from new public surfaces by default. */
 		legacyV1: boolean("legacy_v1").default(false),
@@ -157,6 +188,13 @@ export const agentPersonas = pgTable(
 		runtimeApiKeyHashIdx: uniqueIndex("idx_agent_personas_runtime_api_key_hash")
 			.on(table.runtimeApiKeyHash)
 			.where(sql`${table.runtimeApiKeyHash} IS NOT NULL`),
+		featuredIdx: index("idx_agent_personas_featured").on(table.featured).where(sql`${table.featured} = true`),
+		stewardAgentIdIdx: uniqueIndex("idx_agent_personas_steward_agent_id")
+			.on(table.stewardAgentId)
+			.where(sql`${table.stewardAgentId} IS NOT NULL`),
+		elizaCloudAgentIdIdx: uniqueIndex("idx_agent_personas_eliza_cloud_agent_id")
+			.on(table.elizaCloudAgentId)
+			.where(sql`${table.elizaCloudAgentId} IS NOT NULL`),
 	}),
 );
 

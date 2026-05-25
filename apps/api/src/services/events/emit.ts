@@ -7,6 +7,7 @@ import {
 	agentEvents,
 	getDatabase,
 	isAgentEventType,
+	renderEventData,
 } from "@waifufun/db";
 import { logAgentEventToLoki } from "@waifufun/logger";
 import { agentActionsTotal, agentEventsTotal, agentInferenceCostUsdTotal, agentXPostsTotal } from "@waifufun/metrics";
@@ -82,7 +83,14 @@ export function normalizeAgentEventInput(input: EmitAgentEventInput): NewAgentEv
 		throw new Error(`invalid agent event type: ${input.eventType}`);
 	}
 
-	const data = input.data ?? recordFromUnknown(input.payload) ?? {};
+	const rawData = input.data ?? recordFromUnknown(input.payload) ?? {};
+	const source = input.source ?? stringField(rawData, "source") ?? "api";
+	const sourceEventId =
+		input.sourceEventId ??
+		stringField(rawData, "sourceEventId") ??
+		stringField(rawData, "source_event_id") ??
+		`${source}:${input.eventType}:${input.agentId ?? input.tokenAddress ?? "unknown"}:${stringField(rawData, "txHash") ?? Date.now()}`;
+	const data = renderEventData(input.eventType, rawData);
 	const txHash = input.txHash ?? stringField(data, "txHash");
 	const blockNumber = input.blockNumber ?? stringField(data, "blockNumber");
 	const chainId = input.chainId ?? stringField(data, "chainId");
@@ -94,6 +102,12 @@ export function normalizeAgentEventInput(input: EmitAgentEventInput): NewAgentEv
 		txHash,
 		blockNumber,
 		chainId,
+		source,
+		sourceEventId,
+		correlationId: input.correlationId ?? stringField(rawData, "correlationId"),
+		occurredAt:
+			input.occurredAt ??
+			(stringField(rawData, "occurredAt") ? new Date(stringField(rawData, "occurredAt") as string) : new Date()),
 		type: input.type ?? LEGACY_QUEUE_TYPE_BY_EVENT_TYPE[input.eventType] ?? input.eventType,
 		payload: input.payload ?? data,
 		// API-originated activity rows are feed/webhook records, not brain-worker queue work.

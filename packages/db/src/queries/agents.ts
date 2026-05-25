@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 import type { Database } from "../client.js";
+import { type AgentAppRow, agentApps } from "../schema/agent-apps.js";
 import { agentEvents } from "../schema/agent-events.js";
 import { type AgentPersonaRow, agentPersonas } from "../schema/agent-personas.js";
 import { type AgentWalletRow, agentWallets } from "../schema/agent-wallets.js";
@@ -68,7 +69,31 @@ export interface AgentSummary {
 	createdAt: string;
 }
 
-export interface AgentDetail extends AgentSummary {
+/**
+ * Persona‐driven fields surfaced by the ingestion system. The FE renders
+ * these by presence only — no identity branches. See architect brief
+ * `AGENT-INGESTION-SYSTEM-2026-05-25.md` section 3d.
+ */
+export interface AgentPersonaIngestionFields {
+	featured: boolean;
+	bio: string | null;
+	bioShort: string | null;
+	bioStyle: "first-person" | "third-person" | null;
+	apps: unknown;
+	burn: unknown;
+	monthlyBurnUsd: number | null;
+	featuredCounter: unknown;
+	thesis: unknown;
+	hlAddress: string | null;
+	arbAddresses: string[];
+	solanaAddresses: string[];
+	stewardAgentId: string | null;
+	elizaCloudAgentId: string | null;
+	twitterPollingEnabled: boolean;
+	metadata: unknown;
+}
+
+export interface AgentDetail extends AgentSummary, AgentPersonaIngestionFields {
 	systemPrompt: string | null;
 	traits: string[];
 	trades24hCount: number;
@@ -404,11 +429,73 @@ export async function getAgentByTokenAddress(db: Database, tokenAddress: string)
 	// is guaranteed defined here (we just passed one item in), but appease TS.
 	const hydrated = summary ?? baseSummary;
 
+	const persona = row.persona;
+	const monthlyBurnUsdRaw = persona.monthlyBurnUsd;
+	const monthlyBurnUsd =
+		monthlyBurnUsdRaw == null
+			? null
+			: typeof monthlyBurnUsdRaw === "number"
+				? monthlyBurnUsdRaw
+				: Number(monthlyBurnUsdRaw);
+
+	// Merge apps from the agent_apps registry table. Sorted by featured
+	// first, then by metadata.sort ascending, then by 7d revenue desc.
+	// Featured rows are platform products (waifu.fun, Steward) seeded by
+	// backfill scripts; non-featured rows are revenue-generating mini-apps
+	// from the apps registry. The brief specifies one merged + sorted list.
+	const appRows: AgentAppRow[] = persona.tokenAddress
+		? await db
+				.select()
+				.from(agentApps)
+				.where(sql`lower(${agentApps.agentTokenAddress}) = ${persona.tokenAddress.toLowerCase()}`)
+		: [];
+	const appsSerialized = appRows
+		.map((r) => ({
+			name: r.name,
+			slug: r.appId,
+			url: r.appUrl ?? undefined,
+			logoKey: r.icon ?? undefined,
+			status: r.status,
+			revenueUsd: r.revenue7dUsd == null ? 0 : Number(r.revenue7dUsd),
+			tagline: r.description ?? undefined,
+			metadata: r.metadata,
+		}))
+		.sort((a, b) => {
+			const aMeta = (a.metadata ?? {}) as Record<string, unknown>;
+			const bMeta = (b.metadata ?? {}) as Record<string, unknown>;
+			const af = aMeta.featured === true ? 1 : 0;
+			const bf = bMeta.featured === true ? 1 : 0;
+			if (af !== bf) return bf - af;
+			const asort = typeof aMeta.sort === "number" ? aMeta.sort : Number.POSITIVE_INFINITY;
+			const bsort = typeof bMeta.sort === "number" ? bMeta.sort : Number.POSITIVE_INFINITY;
+			if (asort !== bsort) return asort - bsort;
+			return (b.revenueUsd ?? 0) - (a.revenueUsd ?? 0);
+		});
+
 	return {
 		...hydrated,
-		systemPrompt: row.persona.systemPrompt ?? null,
+		systemPrompt: persona.systemPrompt ?? null,
 		traits,
 		trades24hCount: countRow?.count ?? 0,
+
+		// Persona‐driven ingestion fields. Each maps 1:1 onto the FE
+		// AgentData shape; empty/null → panel suppressed.
+		featured: persona.featured ?? false,
+		bio: persona.bio ?? null,
+		bioShort: persona.bioShort ?? null,
+		bioStyle: (persona.bioStyle as "first-person" | "third-person" | null) ?? null,
+		apps: appsSerialized,
+		burn: persona.burn ?? {},
+		monthlyBurnUsd: Number.isFinite(monthlyBurnUsd as number) ? (monthlyBurnUsd as number) : null,
+		featuredCounter: persona.featuredCounter ?? null,
+		thesis: persona.thesis ?? null,
+		hlAddress: persona.hlAddress ?? null,
+		arbAddresses: Array.isArray(persona.arbAddresses) ? (persona.arbAddresses as string[]) : [],
+		solanaAddresses: Array.isArray(persona.solanaAddresses) ? (persona.solanaAddresses as string[]) : [],
+		stewardAgentId: persona.stewardAgentId ?? null,
+		elizaCloudAgentId: persona.elizaCloudAgentId ?? null,
+		twitterPollingEnabled: persona.twitterPollingEnabled ?? false,
+		metadata: persona.metadata ?? null,
 	};
 }
 

@@ -1,8 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 
-import { getDatabase, webhookInbox } from "@waifufun/db";
+import { agentPersonas, getDatabase, webhookInbox } from "@waifufun/db";
+import { eq, or } from "drizzle-orm";
+import { emitAgentEvent } from "../../services/events/emit.js";
 
 import { type ElizaCloudClient, createElizaCloudClient } from "../../services/eliza-client.js";
 import { type WebhookConsumerEvent, dispatchEvent } from "../../services/webhook-consumer/index.js";
@@ -25,6 +27,15 @@ const SIGNATURE_PREFIX = "sha256=";
 
 export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 	const routes = new Hono();
+
+	routes.post("/steward/policy", async (c) => receiveDirectAgentEvent(c, options, "steward-webhook", mapStewardPolicy));
+	routes.post("/steward/sign", async (c) => receiveDirectAgentEvent(c, options, "steward-webhook", mapStewardSign));
+	routes.post("/eliza-cloud/credits", async (c) =>
+		receiveDirectAgentEvent(c, options, "eliza-cloud-webhook", mapElizaCredits),
+	);
+	routes.post("/eliza-cloud/inference", async (c) =>
+		receiveDirectAgentEvent(c, options, "eliza-cloud-webhook", mapElizaInference),
+	);
 
 	routes.post("/agent-events", async (c) => {
 		const expectedSecret = options.secret ?? process.env.WEBHOOK_RECEIVER_SECRET;
@@ -182,6 +193,134 @@ export function validatePayload(value: unknown): WebhookConsumerEvent {
 		data: data as Record<string, unknown>,
 		...(idempotencyKey ? { idempotencyKey } : {}),
 	};
+}
+
+type DirectMapResult = {
+	eventType: import("@waifufun/db").AgentEventType;
+	agentLookup?: string | null;
+	data: Record<string, unknown>;
+	sourceEventId: string;
+	occurredAt?: Date;
+};
+
+type DirectMapper = (payload: Record<string, unknown>) => DirectMapResult;
+
+async function receiveDirectAgentEvent(
+	c: Context,
+	options: WebhookRoutesOptions,
+	source: string,
+	mapper: DirectMapper,
+) {
+	const expectedSecret = options.secret ?? process.env.WEBHOOK_RECEIVER_SECRET;
+	if (!expectedSecret) return c.json({ error: "unauthorized" }, 401);
+	const rawBody = await c.req.text();
+	let body: Record<string, unknown>;
+	try {
+		body = JSON.parse(rawBody) as Record<string, unknown>;
+	} catch {
+		return c.json({ error: "invalid json" }, 400);
+	}
+	const timestamp = typeof body.timestamp === "string" ? body.timestamp : new Date().toISOString();
+	const authError = verifyWebhookRequest({
+		rawBody,
+		payload: { event: source, timestamp, agentId: null, data: body, idempotencyKey: directIdempotencyKey(body) },
+		secret: expectedSecret,
+		signature: c.req.header("X-Waifu-Webhook-Signature") ?? c.req.header("X-Waifu-Signature"),
+		maxSkewMs: options.maxSkewMs ?? DEFAULT_MAX_SKEW_MS,
+	});
+	if (authError) return c.json({ error: "unauthorized", detail: authError }, 401);
+
+	const db = options.db ?? requireDb();
+	if (!db) return c.json({ error: "database unavailable" }, 503);
+
+	try {
+		const mapped = mapper(body);
+		const agentId = await resolveWebhookAgentId(db, mapped.agentLookup ?? stringField(body, "agentId"), source);
+		await emitAgentEvent({
+			agentId,
+			eventType: mapped.eventType,
+			data: { ...mapped.data, source },
+			source,
+			sourceEventId: mapped.sourceEventId,
+			correlationId: stringField(mapped.data, "correlationId") ?? stringField(mapped.data, "safeTxHash"),
+			occurredAt: mapped.occurredAt ?? new Date(timestamp),
+		});
+		return c.json({ status: "accepted" }, 202);
+	} catch (err) {
+		return c.json(
+			{ error: "failed to receive webhook", detail: err instanceof Error ? err.message : String(err) },
+			500,
+		);
+	}
+}
+
+async function resolveWebhookAgentId(
+	db: Db,
+	lookup: string | null | undefined,
+	source: string,
+): Promise<string | null> {
+	if (!lookup) return null;
+	const [row] = await db
+		.select({ agentId: agentPersonas.agentId })
+		.from(agentPersonas)
+		.where(
+			source === "steward-webhook"
+				? or(eq(agentPersonas.stewardAgentId, lookup), eq(agentPersonas.agentId, lookup))
+				: or(eq(agentPersonas.elizaCloudAgentId, lookup), eq(agentPersonas.agentId, lookup)),
+		)
+		.limit(1);
+	return row?.agentId ?? lookup;
+}
+
+function mapStewardPolicy(payload: Record<string, unknown>): DirectMapResult {
+	const decision = stringField(payload, "decision") ?? stringField(payload, "status") ?? "applied";
+	const eventType =
+		decision === "denied" ? "policy.denied" : decision === "needs_manual" ? "policy.needs_manual" : "policy.applied";
+	return {
+		eventType,
+		agentLookup: stringField(payload, "agentId", "stewardAgentId"),
+		data: payload,
+		sourceEventId: `steward:${stringField(payload, "decisionId", "eventId") ?? crypto.randomUUID()}`,
+	};
+}
+
+function mapStewardSign(payload: Record<string, unknown>): DirectMapResult {
+	return {
+		eventType: "safe.tx.signed",
+		agentLookup: stringField(payload, "agentId", "stewardAgentId"),
+		data: payload,
+		sourceEventId: `steward:${stringField(payload, "signatureId", "safeTxHash", "eventId") ?? crypto.randomUUID()}`,
+	};
+}
+
+function mapElizaCredits(payload: Record<string, unknown>): DirectMapResult {
+	return {
+		eventType: "credits.topped_up",
+		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId"),
+		data: payload,
+		sourceEventId: `eliza:${stringField(payload, "eventId", "creditId") ?? crypto.randomUUID()}`,
+	};
+}
+
+function mapElizaInference(payload: Record<string, unknown>): DirectMapResult {
+	return {
+		eventType: "inference.spent",
+		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId"),
+		data: payload,
+		sourceEventId: `eliza:${stringField(payload, "eventId", "inferenceId") ?? crypto.randomUUID()}`,
+	};
+}
+
+function directIdempotencyKey(payload: Record<string, unknown>): string {
+	return stringField(payload, "idempotencyKey", "eventId", "decisionId", "signatureId") ?? crypto.randomUUID();
+}
+
+function stringField(payload: Record<string, unknown>, ...keys: string[]): string | null {
+	for (const key of keys) {
+		const value = payload[key];
+		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return null;
 }
 
 export default app;

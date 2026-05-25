@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 
-import { type AgentEvent, type AgentEventType, agentEvents, isAgentEventType } from "@waifufun/db";
+import { type AgentEvent, type AgentEventType, agentEvents, isAgentEventType, renderEventData } from "@waifufun/db";
 import { logAgentEventToLoki } from "@waifufun/logger";
 
 import type { WorkerDbClient } from "./types.js";
@@ -10,17 +10,31 @@ export interface EmitAgentEventInput {
 	agentId?: string | null;
 	tokenAddress?: string | null;
 	data?: Record<string, unknown>;
+	source?: string;
+	sourceEventId?: string;
+	correlationId?: string | null;
+	occurredAt?: Date;
 	status?: "pending" | "processing" | "done" | "failed" | "skipped";
 }
 export async function emitAgentEvent(input: EmitAgentEventInput): Promise<AgentEvent> {
 	if (!isAgentEventType(input.eventType)) throw new Error(`invalid agent event type: ${input.eventType}`);
-	const data = input.data ?? {};
+	const rawData = input.data ?? {};
+	const source = input.source ?? stringField(rawData, "source") ?? "worker";
+	const sourceEventId =
+		input.sourceEventId ??
+		stringField(rawData, "sourceEventId") ??
+		`${source}:${input.eventType}:${input.agentId ?? input.tokenAddress ?? "unknown"}:${stringField(rawData, "txHash") ?? Date.now()}`;
+	const data = renderEventData(input.eventType, rawData);
 	const [row] = await input.db
 		.insert(agentEvents)
 		.values({
 			agentId: input.agentId ?? null,
 			eventType: input.eventType,
 			data,
+			source,
+			sourceEventId,
+			correlationId: input.correlationId ?? stringField(rawData, "correlationId"),
+			occurredAt: input.occurredAt ?? new Date(),
 			txHash: stringField(data, "txHash"),
 			blockNumber: stringField(data, "blockNumber"),
 			chainId: stringField(data, "chainId"),

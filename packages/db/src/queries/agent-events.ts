@@ -8,6 +8,7 @@ import {
 	agentEvents,
 	canonicalAgentEventType,
 } from "../schema/agent-events.js";
+import { renderEventData } from "../templates/agent-events.js";
 
 export type { AgentEventRow, AgentEventType, NewAgentEvent };
 
@@ -25,10 +26,22 @@ export interface EnqueueAgentEventInput {
  */
 export async function enqueueAgentEvent(db: Database, input: EnqueueAgentEventInput): Promise<AgentEventRow> {
 	const eventType = canonicalAgentEventType(input.type);
+	const source = typeof input.payload.source === "string" ? input.payload.source : "agent-event-queue";
+	const sourceEventId =
+		typeof input.payload.sourceEventId === "string"
+			? input.payload.sourceEventId
+			: typeof input.payload.source_event_id === "string"
+				? input.payload.source_event_id
+				: `${source}:${input.type}:${input.tokenAddress ?? input.agentId ?? "unknown"}:${input.payload.txHash ?? Date.now()}`;
+
 	const values: NewAgentEvent = {
 		agentId: input.agentId ?? null,
 		eventType,
-		data: input.payload,
+		data: renderEventData(eventType, input.payload),
+		source,
+		sourceEventId,
+		correlationId: typeof input.payload.correlationId === "string" ? input.payload.correlationId : null,
+		occurredAt: typeof input.payload.occurredAt === "string" ? new Date(input.payload.occurredAt) : new Date(),
 		txHash: typeof input.payload.txHash === "string" ? input.payload.txHash : null,
 		blockNumber: typeof input.payload.blockNumber === "string" ? input.payload.blockNumber : null,
 		chainId: typeof input.payload.chainId === "string" ? input.payload.chainId : null,

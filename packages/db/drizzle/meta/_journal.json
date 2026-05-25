@@ -260,6 +260,13 @@
       "when": 1779604965711,
       "tag": "0036_fixed_pestilence",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779735916091,
+      "tag": "0037_thick_princess_powerful",
+      "breakpoints": true
     }
   ]
 }

@@ -80,6 +80,11 @@ function metadataNumber(metadata: unknown, key: string): number | null {
 	return Number.isFinite(parsed) ? parsed : null;
 }
 
+function metadataBoolean(metadata: unknown, key: string): boolean {
+	if (!metadata || typeof metadata !== "object" || !(key in metadata)) return false;
+	return (metadata as Record<string, unknown>)[key] === true;
+}
+
 type LaunchOrchestrator = ReturnType<typeof createOrchestrator>;
 
 type AgentsRouteDepsForTest = {
@@ -706,7 +711,7 @@ app.get("/:token/apps", async (c) => {
 			.where(eq(agentApps.agentTokenAddress, token.toLowerCase()))
 			.orderBy(desc(agentApps.revenue7dUsd));
 
-		const apps = rows.map((row) => {
+		const mapped = rows.map((row) => {
 			const revenue24hUsd = numericToNumber(row.revenue24hUsd);
 			const revenue7dUsd = numericToNumber(row.revenue7dUsd);
 			const revenueLifetimeUsd = numericToNumber(row.revenueLifetimeUsd);
@@ -728,6 +733,20 @@ app.get("/:token/apps", async (c) => {
 				createdAt: row.createdAt.toISOString(),
 				updatedAt: row.updatedAt.toISOString(),
 			};
+		});
+
+		// Sort: featured first (metadata.featured === true), then by
+		// metadata.sort ascending, then by revenue7d descending. Platform
+		// products (waifu.fun, Steward) land at the top via featured+sort;
+		// revenue-bearing mini-apps fall in below by 7d revenue.
+		const apps = mapped.slice().sort((a, b) => {
+			const af = metadataBoolean(a.metadata, "featured") ? 1 : 0;
+			const bf = metadataBoolean(b.metadata, "featured") ? 1 : 0;
+			if (af !== bf) return bf - af;
+			const asort = metadataNumber(a.metadata, "sort") ?? Number.POSITIVE_INFINITY;
+			const bsort = metadataNumber(b.metadata, "sort") ?? Number.POSITIVE_INFINITY;
+			if (asort !== bsort) return asort - bsort;
+			return (b.revenue7dUsd ?? 0) - (a.revenue7dUsd ?? 0);
 		});
 
 		c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");

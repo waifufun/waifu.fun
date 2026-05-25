@@ -325,6 +325,117 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				...(url ? { url } : {}),
 			};
 		}
+		case "transfer.in":
+		case "transfer.out": {
+			const direction = event.eventType === "transfer.in" ? "deposit" : "withdraw";
+			const amount = asString(payload.amount, "?");
+			const asset = asString(payload.asset, asString(payload.symbol, "token")).toUpperCase();
+			const counterparty = asString(
+				payload.counterpartyLabel,
+				asString(payload.counterparty, asString(payload.from, asString(payload.to, "chain"))),
+			);
+			const amountUsd = asNumber(payload.amountUsd, 0);
+			const delta = direction === "deposit" ? Math.abs(amountUsd) : -Math.abs(amountUsd);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: direction,
+				from: direction === "deposit" ? counterparty : "agent",
+				to: direction === "deposit" ? "agent" : counterparty,
+				amount: renderedText(event) ?? `${amount} ${asset}`,
+				deltaUsd: delta,
+				...(url ? { url } : {}),
+			};
+		}
+		case "safe.tx.proposed":
+		case "safe.tx.signed":
+		case "safe.tx.executed": {
+			// Safe lifecycle events render as a single "safe tx" row. The
+			// stage (proposed | signed | executed) goes into the right slot;
+			// FE relies on backend correlation_id to suppress duplicates
+			// when more than one stage lands within the poll window.
+			const stage = event.eventType.split(".").pop() ?? "updated";
+			const summary = asString(
+				payload.method,
+				asString(payload.summary, `safe tx ${asString(payload.safeTxHash, "").slice(0, 8)}`),
+			);
+			const safeText = renderedText(event);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "policy",
+				timestamp: event.createdAt,
+				count: asNumber(payload.signaturesCount, 0),
+				walletAddress: asString(payload.safeAddress, "safe"),
+				summary: `safe tx ${stage} · ${summary}`,
+				chainId: event.chainId,
+				status: event.status,
+				...(safeText ? { renderedText: safeText } : {}),
+				...(url ? { url } : {}),
+			};
+		}
+		case "policy.denied":
+		case "policy.needs_manual": {
+			// Operator-only events. Hidden by default in the public feed via
+			// the API visibility column; if they leak through (e.g. operator
+			// preview) we still render but with the negative tone implied by
+			// the eventType. The activity-feed.tsx category mapping puts
+			// these in 'system'.
+			const reason = asString(payload.reason, asString(payload.message, "policy decision"));
+			const kind = event.eventType.split(".").pop() ?? "decision";
+			const policyText = renderedText(event);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "policy",
+				timestamp: event.createdAt,
+				count: 1,
+				walletAddress: asString(payload.walletAddress, "steward"),
+				summary: `${kind === "denied" ? "denied" : "manual review"} · ${reason}`,
+				chainId: event.chainId,
+				status: event.status,
+				...(policyText ? { renderedText: policyText } : {}),
+				...(url ? { url } : {}),
+			};
+		}
+		case "inference.spent": {
+			// Rolled up per minute by the eliza bridge ingester; we just
+			// render the bucket. The renderedText cache should already say
+			// e.g. "42 inferences · $0.18" so we never recompute on FE.
+			const usd = asNumber(payload.usd, asNumber(payload.amountUsd, 0));
+			const tokens = asNumber(payload.tokens, asNumber(payload.totalTokens, 0));
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "withdraw",
+				from: "agent",
+				to: asString(payload.provider, "inference"),
+				amount: renderedText(event) ?? (tokens > 0 ? `${tokens.toLocaleString()} tokens` : "inference spend"),
+				deltaUsd: -Math.abs(usd),
+				...(url ? { url } : {}),
+			};
+		}
+		case "identity.registered":
+		case "identity.card_updated": {
+			const kind = event.eventType.split(".").pop() ?? "updated";
+			const tokenId = asString(payload.tokenId, asString(payload.id, ""));
+			const identityText = renderedText(event);
+			return {
+				id: `agent-event-${event.id}`,
+				type: "policy",
+				timestamp: event.createdAt,
+				count: 1,
+				walletAddress: asString(payload.registry, "erc-8004"),
+				summary:
+					kind === "registered"
+						? `identity registered · token #${tokenId}`
+						: `identity card updated · token #${tokenId}`,
+				chainId: event.chainId,
+				status: event.status,
+				...(identityText ? { renderedText: identityText } : {}),
+				...(url ? { url } : {}),
+			};
+		}
 		default:
 			return null;
 	}
@@ -337,7 +448,7 @@ export function LiveActivityFeed({
 	initialTrades,
 	initialActivity,
 	ticker,
-	isSolAgent,
+	twitterPollingEnabled = false,
 	author,
 	max = 30,
 }: {
@@ -345,15 +456,21 @@ export function LiveActivityFeed({
 	initialTrades: AgentTrade[];
 	initialActivity: ActivityRowInput[];
 	ticker: string;
-	isSolAgent: boolean;
+	/**
+	 * Gate the tweet poll on a data-driven flag from the persona
+	 * endpoint. When false, the feed still renders any tweet rows that
+	 * came through the SSG seed but does not spin up a poll. Drops the
+	 * old `isSolAgent` identity prop entirely.
+	 */
+	twitterPollingEnabled?: boolean;
 	author?: ActivityFeedAuthor;
 	max?: number;
 }) {
 	const trades = useLiveAgentTrades(address, initialTrades);
 	const agentEvents = useAgentEvents(address, { pollMs: 15_000, limit: 50 });
-	// Only Sol surfaces tweets in the feed today; non-Sol agents skip
-	// the tweet poll to avoid wasted requests. Future: gate on
-	// `agent.twitterHandle` once non-Sol agents post too.
+	// Tweet poll gates on an explicit persona flag, not identity. Agents
+	// without twitter polling configured render any SSG-seeded tweets and
+	// skip the runtime poll.
 	const initialTweets = useMemo(() => {
 		const out: {
 			id: string;
@@ -379,7 +496,7 @@ export function LiveActivityFeed({
 		}
 		return out;
 	}, [initialActivity]);
-	const tweets = useLiveTweets(isSolAgent ? address : "", initialTweets);
+	const tweets = useLiveTweets(twitterPollingEnabled ? address : "", initialTweets);
 
 	// Merge: replace tweet rows in initialActivity with the live set;
 	// keep everything else (PRs, txs, etc) as the SSG seed because we

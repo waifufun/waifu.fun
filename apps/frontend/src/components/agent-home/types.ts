@@ -1,3 +1,45 @@
+/**
+ * Burn line item: a single cost the agent pays (e.g. "claude max" $200).
+ *
+ * Backed by `agent_personas.burn` jsonb in the persona API. Producer side
+ * normalizes to this shape; FE renders without identity gating. The
+ * `iconKey` is a brand-icon registry key (`anthropic | openai | steward |
+ * ...`) resolved by `wave-t/_primitives.tsx`. Unknown keys fall back to a
+ * neutral chip so a new line item never breaks render.
+ */
+export interface BurnLineItem {
+	name: string;
+	usd: number;
+	label?: string;
+	iconKey?: string;
+}
+
+/**
+ * App row attached to an agent. Mirrors `lib/wave-t/apps.ts#App` but kept
+ * decoupled here so `AgentData.apps` can be populated from any source
+ * (persona endpoint or apps endpoint). The render path treats this as
+ * the canonical app shape; an empty array means "no panel".
+ */
+export interface AgentAppRef {
+	name: string;
+	slug?: string;
+	url?: string;
+	logoKey?: string;
+	status?: "live" | "paused" | "scheduled";
+	revenueUsd?: number | null;
+	tagline?: string;
+}
+
+/**
+ * Featured counter footer: "day N of <suffix>". Generic for any agent
+ * who wants a launch-day counter in the footer. Null → footer omits it.
+ */
+export interface FeaturedCounter {
+	startedAt: string; // ISO date or unix timestamp
+	label?: string; // e.g. "of being me" (suffix)
+	displayName?: string;
+}
+
 export interface AgentData {
 	tokenAddress: string;
 	walletAddress?: string;
@@ -24,6 +66,31 @@ export interface AgentData {
 	model?: string; // inference model label, if the backend attaches one
 	lastActionAt?: number; // unix ms of last autonomous output (trade, call, post, etc)
 	lastActionType?: "trade" | "call" | "post" | "ship" | "decide" | string;
+
+	/**
+	 * Data-driven persona fields (additive). Render presence-based:
+	 * empty / null → panel suppressed; populated → panel renders.
+	 * Populated by the persona endpoint once the ingestion backend lands;
+	 * meantime the page degrades cleanly to "no panel".
+	 */
+	apps?: AgentAppRef[] | null;
+	burn?: BurnLineItem[] | null;
+	monthlyBurnUsd?: number | null;
+	featuredCounter?: FeaturedCounter | null;
+	bioStyle?: "first-person" | "third-person" | null;
+	bioShort?: string | null;
+	twitterPollingEnabled?: boolean;
+	/** Free-form persona metadata jsonb. Holds things like githubRepos[]. */
+	metadata?: Record<string, unknown> | null;
+	/** Steward session id; presence enables the Steward trading proxy. */
+	stewardAgentId?: string | null;
+	/** Multi-chain wallets surfaced by the persona endpoint. */
+	hlAddress?: string | null;
+	arbAddresses?: string[] | null;
+	solanaAddresses?: string[] | null;
+	/** Long bio (the canonical description). bioShort overrides at the hero. */
+	bio?: string | null;
+	thesis?: unknown;
 }
 
 export interface AgentTrade {
