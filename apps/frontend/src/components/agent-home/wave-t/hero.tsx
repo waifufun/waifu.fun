@@ -35,10 +35,12 @@ import { CheckCircle2Icon } from "lucide-react";
 import { useId, useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
+import type { Erc8004IdentityRecord } from "@/lib/erc8004/types";
 import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 
+import { Erc8004Badge } from "../erc8004-badge";
 import { Label, MicroStat, Pulse, StatPill } from "./_primitives";
 import { StatusCard } from "./status-card";
 
@@ -52,6 +54,13 @@ export type HeroIdentity = {
 	twitterHandle?: string | undefined;
 	/** Token contract address. Used to render a copyable CA chip + bscscan link. */
 	tokenAddress?: string | undefined;
+	/**
+	 * Optional ERC-8004 identity record. When present, the hero shows a
+	 * dedicated `<Erc8004Badge>` next to the name + tooltip + click to
+	 * scroll the provenance panel. When absent, the legacy plain
+	 * checkmark renders (or nothing, depending on `verified`).
+	 */
+	erc8004?: Erc8004IdentityRecord | undefined;
 };
 
 export type HeroTreasuryOverride = {
@@ -193,7 +202,9 @@ function IdentityBand({
 					<h1 className="font-medium text-[28px] text-[var(--text-primary)] leading-none lowercase tracking-[-0.02em] md:text-[34px]">
 						{displayName.toLowerCase()}
 					</h1>
-					{verified ? (
+					{identity.erc8004 ? (
+						<Erc8004Badge identity={identity.erc8004} />
+					) : verified ? (
 						<CheckCircle2Icon
 							aria-label="Verified agent"
 							className="h-[20px] w-[20px]"

@@ -49,6 +49,7 @@ import { Typewriter } from "@/lib/motion-plus/typewriter";
 import { cn } from "@/lib/utils";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 
+import { Erc8004Badge } from "../erc8004-badge";
 import { Hairline, Panel, Pulse, StatPill } from "./_primitives";
 import { ContractAddressChip } from "./contract-address-chip";
 import type { HeroIdentity, HeroProps } from "./hero";
@@ -170,7 +171,9 @@ function CharacterColumn({
 					>
 						{displayName}
 					</h1>
-					{verified ? (
+					{identity.erc8004 ? (
+						<Erc8004Badge identity={identity.erc8004} />
+					) : verified ? (
 						<CheckCircle2Icon
 							aria-label="Verified agent"
 							className="h-[18px] w-[18px] md:h-[22px] md:w-[22px] lg:h-[26px] lg:w-[26px]"

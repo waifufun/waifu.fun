@@ -1,6 +1,7 @@
 import AgentHomeV2 from "@/components/agent-home/agent-home-v2";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
 import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-feed";
+import { fetchAgentIdentity } from "@/lib/erc8004/client";
 import { fetchOnchainHistory } from "@/lib/onchain-history";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { buildActivity } from "@/lib/wave-t/activity";
@@ -416,6 +417,10 @@ export default async function AgentPage({
 		orders: [],
 	}));
 	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
+	// ERC-8004 identity. Returns null when the agent has no on-chain
+	// identity (the default for most agents). When present, the hero
+	// shows a verified badge and the page renders a provenance panel.
+	const identityP = fetchAgentIdentity(address).catch(() => null);
 
 	const [
 		agent,
@@ -431,6 +436,7 @@ export default async function AgentPage({
 		apps,
 		activity,
 		trading,
+		identity,
 	] = await Promise.all([
 		agentP,
 		tradesP,
@@ -445,6 +451,7 @@ export default async function AgentPage({
 		appsP,
 		activityP,
 		tradingP,
+		identityP,
 	]);
 
 	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
@@ -488,6 +495,7 @@ export default async function AgentPage({
 			apps={apps}
 			agentSafeBalance={agentSafeBalance}
 			trading={trading}
+			identity={identity}
 		/>
 	);
 }
