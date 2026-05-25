@@ -249,17 +249,48 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 		}
 		case "trade.open":
 		case "trade.close":
-			return {
+		case "trade.fill":
+		case "trade.liquidation": {
+			const kind: "open" | "close" | "fill" | "liquidation" =
+				event.eventType === "trade.open"
+					? "open"
+					: event.eventType === "trade.close"
+						? "close"
+						: event.eventType === "trade.fill"
+							? "fill"
+							: "liquidation";
+			const rawSide = asString(payload.side, "long").toLowerCase();
+			const side: "long" | "short" = rawSide === "short" || rawSide === "sell" || rawSide === "a" ? "short" : "long";
+			const asset = asString(payload.asset, asString(payload.coin, asString(payload.symbol, "asset"))).toUpperCase();
+			const pnlPctRaw = payload.pnlPct;
+			const pnlPct =
+				typeof pnlPctRaw === "number" && Number.isFinite(pnlPctRaw)
+					? pnlPctRaw
+					: typeof pnlPctRaw === "string" && pnlPctRaw.length > 0
+						? Number(pnlPctRaw)
+						: null;
+			const text = renderedText(event);
+			const row: ActivityRowInput = {
 				id: `agent-event-${event.id}`,
-				type: "trade",
+				type: "perpTrade",
+				kind,
 				timestamp: event.createdAt,
-				side: event.eventType === "trade.close" ? "sell" : "buy",
-				asset: asString(payload.asset, asString(payload.symbol, "asset")).toUpperCase(),
-				amount: asNumber(payload.amount, 0),
-				priceBnb: asNumber(payload.priceBnb, 0),
-				venue: asString(payload.venue, "trading"),
+				venue: asString(payload.venue, "hyperliquid"),
+				asset,
+				side,
+				size: asNumber(payload.size, asNumber(payload.amount, 0)),
+				notionalUsd: asNumber(payload.notionalUsd, 0),
+				marginUsd: asNumber(payload.marginUsd, 0),
+				entryPriceUsd: asNumber(payload.entryPrice, asNumber(payload.entryPriceUsd, 0)),
+				fillPriceUsd: asNumber(payload.price, asNumber(payload.fillPriceUsd, 0)),
+				leverage: asNumber(payload.leverage, 0) || null,
+				pnlUsd: asNumber(payload.pnlUsd, asNumber(payload.closedPnl, 0)),
+				pnlPct: pnlPct !== null && Number.isFinite(pnlPct) ? pnlPct : null,
+				...(text ? { renderedText: text } : {}),
 				...(url ? { url } : {}),
 			};
+			return row;
+		}
 		default:
 			return null;
 	}

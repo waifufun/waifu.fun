@@ -123,6 +123,30 @@ export type ActivityRowInput =
 			url?: string;
 	  }
 	| {
+			/**
+			 * Rich perp / leverage trade row used for Hyperliquid (and any
+			 * future perp venue). Distinct from the existing `trade` row which
+			 * targets BSC spot swaps quoted in BNB.
+			 */
+			id: string;
+			type: "perpTrade";
+			kind: "open" | "close" | "fill" | "liquidation";
+			timestamp: string;
+			venue: string;
+			asset: string;
+			side: "long" | "short";
+			size?: number;
+			notionalUsd?: number;
+			marginUsd?: number;
+			entryPriceUsd?: number;
+			fillPriceUsd?: number;
+			leverage?: number | null;
+			pnlUsd?: number;
+			pnlPct?: number | null;
+			renderedText?: string;
+			url?: string;
+	  }
+	| {
 			id: string;
 			type: "tradeSession";
 			timestamp: string;
@@ -155,6 +179,8 @@ function categoryOf(row: ActivityRowInput): ActivityCategory {
 		case "trade":
 			return "trading";
 		case "position":
+			return "trading";
+		case "perpTrade":
 			return "trading";
 		case "bet":
 			return "market";
@@ -386,6 +412,75 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 					<span className={cn("tabular-nums", tone.cls)}>
 						{tone.sign}
 						{formatCompactUsd(row.pnlUsd)} <span className="text-[var(--text-tertiary)]">p&l</span>
+					</span>
+				),
+				url: row.url,
+			};
+		}
+		case "perpTrade": {
+			const asset = row.asset.toLowerCase();
+			if (row.kind === "liquidation") {
+				return {
+					icon: pickVenueIcon(row.venue),
+					title: `🚨 liquidated ${asset} ${row.side}`,
+					sub:
+						row.renderedText ??
+						`liquidated at ${formatCompactUsd(row.fillPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+					right: (
+						<span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--negative)]">
+							margin call
+						</span>
+					),
+					url: row.url,
+				};
+			}
+			if (row.kind === "open") {
+				const lev = row.leverage ? ` ${row.leverage}x` : "";
+				return {
+					icon: pickVenueIcon(row.venue),
+					title: `opened ${asset} ${row.side}`,
+					sub:
+						row.renderedText ??
+						`${formatCompactUsd(row.marginUsd ?? row.notionalUsd ?? 0)}${lev} at ${formatCompactUsd(row.entryPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+					right: (
+						<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
+							{formatCompactUsd(row.notionalUsd ?? 0)}
+						</span>
+					),
+					url: row.url,
+				};
+			}
+			if (row.kind === "close") {
+				const pnl = row.pnlUsd ?? 0;
+				const tone = deltaTone(pnl);
+				const pct =
+					row.pnlPct === null || row.pnlPct === undefined
+						? null
+						: `${row.pnlPct > 0 ? "+" : ""}${row.pnlPct.toFixed(2)}%`;
+				return {
+					icon: pickVenueIcon(row.venue),
+					title: `closed ${asset} ${row.side}`,
+					sub: row.renderedText ?? `closed on ${row.venue.toLowerCase()}`,
+					right: (
+						<span className={cn("tabular-nums", tone.cls)}>
+							{tone.sign}
+							{formatCompactUsd(pnl)}
+							{pct ? <span className="ml-1 text-[var(--text-tertiary)]">{pct}</span> : null}
+						</span>
+					),
+					url: row.url,
+				};
+			}
+			// fill
+			return {
+				icon: pickVenueIcon(row.venue),
+				title: `filled ${row.side} ${asset}`,
+				sub:
+					row.renderedText ??
+					`${formatCompactNum(row.size ?? 0)} ${asset} at ${formatCompactUsd(row.fillPriceUsd ?? 0)}`,
+				right: (
+					<span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
+						{formatCompactUsd((row.fillPriceUsd ?? 0) * (row.size ?? 0))}
 					</span>
 				),
 				url: row.url,

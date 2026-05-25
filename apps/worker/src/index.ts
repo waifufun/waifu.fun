@@ -3,6 +3,7 @@ import { Worker } from "bullmq";
 import { createDbRepository, getDatabase } from "@waifufun/db";
 import { closeRedisConnection, createRedisConnection } from "@waifufun/queue";
 
+import { startHyperliquidListener } from "./lib/hl-listener.js";
 import { logger } from "./lib/logger.js";
 import { startMetricsServer } from "./lib/metrics-server.js";
 import { ensureWorkerSchedules } from "./lib/schedules.js";
@@ -16,6 +17,7 @@ interface BootedWorker {
 
 const workers: BootedWorker[] = [];
 let metricsServer: ReturnType<typeof startMetricsServer> | undefined;
+let hyperliquidListener: ReturnType<typeof startHyperliquidListener> | undefined;
 
 async function bootWorkers(context: WorkerContext): Promise<void> {
 	const registrations = createWorkerRegistrations(context);
@@ -93,6 +95,13 @@ async function main(): Promise<void> {
 	metricsServer = startMetricsServer(logger);
 	await ensureWorkerSchedules(logger);
 	await bootWorkers(context);
+
+	if (process.env.HL_LISTENER_DISABLED !== "1") {
+		const pollIntervalMs = Number(process.env.HL_LISTENER_POLL_MS ?? 10_000);
+		hyperliquidListener = startHyperliquidListener(context, {
+			pollIntervalMs: Number.isFinite(pollIntervalMs) ? pollIntervalMs : 10_000,
+		});
+	}
 }
 
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
@@ -102,6 +111,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 		[
 			...workers.map(({ worker }) => worker.close()),
 			metricsServer ? new Promise<void>((resolve) => metricsServer?.close(() => resolve())) : undefined,
+			hyperliquidListener?.stop(),
 		].filter((item): item is Promise<void> => item !== undefined),
 	);
 	await closeRedisConnection();

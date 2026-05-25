@@ -14,6 +14,7 @@ import agentTwitterTweetsRoutes from "./agents-twitter-tweets.js";
 import agentXRoutes from "./agents-x.js";
 import agentRoutes from "./agents.js";
 import agentBurnRateRoutes from "./agents/burn-rate.js";
+import agentHyperliquidRoutes from "./agents/hyperliquid.js";
 import authSiweRoutes from "./auth-siwe.js";
 import blinkRoutes from "./blinks.js";
 import bundleRoutes from "./bundles.js";
@@ -59,6 +60,7 @@ v2.route("/agents", agentWalletRoutes);
 v2.route("/agents", agentHoldingsRoutes);
 v2.route("/agents", agentNavHistoryRoutes);
 v2.route("/agents", agentBurnRateRoutes);
+v2.route("/agents", agentHyperliquidRoutes);
 v2.route("/agents", agentTwitterStatsRoutes);
 v2.route("/agents", agentTwitterTweetsRoutes);
 // Topup routes mount before agentRoutes so /v2/agents/:address/topup/* resolves

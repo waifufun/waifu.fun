@@ -59,6 +59,8 @@ export const AGENT_EVENT_TYPES = [
 	"trade.session.opened",
 	"trade.open",
 	"trade.close",
+	"trade.fill",
+	"trade.liquidation",
 
 	// X / social
 	"x.connected",
@@ -228,6 +230,8 @@ export const AgentEventTypes = {
 	TradeSessionOpened: "trade.session.opened",
 	TradeOpen: "trade.open",
 	TradeClose: "trade.close",
+	TradeFill: "trade.fill",
+	TradeLiquidation: "trade.liquidation",
 	XConnected: "x.connected",
 	XDisconnected: "x.disconnected",
 	XTokenRefreshExhausted: "x.token.refresh_exhausted",
