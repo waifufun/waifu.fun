@@ -14,6 +14,7 @@
 
 "use client";
 
+import { ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
@@ -97,6 +98,43 @@ export type ActivityRowInput =
 			amount: string;
 			deltaUsd: number;
 			url?: string;
+	  }
+	| {
+			id: string;
+			type: "wallet";
+			timestamp: string;
+			walletType: string;
+			walletAddress: string;
+			chainId?: string | null;
+			status?: string;
+			renderedText?: string;
+			url?: string;
+	  }
+	| {
+			id: string;
+			type: "policy";
+			timestamp: string;
+			count: number;
+			walletAddress: string;
+			summary: string;
+			chainId?: string | null;
+			status?: string;
+			renderedText?: string;
+			url?: string;
+	  }
+	| {
+			id: string;
+			type: "tradeSession";
+			timestamp: string;
+			venue: string;
+			dailyCapUsd?: number;
+			perOrderCapUsd?: number;
+			leverageCap?: number;
+			allowedAssets?: string[];
+			chainId?: string | null;
+			status?: string;
+			renderedText?: string;
+			url?: string;
 	  };
 
 // ── Tab definitions ──────────────────────────────────────────────
@@ -124,6 +162,12 @@ function categoryOf(row: ActivityRowInput): ActivityCategory {
 			return "apps";
 		case "treasury":
 			return "treasury";
+		case "wallet":
+			return "system";
+		case "policy":
+			return "system";
+		case "tradeSession":
+			return "trading";
 		case "revenue":
 			return "treasury";
 		case "tx":
@@ -148,6 +192,26 @@ function deltaTone(delta: number): { cls: string; sign: string } {
 function pickVenueIcon(venue: string): ReactNode {
 	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
 	return <BnbChainIcon className="h-3.5 w-3.5" />;
+}
+
+function chainLabel(chainId?: string | null): string {
+	switch (String(chainId ?? "")) {
+		case "56":
+			return "bsc";
+		case "42161":
+			return "arbitrum";
+		case "8453":
+			return "base";
+		case "1":
+			return "ethereum";
+		default:
+			return "chain";
+	}
+}
+
+function shortAddress(value: string): string {
+	if (value.length <= 12) return value;
+	return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
 // ── Tweet row (distinct visual) ──────────────────────────────────
@@ -403,6 +467,38 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 						{formatCompactUsd(row.deltaUsd)}
 					</span>
 				),
+				url: row.url,
+			};
+		}
+		case "wallet":
+			return {
+				icon: <WalletCards className="h-3.5 w-3.5" />,
+				title: "provisioned wallet",
+				sub: row.renderedText ?? `${row.walletType.toLowerCase()} at ${shortAddress(row.walletAddress)}`,
+				right: <span className="text-[var(--positive)]">{chainLabel(row.chainId)}</span>,
+				url: row.url,
+			};
+		case "policy":
+			return {
+				icon: <ShieldCheck className="h-3.5 w-3.5" />,
+				title: "applied wallet policy",
+				sub: row.renderedText ?? row.summary,
+				right: <span className="text-[var(--positive)] tabular-nums">{row.count} policies</span>,
+				url: row.url,
+			};
+		case "tradeSession": {
+			const caps = [
+				row.dailyCapUsd ? `${formatCompactUsd(row.dailyCapUsd)}/day` : null,
+				row.perOrderCapUsd ? `${formatCompactUsd(row.perOrderCapUsd)}/order` : null,
+				row.leverageCap ? `${row.leverageCap}x max` : null,
+			]
+				.filter(Boolean)
+				.join(", ");
+			return {
+				icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
+				title: `opened ${row.venue.toLowerCase()} session`,
+				sub: row.renderedText ?? caps,
+				right: <span className="text-[var(--positive)]">live</span>,
 				url: row.url,
 			};
 		}

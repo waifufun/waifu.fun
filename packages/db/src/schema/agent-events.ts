@@ -51,6 +51,14 @@ export const AGENT_EVENT_TYPES = [
 	"tax.split.configured",
 	"tax.received",
 	"treasury.swept",
+	"treasury.transfer",
+
+	// wallet / policy / sessions
+	"wallet.provisioned",
+	"policy.applied",
+	"trade.session.opened",
+	"trade.open",
+	"trade.close",
 
 	// X / social
 	"x.connected",
@@ -214,6 +222,12 @@ export const AgentEventTypes = {
 	TaxSplitConfigured: "tax.split.configured",
 	TaxReceived: "tax.received",
 	TreasurySwept: "treasury.swept",
+	TreasuryTransfer: "treasury.transfer",
+	WalletProvisioned: "wallet.provisioned",
+	PolicyApplied: "policy.applied",
+	TradeSessionOpened: "trade.session.opened",
+	TradeOpen: "trade.open",
+	TradeClose: "trade.close",
 	XConnected: "x.connected",
 	XDisconnected: "x.disconnected",
 	XTokenRefreshExhausted: "x.token.refresh_exhausted",

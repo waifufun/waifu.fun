@@ -1,10 +1,11 @@
-import { and, desc, eq, inArray, lt, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, ne, or } from "drizzle-orm";
 import { Hono } from "hono";
 
 import {
 	type AgentEvent,
 	type AgentEventType,
 	agentEvents as agentEventsTable,
+	agentPersonas,
 	getDatabase,
 	isAgentEventType,
 } from "@waifufun/db";
@@ -19,6 +20,46 @@ function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	return getDatabase(url).db;
 }
 
+async function resolveEventAgentIds(
+	db: NonNullable<ReturnType<typeof requireDb>>,
+	routeAgentId: string,
+): Promise<string[]> {
+	const ids = new Set<string>([routeAgentId]);
+	const lookup = routeAgentId.trim();
+	if (!lookup) return [...ids];
+
+	if (UUID_RE.test(lookup)) {
+		const [byUuid] = await db
+			.select({ id: agentPersonas.id, agentId: agentPersonas.agentId })
+			.from(agentPersonas)
+			.where(eq(agentPersonas.id, lookup))
+			.limit(1);
+		if (byUuid) {
+			ids.add(byUuid.id);
+			ids.add(byUuid.agentId);
+		}
+	}
+
+	const tokenCandidates = lookup.startsWith("0x") ? [lookup, lookup.toLowerCase()] : [lookup];
+	const [byPublicId] = await db
+		.select({ id: agentPersonas.id, agentId: agentPersonas.agentId })
+		.from(agentPersonas)
+		.where(
+			or(
+				eq(agentPersonas.agentId, lookup),
+				eq(agentPersonas.tokenAddress, tokenCandidates[0]),
+				eq(agentPersonas.tokenAddress, tokenCandidates[1] ?? tokenCandidates[0]),
+			),
+		)
+		.limit(1);
+	if (byPublicId) {
+		ids.add(byPublicId.id);
+		ids.add(byPublicId.agentId);
+	}
+
+	return [...ids];
+}
+
 /**
  * GET /v2/agents/:agentId/events
  *
@@ -29,6 +70,7 @@ app.get("/:agentId/events", async (c) => {
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 
 	const agentId = c.req.param("agentId");
+	const eventAgentIds = await resolveEventAgentIds(db, agentId);
 
 	const limitRaw = c.req.query("limit");
 	let limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
@@ -56,7 +98,14 @@ app.get("/:agentId/events", async (c) => {
 			const [cursorRow] = await db
 				.select({ createdAt: agentEventsTable.createdAt })
 				.from(agentEventsTable)
-				.where(and(eq(agentEventsTable.agentId, agentId), eq(agentEventsTable.id, cursorRaw)))
+				.where(
+					and(
+						eventAgentIds.length === 1
+							? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
+							: inArray(agentEventsTable.agentId, eventAgentIds),
+						eq(agentEventsTable.id, cursorRaw),
+					),
+				)
 				.limit(1);
 			if (!cursorRow) {
 				return c.json({ error: "cursor not found" }, 400);
@@ -71,7 +120,12 @@ app.get("/:agentId/events", async (c) => {
 		}
 	}
 
-	const filters = [eq(agentEventsTable.agentId, agentId), ne(agentEventsTable.status, "skipped")];
+	const filters = [
+		eventAgentIds.length === 1
+			? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
+			: inArray(agentEventsTable.agentId, eventAgentIds),
+		ne(agentEventsTable.status, "skipped"),
+	];
 	if (cursorDate) filters.push(lt(agentEventsTable.createdAt, cursorDate));
 	if (types.length > 0) filters.push(inArray(agentEventsTable.eventType, types));
 
