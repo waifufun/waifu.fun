@@ -40,18 +40,18 @@ async function resolveEventAgentIds(
 		}
 	}
 
-	const tokenCandidates = lookup.startsWith("0x") ? [lookup, lookup.toLowerCase()] : [lookup];
-	const [byPublicId] = await db
-		.select({ id: agentPersonas.id, agentId: agentPersonas.agentId })
-		.from(agentPersonas)
-		.where(
-			or(
-				eq(agentPersonas.agentId, lookup),
-				eq(agentPersonas.tokenAddress, tokenCandidates[0]),
-				eq(agentPersonas.tokenAddress, tokenCandidates[1] ?? tokenCandidates[0]),
-			),
-		)
-		.limit(1);
+	const tokenCandidates: string[] = lookup.startsWith("0x")
+		? Array.from(new Set([lookup, lookup.toLowerCase()]))
+		: [lookup];
+	const tokenMatchers = tokenCandidates.map((value) => eq(agentPersonas.tokenAddress, value));
+	const publicIdFilter = or(eq(agentPersonas.agentId, lookup), ...tokenMatchers);
+	const [byPublicId] = publicIdFilter
+		? await db
+				.select({ id: agentPersonas.id, agentId: agentPersonas.agentId })
+				.from(agentPersonas)
+				.where(publicIdFilter)
+				.limit(1)
+		: [];
 	if (byPublicId) {
 		ids.add(byPublicId.id);
 		ids.add(byPublicId.agentId);
