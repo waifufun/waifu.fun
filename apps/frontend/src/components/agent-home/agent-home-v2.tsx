@@ -54,6 +54,7 @@ import { BurnRatePanel } from "./wave-t/burn-rate-panel";
 import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
 import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
+import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
@@ -75,6 +76,12 @@ export interface AgentHomeV2Props {
 	daysOperating?: number;
 	agentSafeBalance?: AgentSafeBalance | null;
 	trading?: TradingSnapshot;
+	/**
+	 * Pre-computed PnL series for the 30d chart. Derived from nav-history
+	 * at the page boundary via `selectPnlSeries`. Empty array → chart
+	 * renders its honest empty state. No mock fallback, no flat-zero line.
+	 */
+	pnlSeries?: PnlSeriesPoint[];
 	/**
 	 * Optional ERC-8004 on-chain identity record for the agent. When
 	 * present, the hero shows a verified badge and the page renders an
@@ -106,6 +113,7 @@ export default function AgentHomeV2({
 	agentSafeBalance,
 	trading,
 	identity = null,
+	pnlSeries,
 }: AgentHomeV2Props) {
 	const tradingSnapshot: TradingSnapshot = trading ?? {
 		enabled: false,
@@ -210,7 +218,7 @@ export default function AgentHomeV2({
 				    handles its own empty state ("no apps yet") so the column
 				    layout stays stable for every agent. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-					<PnlChart />
+					{pnlSeries && pnlSeries.length > 0 ? <PnlChart series={pnlSeries} /> : <PnlChart />}
 					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
 

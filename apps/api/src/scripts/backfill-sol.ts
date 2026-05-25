@@ -1,8 +1,40 @@
-import { agentPersonas, getDatabase } from "@waifufun/db";
+import { agentApps, agentPersonas, getDatabase } from "@waifufun/db";
 import { eq, or, sql } from "drizzle-orm";
 
 const SOL_AGENT_UUID = "926f5fa8-aaa8-4ed2-9773-23833e467f4f";
 const SOL_HL_ADDRESS = "0x30641cD7c2E0997AcBd8789b86aDE9B381da048b";
+
+/**
+ * Featured platform-product apps for Sol. Lives as `agent_apps` rows on
+ * her token (NOT as a persona.featuredApps[] column). The mergeAgentApps
+ * + persona-endpoint sort puts these at the top via metadata.featured +
+ * metadata.sort. Same pattern works for any future featured agent.
+ */
+const SOL_FEATURED_APPS: Array<{
+	appId: string;
+	name: string;
+	description: string;
+	appUrl: string;
+	icon: string;
+	sort: number;
+}> = [
+	{
+		appId: "waifu",
+		name: "waifu.fun",
+		description: "my main product",
+		appUrl: "https://waifu.fun",
+		icon: "waifu",
+		sort: 0,
+	},
+	{
+		appId: "steward",
+		name: "steward",
+		description: "my infrastructure layer",
+		appUrl: "https://eliza.steward.fi",
+		icon: "steward",
+		sort: 1,
+	},
+];
 
 async function main(): Promise<void> {
 	const { db } = getDatabase();
@@ -10,6 +42,7 @@ async function main(): Promise<void> {
 		.select({
 			id: agentPersonas.id,
 			agentId: agentPersonas.agentId,
+			tokenAddress: agentPersonas.tokenAddress,
 			apps: agentPersonas.apps,
 			burn: agentPersonas.burn,
 		})
@@ -57,6 +90,54 @@ async function main(): Promise<void> {
 		.where(eq(agentPersonas.id, row.id));
 
 	console.log(`backfilled Sol persona ${row.agentId}`);
+
+	// Insert Steward + waifu.fun as agent_apps rows for Sol's token.
+	// Featured=true + metadata.kind=platform-product + metadata.sort pins
+	// them above any revenue-bearing apps at the persona-endpoint sort.
+	const tokenAddress = row.tokenAddress?.toLowerCase();
+	if (!tokenAddress) {
+		console.warn("sol persona has no token address; skipping featured-apps upsert");
+		return;
+	}
+
+	for (const app of SOL_FEATURED_APPS) {
+		await db
+			.insert(agentApps)
+			.values({
+				agentTokenAddress: tokenAddress,
+				appId: app.appId,
+				name: app.name,
+				description: app.description,
+				icon: app.icon,
+				appUrl: app.appUrl,
+				status: "live",
+				shippedAt: new Date("2026-05-22T00:00:00Z"),
+				metadata: {
+					featured: true,
+					kind: "platform-product",
+					tagline: app.description,
+					sort: app.sort,
+				},
+			})
+			.onConflictDoUpdate({
+				target: [agentApps.agentTokenAddress, agentApps.appId],
+				set: {
+					name: app.name,
+					description: app.description,
+					icon: app.icon,
+					appUrl: app.appUrl,
+					status: "live",
+					metadata: {
+						featured: true,
+						kind: "platform-product",
+						tagline: app.description,
+						sort: app.sort,
+					},
+					updatedAt: new Date(),
+				},
+			});
+		console.log(`upserted agent_apps row ${app.appId} for token ${tokenAddress}`);
+	}
 }
 
 void main().catch((err) => {

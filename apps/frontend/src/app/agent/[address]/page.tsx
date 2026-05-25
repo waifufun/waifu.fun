@@ -11,13 +11,12 @@ import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type App, fetchAppsForAgent } from "@/lib/wave-t/apps";
-import { isArchitectAgentAddress } from "@/lib/wave-t/architect-agent";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
+import { fetchNavHistory, selectPnlSeries } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
-import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTradingSnapshot } from "@/lib/wave-t/trading";
 import { fetchTweets } from "@/lib/wave-t/voice";
@@ -389,12 +388,6 @@ export default async function AgentPage({
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
 	// a sane empty default, so we never throw out of Promise.all.
-	//
-	// `isArchitectAddress` is a *fixture* fallback gate, not a render gate:
-	// until $WAIFU mints, the architect agent is not in the DB so we hydrate
-	// from `buildSolFixtureAgent()`. After mint this branch falls away. No
-	// downstream panel renders off this flag.
-	const isArchitectAddress = isArchitectAgentAddress(address);
 	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
 	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
 		candles: [],
@@ -416,12 +409,14 @@ export default async function AgentPage({
 	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
 	const appsP = fetchAppsForAgent(address).catch(() => []);
-	const tradingP = fetchTradingSnapshot(address).catch(() => ({
-		enabled: false,
-		session: null,
-		positions: [],
-		orders: [],
-	}));
+	// PnL chart series. Pulled from /v2/agents/:address/nav-history; the
+	// selector computes deltas relative to the first snapshot. Returns []
+	// (→ empty state) when nav-history has fewer than two points. Modular:
+	// any agent with nav snapshots gets a chart, anyone without gets the
+	// honest "no pnl history yet" panel. No mock data.
+	const navHistoryP = fetchNavHistory(address, "30d", "1h").catch(() => []);
+	// Trading snapshot fetched post-await because the proxy gate now
+	// reads `agent.stewardAgentId` (presence-based, not identity-based).
 	// ERC-8004 identity. Returns null when the agent has no on-chain
 	// identity (the default for most agents). When present, the hero
 	// shows a verified badge and the page renders a provenance panel.
@@ -439,8 +434,8 @@ export default async function AgentPage({
 		twitterStats,
 		positions,
 		apps,
-		trading,
 		identity,
+		navHistory,
 	] = await Promise.all([
 		agentP,
 		tradesP,
@@ -453,19 +448,27 @@ export default async function AgentPage({
 		twitterStatsP,
 		positionsP,
 		appsP,
-		tradingP,
 		identityP,
+		navHistoryP,
 	]);
 
-	// Presence-based gates (modular for any agent):
-	//   - ship log fetch: enabled when persona has any github repos configured
-	//   - tweet fetch: enabled when persona has twitter polling enabled
-	// Until the persona endpoint exposes these for unseeded agents, the
-	// architect fixture supplies both, so the architect surface still works
-	// pre-mint.
-	const githubRepos = (agent?.metadata as { githubRepos?: unknown } | null)?.githubRepos;
-	const includeShipLog = Array.isArray(githubRepos) ? githubRepos.length > 0 : isArchitectAddress;
-	const includeTweets = agent?.twitterPollingEnabled === true ? true : isArchitectAddress;
+	const pnlSeries = selectPnlSeries(navHistory);
+
+	// Trading gate: presence of `stewardAgentId` on the persona.
+	const trading = await fetchTradingSnapshot(address, {
+		stewardAgentId: agent?.stewardAgentId ?? null,
+	}).catch(() => ({ enabled: false, session: null, positions: [], orders: [] }));
+
+	// Presence-based gates. Modular for any agent: persona populates these
+	// fields, the page renders. No identity branches.
+	//   - ship log fetch: enabled when persona.metadata.githubRepos[] is non-empty
+	//   - tweet fetch: enabled when persona.twitterPollingEnabled === true
+	// Architect-fixture fallback: when the DB row is absent pre-mint, the
+	// fixture supplies both fields so the architect surface still renders.
+	const personaMeta = (agent?.metadata as { githubRepos?: unknown } | null) ?? null;
+	const githubRepos = Array.isArray(personaMeta?.githubRepos) ? personaMeta.githubRepos : [];
+	const includeShipLog = githubRepos.length > 0;
+	const includeTweets = agent?.twitterPollingEnabled === true;
 	const activity = await buildAgentActivity({
 		tokenAddress: address,
 		includeShipLog,
@@ -480,36 +483,23 @@ export default async function AgentPage({
 	// the Hero falls back to holdings.navUsd in that case.
 	const agentSafeBalance = await fetchAgentSafeBalance(launch?.agentSafe ?? null);
 
-	let renderAgent = agent;
-	let renderTrades = trades;
-	let renderLaunch = launch;
-
-	if (!renderAgent) {
-		// Until $WAIFU mints, the architect agent is not seeded in the DB.
-		// Fall back to a fixture so /agent/<architect-address> renders the
-		// architect surface instead of the generic not-found state. Real DB
-		// record wins when present. This is the ONLY place identity gates a
-		// decision; everything downstream renders from `renderAgent`.
-		if (isArchitectAddress) {
-			renderAgent = buildSolFixtureAgent();
-			renderTrades = buildSolFixtureTrades();
-			renderLaunch = buildSolFixtureLaunch();
-		} else {
-			notFound();
-		}
+	if (!agent) {
+		// The persona endpoint is now the source of truth. If the row is
+		// missing the agent does not exist as far as the page is concerned.
+		notFound();
 	}
 
-	// Merge persona-declared apps (from the persona endpoint / fixture) with
-	// the apps registry. Persona apps surface platform products (waifu.fun,
-	// steward) with `metadata.featured = true`; registry apps surface
-	// revenue-generating mini-apps. Both render through the same panel.
-	const mergedApps = mergeAgentApps(renderAgent, apps);
+	// Merge persona-declared apps (legacy jsonb shape, kept for forward
+	// compatibility) with the apps registry table. The persona endpoint
+	// now returns the merged + sorted list directly; mergeAgentApps remains
+	// as a safety net in case the API ever splits them again.
+	const mergedApps = mergeAgentApps(agent, apps);
 
 	return (
 		<AgentHomeV2
-			agent={renderAgent}
-			trades={renderTrades}
-			launch={renderLaunch}
+			agent={agent}
+			trades={trades}
+			launch={launch}
 			token={token}
 			candles={candles}
 			holdings={holdings}
@@ -522,6 +512,7 @@ export default async function AgentPage({
 			agentSafeBalance={agentSafeBalance}
 			trading={trading}
 			identity={identity}
+			pnlSeries={pnlSeries}
 		/>
 	);
 }
