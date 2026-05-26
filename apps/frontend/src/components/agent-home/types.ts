@@ -88,6 +88,10 @@ export interface AgentData {
 	hlAddress?: string | null;
 	arbAddresses?: string[] | null;
 	solanaAddresses?: string[] | null;
+	/** Eliza Cloud agent sandbox id; presence enables Eliza Cloud routes. */
+	elizaCloudAgentId?: string | null;
+	/** Featured-agent flag (used for the first-agent placement). */
+	featured?: boolean | null;
 	/** Long bio (the canonical description). bioShort overrides at the hero. */
 	bio?: string | null;
 	thesis?: unknown;

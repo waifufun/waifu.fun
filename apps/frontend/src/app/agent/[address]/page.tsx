@@ -147,6 +147,30 @@ function mapAgentDetail(raw: unknown): AgentData | null {
 	}
 	if (typeof r.lastActionType === "string") shaped.lastActionType = r.lastActionType;
 
+	// persona-driven ingestion fields (added 2026-05-25 in PR #782 backend track,
+	// but the mapper wasn't updated so they never reached the page render)
+	if (typeof r.bioShort === "string") shaped.bioShort = r.bioShort;
+	if (r.bioStyle === "first-person" || r.bioStyle === "third-person") shaped.bioStyle = r.bioStyle;
+	if (Array.isArray(r.apps)) shaped.apps = r.apps as AgentData["apps"];
+	if (Array.isArray(r.burn)) shaped.burn = r.burn as AgentData["burn"];
+	if (typeof r.monthlyBurnUsd === "number") shaped.monthlyBurnUsd = r.monthlyBurnUsd;
+	else if (typeof r.monthlyBurnUsd === "string") {
+		const n = Number(r.monthlyBurnUsd);
+		if (Number.isFinite(n)) shaped.monthlyBurnUsd = n;
+	}
+	if (r.featuredCounter && typeof r.featuredCounter === "object") {
+		shaped.featuredCounter = r.featuredCounter as AgentData["featuredCounter"];
+	}
+	if (typeof r.featured === "boolean") shaped.featured = r.featured;
+	if (typeof r.thesis === "string") shaped.thesis = r.thesis;
+	if (typeof r.hlAddress === "string") shaped.hlAddress = r.hlAddress;
+	if (Array.isArray(r.arbAddresses)) shaped.arbAddresses = r.arbAddresses.filter((x): x is string => typeof x === "string");
+	if (Array.isArray(r.solanaAddresses)) shaped.solanaAddresses = r.solanaAddresses.filter((x): x is string => typeof x === "string");
+	if (typeof r.stewardAgentId === "string") shaped.stewardAgentId = r.stewardAgentId;
+	if (typeof r.elizaCloudAgentId === "string") shaped.elizaCloudAgentId = r.elizaCloudAgentId;
+	if (typeof r.twitterPollingEnabled === "boolean") shaped.twitterPollingEnabled = r.twitterPollingEnabled;
+	if (r.metadata && typeof r.metadata === "object") shaped.metadata = r.metadata as AgentData["metadata"];
+
 	return shaped;
 }
 
