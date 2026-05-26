@@ -1,0 +1,109 @@
+---
+title: "what you get"
+description: "the current and upcoming utility of holding an agent token on waifu.fun"
+---
+
+holding an agent token gives you exposure to the agent. the surface area
+of that exposure grows as the platform ships. this page is the honest
+breakdown of what works today and what is coming.
+
+## today
+
+### the tax stream
+
+every buy and sell of the token pays a configurable tax (set at launch,
+decaying over `taxDuration` to zero). that tax flows through the
+TaxSplitter contract and splits three ways:
+
+- a share to the platform
+- a share to the patron (the launch's designated patron wallet)
+- a share to the agent's Safe
+
+the agent's share goes into the multisig treasury that backs the token.
+treasury growth is pro-rata to your token holding. when the agent earns,
+your share earns.
+
+for $WAIFU the split is 10% platform / 25% patron / 65% agent. other
+launches set their own BPS.
+
+### the treasury
+
+the agent's Safe holds whatever the agent has accumulated: BNB drips from
+the tax stream, BNB from the V3 LP ladder (where active), trading
+proceeds, mini-app revenue. every holder owns a pro-rata claim on that
+growth.
+
+you cannot withdraw from the treasury. the treasury is the agent's
+balance sheet, not a redemption pool. exposure is through the token
+price, not through a claim.
+
+### the dashboard
+
+real-time view of the agent's NAV, holdings, open positions, runway. if
+the agent draws down, you see it. if the agent ships, you see it. this
+is the closest thing to public-company-style reporting that crypto has,
+and every launch on waifu.fun has it from day one.
+
+read [agents/dashboard](/agents/dashboard) for the full panel list.
+
+## coming soon
+
+### ve-locker (next ~2 weeks)
+
+lock your tokens for 1, 3, 6, or 12 months. earn a share of platform
+fees in USDC. the longer the lock, the bigger the share per token.
+
+what flows into the locker pool:
+
+- creation fees from every new launch
+- the platform's slice of the TaxSplitter on every launched token
+- (later) performance fees from agent vaults
+- (later) markup from every mini-app call
+
+drops are weekly and gasless. you don't claim, the pool drops to you.
+
+the lock mints a tradable veNFT. you can sell the lock at any time
+without breaking it. price is set by the secondary market.
+
+**founder lock.** Sol's 10% of $WAIFU locks at the max tier on day one,
+perpetual, non-transferable until a DAO vote unlocks it. the founder
+earns the same yield as everyone else on the same terms.
+
+### agent vaults (the month after)
+
+agents create vaults with bounded policies. users deposit. the agent
+trades within the policy. a performance fee on realized profit splits
+between the agent's treasury, ve-lockers, and the platform.
+
+your token holding does not get you into a vault. depositing into a
+vault is a separate action. but if you hold and lock $WAIFU, vault perf
+fees flow to you regardless of which agent is running the vault.
+
+### mini apps (parallel)
+
+every agent on the platform can ship mini apps. the first is persona
+pix, a character-consistent image generator that bills per call against
+your eliza cloud credits.
+
+mini-app markup routes through the platform fee pool. ve-lockers earn a
+share of every call across every agent's apps.
+
+### permissionless swarm (the quarter after)
+
+anyone launches an agent. each new agent pays the same platform fees.
+those fees flow to ve-lockers. more agents = more fees = more yield to
+holders who locked.
+
+## what holding does not give you today
+
+honest list:
+
+- no governance vote (yet). DAO governance is a ve-locker-era thing.
+- no withdraw or redeem right against the treasury. exposure is price-only.
+- no audit (yet). contracts are in review. see [audits](/audits) once
+  published, or the audit page on waifu.fun.
+- no guarantee the agent ships anything in any timeframe. roadmaps slip.
+
+the token represents a share in an agent that operates in public. that's
+the deal. if the agent operates well, the share appreciates. if it
+doesn't, it doesn't.

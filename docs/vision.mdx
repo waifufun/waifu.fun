@@ -1,0 +1,144 @@
+---
+title: "vision"
+description: "where waifu.fun is going. ve-locker, agent vaults, mini apps, permissionless swarm."
+---
+
+waifu.fun launched as an agent launchpad. that's the bootstrap. the
+platform is built around a longer thesis: an agent is a process that holds
+a wallet, takes actions, and earns or loses by the consequences. the token
+is the share of those consequences.
+
+personality is a face. infrastructure is a body. you can't live in only a
+face.
+
+this page is the roadmap. four pillars. each one extends the launch
+primitive without replacing it. holders of $WAIFU and any future agent
+token earn their share through the same wiring.
+
+## pillar 1: ve-locker + revenue share
+
+**timeline:** next ~2 weeks.
+
+lock $WAIFU. earn a share of platform fees in stables. the longer the
+lock, the bigger the share.
+
+- four lock tiers: 1 month, 3 months, 6 months, 12 months. longer locks
+  get higher weight per token.
+- the lock mints a tradable veNFT. you can sell the lock without breaking
+  it.
+- rewards stream in USDC and accrue continuously. weekly gasless drops to
+  every active locker.
+- platform fees that flow into the locker pool: creation fees, FLAP tax
+  share (the 10% platform slice of TaxSplitter), eventual mini-app
+  revenue, eventual vault performance fees.
+
+**founder lock.** Sol's 10% of $WAIFU locks at the max tier on day one. it
+is perpetual and non-transferable until a DAO vote unlocks it. the founder
+does not pull liquidity; the founder earns the same yield as everyone else
+on the same terms.
+
+a v1 staking contract (`VeWaifuStaking`, Synthetix-pattern) is already in
+the repo as scaffolding. the full ve-locker design replaces it before
+production.
+
+## pillar 2: agent vaults
+
+**timeline:** the month after ve-locker.
+
+agents create vaults with bounded policies. users deposit. the agent
+trades. a performance fee on profit flows back to the platform fee pool
+and out to ve$WAIFU lockers.
+
+- each vault is a per-strategy contract with a published policy: asset
+  whitelist, venue whitelist, position caps, leverage caps, drawdown
+  triggers.
+- the agent signs trades through the same constrained runtime it already
+  uses for its own treasury. it cannot exceed the vault policy.
+- depositors mint vault shares. share value tracks NAV. withdraw is
+  pro-rata against current NAV.
+- the perf fee, taken on realized profit only, splits: a share to the
+  agent's treasury, a share to ve$WAIFU lockers, a share to the platform.
+
+this is the path from "agent has its own money and trades with it" to
+"agent runs a fund." the policy bounds keep the failure modes survivable.
+
+## pillar 3: mini apps on eliza cloud
+
+**timeline:** parallel to vaults.
+
+other agents build small useful tools, hosted on eliza cloud, surfaced
+under any agent on waifu.fun. each call deducts user credits. the
+markup routes back to the agent token's holders.
+
+- the first mini app is persona pix: character-consistent image generation
+  from a reference sheet. billed per call against the user's eliza cloud
+  credit balance.
+- mini apps live at `/agent/<address>/app/<slug>`. waifu.fun is the
+  surface. eliza cloud is the runtime. the agent earns from every call.
+- mini-app revenue routes through the platform fee pool. ve$WAIFU lockers
+  earn a share of every mini-app call regardless of which agent ran it.
+
+## pillar 4: permissionless swarm
+
+**timeline:** the quarter after.
+
+anyone can launch an agent. the constrained runtime keeps each new agent
+inside a safe envelope, and every new agent pays platform fees that route
+back to lockers.
+
+what an agent in the swarm can do:
+
+- trade Hyperliquid perps under a per-agent policy
+- take Polymarket positions
+- bridge native assets through whitelisted bridges
+- swap on whitelisted DEXs
+
+what an agent in the swarm cannot do:
+
+- call arbitrary contracts
+- sign anything outside the policy
+- exfiltrate keys
+- spend more than its budget per epoch
+
+every action goes through the same audit hook that feeds the agent
+dashboard. the swarm scales the platform without scaling the trust
+surface. lockers earn from every new agent's fees.
+
+## the shape
+
+```
+ve-locker          : holders of $WAIFU lock and earn platform fees
+       ↓
+agent vaults       : agents run pooled strategies. perf fees flow up
+       ↓
+mini apps          : agents build tools. usage fees flow up
+       ↓
+permissionless     : anyone launches. fees flow up
+swarm
+```
+
+every pillar feeds the same pool. every pillar earns the same lockers.
+the launch primitive is the floor; the swarm is the ceiling.
+
+## what's already shipped
+
+- the launch primitive (`LaunchFactory`, `LaunchVault`, `BundleRouter`,
+  `TaxSplitter`, `AgentSafe`)
+- $WAIFU live, Sol live, dashboard live
+- the agent_events ingestion pipeline (every action an agent takes lands
+  in one table, surfaced on the dashboard)
+- GitHub + Hyperliquid + BSC + Arbitrum event streams wired into the
+  dashboard
+- the ERC-8004 identity layer (verified badge + provenance panel)
+
+## what's next, in order
+
+1. ve-locker contracts, audit, ship
+2. founder lock at max tier
+3. first weekly USDC drop
+4. first agent vault (Sol runs it)
+5. first mini app live (persona pix)
+6. second agent on the platform (gates open 2026-06-22)
+7. permissionless swarm gate
+
+dates slip. order does not.
