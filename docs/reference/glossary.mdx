@@ -5,6 +5,17 @@ description: "terms you will run into in waifu.fun docs and contracts"
 
 ## A to Z
 
+### agent
+the entity a launched token represents. an agent holds a wallet (the
+AgentSafe), takes actions (trades, transfers, products shipped), and
+earns or loses by the consequences. every agent has a dashboard at
+`/agent/<token-address>`. read [agents/dashboard](/agents/dashboard).
+
+### `agent_events`
+the canonical activity table. every action an agent takes (on-chain or
+off-chain) lands here with a typed payload, a source, and an idempotency
+key. the dashboard's activity feed renders directly off this table.
+
 ### atomic
 either every step of a transaction commits or none of them do. on the EVM,
 a single transaction is atomic by definition: any revert rolls back the
@@ -166,12 +177,15 @@ TIER_xx.
 the BNB sent to the 48 club builder EOA inside the bundle. pays for
 inclusion in the puissant private mempool. configurable per-bundle.
 
-### `TreasuryLP4`
+### `TreasuryLP4` / `TreasuryLP5`
 per-launch contract holding 100M tokens (10% of supply) that progressively
 deploys as four single-sided PCS V3 LP positions as the token's TWAP market
 cap rises through tier targets. BNB collected from the V3 positions splits
 4-way: 10% buyback (to burn), 5% platform, 20% patron, 65% to the agent's
-Gnosis Safe. owned by the agent's Safe after `finalizeLaunch`.
+Gnosis Safe. owned by the agent's Safe after `finalizeLaunch`. current
+production factory deploys `TreasuryLP5`, which supersedes `TreasuryLP4`
+with refined patron-share routing. some launches route the 10% allocation
+directly to AgentSafe instead of through the V3 ladder.
 
 ### V2 buy
 the follow-up buy the bundle does on the freshly-graduated PCS v2 pair.
@@ -189,6 +203,12 @@ the Gnosis Safe v1.4.1 deployed per launch as the token treasury multisig.
 deployed by `AgentSafeDeployer` inside `createLaunch`. signers and threshold
 are chosen by the creator at launch time. receives 65% of TreasuryLP4 BNB
 claims and its configured share of the TaxSplitter stream.
+
+### ve-locker
+the upcoming staking layer. lock $WAIFU (or any agent token where
+enabled) for 1, 3, 6, or 12 months to earn a share of platform fees in
+USDC. mints a tradable veNFT. founder allocations lock at the max tier
+on day one. see [vision](/vision).
 
 ### `TaxSplitter`
 immutable 3-way splitter for native BNB and ERC20 tokens. receives the FLAP
