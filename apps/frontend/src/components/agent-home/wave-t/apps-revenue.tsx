@@ -45,7 +45,7 @@ function appMeta(app: App): { tagline?: string; kind?: string; featured?: boolea
 // Falls back to the brand-icons SVG component for everything else.
 const APP_LOGO_URLS: Record<string, string> = {
 	waifu: "/brand/icon/icon_256.png",
-	steward: "https://eliza.steward.fi/favicon.svg",
+	steward: "https://steward.fi/favicon.svg",
 };
 
 function AppIcon({ app, className }: { app: App; className?: string }) {
