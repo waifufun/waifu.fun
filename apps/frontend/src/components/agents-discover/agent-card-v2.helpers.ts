@@ -90,3 +90,14 @@ export function formatNumberShort(n: number): string {
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
 	return n.toLocaleString();
 }
+
+/**
+ * Format a signed percentage for the 24h stat cell.
+ */
+export function formatPercentShort(n: number): string {
+	if (!Number.isFinite(n)) return "–";
+	const sign = n > 0 ? "+" : "";
+	const abs = Math.abs(n);
+	const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+	return `${sign}${n.toFixed(digits)}%`;
+}

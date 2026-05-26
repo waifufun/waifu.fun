@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { formatNumberShort, formatUsdShort, resolveTierId, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
+import {
+	formatNumberShort,
+	formatPercentShort,
+	formatUsdShort,
+	resolveTierId,
+	shortAddress,
+	tierDisplay,
+} from "./agent-card-v2.helpers";
 
 describe("agent-card-v2 helpers", () => {
 	describe("shortAddress", () => {
@@ -68,6 +75,14 @@ describe("agent-card-v2 helpers", () => {
 		it("formats millions / thousands compactly", () => {
 			expect(formatNumberShort(2_300_000)).toBe("2.3m");
 			expect(formatNumberShort(4_500)).toBe("4.5k");
+		});
+	});
+
+	describe("formatPercentShort", () => {
+		it("formats signed percentages compactly", () => {
+			expect(formatPercentShort(12.345)).toBe("+12.3%");
+			expect(formatPercentShort(-1.234)).toBe("-1.23%");
+			expect(formatPercentShort(0)).toBe("0.00%");
 		});
 	});
 
