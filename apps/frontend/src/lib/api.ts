@@ -331,6 +331,7 @@ function mapApiTokenToIToken(apiToken: any): IToken {
 		billingMode: source.billingMode,
 		infraReserveUsd: toNumber(source.infraReserveUsd),
 		hasAgent: Boolean(source.hasAgent),
+		launchPlatform: source.launchPlatform,
 	} as IToken;
 }
 

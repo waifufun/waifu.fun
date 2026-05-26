@@ -177,6 +177,44 @@ test("provision adapter maps four.meme regular without tax for each runtime kind
 	}
 });
 
+test("provision request validation accepts bankr and bags launchpad configs", () => {
+	const bankr = validate({
+		...basePayload("hosted"),
+		launchpad: {
+			launchpad_id: "bankr",
+			chain: "base",
+			launchpad_config: {
+				kind: "bankr",
+				platformCutBps: 1805,
+				creatorFeeBps: 5700,
+				feeRecipientType: "wallet",
+			},
+			fee_mode: "production",
+		},
+	});
+	assert.equal(bankr.ok, true);
+	if (!bankr.ok) return;
+	assert.equal(bankr.launchInput.launchpad?.id, "bankr");
+
+	const bags = validate({
+		...basePayload("hosted"),
+		launchpad: {
+			launchpad_id: "bags",
+			chain: "solana",
+			launchpad_config: {
+				kind: "bags",
+				platformCutBps: 2500,
+				creatorFeeBps: 7500,
+				initialBuyLamports: 10_000_000,
+			},
+			fee_mode: "production",
+		},
+	});
+	assert.equal(bags.ok, true);
+	if (!bags.ok) return;
+	assert.equal(bags.launchInput.launchpad?.id, "bags");
+});
+
 test("provision adapter maps typed flap agent-treasury and custom-vault input for pull and webhook runtimes", () => {
 	for (const kind of ["pull", "webhook"] as const) {
 		for (const recipient of ["agent-treasury", "custom-vault"] as const) {

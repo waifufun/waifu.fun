@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { LaunchpadAdapter, LaunchpadFeeConfig } from "@waifufun/launchpad";
+import { type LaunchpadAdapter, type LaunchpadFeeConfig, bagsAdapter, bankrAdapter } from "@waifufun/launchpad";
 
 import { __setRequirePatronDbForTest, __setRequirePatronStewardParserForTest } from "../middleware/patron-auth.js";
 import { createV3Routes } from "./v3/index.js";
@@ -365,6 +365,101 @@ test("POST /v3/agents/:id/launch rejects invalid production fee config before Sa
 	assert.equal(json.error, "invalid feeConfig");
 	assert.equal(json.details[0], "taxBps must be greater than 0 in prod");
 	assert.equal(deployed, false);
+});
+
+test("POST /v3/agents/:id/launch prepares Bankr and Bags plans without BSC Safe deployment", async () => {
+	test.after(resetPatronAuthMocks);
+	for (const scenario of [
+		{
+			id: "bankr",
+			chain: "base",
+			adapter: bankrAdapter,
+			body: { ticker: "BANKR", launch_wallet: OWNER },
+			expectExternal: "bankr",
+			expectFounder: OWNER,
+		},
+		{
+			id: "bags",
+			chain: "solana",
+			adapter: bagsAdapter,
+			body: { ticker: "BAGS", launch_wallet: "So11111111111111111111111111111111111111112" },
+			expectExternal: "bags",
+			expectFounder: "So11111111111111111111111111111111111111112",
+		},
+	] as const) {
+		const persona = {
+			id: `11111111-1111-1111-1111-11111111111${scenario.id === "bankr" ? "2" : "3"}`,
+			agentId: `waifu-${scenario.id}`,
+			name: `${scenario.id} Demo`,
+			bio: "demo agent",
+			avatarUrl: "https://example.com/demo.png",
+			launchpadId: scenario.id,
+			launchpadConfig: { kind: scenario.id },
+			chain: scenario.chain,
+			ownerStewardUserId: "steward-1",
+			ownerAddress: OWNER.toLowerCase(),
+			tokenAddress: null,
+		};
+		const updates: Record<string, unknown>[] = [];
+		const selectResults = [[{ id: "patron-1", stewardUserId: "steward-1" }], [persona], [persona]];
+		const db = {
+			select() {
+				return {
+					from: () => ({ where: () => ({ limit: async () => selectResults.shift() ?? [] }) }),
+				};
+			},
+			insert() {
+				throw new Error("should not insert a BSC Safe for external launchpads");
+			},
+			update() {
+				return {
+					set(input: Record<string, unknown>) {
+						updates.push(input);
+						return { where: () => ({ returning: async () => [{ ...persona, ...input }] }) };
+					},
+				};
+			},
+		} as never;
+		__setRequirePatronDbForTest(db);
+		__setRequirePatronStewardParserForTest(async () => ({
+			userId: "steward-1",
+			tenantId: "waifu",
+			address: OWNER,
+		}));
+
+		const app = createV3Routes({
+			db,
+			getLaunchpadAdapter: (id) => (id === scenario.id ? scenario.adapter : undefined),
+			deployAgentSafe: async () => {
+				throw new Error("should not deploy Safe for external launchpads");
+			},
+		});
+
+		const res = await app.request(`/agents/${persona.agentId}/launch`, {
+			method: "POST",
+			headers: { authorization: "Bearer test", "content-type": "application/json" },
+			body: JSON.stringify(scenario.body),
+		});
+
+		assert.equal(res.status, 200, `${scenario.id} launch should prepare`);
+		const json = (await res.json()) as {
+			ok: boolean;
+			safe: unknown;
+			launchPlan: {
+				chain: string;
+				safeAddress: string | null;
+				tx: { external?: { kind: string } };
+			};
+		};
+		assert.equal(json.ok, true);
+		assert.equal(json.safe, null);
+		assert.equal(json.launchPlan.chain, scenario.chain);
+		assert.equal(json.launchPlan.safeAddress, null);
+		assert.equal(json.launchPlan.tx.external?.kind, scenario.expectExternal);
+		const prelaunchParams = updates[0]?.prelaunchParams as { founderAddress?: string };
+		assert.equal(prelaunchParams?.founderAddress?.toLowerCase(), scenario.expectFounder.toLowerCase());
+	}
+	resetPatronAuthMocks();
 });
 
 test("PATCH /v3/agents/:id/autonomy returns patron-signable role txs", async () => {

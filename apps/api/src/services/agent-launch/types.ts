@@ -10,7 +10,13 @@
 
 import type { Address, Hex } from "viem";
 
-import type { FlapFeeConfig, FourMemeRegularFeeConfig, FourMemeTaxFeeConfig } from "@waifufun/launchpad";
+import type {
+	BagsFeeConfig,
+	BankrFeeConfig,
+	FlapFeeConfig,
+	FourMemeRegularFeeConfig,
+	FourMemeTaxFeeConfig,
+} from "@waifufun/launchpad";
 
 export type FourMemeLabel =
 	| "Meme"
@@ -64,7 +70,9 @@ export type ProvisionLaunchpadInput =
 			platformWalletAddress?: Address;
 			flapVaultPortalAddress?: Address;
 			flapSplitVaultFactoryAddress?: Address;
-	  };
+	  }
+	| { id: "bankr"; feeConfig: BankrFeeConfig }
+	| { id: "bags"; feeConfig: BagsFeeConfig };
 
 export interface AgentLaunchInput {
 	/** Internal agent id. Stable slug — generated if not supplied. */

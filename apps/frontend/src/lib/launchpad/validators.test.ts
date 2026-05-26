@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FLAP, DEFAULT_FOUR_MEME_TAX } from "./fee-defaults";
+import { DEFAULT_BAGS, DEFAULT_BANKR, DEFAULT_FLAP, DEFAULT_FOUR_MEME_TAX } from "./fee-defaults";
 import { DEFAULT_PLATFORM_CUT_BPS, MAX_PLATFORM_CUT_BPS, MIN_PLATFORM_CUT_BPS } from "./types";
-import { computePlatformCutVolumeBps, sumAllocationBps, validateFlap, validateFourMemeTax } from "./validators";
+import {
+	computePlatformCutVolumeBps,
+	sumAllocationBps,
+	validateBags,
+	validateBankr,
+	validateFlap,
+	validateFourMemeTax,
+} from "./validators";
 
 describe("sumAllocationBps", () => {
 	it("sums correctly for the default config (= 10000 - platform cut)", () => {
@@ -161,5 +168,27 @@ describe("validateFlap", () => {
 	// Sanity: bounds export check
 	it("exports MIN < MAX", () => {
 		expect(MIN_PLATFORM_CUT_BPS).toBeLessThan(MAX_PLATFORM_CUT_BPS);
+	});
+});
+
+describe("external launchpad validators", () => {
+	it("accepts documented Bankr fee shape", () => {
+		expect(validateBankr(DEFAULT_BANKR).ok).toBe(true);
+	});
+
+	it("rejects arbitrary Bankr creator splits", () => {
+		const result = validateBankr({ ...DEFAULT_BANKR, creatorFeeBps: 7500 });
+		expect(result.ok).toBe(false);
+		expect(result.errors.some((e) => /57%/i.test(e))).toBe(true);
+	});
+
+	it("accepts Bags split when creator plus platform equals 100%", () => {
+		expect(validateBags(DEFAULT_BAGS).ok).toBe(true);
+	});
+
+	it("rejects Bags split that does not sum to 100%", () => {
+		const result = validateBags({ ...DEFAULT_BAGS, creatorFeeBps: 8000 });
+		expect(result.ok).toBe(false);
+		expect(result.errors.some((e) => /equal 100%/i.test(e))).toBe(true);
 	});
 });

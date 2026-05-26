@@ -13,6 +13,9 @@ export interface AgentListItem extends Partial<AgentData> {
 	createdAt?: number;
 	volume24h?: number;
 	marketCap?: number;
+	chain?: string;
+	chainId?: number;
+	launchPlatform?: string;
 	// runtime metadata (from AgentData, surfaced on cards)
 	eip8004TokenId?: string | number;
 	framework?: string;

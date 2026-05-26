@@ -16,6 +16,26 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 		badges: ["recommended"],
 	},
 	{
+		id: "bags",
+		status: "live",
+		chain: "solana",
+		displayName: "bags",
+		shortDescription: "solana launch path through bags token-launch v2 with explicit creator fee sharing.",
+		feeSummary: "creator fee sharing.",
+		graduationTarget: "Meteora DLMM",
+		badges: ["advanced"],
+	},
+	{
+		id: "bankr",
+		status: "live",
+		chain: "base",
+		displayName: "bankr",
+		shortDescription: "base launch path through bankr's sponsored doppler token-launch API.",
+		feeSummary: "57% creator, partner fee share.",
+		graduationTarget: "Uniswap v4 via Doppler",
+		badges: ["advanced"],
+	},
+	{
 		id: "four-meme-tax",
 		status: "coming-soon",
 		chain: "bsc",
@@ -56,16 +76,6 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 		comingSoonNotes: "needs solana wallet adapter, metadata handling, and migration payload support.",
 	},
 	{
-		id: "bags",
-		status: "coming-soon",
-		chain: "solana",
-		displayName: "bags",
-		shortDescription: "solana launch path for creators who want attribution and reward routing in the flow.",
-		feeSummary: "creator reward model.",
-		graduationTarget: "Meteora DLMM",
-		comingSoonNotes: "needs solana wallet adapter and reward-split UX validation.",
-	},
-	{
 		id: "custom-evm",
 		status: "coming-soon",
 		chain: "ethereum",
@@ -80,10 +90,11 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 /** Fixed render order, regardless of API order. */
 export const LAUNCHPAD_DISPLAY_ORDER = [
 	"flap",
+	"bags",
+	"bankr",
 	"four-meme-tax",
 	"four-meme-regular",
 	"meteora",
 	"pump-fun",
-	"bags",
 	"custom-evm",
 ] as const;

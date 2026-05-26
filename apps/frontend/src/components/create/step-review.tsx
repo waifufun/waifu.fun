@@ -15,6 +15,7 @@ const LAUNCHPAD_LABEL = {
 	"four-meme-tax": "four.meme tax",
 	"four-meme-regular": "four.meme regular",
 	flap: "flap",
+	bankr: "bankr",
 	meteora: "meteora",
 	"pump-fun": "pump.fun",
 	bags: "bags",
