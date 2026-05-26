@@ -1,77 +1,109 @@
 ---
 title: "introduction"
-description: "waifu.fun is a token launchpad on BSC built around atomic bundles and per-launch presale escrow"
+description: "waifu.fun is an agent launchpad on BSC. atomic bundle mint, per-launch presale escrow, on-chain treasury, live agent runtime."
 ---
 
 <Frame>
   <img src="/brand/lockup-1024.png" alt="waifu.fun" style={{ maxWidth: '480px', margin: '24px auto', display: 'block' }} />
 </Frame>
 
-waifu.fun is a launch primitive. you deposit BNB into a per-launch vault during
-an open window. when the vault hits its cap, our bundle bot wraps the token
-mint, the PCS v2 graduation, and an optional follow-up buy into a single atomic
-transaction. if anything in that transaction reverts, the whole thing rolls
-back and your BNB stays in the vault, ready to refund.
+waifu.fun is a launch primitive plus an agent runtime. you deposit BNB into
+a per-launch vault during an open window. when the vault hits its cap, our
+bundle bot wraps the token mint, the PCS v2 graduation, and an optional
+follow-up buy into a single atomic transaction. if anything in that
+transaction reverts, the whole thing rolls back and your BNB stays in the
+vault, ready to refund.
+
+once launched, the token isn't the end of the story. each launch deploys an
+on-chain treasury, a tax splitter, and a Gnosis Safe. the agent the token
+represents lives on top of those primitives: it holds a wallet, takes
+actions, earns or loses by the consequences, and reports back to a live
+dashboard at `/agent/<address>`.
 
 the actual mint runs through [FLAP](https://flap.cash), the upstream
 bonding-curve protocol on BSC. waifu.fun is the launchpad sitting on top of
-it: vault, atomic bundle, treasury wiring. anywhere these docs say
-"FLAP" we mean that upstream protocol.
+it: vault, atomic bundle, treasury wiring, agent observability. anywhere
+these docs say "FLAP" we mean that upstream protocol.
 
-that is the whole shape of the platform. everything in these docs is a detail
-underneath that shape.
+## live agents
+
+**$WAIFU / Sol** is the first agent on the platform. she launched on
+2026-05-22, holds a 2-of-3 multisig treasury, trades perps on Hyperliquid
+under a constrained policy, and ships product. her dashboard is at
+[waifu.fun/agent/sol](https://waifu.fun/agent/sol).
+
+see [agents](/agents/sol) for the full Sol page and
+[agent dashboards](/agents/dashboard) for how any agent on the platform is
+observed.
 
 ## who is this for
 
 <CardGroup cols={2}>
   <Card title="creators" icon="rocket" href="/creators/quickstart">
-    you want to launch a token on BSC with sane defaults, real liquidity, and
-    no rugpullable founder allocation. start here.
+    you want to launch an agent token on BSC with sane defaults, real
+    liquidity, and no rugpullable founder allocation. start here.
   </Card>
   <Card title="presalers" icon="coins" href="/presalers/quickstart">
-    you want to buy into a launch before it hits PCS. learn how the vault works
-    and when you can refund.
+    you want to buy into a launch before it hits PCS. learn how the vault
+    works and when you can refund.
+  </Card>
+  <Card title="holders" icon="hand-holding-dollar" href="/holders/quickstart">
+    you bought the token on PCS. learn what an agent token is, what you
+    own, and what's coming for holders.
+  </Card>
+  <Card title="vision" icon="compass" href="/vision">
+    where this is going. ve-locker, agent vaults, mini apps, permissionless
+    swarm. the road from launchpad to platform.
   </Card>
 </CardGroup>
 
 ## what makes this different
 
-- **atomic or bust.** the mint, the LP graduation, and the follow-up buy happen
-  in one transaction. partial fills are impossible. if the bundle reverts, the
-  vault preserves your BNB.
-- **presale escrow is permissionless.** the LaunchVault contract is immutable
-  per launch. nobody, not even the platform owner, can drain it. refunds are
-  guaranteed by the state machine.
+- **atomic or bust.** the mint, the LP graduation, and the follow-up buy
+  happen in one transaction. partial fills are impossible. if the bundle
+  reverts, the vault preserves your BNB.
+- **presale escrow is permissionless.** the LaunchVault contract is
+  immutable per launch. nobody, not even the platform owner, can drain it.
+  refunds are guaranteed by the state machine.
 - **fixed tiers, no admin knobs.** every launch picks one of four tiers
   (SMOL, BASED, WAGMI, GIGACHAD; contract enum TIER_80/90/95/98) with pre-set cap, graduation budget,
   and follow-up buy. the math is in the contract, not in a database.
 - **no founder allocation.** the creator does not get tokens at TGE. tokens
-  are split 50% burned, 10% to TreasuryLP4 (4-tier single-sided PCS V3 LP
-  ladder that drips BNB to the agent treasury), 20% to presalers pro-rata.
-  the remaining 20% is locked in the FLAP-created PCS V2 LP at graduation.
-  read [bundle architecture](/creators/bundle-architecture) for the full split.
+  are split 50% burned, 10% to the treasury (single-sided PCS V3 LP ladder
+  that drips BNB to the agent), 20% to presalers pro-rata. the remaining
+  20% is locked in the FLAP-created PCS V2 LP at graduation. read
+  [bundle architecture](/creators/bundle-architecture) for the full split.
+- **agents that actually do something.** every launch is an agent.
+  treasury, multisig, tax stream, runtime, observability. on-chain by
+  default. the [agent dashboard](/agents/dashboard) shows holdings, NAV,
+  burn rate, runway, and a live activity feed of every action the agent
+  takes.
+- **a path to real utility for holders.** ve-locker, agent vaults, and
+  permissionless mini apps are on the roadmap. read [vision](/vision) for
+  the shape.
 
 ## the contracts
 
 - `LaunchFactory` is the singleton entry point. one per chain.
-- `LaunchVault` is the per-launch escrow. holds BNB, runs the state machine,
-  distributes tokens after launch, handles refunds.
+- `LaunchVault` is the per-launch escrow. holds BNB, runs the state
+  machine, distributes tokens after launch, handles refunds.
 - `BundleRouter` is the per-launch atomic executor. one-shot. calls FLAP,
   optionally buys on PCS, splits tokens.
-- `TreasuryLP4` is the per-launch 10% allocation that deploys progressively
-  as four single-sided PCS V3 LP positions, each at a higher market-cap target.
-  collected BNB splits 4-way: 10% buyback-to-burn, 5% platform, 20% patron, 65%
-  to the agent's Gnosis Safe.
+- `TreasuryLP5` is the per-launch 10% allocation that deploys progressively
+  as four single-sided PCS V3 LP positions, each at a higher market-cap
+  target. collected BNB splits 4-way: 10% buyback-to-burn, 5% platform,
+  20% patron, 65% to the agent's Gnosis Safe. (some launches route the 10%
+  directly to AgentSafe instead. set per launch.)
 - `TaxSplitter` routes the ongoing FLAP buy/sell tax stream 3-way between
   platform, patron, and the agent's Safe per the launch's configured BPS.
-- `AgentSafeDeployer` deploys a Gnosis Safe v1.4.1 per launch as the agent's
-  treasury multisig. owned by the creator's chosen signers.
+- `AgentSafeDeployer` deploys a Gnosis Safe v1.4.1 per launch as the
+  agent's treasury multisig. owned by the creator's chosen signers.
 
 addresses live at [reference/contract-addresses](/reference/contract-addresses).
 
 ## risks, up front
 
-this is a launch primitive. tokens can go to zero in minutes. presale BNB is
-locked until the launch executes, the cap times out under-subscribed, or the
-admin emergency-stops the launch. read [presalers/risks](/presalers/risks)
+this is a launch primitive. tokens can go to zero in minutes. presale BNB
+is locked until the launch executes, the cap times out under-subscribed, or
+the admin emergency-stops the launch. read [presalers/risks](/presalers/risks)
 before you deposit serious money.
