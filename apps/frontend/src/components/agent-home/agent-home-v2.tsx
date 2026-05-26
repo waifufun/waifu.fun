@@ -16,7 +16,6 @@
  *   PnlChart                       | AppsShipped (merged: platform products + revenue apps)
  *   BurnRatePanel                  (renders only when agent.burn is populated)
  *   ThesisPanel
- *   TradingPanel
  *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3)
  *   TopUpPanel
  *   footer (days since launch, generic)
@@ -41,7 +40,6 @@ import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
 import type { Position } from "@/lib/wave-t/positions";
 import { computeRunway } from "@/lib/wave-t/runway";
 import type { TokenMetrics } from "@/lib/wave-t/token";
-import type { TradingSnapshot } from "@/lib/wave-t/trading";
 
 import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
@@ -58,7 +56,6 @@ import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
-import { TradingPanel } from "./wave-t/trading-panel";
 
 export interface AgentHomeV2Props {
 	agent: AgentData;
@@ -75,13 +72,18 @@ export interface AgentHomeV2Props {
 	apps: App[];
 	daysOperating?: number;
 	agentSafeBalance?: AgentSafeBalance | null;
-	trading?: TradingSnapshot;
 	/**
 	 * Pre-computed PnL series for the 30d chart. Derived from nav-history
 	 * at the page boundary via `selectPnlSeries`. Empty array → chart
 	 * renders its honest empty state. No mock fallback, no flat-zero line.
 	 */
 	pnlSeries?: PnlSeriesPoint[];
+	/**
+	 * Optional baseline NAV used by the PnL chart to derive a percentage
+	 * delta vs the opening snapshot. When absent the chart falls back to
+	 * a 0% display while still rendering the signed dollar total.
+	 */
+	pnlBaselineNav?: number | null;
 	/**
 	 * Optional ERC-8004 on-chain identity record for the agent. When
 	 * present, the hero shows a verified badge and the page renders an
@@ -111,17 +113,10 @@ export default function AgentHomeV2({
 	apps,
 	daysOperating: daysOperatingOverride,
 	agentSafeBalance,
-	trading,
 	identity = null,
 	pnlSeries,
+	pnlBaselineNav = null,
 }: AgentHomeV2Props) {
-	const tradingSnapshot: TradingSnapshot = trading ?? {
-		enabled: false,
-		session: null,
-		positions: [],
-		orders: [],
-	};
-
 	// Hero identity: prefer the short bio when set, fall back to the full
 	// description. The persona endpoint owns both; we never override here.
 	const heroBio = agent.bioShort ?? agent.description;
@@ -218,7 +213,11 @@ export default function AgentHomeV2({
 				    handles its own empty state ("no apps yet") so the column
 				    layout stays stable for every agent. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-					{pnlSeries && pnlSeries.length > 0 ? <PnlChart series={pnlSeries} /> : <PnlChart />}
+					{pnlSeries && pnlSeries.length > 0 ? (
+						<PnlChart series={pnlSeries} baselineNav={pnlBaselineNav} />
+					) : (
+						<PnlChart />
+					)}
 					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
 
@@ -239,11 +238,6 @@ export default function AgentHomeV2({
 				{/* Row 5: thesis. */}
 				<div className="mt-6 md:mt-8" id="thesis">
 					<ThesisPanel hasLiveRevenue={false} ticker={agent.ticker} />
-				</div>
-
-				{/* Row 5b: trading panel (full width). */}
-				<div className="mt-4" id="trading">
-					<TradingPanel snapshot={tradingSnapshot} />
 				</div>
 
 				{/* Row 6: unified activity feed (2/3) + top apps by revenue
