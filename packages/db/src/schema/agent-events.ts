@@ -43,6 +43,8 @@ export const AGENT_EVENT_TYPES = [
 	"system.notification_failed",
 
 	// tokens / trades
+	"commit.pushed",
+	"pr.merged",
 	"token.created",
 	"token.purchased",
 	"token.sold",
@@ -253,6 +255,8 @@ export const AgentEventTypes = {
 	SystemReindexTriggered: "system.reindex_triggered",
 	SystemNotificationDispatched: "system.notification_dispatched",
 	SystemNotificationFailed: "system.notification_failed",
+	CommitPushed: "commit.pushed",
+	PrMerged: "pr.merged",
 	TokenCreated: "token.created",
 	TokenPurchased: "token.purchased",
 	TokenSold: "token.sold",

@@ -5,6 +5,16 @@ import { renderEvent } from "./agent-events.js";
 
 const fixtures: Array<[AgentEventType, Record<string, unknown>, string]> = [
 	[
+		"commit.pushed",
+		{ sha: "abcdef123456", repoLabel: "waifu", message: "feat: ship github listener" },
+		"shipped abcdef1 · waifu · feat: ship github listener",
+	],
+	[
+		"pr.merged",
+		{ number: 782, repoLabel: "waifu", title: "feat: agent ingestion system" },
+		"merged PR #782 · waifu · feat: agent ingestion system",
+	],
+	[
 		"trade.open",
 		{ coin: "BTC", side: "long", notionalUsd: 99.72, leverage: 5, entryPrice: 77301 },
 		"opened btc long $99.72 5x at $77,301",
