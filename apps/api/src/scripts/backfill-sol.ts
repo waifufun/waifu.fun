@@ -37,7 +37,7 @@ const SOL_FEATURED_APPS: Array<{
 		appId: "steward",
 		name: "steward",
 		description: "my infrastructure layer",
-		appUrl: "https://eliza.steward.fi",
+		appUrl: "https://steward.fi",
 		icon: "steward",
 		sort: 1,
 	},
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
 				? row.apps
 				: [
 						{ name: "waifu.fun", slug: "waifu", url: "https://waifu.fun", logoKey: "waifu", status: "live" },
-						{ name: "steward", slug: "steward", url: "https://eliza.steward.fi", logoKey: "steward", status: "live" },
+						{ name: "steward", slug: "steward", url: "https://steward.fi", logoKey: "steward", status: "live" },
 					],
 			burn: hasBurn
 				? row.burn
