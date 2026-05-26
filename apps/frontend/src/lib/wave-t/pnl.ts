@@ -36,6 +36,25 @@ export function selectPnlSeries(navHistory: NavHistoryPoint[] | null | undefined
 	return points.map((p) => ({ t: p.t, pnl: p.nav - baseline }));
 }
 
+/**
+ * Return the first observed nav value, i.e. the baseline against which
+ * pnl deltas are computed. Used by `<PnlChart>` to derive a percentage
+ * change vs the opening nav.
+ *
+ * Returns `null` when the history is empty, has fewer than two points,
+ * or the first point is non-finite or zero. The chart treats `null` as
+ * "unknown baseline" and falls back to a 0% display.
+ */
+export function selectPnlBaselineNav(navHistory: NavHistoryPoint[] | null | undefined): number | null {
+	if (!navHistory || navHistory.length < 2) return null;
+	for (const p of navHistory) {
+		const t = Date.parse(p.t);
+		const nav = Number(p.nav);
+		if (Number.isFinite(t) && Number.isFinite(nav) && nav > 0) return nav;
+	}
+	return null;
+}
+
 export type NavHistoryWindow = "24h" | "7d" | "30d" | "all";
 export type NavHistoryInterval = "1h" | "1d";
 

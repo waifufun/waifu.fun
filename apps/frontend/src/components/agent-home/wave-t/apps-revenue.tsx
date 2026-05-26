@@ -41,7 +41,21 @@ function appMeta(app: App): { tagline?: string; kind?: string; featured?: boolea
 	return out;
 }
 
+// Resolve a real logo URL for an app when we have one bundled.
+// Falls back to the brand-icons SVG component for everything else.
+const APP_LOGO_URLS: Record<string, string> = {
+	waifu: "/brand/icon/icon_256.png",
+	steward: "https://eliza.steward.fi/favicon.svg",
+};
+
 function AppIcon({ app, className }: { app: App; className?: string }) {
+	if (app.icon?.startsWith("http")) {
+		return <img src={app.icon} alt="" className={cn("rounded-full object-cover", className)} />;
+	}
+	const logoUrl = APP_LOGO_URLS[app.appId];
+	if (logoUrl) {
+		return <img src={logoUrl} alt={app.name} className={cn("rounded-full object-cover", className)} />;
+	}
 	if (app.icon) return <img src={app.icon} alt="" className={cn("rounded-full object-cover", className)} />;
 	const Icon = APP_ICONS[app.appId] ?? GithubIcon;
 	return <Icon className={className} />;

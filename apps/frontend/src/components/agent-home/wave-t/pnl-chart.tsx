@@ -1,15 +1,22 @@
 /**
- * P&L 30D chart panel (Wave T worker B v2).
+ * P&L chart panel (Wave T worker B v2).
  *
- * Area chart of realized + unrealized PnL over the last 30 days. When
- * the caller supplies a `series`, we render it; until a snapshot table
- * exists upstream there is no series to render and the panel surfaces
- * an honest empty state (no chart at all) rather than a flat-zero line
+ * Area chart of nav delta over the rolling window. When the caller
+ * supplies a `series`, we render it; until a snapshot table exists
+ * upstream there is no series to render and the panel surfaces an
+ * honest empty state (no chart at all) rather than a flat-zero line
  * that masquerades as data.
  *
- * Header: "P&L (30D)" + total $ + %% with green/red tone (when data).
- * Body:   AreaChart when data; otherwise centered empty notice.
- * Footer: disclosure that snapshot instrumentation is pending.
+ * Header label: shows "p&l (Nd)" where N is the elapsed days inferred
+ * from the series span, capped at 30. Sol just launched, so a fresh
+ * agent shows "p&l (3d)" instead of pretending it has 30 days.
+ *
+ * Header right: total nav delta (signed $) + percentage delta vs
+ * baseline (first observed nav). Tone (positive / negative / neutral)
+ * applies to both the line color and the numeric chips so they always
+ * agree.
+ *
+ * Body: AreaChart when data; otherwise centered empty notice.
  */
 
 "use client";
@@ -45,14 +52,40 @@ function fmtDayTick(ms: number): string {
 	return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
 }
 
-export function PnlChart({ series }: { series?: Point[] }) {
+export function PnlChart({ series, baselineNav }: { series?: Point[]; baselineNav?: number | null }) {
 	const hasData = Array.isArray(series) && series.length > 0;
 	const data = useMemo(() => series ?? [], [series]);
 	const total = useMemo(() => {
 		if (!hasData) return 0;
+		// `series` already carries `pnl = nav[i] - nav[0]`, so the latest
+		// point is the full window delta. Subtracting the first point's
+		// pnl (always 0 by construction) is a no-op but kept for clarity.
 		return (data.at(-1)?.pnl ?? 0) - (data.at(0)?.pnl ?? 0);
 	}, [data, hasData]);
-	const pct = 0; // historical % derivation lands with snapshot backfill.
+	// Percentage delta vs baseline. When baselineNav is not provided we
+	// can still derive it from the series: the first point has pnl=0,
+	// which means baseline = (any nav at index 0). But the series itself
+	// strips nav, so we accept a baselineNav prop. Falls back to 0 when
+	// baseline is unknown or non-positive (avoids divide-by-zero and a
+	// nonsensical percentage on freshly-funded agents).
+	const pct = useMemo(() => {
+		if (!hasData) return 0;
+		if (typeof baselineNav === "number" && baselineNav > 0) {
+			return (total / baselineNav) * 100;
+		}
+		return 0;
+	}, [hasData, total, baselineNav]);
+
+	// Window label: honest elapsed-days count from the first to last
+	// snapshot, capped at 30. "30D" was lying for fresh agents.
+	const windowLabel = useMemo(() => {
+		if (!hasData) return "30d";
+		const first = data[0]?.t;
+		const last = data.at(-1)?.t;
+		if (!first || !last || last <= first) return "30d";
+		const days = Math.max(1, Math.min(30, Math.round((last - first) / 86_400_000)));
+		return `${days}d`;
+	}, [hasData, data]);
 
 	const tone = total > 0 ? "positive" : total < 0 ? "negative" : "neutral";
 	const strokeColor =
@@ -75,7 +108,7 @@ export function PnlChart({ series }: { series?: Point[] }) {
 						>
 							<span>{total === 0 ? "+$0.00" : fmtUsdSigned(total)}</span>
 							<span className="text-[var(--text-tertiary)]">
-								{pct >= 0 ? "+" : ""}
+								{pct > 0 ? "+" : ""}
 								{pct.toFixed(2)}%
 							</span>
 						</span>
@@ -86,7 +119,7 @@ export function PnlChart({ series }: { series?: Point[] }) {
 					)
 				}
 			>
-				p&amp;l (30d)
+				p&amp;l ({windowLabel})
 			</Label>
 
 			{hasData ? (
@@ -162,7 +195,7 @@ export function PnlChart({ series }: { series?: Point[] }) {
 
 			{hasData ? (
 				<footer className="mt-2 border-t border-[var(--border-soft)] pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					live pnl · 30 day window
+					live pnl · tracking {windowLabel} of nav
 				</footer>
 			) : null}
 		</Panel>

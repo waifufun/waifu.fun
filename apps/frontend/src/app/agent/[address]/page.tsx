@@ -15,10 +15,9 @@ import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
-import { fetchNavHistory, selectPnlSeries } from "@/lib/wave-t/pnl";
+import { fetchNavHistory, selectPnlBaselineNav, selectPnlSeries } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
-import { fetchTradingSnapshot } from "@/lib/wave-t/trading";
 import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -164,8 +163,10 @@ function mapAgentDetail(raw: unknown): AgentData | null {
 	if (typeof r.featured === "boolean") shaped.featured = r.featured;
 	if (typeof r.thesis === "string") shaped.thesis = r.thesis;
 	if (typeof r.hlAddress === "string") shaped.hlAddress = r.hlAddress;
-	if (Array.isArray(r.arbAddresses)) shaped.arbAddresses = r.arbAddresses.filter((x): x is string => typeof x === "string");
-	if (Array.isArray(r.solanaAddresses)) shaped.solanaAddresses = r.solanaAddresses.filter((x): x is string => typeof x === "string");
+	if (Array.isArray(r.arbAddresses))
+		shaped.arbAddresses = r.arbAddresses.filter((x): x is string => typeof x === "string");
+	if (Array.isArray(r.solanaAddresses))
+		shaped.solanaAddresses = r.solanaAddresses.filter((x): x is string => typeof x === "string");
 	if (typeof r.stewardAgentId === "string") shaped.stewardAgentId = r.stewardAgentId;
 	if (typeof r.elizaCloudAgentId === "string") shaped.elizaCloudAgentId = r.elizaCloudAgentId;
 	if (typeof r.twitterPollingEnabled === "boolean") shaped.twitterPollingEnabled = r.twitterPollingEnabled;
@@ -439,8 +440,6 @@ export default async function AgentPage({
 	// any agent with nav snapshots gets a chart, anyone without gets the
 	// honest "no pnl history yet" panel. No mock data.
 	const navHistoryP = fetchNavHistory(address, "30d", "1h").catch(() => []);
-	// Trading snapshot fetched post-await because the proxy gate now
-	// reads `agent.stewardAgentId` (presence-based, not identity-based).
 	// ERC-8004 identity. Returns null when the agent has no on-chain
 	// identity (the default for most agents). When present, the hero
 	// shows a verified badge and the page renders a provenance panel.
@@ -477,11 +476,7 @@ export default async function AgentPage({
 	]);
 
 	const pnlSeries = selectPnlSeries(navHistory);
-
-	// Trading gate: presence of `stewardAgentId` on the persona.
-	const trading = await fetchTradingSnapshot(address, {
-		stewardAgentId: agent?.stewardAgentId ?? null,
-	}).catch(() => ({ enabled: false, session: null, positions: [], orders: [] }));
+	const pnlBaselineNav = selectPnlBaselineNav(navHistory);
 
 	// Presence-based gates. Modular for any agent: persona populates these
 	// fields, the page renders. No identity branches.
@@ -534,9 +529,9 @@ export default async function AgentPage({
 			activity={activity}
 			apps={mergedApps}
 			agentSafeBalance={agentSafeBalance}
-			trading={trading}
 			identity={identity}
 			pnlSeries={pnlSeries}
+			pnlBaselineNav={pnlBaselineNav}
 		/>
 	);
 }
