@@ -8,7 +8,7 @@
 		"prestart": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
 		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
 		"pretypecheck": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
-		"start": "tsx src/index.ts",
+		"start": "bun dist/index.js",
 		"dev": "tsx watch src/index.ts",
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
