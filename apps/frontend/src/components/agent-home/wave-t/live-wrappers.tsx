@@ -538,7 +538,38 @@ export function LiveActivityFeed({
 			impressions: t.impressions,
 			likes: t.likes,
 		}));
-		const eventRows = agentEvents.events.map(eventToActivityRow).filter((row): row is ActivityRowInput => Boolean(row));
+
+		// Dedupe github events: a merged PR head commit shows up as both
+		// pr.merged AND commit.pushed (same sha). Drop the commit when its
+		// sha matches a pr.merged.merge_commit_sha (or, when that field is
+		// absent, when the commit lands within 60s of the pr.merged for the
+		// same org/repo). pr.merged is canonical.
+		const prMergedShas = new Set<string>();
+		const prMergedRepoTimes: Array<{ repo: string; t: number }> = [];
+		for (const e of agentEvents.events) {
+			if (e.eventType !== "pr.merged") continue;
+			const p = e.payload ?? {};
+			const sha = (p as Record<string, unknown>).mergeCommitSha;
+			if (typeof sha === "string" && sha) prMergedShas.add(sha.toLowerCase());
+			const org = String((p as Record<string, unknown>).org ?? "");
+			const repo = String((p as Record<string, unknown>).repo ?? "");
+			if (org && repo) prMergedRepoTimes.push({ repo: `${org}/${repo}`, t: new Date(e.createdAt).getTime() });
+		}
+		const filteredEvents = agentEvents.events.filter((e) => {
+			if (e.eventType !== "commit.pushed") return true;
+			const p = (e.payload ?? {}) as Record<string, unknown>;
+			const sha = typeof p.sha === "string" ? p.sha.toLowerCase() : "";
+			if (sha && prMergedShas.has(sha)) return false;
+			// 60-second heuristic when sha not in pr.merged payload
+			const org = String(p.org ?? "");
+			const repo = String(p.repo ?? "");
+			const orgRepo = org && repo ? `${org}/${repo}` : "";
+			if (!orgRepo) return true;
+			const t = new Date(e.createdAt).getTime();
+			return !prMergedRepoTimes.some((p2) => p2.repo === orgRepo && Math.abs(p2.t - t) < 60_000);
+		});
+
+		const eventRows = filteredEvents.map(eventToActivityRow).filter((row): row is ActivityRowInput => Boolean(row));
 		const merged = [...nonTweet, ...tweetRows, ...eventRows];
 		merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 		return mergeActivityWithTrades({ activity: merged, trades, ticker });

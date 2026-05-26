@@ -33,6 +33,15 @@ export type AgentHoldingsHolding = {
 	valueUsd: number | null;
 	priced: boolean;
 	kind?: "spot" | "perp" | "lp" | string;
+	/**
+	 * Venue this position is custodied / cleared at, when distinct from
+	 * the EVM chain. Example: USDC sitting in the Hyperliquid clearinghouse
+	 * is held in a wallet on `chain: "arb"` but its purchasing power lives
+	 * inside Hyperliquid, not on Arbitrum. The API sets `venue:
+	 * "hyperliquid"` on those rows so the FE can label the chain column
+	 * with the venue, not the bridge chain.
+	 */
+	venue?: string;
 };
 
 export type AgentHoldingsSnapshot = {

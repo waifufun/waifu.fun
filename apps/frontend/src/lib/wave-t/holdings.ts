@@ -33,6 +33,15 @@ export interface ChainHolding {
 	 * tooltips / drilldowns.
 	 */
 	wallets?: { label: string; role: string; balance: number; valueUsd: number }[];
+	/**
+	 * Display label for the chain column when the asset is custodied at a
+	 * venue distinct from the EVM chain it bridges through. Example: USDC
+	 * in the Hyperliquid clearinghouse rides through an Arbitrum deposit
+	 * wallet but its purchasing power is on Hyperliquid, so we surface
+	 * "HYPERLIQUID" instead of "ARBITRUM". When undefined, consumers fall
+	 * back to `chainName`.
+	 */
+	displayVenue?: string;
 }
 
 interface ChainConfig {
@@ -127,7 +136,20 @@ export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): Holdin
 		optimism: "op",
 	};
 
+	// Friendly display labels for venues that custody assets distinct
+	// from the bridge chain they ride through. Keyed by the lowercase
+	// `venue` field on the API row.
+	const venueDisplay: Record<string, string> = {
+		hyperliquid: "Hyperliquid",
+	};
+
 	const grouped = new Map<string, ChainHolding>();
+	// Track the set of distinct venues contributing to each bucket. When
+	// every contributor shares a single non-empty venue, we surface that
+	// venue as the displayed chain. Mixed buckets (e.g. half on chain,
+	// half bridged to a venue) keep the EVM chain name, since collapsing
+	// would be misleading.
+	const bucketVenues = new Map<string, Set<string>>();
 	for (const h of snapshot.holdings) {
 		if (h.valueUsd == null) continue;
 		const chain = chainKeyMap[h.chain.toLowerCase()] ?? "bsc";
@@ -143,6 +165,10 @@ export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): Holdin
 			balance: h.balance,
 			valueUsd: h.valueUsd,
 		};
+		const venueKey = (h.venue || "").toLowerCase();
+		const venues = bucketVenues.get(key) ?? new Set<string>();
+		venues.add(venueKey);
+		bucketVenues.set(key, venues);
 		const existing = grouped.get(key);
 		if (existing) {
 			existing.balance += h.balance;
@@ -160,6 +186,18 @@ export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): Holdin
 				wallets: [walletEntry],
 			});
 		}
+	}
+
+	// Resolve displayVenue per bucket: only when every contributing row
+	// shares the same non-empty venue. Mixed venues fall back to the
+	// EVM chain label.
+	for (const [key, row] of grouped) {
+		const venues = bucketVenues.get(key);
+		if (!venues || venues.size !== 1) continue;
+		const [only] = Array.from(venues);
+		if (!only) continue;
+		const label = venueDisplay[only];
+		if (label) row.displayVenue = label;
 	}
 
 	// Sort wallet breakdowns desc by usd contribution for stable rendering.

@@ -67,7 +67,9 @@ function slicesByAsset(holdings: ChainHolding[], navUsd: number): Slice[] {
 	return live.slice(0, 7).map((h, i) => ({
 		key: `${h.chain}-${h.contract ?? h.asset}`,
 		label: h.asset,
-		sub: h.chainName.toLowerCase(),
+		// Prefer venue label (e.g. 'hyperliquid') when the asset is custodied
+		// at a venue distinct from the bridge chain. Falls back to chain name.
+		sub: (h.displayVenue ?? h.chainName).toLowerCase(),
 		balance: h.balance,
 		valueUsd: h.valueUsd,
 		pct: navUsd > 0 ? (h.valueUsd / navUsd) * 100 : 0,
@@ -90,17 +92,24 @@ function slicesByChain(holdings: ChainHolding[], navUsd: number): Slice[] {
 		}
 	}
 	const sorted = Array.from(grouped.entries()).sort(([, a], [, b]) => b.valueUsd - a.valueUsd);
-	return sorted.slice(0, 7).map(([chain, group], i) => ({
-		key: `chain-${chain}`,
-		label: group.chainName.toLowerCase(),
-		sub: `${group.rows.length} ${group.rows.length === 1 ? "asset" : "assets"}`,
-		balance: 0,
-		valueUsd: group.valueUsd,
-		pct: navUsd > 0 ? (group.valueUsd / navUsd) * 100 : 0,
-		fill: tintForIndex(i),
-		chain: CHAIN_KEY_TO_TOKEN_CHAIN[chain] ?? "ethereum",
-		sources: group.rows,
-	}));
+	return sorted.slice(0, 7).map(([chain, group], i) => {
+		// When every row in the chain bucket shares a displayVenue (e.g. all
+		// rows on 'arb' are inside the Hyperliquid clearinghouse), surface the
+		// venue as the label instead of the EVM chain.
+		const venues = new Set(group.rows.map((r) => r.displayVenue).filter(Boolean));
+		const label = venues.size === 1 ? Array.from(venues)[0]!.toLowerCase() : group.chainName.toLowerCase();
+		return {
+			key: `chain-${chain}`,
+			label,
+			sub: `${group.rows.length} ${group.rows.length === 1 ? "asset" : "assets"}`,
+			balance: 0,
+			valueUsd: group.valueUsd,
+			pct: navUsd > 0 ? (group.valueUsd / navUsd) * 100 : 0,
+			fill: tintForIndex(i),
+			chain: CHAIN_KEY_TO_TOKEN_CHAIN[chain] ?? "ethereum",
+			sources: group.rows,
+		};
+	});
 }
 
 function slicesByWallet(holdings: ChainHolding[], navUsd: number): Slice[] {
