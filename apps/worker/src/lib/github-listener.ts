@@ -56,6 +56,7 @@ type GitHubPullListItem = {
 	merged_at?: string | null;
 	updated_at?: string | null;
 	user?: { login?: string | null } | null;
+	merge_commit_sha?: string | null;
 };
 
 type GitHubPullDetail = GitHubPullListItem & {
@@ -314,6 +315,7 @@ async function processMergedPulls(
 		const filesChanged = files.map((file) => file.filename).filter((file): file is string => Boolean(file));
 		const title = detail.title ?? item.title ?? `PR #${item.number}`;
 		const mergedAt = detail.merged_at ?? item.merged_at ?? new Date().toISOString();
+		const mergeCommitSha = detail.merge_commit_sha ?? item.merge_commit_sha ?? null;
 		const payload = {
 			org: repo.org,
 			repo: repo.repo,
@@ -324,6 +326,7 @@ async function processMergedPulls(
 			mergedAt,
 			additions: detail.additions ?? 0,
 			deletions: detail.deletions ?? 0,
+			...(mergeCommitSha ? { mergeCommitSha } : {}),
 		};
 		await insertGithubEvent(context, {
 			agentId: target.agentId,
