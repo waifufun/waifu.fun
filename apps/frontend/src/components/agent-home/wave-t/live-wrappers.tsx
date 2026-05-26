@@ -492,7 +492,11 @@ export function LiveActivityFeed({
 	max?: number;
 }) {
 	const trades = useLiveAgentTrades(address, initialTrades);
-	const agentEvents = useAgentEvents(address, { pollMs: 15_000, limit: 50 });
+	// limit:200 so the dedup logic (which pairs commit.pushed events to their
+	// parent pr.merged via mergeCommitSha) has enough history to catch the
+	// pairings even when the agent has shipped a lot recently. The dedup
+	// only works when both events are in the same batch.
+	const agentEvents = useAgentEvents(address, { pollMs: 15_000, limit: 200 });
 	// Tweet poll gates on an explicit persona flag, not identity. Agents
 	// without twitter polling configured render any SSG-seeded tweets and
 	// skip the runtime poll.
