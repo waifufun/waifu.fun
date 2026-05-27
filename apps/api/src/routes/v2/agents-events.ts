@@ -11,6 +11,8 @@ import {
 	renderEventData,
 } from "@waifufun/db";
 
+import { groupGithubAgentEvents } from "./agent-event-groups.js";
+
 const app = new Hono();
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -127,7 +129,7 @@ app.get("/:agentId/events", async (c) => {
 	const limitRaw = c.req.query("limit");
 	let limit = limitRaw ? Number.parseInt(limitRaw, 10) : 25;
 	if (!Number.isFinite(limit) || limit <= 0) limit = 25;
-	if (limit > 100) limit = 100;
+	if (limit > 200) limit = 200;
 
 	const typesRaw = c.req.query("types");
 	const types: AgentEventType[] = [];
@@ -203,9 +205,10 @@ app.get("/:agentId/events", async (c) => {
 			...row,
 			data: row.data?.renderedText ? row.data : renderEventData(row.eventType, row.data ?? {}),
 		}));
+		const events = groupGithubAgentEvents(page);
 		const nextCursor = rows.length > limit ? (page.at(-1)?.createdAt.toISOString() ?? null) : null;
 
-		return c.json({ events: page, nextCursor });
+		return c.json({ events, nextCursor });
 	} catch (err) {
 		return c.json(
 			{
