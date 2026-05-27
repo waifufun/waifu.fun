@@ -237,7 +237,11 @@ export default function AgentHomeV2({
 
 				{/* Row 5: thesis. */}
 				<div className="mt-6 md:mt-8" id="thesis">
-					<ThesisPanel hasLiveRevenue={false} ticker={agent.ticker} />
+					<ThesisPanel
+						hasLiveRevenue={false}
+						ticker={agent.ticker}
+						holderCount={token.holders || agent.holderCount || null}
+					/>
 				</div>
 
 				{/* Row 6: unified activity feed (2/3) + top apps by revenue

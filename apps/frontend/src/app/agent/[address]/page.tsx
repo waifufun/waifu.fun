@@ -50,6 +50,12 @@ function unwrapApiData<T = unknown>(payload: unknown): T {
 	return payload as T;
 }
 
+function numberFromUnknown(value: unknown): number | null {
+	if (typeof value !== "number" && typeof value !== "string") return null;
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
 function mapAgentTrade(raw: Record<string, unknown>): AgentTrade {
 	const timestamp =
 		typeof raw.timestamp === "number"
@@ -171,6 +177,17 @@ function mapAgentDetail(raw: unknown): AgentData | null {
 	if (typeof r.elizaCloudAgentId === "string") shaped.elizaCloudAgentId = r.elizaCloudAgentId;
 	if (typeof r.twitterPollingEnabled === "boolean") shaped.twitterPollingEnabled = r.twitterPollingEnabled;
 	if (r.metadata && typeof r.metadata === "object") shaped.metadata = r.metadata as NonNullable<AgentData["metadata"]>;
+
+	const marketCapUsd = numberFromUnknown(r.marketCapUsd ?? r.marketCap ?? r.market_cap_usd);
+	if (marketCapUsd !== null) shaped.marketCapUsd = marketCapUsd;
+	const priceChange24hPct = numberFromUnknown(r.priceChange24hPct ?? r.priceChange24h ?? r.price_change_24h);
+	if (priceChange24hPct !== null) shaped.priceChange24hPct = priceChange24hPct;
+	const holderCount = numberFromUnknown(r.holderCount ?? r.holders ?? r.holder_count);
+	if (holderCount !== null) shaped.holderCount = Math.max(0, Math.round(holderCount));
+	const volume24h = numberFromUnknown(r.volume24h ?? r.volume24hUsd ?? r.volume_24h);
+	if (volume24h !== null) shaped.volume24h = volume24h;
+	const treasuryNavUsd = numberFromUnknown(r.treasuryNavUsd ?? r.treasury_nav_usd);
+	if (treasuryNavUsd !== null) shaped.treasuryNavUsd = treasuryNavUsd;
 
 	return shaped;
 }
@@ -508,6 +525,14 @@ export default async function AgentPage({
 		notFound();
 	}
 
+	const tokenWithAgentMetrics: TokenMetrics = {
+		...token,
+		marketCap: agent.marketCapUsd ?? token.marketCap,
+		volume24h: agent.volume24h ?? token.volume24h,
+		change24h: agent.priceChange24hPct ?? token.change24h,
+		holders: agent.holderCount ?? token.holders,
+	};
+
 	// Merge persona-declared apps (legacy jsonb shape, kept for forward
 	// compatibility) with the apps registry table. The persona endpoint
 	// now returns the merged + sorted list directly; mergeAgentApps remains
@@ -519,7 +544,7 @@ export default async function AgentPage({
 			agent={agent}
 			trades={trades}
 			launch={launch}
-			token={token}
+			token={tokenWithAgentMetrics}
 			candles={candles}
 			holdings={holdings}
 			holdingsSource={holdingsSource}

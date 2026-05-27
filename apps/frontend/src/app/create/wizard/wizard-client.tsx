@@ -102,6 +102,10 @@ function WizardInner() {
 				},
 				tier: state.launch.tierId,
 				runtime: { kind: "hosted" },
+				flap: {
+					metaCid: state.flap.metaCid,
+					metaUri: state.flap.metaUri,
+				},
 				safe: {
 					taxAgentBps: state.safe.taxAgentBps,
 					taxPatronBps: state.safe.taxPatronBps,

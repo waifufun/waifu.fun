@@ -43,6 +43,17 @@ test("schema applies Wave M defaults when fields omitted", () => {
 	assert.equal(parsed.agentSafeOwners, undefined);
 });
 
+test("schema accepts flapMetaCid as the launch metadata source", () => {
+	const parsed = createLaunchBodySchema.parse(
+		baseBody({
+			metadataURI: undefined,
+			flapMetaCid: "bafkreigh2akiscaildc0123456789",
+		}),
+	);
+	assert.equal(parsed.flapMetaCid, "bafkreigh2akiscaildc0123456789");
+	assert.equal(parsed.metadataURI, undefined);
+});
+
 test("schema accepts platformReceiver, patron, and multi-owner agent safe", () => {
 	const parsed = createLaunchBodySchema.parse(
 		baseBody({
