@@ -19,6 +19,10 @@ export type CreateLaunchRequest = {
 		webhookUrl?: string;
 		webhookSecret?: string;
 	};
+	flap?: {
+		metaCid?: string | null;
+		metaUri?: string | null;
+	};
 	safe?: {
 		taxAgentBps: number;
 		taxPatronBps: number;
@@ -94,14 +98,20 @@ export type CreateLaunchResult =
  */
 export async function createLaunch(payload: CreateLaunchRequest, signal?: AbortSignal): Promise<CreateLaunchResult> {
 	try {
+		const fallbackMetadataUri = `waifu://create/${encodeURIComponent(
+			payload.inviteCode || payload.persona.ticker || payload.persona.name,
+		)}`;
+		const flapMetaCid = payload.flap?.metaCid?.trim();
+		const metadataUri = payload.flap?.metaUri?.trim() || (flapMetaCid ? `ipfs://${flapMetaCid}` : fallbackMetadataUri);
 		const body: Record<string, unknown> = {
 			name: payload.persona.name,
 			symbol: payload.persona.ticker,
-			metadataURI: `waifu://create/${encodeURIComponent(payload.inviteCode || payload.persona.ticker || payload.persona.name)}`,
+			metadataURI: metadataUri,
 			creator: payload.launchAuthorization.creator,
 			tier: String(payload.tier),
 			siwe: payload.launchAuthorization.siwe,
 		};
+		if (flapMetaCid) body.flapMetaCid = flapMetaCid;
 		if (payload.patronPlatform) {
 			const pp = payload.patronPlatform;
 			body.platformReceiver = pp.platformReceiver;
