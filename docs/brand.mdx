@@ -1,0 +1,150 @@
+---
+title: "brand"
+description: "voice, color, assets. how to write and design for waifu.fun."
+---
+
+waifu.fun is a quiet brand. dark backgrounds, one accent color, lowercase
+copy. the platform's value is in what it ships, not in how it shouts.
+
+## voice
+
+### lowercase by default
+
+we write in lowercase. capitalize only:
+
+- brand names (WAIFU, FLAP, STEWARD, ELIZA CLOUD, PCS, BSC, BNB)
+- contract names (`LaunchVault`, `BundleRouter`, `TreasuryLP5`)
+- proper nouns where convention demands (Hyperliquid, PancakeSwap, X)
+- the start of a sentence after a period? optional. usually no.
+
+### no em-dashes
+
+we do not use em-dashes. ever. use commas, periods, or restructure the
+sentence. if you find yourself reaching for one, the sentence wants to be
+two sentences.
+
+### concrete over abstract
+
+bad: "waifu.fun empowers creators to launch sustainable token economies."
+
+good: "launch a token on BSC. atomic mint, pro-rata distribution,
+permissionless refund."
+
+every claim should be checkable. if you can't point at a contract, an
+event, or a screenshot that proves it, cut the claim.
+
+### short over long
+
+a doc page that takes 5 minutes to read beats one that takes 15 every
+time. cut everything that does not move the reader closer to either
+"i understand" or "i can do this thing."
+
+### no hype
+
+no "revolutionary," no "groundbreaking," no "ultimate." we built a
+launchpad. it works. that is interesting in itself.
+
+### minimal emoji
+
+near zero. if a message reads fine without an emoji, leave it out. the
+only emoji that comes up often is ☀️ as Sol's signature, and even that
+is rare.
+
+## color
+
+one accent color. one.
+
+| token | hex | use |
+| --- | --- | --- |
+| `accent` | `#00ff87` | primary actions, links, focus rings, brand mark |
+| `bg-dark` | `#08080a` | the default canvas |
+| `bg-light` | `#ffffff` | rare; only on docs and email |
+| `fg` | `#fafafa` | body text on dark |
+| `fg-muted` | `#9ca3af` | secondary text |
+| `success` | `#22c55e` | "ok" states, transaction confirmations |
+| `danger` | `#ef4444` | reverts, refund triggers, kill switches |
+
+`#00ff87` is the only accent. do not add a second hue. do not gradient
+between two brand colors. if a state needs to feel different, change
+intensity, not hue.
+
+## type
+
+system stack on the web app:
+
+```
+ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif
+```
+
+mono stack for code blocks, contract addresses, anything monospaced:
+
+```
+ui-monospace, "SF Mono", Menlo, Consolas, monospace
+```
+
+no custom fonts. no decorative display faces. legibility first.
+
+## assets
+
+logos, lockups, OG previews:
+
+- `/logo/dark.png` (1024x1024) wordmark on dark
+- `/logo/light.png` (1024x1024) wordmark on light
+- `/brand/lockup-1024.png` (1024x256) horizontal lockup
+- `/brand/og.png` (1200x630) Open Graph + Twitter card
+- `/favicon.png` (256x256) circular mark
+
+if you need a variant, do not edit the canonical files. ask in discord
+or open a PR with the new variant alongside.
+
+## screenshots
+
+screenshots in docs should be:
+
+- captured at 2x density (retina)
+- cropped tightly to the panel they document
+- dark mode (the platform default)
+- saved as PNG with the source URL captured in the filename comment
+
+do not annotate screenshots in red arrows. if the doc needs an arrow, the
+copy needs a sentence.
+
+## diagrams
+
+mermaid for everything. inline in the .mdx page. do not export SVGs.
+
+prefer:
+
+- `flowchart LR` for left-to-right architecture
+- `sequenceDiagram` for protocols
+- `stateDiagram-v2` for finite states
+
+keep nodes labeled in lowercase. brand names CAPITALIZED inside node
+labels are fine when they refer to specific products (`Steward`,
+`ELIZA CLOUD`).
+
+## attribution
+
+quotes attributed to "Sol" are first-person from the inaugural agent.
+they should match her voice (calm, direct, lowercase, no em-dashes).
+review with Shadow before publishing anything quoting Sol that wasn't
+authored by her.
+
+## tone tests
+
+before you ship copy, ask:
+
+- would i read this if i did not work here? if no, cut half.
+- does it sound like a corporate press release? if yes, rewrite.
+- does the copy say one thing the docs do not already say? if no, link
+  instead of restate.
+- is it specific? if every claim could apply to "any web3 platform," it
+  is not specific enough.
+
+## further reading
+
+- the platform's [introduction page](/introduction) is the canonical
+  example of acceptable tone and length
+- [agents/sol](/agents/sol) shows how first-person quotes work
+- [vision](/vision) shows how to talk about roadmap without
+  overpromising

@@ -14,14 +14,14 @@ into the treasury contract. after that, everything runs autonomously.
   anything.
 - **BundleRouter** is one-shot and done. `executed = true` forever. nobody can
   call `executeBundle` again on it.
-- **TreasuryLP4** holds 10% of the token (100M). it deploys progressively as
+- **TreasuryLP5** holds 10% of the token (100M). it deploys progressively as
   four single-sided PCS V3 LP positions as the token's TWAP market cap rises
   through the tier targets configured for your launch tier. as the token
   trades through each tier's range, the position sells token for BNB, and the
   BNB accumulates inside the position. an operator service (`tier-cron`)
   permissionlessly calls `oraclePoke` and `checkAndAdvance` to advance tiers.
 - **AgentSafe** is your token's treasury multisig (Gnosis Safe v1.4.1). it is
-  the only address that can call `treasuryLp4.claim()` to pull accumulated
+  the only address that can call `treasuryLp5.claim()` to pull accumulated
   BNB out of the V3 positions. signers are whoever you configured at launch.
 - **TaxSplitter** splits the FLAP buy/sell tax stream 3-way between platform,
   patron, and your AgentSafe per the BPS you configured at launch.
@@ -45,28 +45,28 @@ into the treasury contract. after that, everything runs autonomously.
 - change the tax structure (set at launch, decays per `taxDuration`)
 - pause transfers
 - recover BNB from any contract
-- recover tokens from the burn address, FLAP V2 LP, or TreasuryLP4
-  positions (the V3 LP NFTs are owned by TreasuryLP4 and only the contract
+- recover tokens from the burn address, FLAP V2 LP, or TreasuryLP5
+  positions (the V3 LP NFTs are owned by TreasuryLP5 and only the contract
   can collect from them)
 - replay the bundle
 - modify metadata
 
 this is the price of trustlessness. once you launch, the launch runs itself.
 
-## claiming BNB from TreasuryLP4
+## claiming BNB from TreasuryLP5
 
-as the token's price rises through tier targets, TreasuryLP4 deploys
+as the token's price rises through tier targets, TreasuryLP5 deploys
 single-sided V3 LP positions that automatically sell token for BNB. that
 BNB accumulates inside the V3 positions until someone calls
-`treasuryLp4.claim()`, which:
+`treasuryLp5.claim()`, which:
 
 1. collects BNB from every deployed tier via `npm.collect`
 2. unwraps WBNB to native BNB
 3. splits the BNB 4-way:
-   - **10% buyback** , V2 swap of BNB for the token, sent to the burn address
-   - **5% platform** , to the platform receiver
-   - **20% patron** , to the launch's patron receiver
-   - **65% agent** , to your AgentSafe (this is your share, plus any rounding dust)
+   - **10% buyback.** V2 swap of BNB for the token. tokens sent to the burn address.
+   - **5% platform.** sent to the platform receiver.
+   - **20% patron.** sent to the launch's patron receiver.
+   - **65% agent.** sent to your AgentSafe. this is your share, plus any rounding dust.
 4. emits `BnbClaimed` and `BuybackExecuted`
 
 only your AgentSafe can call `claim()`. anyone can call `oraclePoke()` and
