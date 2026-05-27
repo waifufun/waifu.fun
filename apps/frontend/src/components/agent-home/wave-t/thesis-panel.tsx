@@ -21,6 +21,7 @@ export function ThesisPanel({
 	agentShareBps = 6500,
 	platformShareBps = 1000,
 	ticker,
+	holderCount,
 }: {
 	taxBuyBps?: number;
 	taxSellBps?: number;
@@ -29,6 +30,7 @@ export function ThesisPanel({
 	platformShareBps?: number;
 	hasLiveRevenue?: boolean;
 	ticker?: string;
+	holderCount?: number | null;
 }) {
 	const taxBuyPct = (taxBuyBps / 100).toFixed(0);
 	const taxSellPct = (taxSellBps / 100).toFixed(0);
@@ -36,12 +38,13 @@ export function ThesisPanel({
 	const agentPct = (agentShareBps / 100).toFixed(0);
 	const platformPct = (platformShareBps / 100).toFixed(0);
 	const tickerLabel = ticker ? `$${ticker.toUpperCase()}` : "the token";
+	const holdersValue = typeof holderCount === "number" && holderCount > 0 ? holderCount.toLocaleString("en-US") : "—";
 
-	const splits: { label: string; pct: string; tone: "accent" | "muted" }[] = [
-		{ label: "agent treasury", pct: agentPct, tone: "accent" },
-		{ label: "patron", pct: patronPct, tone: "accent" },
-		{ label: "platform", pct: platformPct, tone: "muted" },
-		{ label: "holders", pct: "0", tone: "muted" },
+	const splits: { label: string; value: string; suffix?: string; tone: "accent" | "muted" }[] = [
+		{ label: "agent treasury", value: agentPct, suffix: "%", tone: "accent" },
+		{ label: "patron", value: patronPct, suffix: "%", tone: "accent" },
+		{ label: "platform", value: platformPct, suffix: "%", tone: "muted" },
+		{ label: "holders", value: holdersValue, tone: "muted" },
 	];
 
 	return (
@@ -69,7 +72,8 @@ export function ThesisPanel({
 									: "font-mono text-lg tabular-nums text-[var(--text-primary)]"
 							}
 						>
-							{s.pct}%
+							{s.value}
+							{s.suffix ?? ""}
 						</span>
 						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 							{s.label}

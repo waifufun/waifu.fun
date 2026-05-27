@@ -94,6 +94,12 @@ export interface AgentData {
 	featured?: boolean | null;
 	/** Long bio (the canonical description). bioShort overrides at the hero. */
 	bio?: string | null;
+	/** Market metrics from /v2/agents detail/list. */
+	marketCapUsd?: number | null;
+	priceChange24hPct?: number | null;
+	holderCount?: number | null;
+	volume24h?: number | null;
+	treasuryNavUsd?: number | null;
 	thesis?: unknown;
 }
 
