@@ -397,12 +397,14 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 		}
 		case "safe": {
 			// Safe is an EVM construct. Solana-only patrons can't sign as a
-			// Safe owner, so we require at least one valid EVM address before
-			// the user can advance. step-safe.tsx surfaces a 'link evm wallet'
-			// CTA in this state.
+			// Safe owner, so every owner must be a valid EVM address. Match the
+			// submission filter in wizard-client.tsx so invalid rows can't pass
+			// validation and then get silently dropped on createLaunch, which
+			// would deploy a Safe with the wrong owner set / threshold.
 			const owners = state.safe.owners ?? [];
-			const hasEvmOwner = owners.some((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim()));
-			if (!hasEvmOwner) return "link an EVM wallet to be a safe owner";
+			if (owners.length === 0) return "link an EVM wallet to be a safe owner";
+			const everyOwnerIsEvm = owners.every((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim()));
+			if (!everyOwnerIsEvm) return "one or more owner addresses are invalid";
 			return null;
 		}
 		case "review":
