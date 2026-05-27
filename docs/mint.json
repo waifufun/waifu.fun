@@ -40,6 +40,11 @@
 	},
 	"anchors": [
 		{
+			"name": "agents",
+			"icon": "robot",
+			"url": "agents"
+		},
+		{
 			"name": "creators",
 			"icon": "rocket",
 			"url": "creators"
@@ -48,6 +53,11 @@
 			"name": "presalers",
 			"icon": "coins",
 			"url": "presalers"
+		},
+		{
+			"name": "holders",
+			"icon": "hand-holding-dollar",
+			"url": "holders"
 		},
 		{
 			"name": "reference",
@@ -70,7 +80,15 @@
 			"group": "get started",
 			"pages": [
 				"introduction",
-				"what-is-an-agent-launch"
+				"what-is-an-agent-launch",
+				"vision"
+			]
+		},
+		{
+			"group": "agents",
+			"pages": [
+				"agents/sol",
+				"agents/dashboard"
 			]
 		},
 		{
@@ -92,6 +110,13 @@
 				"presalers/vesting-explained",
 				"presalers/refund-safety",
 				"presalers/risks"
+			]
+		},
+		{
+			"group": "holders",
+			"pages": [
+				"holders/quickstart",
+				"holders/what-you-get"
 			]
 		},
 		{
