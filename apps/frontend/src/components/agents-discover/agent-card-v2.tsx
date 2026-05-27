@@ -32,7 +32,14 @@ import { useLaunchByToken } from "@/hooks/use-post-launch";
 import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 
-import { formatNumberShort, formatUsdShort, resolveTierId, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
+import {
+	formatNumberShort,
+	formatPercentShort,
+	formatUsdShort,
+	resolveTierId,
+	shortAddress,
+	tierDisplay,
+} from "./agent-card-v2.helpers";
 import type { AgentListItem } from "./types";
 
 // Premium ease curve (apple-ish). Used on the hero image scale so the
@@ -116,22 +123,16 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 
 function StatRow({ agent }: { agent: AgentListItem }) {
 	const mc = agent.marketCap;
-	const vol = agent.volume24h;
-	// holders + treasury not yet on the AgentSummary; surface dash. Wired
-	// up when the backend exposes them (see report: BACKEND-DATA-GAPS).
-	const holders: number | null = null;
-	const treasury: number | null = null;
+	const change24h = agent.priceChange24h;
+	const holders = agent.holders;
+	const treasury = agent.treasuryUsd;
 
 	return (
 		<div className="grid grid-cols-4 divide-x divide-white/[0.06]">
 			<StatCell label="mc" value={mc !== undefined ? formatUsdShort(mc) : "–"} align="start" />
-			<StatCell label="24h" value={vol !== undefined ? formatUsdShort(vol) : "–"} />
-			<StatCell label="holders" value={holders !== null ? formatNumberShort(holders) : "–"} />
-			{treasury !== null ? (
-				<StatCell label="treasury" value={`${(treasury as number).toFixed(2)}`} suffix="bnb" />
-			) : (
-				<StatCell label="treasury" value="–" />
-			)}
+			<StatCell label="24h" value={change24h !== undefined ? formatPercentShort(change24h) : "–"} />
+			<StatCell label="holders" value={holders !== undefined ? formatNumberShort(holders) : "–"} />
+			<StatCell label="treasury" value={treasury !== undefined ? formatUsdShort(treasury) : "–"} />
 		</div>
 	);
 }

@@ -7,10 +7,18 @@ description: "common questions, direct answers"
 
 ### what is waifu.fun
 
-a token launchpad on BSC. you deposit BNB into a per-launch vault. when the
-cap is hit, our bundle bot wraps the FLAP mint plus the PCS graduation plus
-the follow-up buy into one atomic transaction. presalers get pro-rata tokens
-with optional vesting, or BNB refunds if the launch fails.
+an agent launchpad on BSC. you deposit BNB into a per-launch vault. when
+the cap is hit, our bundle bot wraps the FLAP mint plus the PCS graduation
+plus the follow-up buy into one atomic transaction. presalers get pro-rata
+tokens with optional vesting, or BNB refunds if the launch fails. every
+launch is also an agent with a treasury multisig, a tax stream, and a
+dashboard at `/agent/<address>`.
+
+### is there a live agent
+
+yes. $WAIFU / Sol launched 2026-05-22 and is the first agent on the
+platform. see [agents/sol](/agents/sol) or visit
+[waifu.fun/agent/sol](https://waifu.fun/agent/sol).
 
 ### what chains do you support
 
@@ -18,9 +26,10 @@ BSC mainnet only (chain id 56).
 
 ### is this audited
 
-contracts are in audit at the time of writing. see the audit page on
-waifu.fun for the current status, audit firm, and report PDF.
-{/* TODO link to audit report once published */}
+contracts are currently in audit. status, audit firm, and report PDF
+will be published on the audit page on waifu.fun once finalized. do not
+treat the absence of a finalized audit as a positive signal. assume the
+worst-case until the report is public.
 
 ### who runs this
 
@@ -32,17 +41,20 @@ the social side and the API are operated by the waifu.fun team.
 ### how much does it cost to launch
 
 the gas to deploy five contracts (`LaunchVault`, `BundleRouter`,
-`TreasuryLP4`, `TaxSplitter`, and a Gnosis Safe v1.4.1 `AgentSafe`) plus a
-platform creation fee. exact BNB amount shown in the UI before you confirm.
-expect roughly the same range as a typical FLAP mint plus our cut.
+`TreasuryLP5`, `TaxSplitter`, and a Gnosis Safe v1.4.1 `AgentSafe`) plus
+a platform creation fee. exact BNB amount shown in the UI before you
+confirm. expect roughly the same range as a typical FLAP mint plus our
+cut.
 
 ### do i get tokens at TGE
 
 no. the creator does not receive a token allocation. the supply split is
-flat: 50% burn, 10% TreasuryLP4 (V3 LP ladder), 20% presalers (vault claims),
-20% locked in the FLAP V2 LP at graduation. zero to the creator. the creator
-does own the `AgentSafe` which receives 65% of TreasuryLP4 BNB claims plus a
-share of the FLAP tax stream per the launch's configured TaxSplitter BPS.
+flat: 50% burn, 10% treasury (V3 LP ladder, or routed directly to
+AgentSafe per launch config), 20% presalers (vault claims), 20% locked in
+the FLAP V2 LP at graduation. zero to the creator. the creator does own
+the `AgentSafe` which receives the 65% agent share of treasury BNB claims
+plus a share of the FLAP tax stream per the launch's configured
+TaxSplitter BPS.
 
 ### can i change the metadata after launch
 
@@ -156,7 +168,7 @@ launch is locked at deploy.
 ### where can i read the source
 
 [github.com/waifufun/waifu.fun](https://github.com/waifufun/waifu.fun)
-`packages/contracts-evm/contracts/`. {/* TODO confirm repo path is public */}
+under `packages/contracts-evm/contracts/`.
 
 ### still have questions
 

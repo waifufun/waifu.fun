@@ -6,6 +6,8 @@ import { agentEvents } from "../schema/agent-events.js";
 import { type AgentPersonaRow, agentPersonas } from "../schema/agent-personas.js";
 import { type AgentWalletRow, agentWallets } from "../schema/agent-wallets.js";
 import { curveState } from "../schema/curve-state.js";
+import { navSnapshots } from "../schema/nav-snapshots.js";
+import { tokenSnapshots } from "../schema/token-snapshots.js";
 import { tokens } from "../schema/tokens.js";
 import { trades } from "../schema/trades.js";
 
@@ -66,6 +68,11 @@ export interface AgentSummary {
 	model: string;
 	lastActionAt: string | null;
 	lastActionType: string | null;
+	marketCapUsd: number | null;
+	volume24hUsd: number | null;
+	priceChange24hPct: number | null;
+	holderCount: number | null;
+	treasuryNavUsd: number | null;
 	createdAt: string;
 }
 
@@ -145,7 +152,21 @@ interface JoinRow {
 	persona: AgentPersonaRow;
 	wallet: AgentWalletRow | null;
 	curve: typeof curveState.$inferSelect | null;
-	token: { ticker: string; description: string | null; imageUrl: string | null } | null;
+	token: {
+		ticker: string;
+		description: string | null;
+		imageUrl: string | null;
+		marketCapUsd: string | number | null;
+		volume24h: string | number | null;
+		priceChange24h: string | number | null;
+		holderCount: number | null;
+	} | null;
+}
+
+function finiteNumberOrNull(value: string | number | null | undefined): number | null {
+	if (value === null || value === undefined) return null;
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
 }
 
 function toSummary(row: JoinRow): AgentSummary {
@@ -202,6 +223,11 @@ function toSummary(row: JoinRow): AgentSummary {
 		model: "Cloud",
 		lastActionAt: null,
 		lastActionType: null,
+		marketCapUsd: finiteNumberOrNull(token?.marketCapUsd),
+		volume24hUsd: finiteNumberOrNull(token?.volume24h),
+		priceChange24hPct: finiteNumberOrNull(token?.priceChange24h),
+		holderCount: typeof token?.holderCount === "number" ? token.holderCount : null,
+		treasuryNavUsd: null,
 		createdAt: persona.createdAt.toISOString(),
 	};
 }
@@ -269,6 +295,10 @@ export async function listAgents(db: Database, filters: AgentListFilters): Promi
 			tokenTicker: tokens.ticker,
 			tokenDescription: tokens.description,
 			tokenImageUrl: tokens.imageUrl,
+			tokenMarketCapUsd: tokens.marketCapUsd,
+			tokenVolume24h: tokens.volume24h,
+			tokenPriceChange24h: tokens.priceChange24h,
+			tokenHolderCount: tokens.holderCount,
 		})
 		.from(agentPersonas)
 		.leftJoin(agentWallets, eq(agentWallets.internalAgentId, agentPersonas.agentId))
@@ -293,6 +323,10 @@ export async function listAgents(db: Database, filters: AgentListFilters): Promi
 						ticker: row.tokenTicker,
 						description: row.tokenDescription,
 						imageUrl: row.tokenImageUrl,
+						marketCapUsd: row.tokenMarketCapUsd,
+						volume24h: row.tokenVolume24h,
+						priceChange24h: row.tokenPriceChange24h,
+						holderCount: row.tokenHolderCount,
 					}
 				: null,
 		}),
@@ -303,10 +337,125 @@ export async function listAgents(db: Database, filters: AgentListFilters): Promi
 	const total = filtered.length;
 	const page = filtered.slice(offset, offset + limit);
 
-	// Hydrate lastAction for the paginated slice only (cheap batch query).
-	const hydrated = await hydrateLastActions(db, page);
+	// Hydrate live-ish card stats for the paginated slice only.
+	const withMarketStats = await hydrateTokenSnapshotStats(db, page);
+	const withTreasury = await hydrateTreasuryNav(db, withMarketStats);
+	const hydrated = await hydrateLastActions(db, withTreasury);
 
 	return { agents: hydrated, total, limit, offset };
+}
+
+/**
+ * Attach latest token snapshot stats for discovery-card market cells.
+ * The tokens row can lag for graduated DEX markets; token_snapshots is the
+ * ingestion-backed source used by market displays.
+ */
+async function hydrateTokenSnapshotStats<T extends AgentSummary>(db: Database, items: T[]): Promise<T[]> {
+	if (items.length === 0) return items;
+	const tokenAddresses = items
+		.map((a) => a.tokenAddress?.toLowerCase())
+		.filter((addr): addr is string => typeof addr === "string" && addr.length > 0);
+	if (tokenAddresses.length === 0) return items;
+
+	const since = new Date(Date.now() - 25 * 60 * 60 * 1000);
+	const rows = await db
+		.select({
+			tokenAddress: tokenSnapshots.tokenAddress,
+			price: tokenSnapshots.price,
+			marketCapUsd: tokenSnapshots.marketCapUsd,
+			volumePeriod: tokenSnapshots.volumePeriod,
+			holderCount: tokenSnapshots.holderCount,
+			snapshotAt: tokenSnapshots.snapshotAt,
+		})
+		.from(tokenSnapshots)
+		.where(and(inArray(tokenSnapshots.tokenAddress, tokenAddresses), gte(tokenSnapshots.snapshotAt, since)))
+		.orderBy(desc(tokenSnapshots.snapshotAt));
+
+	type SnapshotStats = {
+		latestMarketCapUsd: number | null;
+		latestHolderCount: number | null;
+		latestPrice: number | null;
+		oldestPrice: number | null;
+		volume24hUsd: number;
+	};
+	const byToken = new Map<string, SnapshotStats>();
+	for (const row of rows) {
+		const key = row.tokenAddress.toLowerCase();
+		const stats = byToken.get(key) ?? {
+			latestMarketCapUsd: null,
+			latestHolderCount: null,
+			latestPrice: null,
+			oldestPrice: null,
+			volume24hUsd: 0,
+		};
+		const price = finiteNumberOrNull(row.price);
+		if (!byToken.has(key)) {
+			stats.latestMarketCapUsd = finiteNumberOrNull(row.marketCapUsd);
+			stats.latestHolderCount = typeof row.holderCount === "number" ? row.holderCount : null;
+			stats.latestPrice = price;
+		}
+		if (price !== null) stats.oldestPrice = price;
+		stats.volume24hUsd += finiteNumberOrNull(row.volumePeriod) ?? 0;
+		byToken.set(key, stats);
+	}
+
+	return items.map((item) => {
+		const tokenAddress = item.tokenAddress?.toLowerCase();
+		const stats = tokenAddress ? byToken.get(tokenAddress) : undefined;
+		if (!stats) return item;
+		const latestPrice = stats.latestPrice;
+		const oldestPrice = stats.oldestPrice;
+		const snapshotPriceChange =
+			latestPrice !== null && oldestPrice !== null && oldestPrice > 0
+				? ((latestPrice - oldestPrice) / oldestPrice) * 100
+				: null;
+		return {
+			...item,
+			marketCapUsd: stats.latestMarketCapUsd ?? item.marketCapUsd,
+			volume24hUsd: stats.volume24hUsd > 0 ? stats.volume24hUsd : item.volume24hUsd,
+			priceChange24hPct: snapshotPriceChange ?? item.priceChange24hPct,
+			holderCount: stats.latestHolderCount ?? item.holderCount,
+		};
+	});
+}
+
+/**
+ * Attach the latest aggregated holdings NAV for discovery-card treasury.
+ * The detail page already polls `/holdings`; the list gets the same source
+ * here so cards do not render stale dashes.
+ */
+async function hydrateTreasuryNav<T extends AgentSummary>(db: Database, items: T[]): Promise<T[]> {
+	if (items.length === 0) return items;
+	const tokenAddresses = items
+		.map((a) => a.tokenAddress?.toLowerCase())
+		.filter((addr): addr is string => typeof addr === "string" && addr.length > 0);
+	if (tokenAddresses.length === 0) return items;
+
+	const rows = await db
+		.select({
+			agentTokenAddress: navSnapshots.agentTokenAddress,
+			navUsd: navSnapshots.navUsd,
+			snapshotAt: navSnapshots.snapshotAt,
+		})
+		.from(navSnapshots)
+		.where(inArray(navSnapshots.agentTokenAddress, tokenAddresses))
+		.orderBy(desc(navSnapshots.snapshotAt));
+
+	const latest = new Map<string, number>();
+	for (const row of rows) {
+		const key = row.agentTokenAddress.toLowerCase();
+		if (latest.has(key)) continue;
+		const navUsd = finiteNumberOrNull(row.navUsd);
+		if (navUsd !== null) latest.set(key, navUsd);
+	}
+
+	return items.map((item) => {
+		const tokenAddress = item.tokenAddress?.toLowerCase();
+		if (!tokenAddress) return item;
+		const treasuryNavUsd = latest.get(tokenAddress);
+		if (treasuryNavUsd === undefined) return item;
+		return { ...item, treasuryNavUsd };
+	});
 }
 
 /**
@@ -390,6 +539,10 @@ export async function getAgentByTokenAddress(db: Database, tokenAddress: string)
 			tokenTicker: tokens.ticker,
 			tokenDescription: tokens.description,
 			tokenImageUrl: tokens.imageUrl,
+			tokenMarketCapUsd: tokens.marketCapUsd,
+			tokenVolume24h: tokens.volume24h,
+			tokenPriceChange24h: tokens.priceChange24h,
+			tokenHolderCount: tokens.holderCount,
 		})
 		.from(agentPersonas)
 		.leftJoin(agentWallets, eq(agentWallets.internalAgentId, agentPersonas.agentId))
@@ -409,10 +562,16 @@ export async function getAgentByTokenAddress(db: Database, tokenAddress: string)
 					ticker: row.tokenTicker,
 					description: row.tokenDescription,
 					imageUrl: row.tokenImageUrl,
+					marketCapUsd: row.tokenMarketCapUsd,
+					volume24h: row.tokenVolume24h,
+					priceChange24h: row.tokenPriceChange24h,
+					holderCount: row.tokenHolderCount,
 				}
 			: null,
 	});
-	const [summary] = await hydrateLastActions(db, [baseSummary]);
+	const [summaryWithMarketStats] = await hydrateTokenSnapshotStats(db, [baseSummary]);
+	const [summaryWithTreasury] = await hydrateTreasuryNav(db, [summaryWithMarketStats ?? baseSummary]);
+	const [summary] = await hydrateLastActions(db, [summaryWithTreasury ?? summaryWithMarketStats ?? baseSummary]);
 
 	// Trades in the last 24h
 	const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
