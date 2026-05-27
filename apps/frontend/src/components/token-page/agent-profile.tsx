@@ -375,15 +375,24 @@ export default function AgentProfile({
 						)}
 
 						{token?.contractAddress && (
-							<Link
-								href={getExplorerAddressUrl(token.contractAddress, token.chainId)}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="flex items-center gap-1 font-mono text-zinc-700 hover:text-zinc-500 transition-colors"
-							>
-								<span>{shortenAddress(token.contractAddress)}</span>
-								<ExternalLink className="size-2.5" />
-							</Link>
+							<div className="flex items-center gap-1.5 font-mono text-zinc-700">
+								<Link
+									href={getExplorerAddressUrl(token.contractAddress, token.chainId)}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-1 hover:text-zinc-500 transition-colors"
+									title={token.contractAddress}
+								>
+									<span>{shortenAddress(token.contractAddress)}</span>
+									<ExternalLink className="size-2.5" />
+								</Link>
+								<CopyButton
+									textToCopy={token.contractAddress}
+									iconSize={11}
+									className="text-zinc-700 hover:text-zinc-400"
+									aria-label="copy contract address"
+								/>
+							</div>
 						)}
 					</div>
 
