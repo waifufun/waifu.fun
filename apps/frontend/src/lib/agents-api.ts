@@ -73,6 +73,17 @@ function mapAgentSummary(raw: unknown): AgentListItem {
 	const lastActionType = typeof r.lastActionType === "string" ? (r.lastActionType as string) : undefined;
 	if (lastActionType) item.lastActionType = lastActionType;
 
+	const marketCap = readNumber(r.marketCap ?? r.marketCapUsd ?? r.market_cap_usd);
+	if (marketCap !== undefined) item.marketCap = marketCap;
+	const volume24h = readNumber(r.volume24h ?? r.volume24hUsd ?? r.volume_24h);
+	if (volume24h !== undefined) item.volume24h = volume24h;
+	const priceChange24h = readNumber(r.priceChange24h ?? r.priceChange24hPct ?? r.price_change_24h);
+	if (priceChange24h !== undefined) item.priceChange24h = priceChange24h;
+	const holders = readNumber(r.holders ?? r.holderCount ?? r.holder_count);
+	if (holders !== undefined) item.holders = holders;
+	const treasuryUsd = readNumber(r.treasuryUsd ?? r.treasuryNavUsd ?? r.navUsd ?? r.treasury_usd);
+	if (treasuryUsd !== undefined) item.treasuryUsd = treasuryUsd;
+
 	if (curve) {
 		const bondedRaw = curve.waifuBonded;
 		const limitRaw = curve.curveLimit;
@@ -94,6 +105,12 @@ function mapAgentSummary(raw: unknown): AgentListItem {
 	}
 
 	return item;
+}
+
+function readNumber(value: unknown): number | undefined {
+	if (typeof value !== "number" && typeof value !== "string") return undefined;
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function normalizeStatus(s: unknown): "active" | "graduated" | "pending" {
