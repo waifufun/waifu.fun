@@ -6,6 +6,20 @@ import type { AppBindings } from "../lib/bindings.js";
 import { forbidden, unauthorized } from "../lib/errors.js";
 import { hasStewardAuth, verifyStewardJwt } from "./steward-auth.js";
 
+const ADMIN_ADDRESSES = new Set(
+	(process.env.WAIFU_ADMIN_ADDRESSES ?? "")
+		.split(",")
+		.map((a) => a.trim().toLowerCase())
+		.filter(Boolean),
+);
+
+function applyAdminAllowlist(principal: AuthPrincipal): AuthPrincipal {
+	if (principal.address && ADMIN_ADDRESSES.has(principal.address.toLowerCase())) {
+		return { ...principal, role: "admin" };
+	}
+	return principal;
+}
+
 function parseDevToken(token: string): AuthPrincipal | null {
 	if (!token.startsWith("dev:")) return null;
 
@@ -135,7 +149,7 @@ export function optionalAuth(): MiddlewareHandler<AppBindings> {
 			}
 		}
 
-		c.set("auth", auth);
+		c.set("auth", auth ? applyAdminAllowlist(auth) : null);
 		await next();
 	};
 }
