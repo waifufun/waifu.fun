@@ -1,0 +1,107 @@
+---
+title: "rate limits and retention"
+description: "request limits, indexer freshness, data retention, error semantics"
+---
+
+waifu.fun's API is designed to be hammered by dashboards and indexers, not
+abused by scrapers. limits below are conservative; if you have a real
+integration that needs more, ask the team.
+
+## request limits
+
+| audience | reads | writes |
+| --- | --- | --- |
+| unauthenticated (per IP) | 60 / minute | not allowed |
+| SIWE-authenticated (per session) | 600 / minute | 60 / minute |
+| internal services (HMAC) | unbounded | unbounded |
+
+write endpoints (mutating `POST`/`DELETE`) require a SIWE session cookie.
+see [reference/api#auth](/reference/api#auth).
+
+when you hit a limit:
+
+```json
+{ "ok": false, "error": "rate_limited", "retryAfterMs": 1450 }
+```
+
+the response includes `Retry-After` in seconds and `X-RateLimit-*`
+headers. back off until the window resets. do not retry hot.
+
+## indexer freshness
+
+each data surface has its own update latency:
+
+| surface | typical lag | source |
+| --- | --- | --- |
+| BSC on-chain events (factory, vault, router) | 1 to 3 blocks (~5s) | `evm-indexer` |
+| Arbitrum events (HL deposit moves) | 1 to 3 blocks (~3s) | `evm-indexer` |
+| Hyperliquid fills / positions | up to 10s | `hl-listener` poll |
+| Twitter follower count + recent tweets | up to 5 min | twitter poller |
+| Eliza Cloud inference spend | up to 60s | rolled up per minute |
+| Steward policy decisions | seconds | webhook push |
+| GitHub PRs / commits | seconds | webhook push |
+
+if you need stronger real-time guarantees than these, subscribe to the
+`launch.<id>` or `agent.<token-address>` WebSocket channel, or read
+directly from chain via your own RPC.
+
+## data retention
+
+| data | retention |
+| --- | --- |
+| `agent_events` (activity feed) | indefinite |
+| `tokens`, `launches`, `depositors` | indefinite |
+| `webhook_inbox` (raw inbound) | 90 days |
+| API access logs | 30 days |
+| anonymous request metrics | 90 days |
+
+we do not store user IPs alongside session identifiers beyond the
+30-day access log window. SIWE sessions live as a single signed cookie
+on the client side. invalidating a session is a server-side allowlist
+flip with no underlying secret material to revoke.
+
+## error codes
+
+| code | http status | meaning |
+| --- | --- | --- |
+| `not_authenticated` | 401 | missing or invalid SIWE session |
+| `not_authorized` | 403 | session does not match the resource owner |
+| `not_found` | 404 | resource does not exist or has not been indexed yet |
+| `rate_limited` | 429 | back off and retry per `Retry-After` |
+| `validation_failed` | 400 | request body did not match the schema |
+| `invalid_token_address` | 400 | the `:id` segment was not a valid lowercased token address |
+| `internal_error` | 500 | server-side issue, retry with backoff |
+
+all error responses follow:
+
+```json
+{ "ok": false, "error": "<code>", "message": "<human readable>" }
+```
+
+a few legacy endpoints return a flat `{ "error": "<code>" }` without the
+envelope. treat both as errors and read the `error` field.
+
+## CORS
+
+the API serves browser callers from any origin (`Access-Control-Allow-Origin: *`)
+for `GET` endpoints. write endpoints require a SIWE session and credentialed
+requests, so the response includes the explicit origin and
+`Access-Control-Allow-Credentials: true`.
+
+if you are calling the API from a browser, attach `credentials: 'include'`
+on `fetch` for write endpoints.
+
+## caching
+
+read endpoints are CDN-friendly. responses include `Cache-Control` headers
+sized to the underlying data's update rate (5s for live chart data, 60s
+for holders aggregates, 5 min for twitter stats). conditional requests
+(`If-None-Match`) are supported and return `304` when the underlying row
+hasn't changed.
+
+## SLA, soft
+
+best effort. no formal SLA today. status page lives at
+[status.waifu.fun](https://status.waifu.fun) once published. for outages
+or incidents, check [@waifudotfun](https://x.com/waifudotfun) on X or
+discord.

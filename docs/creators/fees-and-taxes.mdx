@@ -13,7 +13,7 @@ whole map.
   contract deployment gas plus a small platform cut. flat BNB amount, shown
   in the UI before you confirm.
 - **treasury LP allocation.** when the bundle runs, a flat 100M tokens (10% of
-  supply) goes to `TreasuryLP4`. these tokens get progressively deployed as
+  supply) goes to `TreasuryLP5`. these tokens get progressively deployed as
   four single-sided PCS V3 LP positions that sell token for BNB as the price
   rises. the collected BNB splits 4-way: 10% buyback (to burn), 5% platform,
   20% patron, 65% to the agent's Safe.
@@ -101,7 +101,7 @@ so no BNB strands.
 | FLAP portal | `quoteAmt` BNB, used to seed the curve and the PCS LP |
 | PCS v2 pair | `quoteAmt + v2BuyBnb` worth of liquidity + 200M tokens (20% of supply) locked by the migrator |
 | `0x...dEaD` (burn) | 500M tokens (50% of supply), plus BNB dust |
-| `TreasuryLP4` (V3 LP ladder) | 100M tokens (10% of supply) |
+| `TreasuryLP5` (V3 LP ladder) | 100M tokens (10% of supply) |
 | `LaunchVault` (presalers, pro-rata) | 200M tokens (20% of supply) |
 | 48 club EOA (builder tip) | paid out-of-band by the bundle-bot EOA, not from the vault |
 | `TaxSplitter` (platform + patron + agent BPS) | FLAP commission + ongoing buy/sell tax cut over time |
@@ -109,6 +109,6 @@ so no BNB strands.
 the creator does not get tokens at TGE. they get the agent treasury (Gnosis
 Safe) which receives:
 
-- 65% of every BNB claim from `TreasuryLP4` as the V3 ladder deploys
+- 65% of every BNB claim from `TreasuryLP5` as the V3 ladder deploys
 - their share of the ongoing TaxSplitter stream per the configured BPS
 - token-side fees from any V3 LP price re-entry from above

@@ -3,6 +3,7 @@
 import type { LaunchpadDescriptor } from "@/lib/launchpad/types";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useId } from "react";
 import { CheckIcon } from "../wizard-icons";
 import { getComingSoonCopy } from "./coming-soon-copy";
@@ -21,12 +22,19 @@ const CHAIN_LABEL: Record<string, string> = {
 	ethereum: "Ethereum",
 };
 
+const LOGO_SRC: Partial<Record<LaunchpadDescriptor["id"], string>> = {
+	flap: "/venue-logos/flap.svg",
+	bags: "/venue-logos/bags.png",
+	bankr: "/venue-logos/bankr.svg",
+};
+
 export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 	const headingId = useId();
 	const isComingSoon = descriptor.status === "coming-soon";
 	const recommended = descriptor.badges?.includes("recommended");
 	const advanced = descriptor.badges?.includes("advanced");
 	const comingSoonCopy = isComingSoon ? getComingSoonCopy(descriptor.id) : null;
+	const logoSrc = LOGO_SRC[descriptor.id];
 
 	return (
 		<motion.button
@@ -75,9 +83,16 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 
 			{/* title */}
 			<div className="flex-1 min-w-0">
-				<h3 id={headingId} className="text-base text-white tracking-tight lowercase">
-					{descriptor.displayName}
-				</h3>
+				<div className="flex items-center gap-2 min-w-0">
+					{logoSrc ? (
+						<span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-sm border border-white/10 bg-black">
+							<Image src={logoSrc} alt="" fill sizes="24px" className="object-cover" />
+						</span>
+					) : null}
+					<h3 id={headingId} className="text-base text-white tracking-tight lowercase truncate">
+						{descriptor.displayName}
+					</h3>
+				</div>
 				<p className="mt-2 text-xs text-neutral-400 leading-relaxed">{descriptor.shortDescription}</p>
 				{comingSoonCopy ? (
 					<div className="mt-4 border-l border-accent/45 pl-3">

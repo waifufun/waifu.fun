@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "./_fetcher";
+import { apiFetch, isApiError } from "./_fetcher";
 
 /**
  * W5.7: Admin (kill-switch) API client.
@@ -152,6 +152,18 @@ async function adminPost<T>(path: string, token: string | null): Promise<T> {
 	}
 }
 
+async function adminPostJson<T>(path: string, token: string | null, body: Record<string, unknown>): Promise<T> {
+	try {
+		return await apiFetch<T>(path, { method: "POST", headers: adminHeaders(token), body: JSON.stringify(body) });
+	} catch (err) {
+		if (typeof err === "object" && err !== null && "status" in err) {
+			const e = err as { status: number; message: string };
+			throw new Error(`POST ${path} failed: ${e.status}${e.message ? ` ${e.message}` : ""}`);
+		}
+		throw err;
+	}
+}
+
 /* ─── shape coercion ─── */
 
 function coerceAgent(raw: unknown): AdminAgent | null {
@@ -260,6 +272,210 @@ export function useAdminAuditLog(opts: { token: string | null; agentId?: string 
 		},
 		refetchInterval: 60_000,
 		retry: 1,
+	});
+}
+
+export type AdminElizaCloudTestInput = {
+	agentId?: string;
+	tokenContractAddress: string;
+	chain?: string;
+	chainId?: number;
+	tokenName?: string;
+	tokenTicker?: string;
+	name?: string;
+	bio?: string;
+	agentEvmAddress?: string;
+	adminWallet?: string;
+	walletKeyRef?: string;
+	containerImageUri?: string;
+	projectName?: string;
+};
+
+export type AdminElizaCloudWalletProvisioning = {
+	id?: string;
+	address?: string;
+	chainType?: string;
+	clientAddress?: string;
+} | null;
+
+export type AdminElizaCloudAccount = {
+	primaryWalletAddress?: string | null;
+	organizationId?: string;
+	userId?: string;
+	isNewAccount?: boolean;
+	initialFreeCreditsUsd?: number;
+} | null;
+
+export type AdminElizaCloudTestResult = {
+	ok: boolean;
+	data?: {
+		agentId: string;
+		cloudAgentId: string;
+		containerId?: string;
+		containerUrl?: string;
+		status?: string | null;
+		jobId?: string;
+		polling?: { endpoint: string; intervalMs: number; expectedDurationMs: number };
+		walletProvisioning?: AdminElizaCloudWalletProvisioning;
+		account?: AdminElizaCloudAccount;
+	};
+	error?: string;
+	message?: string;
+};
+
+export function useElizaCloudTestProvision(token: string | null) {
+	return useMutation({
+		mutationFn: (body: AdminElizaCloudTestInput) =>
+			adminPostJson<AdminElizaCloudTestResult>("/v2/admin/agents/eliza-cloud/test-provision", token, body),
+	});
+}
+
+export type AdminElizaCloudTestEnqueueInput = AdminElizaCloudTestInput & {
+	source?: "agent.graduated" | "token.migrated" | "manual";
+	dryRun?: boolean;
+	jobId?: string;
+};
+
+export type AdminElizaCloudTestEnqueueResult = {
+	ok: boolean;
+	data?: {
+		enqueued: boolean;
+		dryRun: boolean;
+		jobId: string;
+		payload: {
+			agentId: string;
+			source: string;
+			data: Record<string, unknown>;
+		};
+	};
+	error?: string;
+	message?: string;
+};
+
+export function useElizaCloudTestEnqueueProvisioning(token: string | null) {
+	return useMutation({
+		mutationFn: (body: AdminElizaCloudTestEnqueueInput) =>
+			adminPostJson<AdminElizaCloudTestEnqueueResult>(
+				"/v2/admin/agents/eliza-cloud/test-enqueue-provisioning",
+				token,
+				body,
+			),
+	});
+}
+
+export type AdminElizaCloudRuntimeRefResult = {
+	ok: boolean;
+	data?: {
+		agentId: string;
+		cloudAgentId: string;
+		containerId?: string | null;
+		containerUrl?: string | null;
+		status?: string | null;
+		account?: AdminElizaCloudAccount;
+		walletProvisioning?: AdminElizaCloudWalletProvisioning;
+		polling?: Record<string, unknown> | null;
+	};
+	error?: string;
+	message?: string;
+};
+
+function coerceRuntimeRefPending(err: unknown): AdminElizaCloudRuntimeRefResult | null {
+	if (!isApiError(err) || err.status !== 409) return null;
+	const details = err.details;
+	if (!details || typeof details !== "object" || Array.isArray(details)) return null;
+	const body = details as AdminElizaCloudRuntimeRefResult;
+	if (body.error !== "RUNTIME_NOT_READY") return null;
+	return body;
+}
+
+export function useElizaCloudRuntimeRef(token: string | null, agentId: string | null | undefined, enabled: boolean) {
+	return useQuery({
+		queryKey: ["admin-eliza-cloud-runtime-ref", token ?? null, agentId ?? null],
+		enabled: Boolean(token && agentId && enabled),
+		queryFn: async () => {
+			try {
+				return await apiFetch<AdminElizaCloudRuntimeRefResult>(
+					`/v2/admin/agents/eliza-cloud/test-runtime-ref?agentId=${encodeURIComponent(agentId ?? "")}`,
+					{ headers: adminHeaders(token) },
+				);
+			} catch (err) {
+				const pending = coerceRuntimeRefPending(err);
+				if (pending) return pending;
+				throw err;
+			}
+		},
+		refetchInterval: 5_000,
+		retry: 1,
+	});
+}
+
+export type AdminElizaCloudStatus = {
+	ok: boolean;
+	data?: {
+		ready: boolean;
+		baseUrl: string;
+		checks: {
+			serviceAuth: boolean;
+			containerImage: boolean;
+			chatAccessSecret: boolean;
+			database: boolean;
+			testPageEnabled: boolean;
+		};
+		missing: string[];
+		productionGate: string | null;
+	};
+	error?: string;
+	message?: string;
+};
+
+export function useElizaCloudStatus(token: string | null) {
+	return useQuery({
+		queryKey: ["admin-eliza-cloud-status", token ?? null],
+		enabled: Boolean(token),
+		queryFn: () => adminGet<AdminElizaCloudStatus>("/v2/admin/agents/eliza-cloud/status", token),
+		refetchInterval: 30_000,
+		retry: 1,
+	});
+}
+
+export type AdminElizaCloudTestControlInput = {
+	action: "pause" | "resume" | "restart" | "status" | "top-up" | "balance" | "verify-top-up";
+	containerId?: string;
+	cloudAgentId?: string;
+	amountUsdCents?: number;
+	sessionId?: string;
+};
+
+export type AdminElizaCloudTestControlResult = {
+	ok: boolean;
+	data?: {
+		action: string;
+		containerId?: string;
+		cloudAgentId?: string;
+		amountUsdCents?: number;
+		checkout?: { url?: string | null; checkoutUrl?: string | null; sessionId?: string | null };
+		balance?: { balance: number; totalPurchased?: number; totalSpent?: number; isLow?: boolean };
+		verification?: { amount?: number; message?: string };
+		status?: {
+			agentId?: string;
+			cloudAgentId?: string;
+			containerId?: string;
+			containerUrl?: string;
+			status?: string;
+			webUiUrl?: string | null;
+			updatedAt?: string;
+			updated_at?: string;
+		};
+		result?: unknown;
+	};
+	error?: string;
+	message?: string;
+};
+
+export function useElizaCloudTestControl(token: string | null) {
+	return useMutation({
+		mutationFn: (body: AdminElizaCloudTestControlInput) =>
+			adminPostJson<AdminElizaCloudTestControlResult>("/v2/admin/agents/eliza-cloud/test-control", token, body),
 	});
 }
 

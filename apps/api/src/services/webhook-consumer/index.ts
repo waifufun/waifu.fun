@@ -1,9 +1,9 @@
-import { agentPersonas, getDatabase } from "@waifufun/db";
-import { eq } from "drizzle-orm";
-import type { Address } from "viem";
+import { agentPersonas, agents, getDatabase, tokens } from "@waifufun/db";
+import { eq, sql } from "drizzle-orm";
 
-import { type AgentSpec, type ElizaCloudClient, ElizaCloudNotConfiguredError, type Logger } from "../eliza-client.js";
+import { type ElizaCloudClient, ElizaCloudNotConfiguredError, type Logger } from "../eliza-client.js";
 import { emitAgentEvent } from "../events/emit.js";
+import { provisionClaimedAgent } from "../provisioning.js";
 import { type XClient, getAgentXClient } from "../x/agent-x-client.js";
 
 export type WebhookConsumerEvent = {
@@ -47,10 +47,17 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] agent.claimed missing agentId", { event });
 					return;
 				}
-				await deps.elizaCloud.provisionAgent({
+				logger.info?.("[webhook-consumer] agent.claimed recorded; waiting for agent.launched before cloud provision", {
 					agentId: event.agentId,
-					spec: buildAgentSpec(event.agentId, event.data),
 				});
+				return;
+			}
+			case "agent.launched": {
+				if (!event.agentId) {
+					logger.warn?.("[webhook-consumer] agent.launched missing agentId", { event });
+					return;
+				}
+				await provisionClaimedAgent(event.agentId, event.data);
 				return;
 			}
 			case "agent.credits.low": {
@@ -66,7 +73,16 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] agent.credits.depleted missing agentId", { event });
 					return;
 				}
-				await handleCreditsDepleted(event.agentId, deps);
+				await handleCreditsDepleted(event.agentId, event.data, deps);
+				return;
+			}
+			case "credits.topped_up":
+			case "agent.credits.topped_up": {
+				if (!event.agentId) {
+					logger.warn?.("[webhook-consumer] credits.topped_up missing agentId", { event });
+					return;
+				}
+				await handleCreditsToppedUp(event.agentId, event.data, deps);
 				return;
 			}
 			case "agent.kill_activated":
@@ -75,7 +91,7 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] kill event missing agentId", { event });
 					return;
 				}
-				await deps.elizaCloud.pauseAgent(event.agentId);
+				await pauseAgentContainer(event.agentId, event.data, deps, event.event);
 				return;
 			}
 			case "agent.revived":
@@ -84,7 +100,7 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] revive event missing agentId", { event });
 					return;
 				}
-				await deps.elizaCloud.resumeAgent(event.agentId);
+				await resumeAgentContainer(event.agentId, event.data, deps, event.event);
 				return;
 			}
 			default:
@@ -100,7 +116,7 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 			return;
 		}
 
-		if (event.event === "agent.claimed" && event.agentId) {
+		if ((event.event === "agent.claimed" || event.event === "agent.launched") && event.agentId) {
 			const emit = deps.emitEvent ?? emitAgentEvent;
 			const retryCount = numberField(event.data, "retryCount") + 1;
 			await emit({
@@ -155,7 +171,11 @@ async function handleCreditsLow(agentId: string, deps: WebhookConsumerDeps): Pro
 	});
 }
 
-async function handleCreditsDepleted(agentId: string, deps: WebhookConsumerDeps): Promise<void> {
+async function handleCreditsDepleted(
+	agentId: string,
+	data: Record<string, unknown>,
+	deps: WebhookConsumerDeps,
+): Promise<void> {
 	const store = deps.personaStore ?? createDefaultPersonaStore();
 	const persona = await store.get(agentId);
 	if (!persona) {
@@ -198,6 +218,7 @@ async function handleCreditsDepleted(agentId: string, deps: WebhookConsumerDeps)
 	}
 
 	await store.markDormant(agentId, now);
+	await pauseAgentContainer(agentId, data, deps, "agent.credits.depleted");
 	await emit({
 		agentId,
 		eventType: "agent.dormant",
@@ -207,6 +228,152 @@ async function handleCreditsDepleted(agentId: string, deps: WebhookConsumerDeps)
 			reason: "credits_depleted",
 		},
 	});
+}
+
+async function handleCreditsToppedUp(
+	agentId: string,
+	data: Record<string, unknown>,
+	deps: WebhookConsumerDeps,
+): Promise<void> {
+	const now = new Date();
+	await resumeAgentContainer(agentId, data, deps, "credits.topped_up");
+
+	const db = getDatabase().db;
+	await db
+		.update(agentPersonas)
+		.set({
+			dormantAt: null,
+			brainPausedAt: null,
+			brainPausedReason: null,
+			lastWordsPostedAt: null,
+			modelTier: "premium",
+			creditsTopUpCount: sql`${agentPersonas.creditsTopUpCount} + 1`,
+			updatedAt: now,
+		})
+		.where(eq(agentPersonas.agentId, agentId));
+
+	const tokenAddress =
+		stringField(data, "tokenAddress") ??
+		stringField(data, "tokenContractAddress") ??
+		(await resolvePersonaTokenAddress(agentId));
+	const overlayAgentId = stringField(data, "overlayAgentId");
+	if (overlayAgentId) {
+		await db
+			.update(agents)
+			.set({ agentStatus: "running", lifecycleState: "live", suspendedReason: null, updatedAt: now })
+			.where(eq(agents.id, overlayAgentId));
+	} else if (tokenAddress) {
+		const [overlay] = await db
+			.select({ agentId: agents.id, tokenId: tokens.id })
+			.from(tokens)
+			.leftJoin(agents, eq(agents.tokenId, tokens.id))
+			.where(sql`lower(${tokens.contractAddress}) = lower(${tokenAddress})`)
+			.limit(1);
+		if (overlay?.agentId) {
+			await db
+				.update(agents)
+				.set({ agentStatus: "running", lifecycleState: "live", suspendedReason: null, updatedAt: now })
+				.where(eq(agents.id, overlay.agentId));
+		}
+		if (overlay?.tokenId) {
+			await db.update(tokens).set({ agentStatus: "running", updatedAt: now }).where(eq(tokens.id, overlay.tokenId));
+		}
+	}
+
+	const emit = deps.emitEvent ?? emitAgentEvent;
+	await emit({
+		agentId,
+		eventType: "agent.resurrected",
+		data: {
+			sourceEvent: "credits.topped_up",
+			creditsAmount:
+				numberField(data, "amount") || numberField(data, "amountUsd") || numberField(data, "creditsAmount"),
+			resurrectedAt: now.toISOString(),
+		},
+	});
+}
+
+async function resolvePersonaTokenAddress(agentId: string): Promise<string | null> {
+	const db = getDatabase().db;
+	const [persona] = await db
+		.select({ tokenAddress: agentPersonas.tokenAddress })
+		.from(agentPersonas)
+		.where(eq(agentPersonas.agentId, agentId))
+		.limit(1);
+	return persona?.tokenAddress ?? null;
+}
+
+async function pauseAgentContainer(
+	agentId: string,
+	data: Record<string, unknown>,
+	deps: WebhookConsumerDeps,
+	sourceEvent: string,
+): Promise<void> {
+	const containerId = await resolveContainerId(agentId, data);
+	if (!containerId) {
+		deps.logger.warn?.("[webhook-consumer] container id not found; cannot pause eliza cloud container", {
+			agentId,
+			sourceEvent,
+		});
+		return;
+	}
+	await deps.elizaCloud.pauseAgent(containerId);
+}
+
+async function resumeAgentContainer(
+	agentId: string,
+	data: Record<string, unknown>,
+	deps: WebhookConsumerDeps,
+	sourceEvent: string,
+): Promise<void> {
+	const containerId = await resolveContainerId(agentId, data);
+	if (!containerId) {
+		deps.logger.warn?.("[webhook-consumer] container id not found; cannot resume eliza cloud container", {
+			agentId,
+			sourceEvent,
+		});
+		return;
+	}
+	await deps.elizaCloud.resumeAgent(containerId);
+}
+
+async function resolveContainerId(agentId: string, data: Record<string, unknown>): Promise<string | null> {
+	const eventContainerId =
+		stringField(data, "containerId") ??
+		stringField(data, "cloudContainerId") ??
+		stringField(data, "elizaContainerId") ??
+		stringField(data, "cloudAgentId") ??
+		stringField(data, "runtimeAgentId");
+	if (eventContainerId) return eventContainerId;
+
+	const db = getDatabase().db;
+	const [persona] = await db
+		.select({
+			metadata: agentPersonas.metadata,
+			tokenAddress: agentPersonas.tokenAddress,
+		})
+		.from(agentPersonas)
+		.where(eq(agentPersonas.agentId, agentId))
+		.limit(1);
+	if (!persona) return null;
+
+	const metadata = recordFromUnknown(persona.metadata);
+	const provisioning = recordFromUnknown(metadata?.provisioning);
+	const metadataContainerId = provisioning
+		? (stringField(provisioning, "containerId") ??
+			stringField(provisioning, "cloudAgentId") ??
+			stringField(provisioning, "runtimeAgentId"))
+		: null;
+	if (metadataContainerId) return metadataContainerId;
+	if (!persona.tokenAddress) return null;
+
+	const [overlay] = await db
+		.select({ containerId: agents.bridgeUrl, cloudAgentId: agents.cloudAgentId })
+		.from(tokens)
+		.leftJoin(agents, eq(agents.tokenId, tokens.id))
+		.where(sql`lower(${tokens.contractAddress}) = lower(${persona.tokenAddress})`)
+		.limit(1);
+	return overlay?.containerId ?? overlay?.cloudAgentId ?? null;
 }
 
 function nextDowngradedTier(tier: ModelTier): ModelTier {
@@ -259,27 +426,17 @@ function createDefaultPersonaStore(): WebhookConsumerPersonaStore {
 	};
 }
 
-function buildAgentSpec(agentId: string, data: Record<string, unknown>): AgentSpec {
-	return {
-		personaId: stringField(data, "personaId") ?? agentId,
-		xHandle: stringField(data, "xHandle") ?? stringField(data, "claimedByXHandle"),
-		taxConfig: data.taxConfig ?? null,
-		safeAddress: addressField(data, "safeAddress"),
-	};
-}
-
 function stringField(data: Record<string, unknown>, key: string): string | null {
 	const value = data[key];
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function recordFromUnknown(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	return value as Record<string, unknown>;
+}
+
 function numberField(data: Record<string, unknown>, key: string): number {
 	const value = data[key];
 	return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function addressField(data: Record<string, unknown>, key: string): Address | null {
-	const value = data[key];
-	if (typeof value !== "string") return null;
-	return /^0x[0-9a-fA-F]{40}$/.test(value) ? (value as Address) : null;
 }

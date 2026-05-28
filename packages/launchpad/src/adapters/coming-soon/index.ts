@@ -39,7 +39,7 @@ export const createComingSoonAdapter = (descriptor: LaunchpadDescriptor): Launch
 	},
 });
 
-const descriptors: Record<Extract<LaunchpadId, "pump-fun" | "bags" | "custom">, LaunchpadDescriptor> = {
+const descriptors: Record<Extract<LaunchpadId, "pump-fun" | "custom">, LaunchpadDescriptor> = {
 	"pump-fun": {
 		id: "pump-fun",
 		status: "coming-soon",
@@ -49,17 +49,6 @@ const descriptors: Record<Extract<LaunchpadId, "pump-fun" | "bags" | "custom">, 
 		feeSummary: "TBD when pump.fun adapter ships.",
 		graduationTarget: "Pump.fun graduation to Solana DEX liquidity.",
 		comingSoonNotes: "Deferred to Wave 4+ with Solana wallet integration.",
-		expectedAvailability: "Wave 4+",
-	},
-	bags: {
-		id: "bags",
-		status: "coming-soon",
-		chain: "base",
-		displayName: "Bags",
-		shortDescription: "Bags launchpad support.",
-		feeSummary: "TBD when Bags adapter ships.",
-		graduationTarget: "Bags-native graduation path.",
-		comingSoonNotes: "Deferred until launchpad SDK surface is finalized.",
 		expectedAvailability: "Wave 4+",
 	},
 	custom: {

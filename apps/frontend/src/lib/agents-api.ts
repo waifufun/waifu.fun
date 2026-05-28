@@ -54,6 +54,17 @@ function mapAgentSummary(raw: unknown): AgentListItem {
 	if (preset) item.preset = preset;
 	const twitterHandle = typeof r.twitterHandle === "string" ? (r.twitterHandle as string) : undefined;
 	if (twitterHandle) item.twitterHandle = twitterHandle;
+	const chain = typeof r.chain === "string" ? (r.chain as string) : undefined;
+	if (chain) item.chain = chain;
+	const chainId = typeof r.chainId === "number" ? r.chainId : typeof r.chain_id === "number" ? r.chain_id : undefined;
+	if (chainId) item.chainId = chainId;
+	const launchPlatform =
+		typeof r.launchPlatform === "string"
+			? (r.launchPlatform as string)
+			: typeof r.launch_platform === "string"
+				? (r.launch_platform as string)
+				: undefined;
+	if (launchPlatform) item.launchPlatform = launchPlatform;
 
 	if (identity) {
 		const tokenId = identity.eip8004TokenId;
@@ -249,6 +260,9 @@ async function fetchAgentsFallback({
 				item.volume24h = t.volumeUSD;
 			}
 			if (typeof t.marketCap === "number") item.marketCap = t.marketCap;
+			if (typeof t.chain === "string") item.chain = t.chain;
+			if (typeof t.chainId === "number") item.chainId = t.chainId;
+			if (typeof t.launchPlatform === "string") item.launchPlatform = t.launchPlatform;
 			return item;
 		});
 

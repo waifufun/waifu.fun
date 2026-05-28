@@ -30,7 +30,19 @@ export interface AgentLifecycleStatus {
 const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
 const externalMarketStatuses = new Set(["migrated", "dex", "locked"]);
 
-type TokenLifecycleHints = IToken & { origin?: string; pool?: string | null };
+type TokenLifecycleHints = IToken & { launchPlatform?: string; origin?: string; pool?: string | null };
+
+const TOKEN_CHAIN_BADGE: Record<number, { label: string; icon: string }> = {
+	56: { label: "BSC", icon: "/chain-icons/bsc.svg" },
+	8453: { label: "Base", icon: "/chain-icons/base.svg" },
+	101: { label: "Solana", icon: "/chain-icons/solana.svg" },
+};
+
+const TOKEN_LAUNCHPAD_BADGE: Record<string, { label: string; icon: string }> = {
+	flap: { label: "Flap", icon: "/venue-logos/flap.svg" },
+	bags: { label: "Bags", icon: "/venue-logos/bags.png" },
+	bankr: { label: "Bankr", icon: "/venue-logos/bankr.svg" },
+};
 
 function isImportedToken(token: IToken) {
 	const tokenWithOrigin = token as TokenLifecycleHints;
@@ -315,6 +327,7 @@ export default function AgentProfile({
 							<span className="text-base sm:text-lg text-zinc-600 font-mono font-medium tracking-tight">
 								${token.ticker}
 							</span>
+							<TokenBadges token={token as TokenLifecycleHints} />
 						</div>
 
 						{/* Status text + last seen */}
@@ -401,5 +414,28 @@ export default function AgentProfile({
 				</div>
 			</div>
 		</motion.div>
+	);
+}
+
+function TokenBadges({ token }: { token: TokenLifecycleHints }) {
+	const launchpad = TOKEN_LAUNCHPAD_BADGE[(token.launchPlatform ?? "flap").toLowerCase()] ?? null;
+	const chain = TOKEN_CHAIN_BADGE[Number(token.chainId)] ?? null;
+	if (!launchpad && !chain) return null;
+	return (
+		<div className="flex items-center gap-1.5">
+			{launchpad ? <TokenBadge label={launchpad.label} icon={launchpad.icon} /> : null}
+			{chain ? <TokenBadge label={chain.label} icon={chain.icon} /> : null}
+		</div>
+	);
+}
+
+function TokenBadge({ label, icon }: { label: string; icon: string }) {
+	return (
+		<span className="inline-flex h-6 items-center gap-1.5 rounded-sm border border-white/10 bg-white/[0.03] px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/55">
+			<span className="relative h-3.5 w-3.5 overflow-hidden rounded-[2px] bg-black">
+				<Image src={icon} alt="" fill sizes="14px" className="object-cover" />
+			</span>
+			{label}
+		</span>
 	);
 }

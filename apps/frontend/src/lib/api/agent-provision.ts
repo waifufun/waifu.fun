@@ -101,6 +101,7 @@ const FALLBACK_CHAIN_BY_LAUNCHPAD: Record<LaunchpadId, ChainId> = {
 	"four-meme-regular": "bsc",
 	"four-meme-tax": "bsc",
 	flap: "bsc",
+	bankr: "base",
 	meteora: "solana",
 	"pump-fun": "solana",
 	bags: "solana",

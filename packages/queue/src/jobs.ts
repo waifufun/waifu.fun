@@ -122,7 +122,16 @@ export const xTokenRefreshJobSchema = z.object({
 export const agentProvisioningJobSchema = z.object({
 	agentId: z.string().min(1),
 	data: z.record(z.string(), z.unknown()).default({}),
-	source: z.enum(["agent.claimed", "agent.provisioning_failed", "manual"]).default("agent.provisioning_failed"),
+	source: z
+		.enum([
+			"agent.claimed",
+			"agent.launched",
+			"agent.graduated",
+			"token.migrated",
+			"agent.provisioning_failed",
+			"manual",
+		])
+		.default("agent.provisioning_failed"),
 });
 
 export const agentRollupJobSchema = z.object({

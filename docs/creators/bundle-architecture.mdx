@@ -17,7 +17,7 @@ flowchart LR
   Portal -- auto-graduate --> PCS[PancakeSwap V2]
   Router -- swapExactETHForTokens --> PCS
   Router -- safeTransfer 200M --> Vault
-  Router -- safeTransfer 100M --> Treasury[TreasuryLP4]
+  Router -- safeTransfer 100M --> Treasury[TreasuryLP5]
   Router -- safeTransfer remainder --> Burn[0x...dEaD]
   Vault -- distribute --> Vault
 ```
@@ -58,15 +58,15 @@ flowchart LR
    and `supply = totalSupply()`. it then computes FLAT amounts pegged to
    total supply:
    - `vault = supply / 5` (= 20% of supply = 200M tokens, for presalers)
-   - `treasury = supply / 10` (= 10% of supply = 100M tokens, for TreasuryLP4)
+   - `treasury = supply / 10` (= 10% of supply = 100M tokens, for TreasuryLP5)
    - `burn = totalY - vault - treasury` (= 50% of supply for tier 80; absorbs
      V2 follow-up buy tokens for graduating tiers, plus any rounding crumbs)
    the remaining 20% of supply lives in the FLAP-created PCS V2 LP at
    graduation (the 200M that flap migrates as initial liquidity).
 7. **distribute the splits.** `safeTransfer` the vault share to `LaunchVault`,
-   the treasury share to `TreasuryLP4`, the burn share to `0x...dEaD`. then
+   the treasury share to `TreasuryLP5`, the burn share to `0x...dEaD`. then
    call `vault.distribute(token, vaultAmt)` so claims can compute pro-rata,
-   and `treasuryLp4.recordManagedToken(token)` to lock the launch token in
+   and `treasuryLp5.recordManagedToken(token)` to lock the launch token in
    the treasury contract.
 8. **dust sweep.** any leftover BNB at the router goes to `0x...dEaD`. the
    router never holds custody between transactions.
@@ -110,7 +110,7 @@ a few things are operationally trusted, not enforced on-chain:
 splits are FLAT against total supply (1B), so they're identical across tiers:
 
 - 200M tokens (20% of supply) to `LaunchVault` for presaler claims, pro-rata
-- 100M tokens (10% of supply) to `TreasuryLP4` for the V3 LP ladder
+- 100M tokens (10% of supply) to `TreasuryLP5` for the V3 LP ladder
 - 200M tokens (20% of supply) locked in the FLAP-created PCS V2 LP at graduation
 - 500M tokens (50% of supply) burned (= router balance minus vault minus
   treasury; absorbs any V2 follow-up buy tokens for graduating tiers)
@@ -122,18 +122,18 @@ event so you can verify on-chain.
 ## after the bundle: post-graduation wiring
 
 `executeBundle` ends with the FLAP-created V2 pair live and 100M tokens
-sitting in `TreasuryLP4`. the treasury cannot run its oracle yet because
+sitting in `TreasuryLP5`. the treasury cannot run its oracle yet because
 at bundle time the V2 pair address is not yet known to the contract.
 
 that's solved by `LaunchFactory.finalizeLaunch(token)`, a separate
 idempotent function that anyone can call once the V2 pair exists:
 
 1. read the V2 pair from `pcsFactory.getPair(token, WBNB)` (must be non-zero)
-2. call `treasuryLp4.setFlapV2Pair(pair)` to wire the TWAP oracle source
-3. transfer ownership of the TreasuryLP4 from the factory to the agent's Safe
+2. call `treasuryLp5.setFlapV2Pair(pair)` to wire the TWAP oracle source
+3. transfer ownership of the TreasuryLP5 from the factory to the agent's Safe
 4. emit `LaunchFinalized`
 
-after `finalizeLaunch`, the TreasuryLP4 is fully owned by the agent's Safe.
+after `finalizeLaunch`, the TreasuryLP5 is fully owned by the agent's Safe.
 the `tier-cron` operator service can now permissionlessly call `oraclePoke()`
 and `checkAndAdvance()` to deploy V3 LP tiers as the token's TWAP market cap
 rises through the configured ladder.

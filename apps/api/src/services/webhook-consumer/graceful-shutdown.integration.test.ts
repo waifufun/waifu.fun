@@ -5,16 +5,21 @@ import { resurrectAgent } from "../../routes/v2/agents.js";
 import type { ElizaCloudClient } from "../eliza-client.js";
 import { type WebhookConsumerDeps, type WebhookConsumerPersonaStore, dispatchEvent } from "./index.js";
 
-function elizaStub(toppedUp: unknown[]): ElizaCloudClient {
+function elizaStub(calls: { toppedUp: unknown[]; paused: string[]; resumed: string[] }): ElizaCloudClient {
 	return {
 		async provisionAgent() {
 			return { containerId: "container-1" };
 		},
-		async pauseAgent() {},
-		async resumeAgent() {},
+		async pauseAgent(agentId) {
+			calls.paused.push(agentId);
+		},
+		async resumeAgent(agentId) {
+			calls.resumed.push(agentId);
+		},
 		async deprovisionAgent() {},
 		async topUpCredits(agentId, amount) {
-			toppedUp.push({ agentId, amount });
+			calls.toppedUp.push({ agentId, amount });
+			return undefined;
 		},
 	};
 }
@@ -22,7 +27,11 @@ function elizaStub(toppedUp: unknown[]): ElizaCloudClient {
 test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", async () => {
 	const emitted: { eventType: string }[] = [];
 	const tweets: string[] = [];
-	const toppedUp: unknown[] = [];
+	const cloudCalls: { toppedUp: unknown[]; paused: string[]; resumed: string[] } = {
+		toppedUp: [],
+		paused: [],
+		resumed: [],
+	};
 	const state: {
 		modelTier: "premium" | "standard" | "free";
 		lastWordsPostedAt: Date | null;
@@ -52,7 +61,7 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 	};
 
 	const deps: WebhookConsumerDeps = {
-		elizaCloud: elizaStub(toppedUp),
+		elizaCloud: elizaStub(cloudCalls),
 		logger: {},
 		personaStore: store,
 		async emitEvent(input) {
@@ -84,13 +93,36 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 			event: "agent.credits.depleted",
 			timestamp: new Date().toISOString(),
 			agentId: "waifu-demo-01",
-			data: {},
+			data: { containerId: "container-1" },
 		},
 		deps,
 	);
 
 	const updates: Record<string, unknown>[] = [];
 	const db = {
+		select() {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									return Promise.resolve([
+										{
+											metadata: { provisioning: { containerId: "container-1" } },
+											tokenAddress: null,
+										},
+									]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
 		update() {
 			return {
 				set(values: Record<string, unknown>) {
@@ -107,7 +139,7 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 
 	await resurrectAgent("waifu-demo-01", 2500, {
 		db,
-		elizaClient: elizaStub(toppedUp),
+		elizaClient: elizaStub(cloudCalls),
 		async emitEvent(input) {
 			emitted.push({ eventType: input.eventType });
 			return {} as never;
@@ -123,6 +155,8 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 	assert.equal(state.brainPausedAt, null);
 	assert.equal(state.lastWordsPostedAt, null);
 	assert.equal(tweets.length, 2);
-	assert.deepEqual(toppedUp, [{ agentId: "waifu-demo-01", amount: 2500 }]);
+	assert.deepEqual(cloudCalls.paused, ["container-1"]);
+	assert.deepEqual(cloudCalls.resumed, ["container-1"]);
+	assert.deepEqual(cloudCalls.toppedUp, [{ agentId: "waifu-demo-01", amount: 25 }]);
 	assert.equal(updates.length, 1);
 });

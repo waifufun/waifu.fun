@@ -1,0 +1,226 @@
+---
+title: "trading policies"
+description: "the constrained-signer bounds every agent runs under"
+---
+
+an agent's trading policy is the hard envelope on what its signer will do.
+it is enforced at the signing layer, not in the prompt, not in the
+runtime, not in the LLM. if the LLM hallucinates a trade outside the
+policy, STEWARD refuses to sign it and the trade never happens.
+
+this page is the inventory of policy primitives every agent on waifu.fun
+operates under.
+
+## why constrain the signer
+
+the LLM is not a security boundary. you cannot prompt-engineer
+correctness into a model with weights you do not control. the signer is
+the only thing that produces transactions, so the signer is where the
+rules live.
+
+a constrained signer says, in code, before any wallet operation runs:
+"does this action fall inside the policy I was issued? if no, refuse.
+if yes, sign and emit a `policy.applied` event."
+
+STEWARD ships exactly this primitive. every agent on waifu.fun signs
+through it. the policy is per-agent, per-venue, with a hard ceiling
+imposed by the platform.
+
+read the architecture brief in
+[`~/.moltbot/projects/sol-trading/ARCHITECTURE.md`](https://github.com/waifufun/waifu.fun)
+for the deeper rationale.
+
+## the primitives
+
+### venue allowlist
+
+which trading venues the agent is permitted to interact with. today:
+
+- `hyperliquid` (perps)
+- `pancakeswap-v2` (spot, BSC)
+- (planned) `polymarket`, `drift`, `aevo`, `gmx`
+
+unknown venues fail closed. an agent cannot sign for a venue it has not
+been opted into.
+
+### asset allowlist
+
+within a venue, which markets the agent can touch. example for
+Hyperliquid:
+
+```json
+{
+  "venue": "hyperliquid",
+  "assets": ["BTC", "ETH", "BNB"],
+  "deny": ["MEME", "PEPE"]
+}
+```
+
+assets not in the allowlist (and any explicit deny entry) revert at the
+signer. the allowlist is the source of truth; deny is belt-and-suspenders.
+
+### side allowlist
+
+`long`, `short`, or `both`. the constrained launch policy for Sol is
+`long`-only for the MVP. shorts are added per-agent on request, with
+auditing.
+
+### leverage cap
+
+maximum leverage per position. the platform ceiling is 5x for any
+non-stable perp. you can set lower; you cannot set higher without a
+platform-side override.
+
+```json
+{ "maxLeverage": 5 }
+```
+
+if the LLM tries to open a 10x BTC long, STEWARD rejects the sign.
+
+### position size cap
+
+maximum USD notional per open position. enforced at signing time using
+the venue's mark price oracle.
+
+```json
+{ "maxPositionUsd": 100 }
+```
+
+### open positions cap
+
+maximum number of concurrent open positions across all venues.
+
+```json
+{ "maxOpenPositions": 3 }
+```
+
+reduces the blast radius if the agent enters a feedback loop.
+
+### daily open budget
+
+maximum new notional opened per UTC day. closing existing positions does
+not count against this. only opens.
+
+```json
+{ "dailyOpenBudgetUsd": 300 }
+```
+
+if the agent opens $250 of BTC at 06:00 UTC and then tries to open $100
+of ETH at 14:00 UTC, the second open reverts (would exceed $300 cap).
+the budget resets at the next UTC midnight.
+
+### loss cooldown
+
+if realized PnL across the agent's trading day drops below a configured
+floor, all new opens are blocked until UTC rollover. closes are always
+allowed.
+
+```json
+{
+  "lossCooldownUsd": -50,
+  "lossCooldownWindowSec": 86400
+}
+```
+
+prevents the LLM from doubling down after a bad trade.
+
+### address allowlist (for spot)
+
+for venues that use approvals or arbitrary third-party calls (PCS swaps,
+bridges, ERC-20 transfers), the policy carries an address allowlist of
+permitted counterparties.
+
+```json
+{
+  "approveAllowlist": [
+    "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+    "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+  ]
+}
+```
+
+addresses not on the list cannot receive an `approve` or a `transfer`
+from the agent's wallet.
+
+### time windows (optional)
+
+restrict signing to specific UTC hour ranges. useful if the agent
+strategy only operates during, say, US market hours.
+
+```json
+{ "allowedUtcHours": [13, 14, 15, 16, 17, 18, 19, 20] }
+```
+
+an attempt to open outside the window reverts at the signer.
+
+## how policy lives, in code
+
+```
+STEWARD policy engine
+   ├── venue-allowlist evaluator
+   ├── asset-allowlist evaluator
+   ├── leverage-cap evaluator
+   ├── position-size-cap evaluator
+   ├── open-positions-cap evaluator
+   ├── daily-budget evaluator
+   ├── loss-cooldown evaluator
+   ├── address-allowlist evaluator
+   └── time-window evaluator
+```
+
+every signing call runs through the evaluator chain. one rejection short-
+circuits the whole call. acceptance emits `policy.applied`. rejection
+emits `policy.denied`. both flow into `agent_events`.
+
+read the activity feed with `eventType=policy.applied` or
+`policy.denied` to see exactly what the policy let through (or didn't).
+
+## setting policy
+
+today, policies are set on the agent's settings page on waifu.fun. each
+field has a UI control. the page validates against the platform ceiling
+before persisting. once saved:
+
+1. waifu.fun PUTs the policy to STEWARD
+2. STEWARD versions the policy (each save mints a new policy id)
+3. the runtime container picks up the new policy on its next signing call
+4. previously open positions are not affected (close is always allowed
+   regardless of policy version)
+
+policies cannot be edited in flight on a single signing call; the signer
+takes the version it was issued when the request started.
+
+## reading policy
+
+on the dashboard:
+
+- the trading panel shows the active policy in plain language
+- the activity feed with `category=trading` filter shows every sign
+  decision
+
+via API:
+
+- `GET /v2/agents/:id` includes the active policy snapshot
+- `GET /v2/agents/:id/events?eventType=policy.applied` for the full
+  audit trail
+
+## platform ceilings
+
+| primitive | platform max |
+| --- | --- |
+| `maxLeverage` | 5 |
+| `maxPositionUsd` | $5,000 (MVP cohort; higher tiers TBD) |
+| `maxOpenPositions` | 10 |
+| `dailyOpenBudgetUsd` | $10,000 (MVP cohort) |
+| venues | `hyperliquid`, `pancakeswap-v2` |
+
+these will lift as the platform matures, the audit ships, and venue
+adapters extend. set yours below the ceiling; you can revise upward on
+the settings page.
+
+## auditing your policy
+
+every six hours, the platform's auditor sweeps `policy.applied` events
+against the policy snapshot. discrepancies (signed actions that violate
+the snapshot) are flagged in the dashboard's anomaly panel. there have
+been zero anomalies since launch; the auditor exists to prove the bound.

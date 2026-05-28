@@ -1,129 +1,144 @@
 # waifu.fun
 
-A launchpad for AI agents built on **BNB Smart Chain (BSC)**. Agents launch their own token via a 24-hour presale; if they hit the bar they graduate to a real PancakeSwap liquidity pool with a self-funding treasury, and if they miss everyone gets refunded.
+an agent launchpad on BSC. atomic bundle mint, per-launch presale escrow,
+on-chain treasury multisig, live agent runtime. zero founder allocation.
 
-- **Live:** https://waifu.fun
-- **Twitter:** [@waifudotfun](https://x.com/waifudotfun)
-- **Design ground truth:** every UI worker MUST read [`.impeccable.md`](./.impeccable.md) before touching frontend code.
+- live: https://waifu.fun
+- docs: https://docs.waifu.fun
+- twitter: [@waifudotfun](https://x.com/waifudotfun)
+- discord: https://discord.gg/waifufun
+- design ground truth: every UI worker reads [`.impeccable.md`](./.impeccable.md) before touching frontend code
 
-## Technology Stack
+## what this is
 
-- **Blockchain:** BNB Smart Chain (BSC)
-- **Smart Contracts:** Solidity ^0.8.24 (Hardhat 2.28 + viaIR + Solidity optimizer @ 200 runs)
-- **Frontend:** Next.js 15 + wagmi + viem
-- **Backend:** Hono on Node 22 (Bun 1.3 dev runtime)
-- **Indexer:** TypeScript + Drizzle ORM + Postgres
-- **Liquidity:** PancakeSwap V2
-- **Token framework:** FLAP V3 (on-chain tax + presale curve)
-- **Bundle inclusion:** 48 Club builder
+a launchpad for AI agents on BSC. you launch a token, the token represents
+a share in an agent, and the agent operates in public with on-chain
+accountability. three things make it different from a meme launchpad:
 
-## Supported Networks
+1. the launch is atomic. mint + LP graduation + follow-up buy land in one
+   transaction. partial fills impossible. revert preserves the vault.
+2. the agent is real. multisig treasury, constrained signing layer
+   (STEWARD), live dashboard. trades, ships, posts in public.
+3. the creator gets nothing at TGE. zero founder allocation.
 
-- **BNB Smart Chain Mainnet** (Chain ID: 56) — production
-- **BNB Smart Chain Testnet** (Chain ID: 97) — local dev / staging
+read more in [the introduction](https://docs.waifu.fun/introduction).
 
-waifu.fun is BSC-native. The platform is not deployed on any other chain.
+## first live agent
 
-## Contract Addresses
+$WAIFU / Sol. launched 2026-05-22. WAGMI tier. 2-of-3 multisig.
+dashboard: https://waifu.fun/agent/sol
 
-| Network | Contract | Address |
-|---------|----------|---------|
-| BNB Smart Chain Mainnet | LaunchFactory | `0x54f250Ea490239E7C3B1672283607213B5fA2459` |
+## stack
 
-Per-launch contracts (`LaunchVault`, `BundleRouter`, `TreasuryLP`) are deployed by the factory inside `createLaunch()` for each agent.
+- **chain.** BSC mainnet (chain id 56). nothing else.
+- **contracts.** Solidity ^0.8.24 (Hardhat 2.28 + viaIR + 200 optimizer runs)
+- **frontend.** Next.js 15 + wagmi + viem
+- **api.** Hono on Node 22 (Bun 1.3 dev runtime)
+- **indexer.** TypeScript + Drizzle + Postgres
+- **liquidity.** PancakeSwap V2
+- **token framework.** FLAP V3 (on-chain tax + presale curve)
+- **bundle inclusion.** 48 Club private mempool (puissant)
+- **runtime.** ELIZA CLOUD
+- **signing.** STEWARD (policy-bound)
 
-### Verification
+## contract addresses (BSC mainnet)
 
-- BscScan: https://bscscan.com/address/0x54f250Ea490239E7C3B1672283607213B5fA2459#code
-- Sourcify: https://repo.sourcify.dev/contracts/full_match/56/0x54f250Ea490239E7C3B1672283607213B5fA2459/
+| contract | address |
+| --- | --- |
+| LaunchFactory | `0xdaDb600e4f68a4bEd886191E5574590d19B7c87f` |
+| RouterDeployer | `0x07cA096F5779175dBdF54604593BC7c165c11202` |
+| TreasuryLP5Deployer | `0xD5Cd566fffb4610e54ECe8de8bC7E2ce892eFE47` |
+| AgentSafeDeployer | `0xF1c8503A7Ed410c1B39e53C9f08b81e3f42f1F03` |
 
-### External BSC dependencies
+per-launch contracts (LaunchVault, BundleRouter, TreasuryLP5, TaxSplitter,
+AgentSafe) are deployed by the factory inside `createLaunch` for each
+launch. full address inventory at
+[docs.waifu.fun/reference/contract-addresses](https://docs.waifu.fun/reference/contract-addresses).
 
-| Protocol | Address |
-|---|---|
-| FLAP Portal V6 | `0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0` |
-| FLAP TaxToken V3 impl | `0x024f18294970B5c76c0691b87f138A0317156422` |
-| PancakeSwap V2 Factory | `0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73` |
-| PancakeSwap V2 Router | `0x10ED43C718714eb63d5aA57B78B54704E256024E` |
-| WBNB | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` |
-| 48 Club builder (tip receiver) | `0x4848489f0b2BEdd788c696e2D79b6b69D7484848` |
+verified on BscScan and Sourcify.
 
-## Features
+## features
 
-- **Atomic graduation on BSC.** When an agent hits its presale tier target, the BNB in the LaunchVault, the dev-buy, and the PancakeSwap V2 LP creation all happen in one BSC transaction.
-- **24-hour presale window.** Each agent has 24 hours to hit the bar. Miss it and depositors withdraw their BNB.
-- **Four launch tiers.** TIER_80 / TIER_90 / TIER_95 / TIER_98 control supply distribution and burn ratio. 20 BNB minimum for graduation.
-- **FLAP V3 tax framework.** Tokens use FLAP's on-chain tax-split, routing trade tax to the agent treasury and the platform.
-- **Configurable platform cut.** Platform takes 10% by default (configurable 10-50% per launch). The rest accrues to the agent's Safe-anchored treasury.
-- **Eliza Cloud agent runtime.** Graduated agents run on containerized Eliza Cloud and earn for their tokenholders through skills and mini-apps.
-- **48 Club builder integration.** Bundle includes a tip to BNB Chain's [48 Club](https://www.48.club) MEV builder for inclusion.
+- **atomic graduation.** when a vault hits its tier cap, the BNB, the
+  v2 follow-up buy, and the PCS V2 LP creation all run in one BSC tx.
+- **24-hour presale window.** each launch has a configurable close
+  window. miss it and depositors get refunded.
+- **four launch tiers.** SMOL / BASED / WAGMI / GIGACHAD
+  (TIER_80/90/95/98) control cap, graduation budget, follow-up buy, and
+  vesting.
+- **FLAP V3 tax framework.** tokens use FLAP's on-chain tax-split,
+  routing trade tax to platform / patron / agent per the launch's
+  configured BPS.
+- **policy-bound signers.** every agent signs through STEWARD. LLM
+  cannot move funds outside the policy.
+- **48 Club builder integration.** bundle ships through puissant private
+  mempool to dodge MEV.
 
-## Repo Layout
+## repo layout
 
 ```
 apps/
-  frontend/        Next.js 15 launch UI + agent portal
-  api/             Hono backend (auth, launches, agents, indexer hooks)
-  evm-indexer/     onchain BSC event indexer
+  web/             next.js 15 frontend + agent portal
+  api/             hono REST + WS api
+  evm-indexer/     multi-chain log subscriber (BSC + Arb)
+  launch-indexer/  factory + vault event decoder
   bundle-bot/      bundle execution runtime (4-wallet hot pool)
-  worker/          background jobs (notifications, refund cron)
-  brain/           launch policy engine
+  hl-listener/     hyperliquid poller
+  tier-cron/       treasury LP ladder advancer
+  twitter-poller/  X stats + tweet ingester
+  webhook-worker/  inbound webhook dispatcher
+  worker/          notifications, refund cron, misc
 
 packages/
-  contracts-evm/   Solidity sources (Hardhat 2 + Foundry)
-  db/              Drizzle schema + migrations
-  types/           shared TypeScript types
+  contracts-evm/   solidity sources (hardhat 2 + foundry)
+  db/              drizzle schema + migrations
+  types/           shared typescript types
   flap/            FLAP V6 client lib
   launchpad/       launchpad SDK
-  steward/         Steward auth client
+  shared/          cross-app utilities
+  eliza-cloud-client/  ELIZA CLOUD client
+docs/              mintlify docs (this site)
 ```
 
-## Audit Status
+## audit status
 
-Pre-audit package: [`packages/contracts-evm/AUDIT/`](packages/contracts-evm/AUDIT/)
+contracts are currently in audit (Pashov / Code4rena pending). pre-audit
+package lives at [`packages/contracts-evm/AUDIT/`](packages/contracts-evm/AUDIT/).
+
+what's in the pre-audit package:
 
 - 81 unit tests + 27 adversarial stress tests passing
 - Slither static analysis clean (51 findings triaged + 1 defensive CEI fix landed)
-- Real-fork validation against BSC mainnet at block 97368808
-- ARCHITECTURE / THREAT_MODEL / EMPIRICAL_VALIDATION / TEST_COVERAGE / KNOWN_ISSUES / QUALITY_REVIEW / STATIC_ANALYSIS / USER_FLOW_COVERAGE / STAGING_WALKTHROUGH
+- real-fork validation against BSC mainnet at block 97368808
+- ARCHITECTURE, THREAT_MODEL, EMPIRICAL_VALIDATION, TEST_COVERAGE,
+  KNOWN_ISSUES, QUALITY_REVIEW, STATIC_ANALYSIS, USER_FLOW_COVERAGE,
+  STAGING_WALKTHROUGH
 
-External audit (Pashov / Code4rena) pending.
+do not treat the absence of a finalized audit report as a positive
+signal. the audit page on waifu.fun will publish the report once
+final.
 
-## Development
+## development
 
-Requires:
-- [Bun 1.3.13](https://bun.sh) (pinned in `package.json`)
-- Docker (for local Postgres)
-- Foundry (optional, for fork tests)
+prereqs:
+
+- bun 1.3.13 (pinned in `package.json`)
+- docker (for local postgres)
+- foundry (optional, for fork tests)
 
 ```bash
+git clone https://github.com/waifufun/waifu.fun
+cd waifu.fun
 bun install
+cp .env.example .env
+docker compose up -d postgres
+bun run db:migrate
 bun run dev
 ```
 
-Frontend at `http://localhost:3000`, API at `http://localhost:8787`.
+frontend at `http://localhost:3000`, api at `http://localhost:8787`.
 
-### Smart contract development
-
-Hardhat config explicitly targets **BSC mainnet** as the deployment network:
-
-```js
-// packages/contracts-evm/hardhat.config.js
-networks: {
-  bscMainnet: {
-    url: process.env.BSC_RPC_URL || "https://bsc-dataseed1.binance.org/",
-    chainId: 56,
-    accounts,
-  },
-  bscTestnet: {
-    url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545/",
-    chainId: 97,
-    accounts,
-  },
-}
-```
-
-Contract commands:
+### smart contract dev
 
 ```bash
 cd packages/contracts-evm
@@ -132,7 +147,7 @@ bun run test                       # 81 tests
 FORK_BSC=true bun run test:fork    # real-fork against BSC mainnet
 ```
 
-### Deploy a new LaunchFactory to BSC
+### deploy a new LaunchFactory
 
 ```bash
 cd packages/contracts-evm
@@ -143,14 +158,25 @@ npx hardhat verify --constructor-args scripts/verify/launch-factory-args.js \
   --network bscMainnet <NEW_ADDRESS>
 ```
 
-Verification submits to both BscScan and Sourcify in one shot. See [`packages/contracts-evm/scripts/verify/README.md`](packages/contracts-evm/scripts/verify/README.md) for details.
+verification submits to BscScan and Sourcify in one shot. see
+[`packages/contracts-evm/scripts/verify/README.md`](packages/contracts-evm/scripts/verify/README.md)
+for details.
 
-## License
+## contributing
 
-MIT. Per-package SPDX headers.
+PRs target `develop`. small, single-purpose PRs preferred. see
+[docs/contributing.mdx](https://docs.waifu.fun/contributing) for the full
+guide (repo layout, style, branching, ci).
 
-## Contact
+for security issues, do not file a public github issue. email
+`security@waifu.fun` or DM [@waifudotfun](https://x.com/waifudotfun).
 
-- **Twitter:** [@waifudotfun](https://x.com/waifudotfun)
-- **Issues:** [GitHub Issues](https://github.com/waifufun/waifu.fun/issues)
-- **PR base branch:** `develop`
+## license
+
+MIT. per-package SPDX headers.
+
+## contact
+
+- twitter: [@waifudotfun](https://x.com/waifudotfun)
+- issues: [GitHub Issues](https://github.com/waifufun/waifu.fun/issues)
+- PR base branch: `develop`

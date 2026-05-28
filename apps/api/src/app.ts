@@ -21,6 +21,7 @@ import { createLaunchRoutes } from "./routes/launches.js";
 import { createMetaRoutes } from "./routes/meta.js";
 import { createMetricsRoutes } from "./routes/metrics.js";
 import { createOAuthRoutes } from "./routes/oauth.js";
+import ownerTokenRoutes from "./routes/owner-tokens.js";
 import { createPasskeyAuthRoutes } from "./routes/passkey-auth.js";
 import { createTokenRoutes } from "./routes/tokens.js";
 import { createTradeRoutes } from "./routes/trades.js";
@@ -91,6 +92,7 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger,
 	app.use("/trades/*", limit("trade"));
 	app.use("/agents/*", limit("trade"));
 	app.use("/jobs/*", limit("trade"));
+	app.use("/owner/*", limit("trade"));
 	app.use("/admin/*", limit("admin"));
 	app.use("/v2/auth/*", limit("auth"));
 	app.use("/v2/admin/*", limit("admin"));
@@ -120,6 +122,7 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger,
 	app.route("/trades", createTradeRoutes());
 	app.route("/agents", createAgentRoutes());
 	app.route("/jobs", createJobRoutes());
+	app.route("/owner", ownerTokenRoutes);
 	// Mount agent-keys BEFORE the generic /admin router so its bearer-token
 	// auth is used instead of the wallet-SIWE requireRole guard on /admin.
 	app.route("/admin/agent-keys", createAdminKeysRoutes());

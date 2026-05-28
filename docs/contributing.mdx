@@ -1,0 +1,167 @@
+---
+title: "contributing"
+description: "set up the monorepo, build the contracts, run the indexer, ship a PR"
+---
+
+waifu.fun is open source. the contracts are immutable per launch (so no
+upgrade chaos), but everything around them, the frontend, API, indexers,
+workers, docs, is open to contributions.
+
+repo: [github.com/waifufun/waifu.fun](https://github.com/waifufun/waifu.fun)
+
+## the layout
+
+```
+waifu.fun/
+├── apps/
+│   ├── web/            next.js 15 frontend (waifu.fun)
+│   ├── api/            hono REST + WS API (api.waifu.fun)
+│   ├── bundle-bot/     submits executeBundle through puissant
+│   ├── evm-indexer/    multi-chain log subscriber (BSC + Arb)
+│   ├── launch-indexer/ launch-specific factory + vault decoder
+│   ├── hl-listener/    hyperliquid poller
+│   ├── tier-cron/      treasury LP ladder advancer
+│   ├── twitter-poller/ X stats + tweet ingester
+│   └── webhook-worker/ inbound webhook dispatcher
+├── packages/
+│   ├── contracts-evm/  solidity sources (hardhat 2.28)
+│   ├── shared/         types + utilities used across apps
+│   ├── eliza-cloud-client/ thin SDK for our ELIZA CLOUD tenant
+│   └── ui/             react components used by web/
+└── docs/               this site (mintlify)
+```
+
+## prerequisites
+
+- node 22+ (we test on 22.11)
+- bun 1.3+ (dev runtime; production uses node)
+- docker (for postgres)
+- a wallet with some BSC testnet BNB if you want to test end-to-end
+
+## dev setup
+
+```bash
+git clone https://github.com/waifufun/waifu.fun
+cd waifu.fun
+bun install
+cp .env.example .env
+# fill in: RPC_URL, DATABASE_URL, ETHERSCAN_API_KEY...
+docker compose up -d postgres
+bun run db:migrate
+bun run dev
+```
+
+`bun run dev` starts:
+
+- web on http://localhost:3000
+- api on http://localhost:3001
+- indexer + workers in the background
+
+logs stream to the same terminal. shut down with Ctrl-C.
+
+## running the contract test suite
+
+```bash
+cd packages/contracts-evm
+bun install
+npx hardhat compile
+npx hardhat test
+```
+
+the integration suite spins a forked BSC mainnet and exercises the full
+launch flow against the real FLAP portal and the real PCS V2 router.
+expect ~3 min on a modern laptop.
+
+a smaller unit suite runs in ~10 seconds:
+
+```bash
+npx hardhat test test/unit/
+```
+
+## branching
+
+- `main` is the production tag tip. every commit on `main` is deployed
+- `develop` is the integration branch. PRs target `develop`
+- feature branches use `feat/<short-slug>`, fixes use `fix/<short-slug>`,
+  chores use `chore/<short-slug>`, docs use `docs/<short-slug>`
+
+we ship small PRs. one logical change per PR. if your PR touches three
+unrelated things, split it.
+
+## code style
+
+- biome handles formatting + linting. run `bun run lint` before pushing
+- typescript strict mode everywhere
+- contracts compile with viaIR + 200 optimizer runs. EIP-170 size
+  budget is non-negotiable; if a function pushes a contract over the
+  limit, factor it out
+- no `any`, no `// @ts-ignore`. use `unknown` and narrow if you must
+- prefer named exports over default exports
+
+## copy + brand voice
+
+if you touch user-facing copy or docs:
+
+- lowercase by default (TPOT voice)
+- no em-dashes, ever. use commas, periods, or restructure
+- brand names CAPITALIZED in body copy (WAIFU, FLAP, STEWARD, ELIZA CLOUD,
+  PCS, BSC)
+- examples > explanations
+- short > long
+
+see [brand](/brand) for the full set of assets and tone.
+
+## tests
+
+new code must have tests. minimum bar:
+
+- contracts: hardhat tests in `packages/contracts-evm/test/`. unit and
+  integration both.
+- api: vitest unit tests in `apps/api/src/**/*.test.ts`
+- indexer: integration tests that feed fixture logs through the decoder
+- web: component tests with vitest + testing-library
+
+we do not enforce coverage thresholds. we do enforce "your code has at
+least one test."
+
+## CI
+
+every PR runs:
+
+- biome lint
+- typecheck
+- contract suite (forked BSC mainnet)
+- api unit tests
+- web build
+- docs build (mintlify lint)
+
+a green CI is necessary but not sufficient for merge. a maintainer must
+also review.
+
+## docs PRs
+
+docs live at `docs/` in this repo. mintlify renders them. local preview:
+
+```bash
+cd docs
+npx mintlify@latest dev
+```
+
+then http://localhost:3000.
+
+if you add a new page, register it in `docs/mint.json` under the
+appropriate nav group. orphaned pages will be flagged by CI.
+
+## reporting issues
+
+GitHub issues at
+[github.com/waifufun/waifu.fun/issues](https://github.com/waifufun/waifu.fun/issues).
+
+for security issues, do not file a public issue. email
+`security@waifu.fun` or DM on twitter
+[@waifudotfun](https://x.com/waifudotfun).
+
+## license
+
+MIT for the repo. some packages have additional terms in their own
+license file; check there before vendoring.

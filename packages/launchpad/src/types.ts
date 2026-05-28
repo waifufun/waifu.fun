@@ -1,4 +1,4 @@
-export type LaunchpadId = "four-meme-regular" | "four-meme-tax" | "flap" | "pump-fun" | "bags" | "custom";
+export type LaunchpadId = "four-meme-regular" | "four-meme-tax" | "flap" | "bankr" | "pump-fun" | "bags" | "custom";
 
 export type ChainId = "bsc" | "solana" | "base" | "ethereum";
 
@@ -17,7 +17,12 @@ export interface LaunchpadDescriptor {
 	expectedAvailability?: string;
 }
 
-export type LaunchpadFeeConfig = FourMemeRegularFeeConfig | FourMemeTaxFeeConfig | FlapFeeConfig;
+export type LaunchpadFeeConfig =
+	| FourMemeRegularFeeConfig
+	| FourMemeTaxFeeConfig
+	| FlapFeeConfig
+	| BankrFeeConfig
+	| BagsFeeConfig;
 
 export interface FourMemeRegularFeeConfig {
 	kind: "four-meme-regular";
@@ -53,6 +58,20 @@ export interface FlapFeeConfig {
 	platformCutBps: number;
 	recipient: "agent-treasury" | "custom-vault";
 	customVaultAddress?: string;
+}
+
+export interface BankrFeeConfig {
+	kind: "bankr";
+	platformCutBps: number;
+	creatorFeeBps: number;
+	feeRecipientType: "wallet";
+}
+
+export interface BagsFeeConfig {
+	kind: "bags";
+	platformCutBps: number;
+	creatorFeeBps: number;
+	initialBuyLamports: number;
 }
 
 export interface LaunchpadAdapter {
@@ -93,4 +112,77 @@ export interface UnsignedTx {
 	data: `0x${string}`;
 	value: bigint;
 	chainId: number;
+	external?: ExternalLaunchPlan;
 }
+
+export type ExternalLaunchPlan =
+	| {
+			kind: "bankr";
+			baseUrl: "https://api.bankr.bot";
+			endpoint: "/token-launches/deploy";
+			method: "POST";
+			simulateOnly: boolean;
+			body: {
+				tokenName: string;
+				tokenSymbol: string;
+				description: string;
+				imageUrl: string;
+				feeRecipient: { type: "wallet"; value: string };
+				simulateOnly: boolean;
+			};
+			auth: { userHeader: "X-API-Key"; partnerHeader: "X-Partner-Key" };
+			mockResponse: {
+				tokenAddress: string;
+				poolId: string;
+				feeDistribution: {
+					creator: { address: string; bps: number };
+					bankr: { address: string; bps: number };
+					partner: { address: string; bps: number };
+					alt: { address: string; bps: number };
+					protocol: { address: string; bps: number };
+				};
+			};
+	  }
+	| {
+			kind: "bags";
+			baseUrl: "https://public-api-v2.bags.fm/api/v1";
+			steps: [
+				{
+					endpoint: "/token-launch/create-token-info";
+					method: "POST";
+					contentType: "multipart/form-data";
+					body: {
+						name: string;
+						symbol: string;
+						description: string;
+						imageUrl: string;
+						website?: string;
+						twitter?: string;
+						telegram?: string;
+					};
+				},
+				{
+					endpoint: "/fee-share/config";
+					method: "POST";
+					body: {
+						payer: string;
+						baseMint: string;
+						claimersArray: string[];
+						basisPointsArray: number[];
+					};
+				},
+				{
+					endpoint: "/token-launch/create-launch-transaction";
+					method: "POST";
+					body: { ipfs: string; tokenMint: string; wallet: string; initialBuyLamports: number; configKey: string };
+				},
+				{ endpoint: "/solana/send-transaction"; method: "POST"; body: { transaction: string } },
+			];
+			auth: { header: "x-api-key"; agentAuthEndpoints: ["/agent/v2/auth/init", "/agent/v2/auth/callback"] };
+			mockResponse: {
+				tokenMint: string;
+				tokenMetadata: string;
+				configKey: string;
+				signature: string;
+			};
+	  };

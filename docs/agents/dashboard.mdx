@@ -105,4 +105,7 @@ dashboard reads from:
 - `GET /v2/agents/:id/burn-rate` for line items plus computed runway
 - `GET /v2/agents/:id/twitter-stats` for followers and recent tweets
 
-`:id` accepts the token address, the persona UUID, or the agent slug.
+`:id` is the lowercased token address. the web app accepts slug routing
+for featured agents (e.g. `/agent/sol`), but the API resolves by address.
+fetch `GET /v2/agents?featured=true` to map a featured slug to its
+`tokenAddress`.

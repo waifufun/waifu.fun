@@ -1,9 +1,10 @@
 import { schema } from "@waifufun/db";
-import { addCacheWarmJob, addNotificationJob } from "@waifufun/queue";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 import { and, eq } from "drizzle-orm";
 
 import { type LaunchedToDexEvent, getPortalEventId } from "../lib/events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
+import { lookupAgentIdByToken } from "./fourmeme-filters.js";
 
 export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: LaunchedToDexEvent) {
 	const eventId = getPortalEventId(event);
@@ -92,6 +93,8 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 		);
 	});
 
+	const { addAgentProvisioningJob, addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
+
 	await addCacheWarmJob(
 		{
 			target: "token",
@@ -116,5 +119,33 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 		{ jobId: `indexer-${eventId}-notification-token-migrated` },
 	);
 
-	return { handled: true, enqueuedJobs: ["cache-warm", "notification"] };
+	const agentId = await lookupAgentIdByToken(runtime, event.data.tokenAddress);
+	if (agentId) {
+		await addAgentProvisioningJob(buildLaunchedToDexProvisioningJob(agentId, event), {
+			jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
+		});
+	}
+
+	return {
+		handled: true,
+		enqueuedJobs: agentId ? ["cache-warm", "notification", "agent-provisioning"] : ["cache-warm", "notification"],
+	};
+}
+
+export function buildLaunchedToDexProvisioningJob(agentId: string, event: LaunchedToDexEvent): AgentProvisioningJob {
+	return {
+		agentId,
+		source: "token.migrated",
+		data: {
+			tokenAddress: event.data.tokenAddress,
+			tokenContractAddress: event.data.tokenAddress,
+			chain: "bsc",
+			chainId: event.chainId,
+			launchType: "native",
+			txHash: event.txHash,
+			blockNumber: event.blockNumber.toString(),
+			poolAddress: event.data.poolAddress,
+			dexName: event.data.dexName ?? "pancakeswap",
+		},
+	};
 }

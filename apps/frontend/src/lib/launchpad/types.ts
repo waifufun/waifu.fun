@@ -10,6 +10,7 @@ export type LaunchpadId =
 	| "four-meme-regular"
 	| "four-meme-tax"
 	| "flap"
+	| "bankr"
 	| "meteora"
 	| "pump-fun"
 	| "bags"
@@ -66,7 +67,26 @@ export interface FlapFeeConfig {
 	customVaultAddress?: string;
 }
 
-export type LaunchpadFeeConfig = FourMemeRegularFeeConfig | FourMemeTaxFeeConfig | FlapFeeConfig;
+export interface BankrFeeConfig {
+	kind: "bankr";
+	platformCutBps: number;
+	creatorFeeBps: number;
+	feeRecipientType: "wallet";
+}
+
+export interface BagsFeeConfig {
+	kind: "bags";
+	platformCutBps: number;
+	creatorFeeBps: number;
+	initialBuyLamports: number;
+}
+
+export type LaunchpadFeeConfig =
+	| FourMemeRegularFeeConfig
+	| FourMemeTaxFeeConfig
+	| FlapFeeConfig
+	| BankrFeeConfig
+	| BagsFeeConfig;
 
 /**
  * Platform cut: waifu takes a flat percentage of total tax off the top.

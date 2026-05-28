@@ -1,4 +1,11 @@
-import { type FlapFeeConfig, type FourMemeTaxFeeConfig, MAX_PLATFORM_CUT_BPS, MIN_PLATFORM_CUT_BPS } from "./types";
+import {
+	type BagsFeeConfig,
+	type BankrFeeConfig,
+	type FlapFeeConfig,
+	type FourMemeTaxFeeConfig,
+	MAX_PLATFORM_CUT_BPS,
+	MIN_PLATFORM_CUT_BPS,
+} from "./types";
 
 export type ValidatorResult = {
 	ok: boolean;
@@ -79,4 +86,48 @@ export function validateFlap(config: FlapFeeConfig): ValidatorResult {
 	}
 
 	return { ok: errors.length === 0, errors, warnings };
+}
+
+function validateBankrFeeSplit(config: BankrFeeConfig): ValidatorResult {
+	const errors: string[] = [];
+	const warnings: string[] = [];
+	if (!Number.isInteger(config.platformCutBps) || config.platformCutBps < 0 || config.platformCutBps > 3610) {
+		errors.push("platform share must be between 0% and 36.10% for Bankr.");
+	}
+	if (config.creatorFeeBps !== 5700) {
+		errors.push("creator share must be 57% for Bankr.");
+	}
+	return { ok: errors.length === 0, errors, warnings };
+}
+
+function validateBagsFeeSplit(config: BagsFeeConfig): ValidatorResult {
+	const errors: string[] = [];
+	const warnings: string[] = [];
+	if (!Number.isInteger(config.platformCutBps) || config.platformCutBps < 0 || config.platformCutBps > 10_000) {
+		errors.push("platform cut must be between 0% and 100%.");
+	} else if (config.platformCutBps < MIN_PLATFORM_CUT_BPS) {
+		warnings.push(`platform cut is below the ${(MIN_PLATFORM_CUT_BPS / 100).toFixed(0)}% prod minimum.`);
+	} else if (config.platformCutBps > MAX_PLATFORM_CUT_BPS) {
+		warnings.push(`platform cut is above the ${(MAX_PLATFORM_CUT_BPS / 100).toFixed(0)}% prod maximum.`);
+	}
+	if (!Number.isInteger(config.creatorFeeBps) || config.creatorFeeBps < 0 || config.creatorFeeBps > 10_000) {
+		errors.push("creator share must be between 0% and 100%.");
+	}
+	if (config.creatorFeeBps + config.platformCutBps !== 10_000) {
+		errors.push("creator share plus platform cut must equal 100%.");
+	}
+	if (!Number.isInteger(config.initialBuyLamports) || config.initialBuyLamports < 0) {
+		errors.push("initial buy must be a non-negative lamport amount.");
+	}
+	return { ok: errors.length === 0, errors, warnings };
+}
+
+export function validateBankr(config: BankrFeeConfig): ValidatorResult {
+	const split = validateBankrFeeSplit(config);
+	if (config.feeRecipientType !== "wallet") split.errors.push("fee recipient must be a wallet.");
+	return { ...split, ok: split.errors.length === 0 };
+}
+
+export function validateBags(config: BagsFeeConfig): ValidatorResult {
+	return validateBagsFeeSplit(config);
 }

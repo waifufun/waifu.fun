@@ -16,7 +16,7 @@
 		"dark": "#00ff87",
 		"anchors": {
 			"from": "#00ff87",
-			"to": "#c084fc"
+			"to": "#00ff87"
 		},
 		"background": {
 			"dark": "#08080a",
@@ -60,6 +60,11 @@
 			"url": "holders"
 		},
 		{
+			"name": "integrations",
+			"icon": "plug",
+			"url": "integrations"
+		},
+		{
 			"name": "reference",
 			"icon": "book",
 			"url": "reference"
@@ -88,7 +93,9 @@
 			"group": "agents",
 			"pages": [
 				"agents/sol",
-				"agents/dashboard"
+				"agents/dashboard",
+				"agents/operator-guide",
+				"agents/policies"
 			]
 		},
 		{
@@ -120,11 +127,27 @@
 			]
 		},
 		{
+			"group": "integrations",
+			"pages": [
+				"integrations/steward",
+				"integrations/eliza-cloud"
+			]
+		},
+		{
 			"group": "reference",
 			"pages": [
 				"reference/contract-addresses",
 				"reference/api",
+				"reference/webhooks",
+				"reference/rate-limits",
 				"reference/glossary"
+			]
+		},
+		{
+			"group": "contribute",
+			"pages": [
+				"contributing",
+				"brand"
 			]
 		},
 		{
@@ -135,7 +158,7 @@
 		}
 	],
 	"footerSocials": {
-		"x": "https://x.com/waifufun",
+		"x": "https://x.com/waifudotfun",
 		"github": "https://github.com/waifufun/waifu.fun"
 	}
 }

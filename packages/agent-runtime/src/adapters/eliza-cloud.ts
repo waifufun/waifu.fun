@@ -49,6 +49,16 @@ export interface ElizaProvisionWaifuAgentInput {
 		mode: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
 		initialReserveUsd?: number;
 	};
+	account?: {
+		primaryWalletAddress?: string | null;
+		walletKeyRef?: string | null;
+	};
+	access?: {
+		guestMinTokens?: number;
+		userMinTokens?: number;
+		thresholdMode?: "strict_gt";
+		adminWallets?: string[];
+	};
 	webhookUrl?: string;
 	modelDefaults?: Record<string, string>;
 }
@@ -124,6 +134,8 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 						xHandle: opts.xHandle,
 					},
 				},
+				...(opts.account ? { account: opts.account } : {}),
+				...(opts.access ? { access: opts.access } : {}),
 				...(opts.webhookUrl ? { webhookUrl: opts.webhookUrl } : {}),
 				...(opts.modelDefaults ? { modelDefaults: opts.modelDefaults } : {}),
 			});

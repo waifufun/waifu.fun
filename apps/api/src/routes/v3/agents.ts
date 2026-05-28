@@ -26,6 +26,7 @@ import {
 } from "../../services/agent-launch/index.js";
 
 const CHAINS = new Set(["bsc", "solana", "base", "ethereum"]);
+const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -108,6 +109,13 @@ function resolvePatronAddress(c: RouteContext, body: JsonRecord) {
 	const patron = c.get("patron");
 	if (patron?.primaryAddress && isAddress(patron.primaryAddress)) return getAddress(patron.primaryAddress);
 	return null;
+}
+
+function resolveExternalLaunchWallet(chain: string, patronAddress: string, body: JsonRecord): string {
+	const wallet =
+		readBodyString(body, "launch_wallet", "launchWallet") ?? readBodyString(body, "agent_wallet", "agentWallet");
+	if (chain === "solana") return wallet ?? "";
+	return wallet && isAddress(wallet) ? getAddress(wallet) : patronAddress;
 }
 
 function safeMetadata(row: NonNullable<Awaited<ReturnType<typeof agentSafeQueries.getSafeByAgentId>>>) {
@@ -219,8 +227,8 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 			return c.json({ ok: false, error: "agent_eoa_address must be an EVM address" }, 400);
 		}
 
-		let safe = await agentSafeQueries.getSafeByAgentId(db, persona.id, chain);
-		if (!safe) {
+		let safe = chain === "bsc" ? await agentSafeQueries.getSafeByAgentId(db, persona.id, chain) : null;
+		if (!safe && chain === "bsc") {
 			let deployed: DeployAgentSafeResult;
 			try {
 				deployed = await (options?.deployAgentSafe ?? deployAgentSafe)({
@@ -251,6 +259,10 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 		const logoUrl = readBodyString(body, "logo_url", "logoUrl") ?? persona.avatarUrl;
 		if (!ticker) return c.json({ ok: false, error: "ticker is required" }, 400);
 		if (!logoUrl) return c.json({ ok: false, error: "logo_url is required" }, 400);
+		const founderAddress = safe?.safeAddress ?? resolveExternalLaunchWallet(chain, patronAddress, body);
+		if (chain === "solana" && !SOLANA_ADDRESS_RE.test(founderAddress)) {
+			return c.json({ ok: false, error: "launch_wallet must be a Solana address" }, 400);
+		}
 
 		const txParams: CreateTokenParams & { fourMemeSignedPayload?: unknown } = {
 			name,
@@ -258,7 +270,7 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 			description,
 			logoUrl,
 			feeConfig,
-			founderAddress: safe.safeAddress,
+			founderAddress,
 		};
 		const socials = asRecord(body.socials) as CreateTokenParams["socials"] | null;
 		if (socials) txParams.socials = socials;
@@ -279,7 +291,7 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 			personaId: persona.id,
 			launchpadId,
 			chain,
-			safeAddress: safe.safeAddress,
+			safeAddress: safe?.safeAddress ?? null,
 			feeConfig,
 			tx,
 		};
@@ -304,7 +316,7 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 		}
 		await agentPersonaQueries.updateAgentPersona(db, persona.id, personaUpdate);
 
-		return c.json({ ok: true, launchPlan: bigintToJson(plan), safe: safeMetadata(safe) }, 200);
+		return c.json({ ok: true, launchPlan: bigintToJson(plan), safe: safe ? safeMetadata(safe) : null }, 200);
 	});
 
 	app.get("/:id/safe", async (c) => {

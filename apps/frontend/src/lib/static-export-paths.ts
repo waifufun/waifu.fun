@@ -127,6 +127,25 @@ export async function fetchPatronAgentParamsForStaticExport(): Promise<{ agentId
 	return agents.map(({ address }) => ({ agentId: address }));
 }
 
+/**
+ * Agent tokens are canonicalized to `/agent/[address]` for the main detail page,
+ * but the hosted Eliza Cloud chat surface intentionally lives at the token route:
+ * `/token/bsc/56/[contractAddress]/chat`. Enumerate agent addresses separately
+ * because `fetchTokenRouteParamsForStaticExport` skips BSC/56 root token pages.
+ */
+export async function fetchAgentTokenRouteParamsForStaticExport(): Promise<
+	{ chain: string; chainId: string; contractAddress: string }[]
+> {
+	if (!isStaticExport()) {
+		return [
+			{ chain: "bsc", chainId: "56", contractAddress: STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS },
+			{ chain: "bsc", chainId: "56", contractAddress: ARCHITECT_AGENT_ADDRESS_STATIC },
+		];
+	}
+	const agents = await fetchAgentAddressesForStaticExport();
+	return agents.map(({ address }) => ({ chain: "bsc", chainId: "56", contractAddress: address }));
+}
+
 /** Profiles reuse agent treasury/wallet addresses when present on agent payloads (best-effort). */
 export async function fetchProfileAddressesForStaticExport(): Promise<{ address: string }[]> {
 	if (!isStaticExport()) return [];

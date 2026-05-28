@@ -12,6 +12,7 @@ interface AdminOpsLayoutProps {
 const OPS_NAV = [
 	{ href: "/admin/ops", label: "Agents" },
 	{ href: "/admin/ops/audit", label: "Audit Log" },
+	{ href: "/admin/ops/eliza-cloud", label: "Eliza Cloud" },
 ];
 
 export default function AdminOpsLayout({ children }: AdminOpsLayoutProps) {
