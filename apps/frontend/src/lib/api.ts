@@ -193,6 +193,30 @@ export interface OwnerTokenBillingResponse {
 	error?: string;
 }
 
+export interface OwnerTokenTopUpResponse {
+	success: boolean;
+	creditsAmount?: number;
+	creditsUnit?: "usd_cents";
+	checkoutUrl?: string | null;
+	runtime?: OwnerTokenRuntime;
+	message?: string;
+	error?: string;
+}
+
+export interface TokenChatSessionResponse {
+	success: boolean;
+	chatUrl?: string;
+	role?: "guest" | "user" | "admin";
+	balanceTokens?: number | null;
+	expiresInSeconds?: number;
+	thresholds?: {
+		guestMinTokens: number;
+		userMinTokens: number;
+	};
+	message?: string;
+	error?: string;
+}
+
 export const fetcher = async (
 	endpoint: string,
 	method: "GET" | "POST" | "PUT" | "DELETE",
@@ -331,6 +355,7 @@ function mapApiTokenToIToken(apiToken: any): IToken {
 		billingMode: source.billingMode,
 		infraReserveUsd: toNumber(source.infraReserveUsd),
 		hasAgent: Boolean(source.hasAgent),
+		launchPlatform: source.launchPlatform,
 	} as IToken;
 }
 
@@ -1260,6 +1285,29 @@ export const getOwnerTokenRuntime = async ({
 	};
 };
 
+export const getTokenChatSession = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}): Promise<TokenChatSessionResponse> => {
+	const response = await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/chat-session`, "GET");
+	const data = unwrapApiData<any>(response) ?? response ?? {};
+	return {
+		success: data?.success !== false,
+		chatUrl: data?.chatUrl,
+		role: data?.role,
+		balanceTokens: typeof data?.balanceTokens === "number" ? data.balanceTokens : (data?.balanceTokens ?? null),
+		expiresInSeconds: typeof data?.expiresInSeconds === "number" ? data.expiresInSeconds : undefined,
+		thresholds: data?.thresholds,
+		message: data?.message,
+		error: data?.error,
+	};
+};
+
 export const activateOwnerTokenRuntime = async ({
 	chain,
 	chainId,
@@ -1301,6 +1349,69 @@ export const resumeOwnerTokenRuntime = async ({
 	contractAddress: string;
 }) => {
 	return fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/resume`, "POST");
+};
+
+export const restartOwnerTokenRuntime = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
+	return fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/restart`, "POST");
+};
+
+export const topUpOwnerTokenRuntime = async ({
+	chain,
+	chainId,
+	contractAddress,
+	amountUsdCents = 500,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+	amountUsdCents?: number;
+}): Promise<OwnerTokenTopUpResponse> => {
+	const response = await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/billing/top-up`, "POST", {
+		amountUsdCents,
+	});
+	const data = unwrapApiData<any>(response) ?? response ?? {};
+	const runtimeSource = unwrapApiData<any>(data?.runtime) ?? data?.runtime;
+	const result: OwnerTokenTopUpResponse = {
+		success: data?.success !== false,
+		message: data?.message,
+		error: data?.error,
+	};
+	if (typeof data?.creditsAmount === "number") result.creditsAmount = data.creditsAmount;
+	if (data?.creditsUnit === "usd_cents") result.creditsUnit = "usd_cents";
+	if (typeof data?.checkoutUrl === "string") result.checkoutUrl = data.checkoutUrl;
+	else if (typeof data?.checkout?.url === "string") result.checkoutUrl = data.checkout.url;
+	else if (typeof data?.checkout?.checkoutUrl === "string") result.checkoutUrl = data.checkout.checkoutUrl;
+	if (runtimeSource) {
+		result.runtime = {
+			mint: runtimeSource?.mint,
+			chain: runtimeSource?.chain,
+			chainId: runtimeSource?.chainId,
+			claimStatus: runtimeSource?.claimStatus,
+			claimedAt: runtimeSource?.claimedAt ?? null,
+			creatorWallet: runtimeSource?.creatorWallet ?? null,
+			cloudAgentId: runtimeSource?.cloudAgentId,
+			agentStatus: runtimeSource?.agentStatus,
+			agentLifecycleState: runtimeSource?.agentLifecycleState,
+			webUiUrl: runtimeSource?.webUiUrl,
+			billingMode: runtimeSource?.billingMode,
+			infraReserveUsd:
+				typeof runtimeSource?.infraReserveUsd === "number"
+					? runtimeSource.infraReserveUsd
+					: toNumber(runtimeSource?.infraReserveUsd, Number.NaN),
+			lastHeartbeatAt: runtimeSource?.lastHeartbeatAt ?? null,
+			suspendedReason: runtimeSource?.suspendedReason ?? null,
+			hasAgent: Boolean(runtimeSource?.hasAgent ?? runtimeSource?.cloudAgentId),
+		};
+	}
+	return result;
 };
 
 export const getOwnerTokenBilling = async ({

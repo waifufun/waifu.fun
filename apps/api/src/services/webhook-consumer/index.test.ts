@@ -4,15 +4,21 @@ import test from "node:test";
 import type { ElizaCloudClient } from "../eliza-client.js";
 import { type WebhookConsumerPersonaStore, dispatchEvent } from "./index.js";
 
-function elizaStub(): ElizaCloudClient {
+function elizaStub(calls: { paused?: string[]; resumed?: string[] } = {}): ElizaCloudClient {
 	return {
 		async provisionAgent() {
 			return { containerId: "container-1" };
 		},
-		async pauseAgent() {},
-		async resumeAgent() {},
+		async pauseAgent(agentId) {
+			calls.paused?.push(agentId);
+		},
+		async resumeAgent(agentId) {
+			calls.resumed?.push(agentId);
+		},
 		async deprovisionAgent() {},
-		async topUpCredits() {},
+		async topUpCredits() {
+			return undefined;
+		},
 	};
 }
 
@@ -112,6 +118,7 @@ test("agent.credits.depleted posts last words and freezes the persona", async ()
 	let dormantAt: Date | null = null;
 	const emitted: unknown[] = [];
 	const tweets: string[] = [];
+	const cloudCalls: { paused: string[] } = { paused: [] };
 	const store: WebhookConsumerPersonaStore = {
 		async get(agentId) {
 			return { agentId, modelTier: "free", lastWordsPostedAt };
@@ -130,10 +137,10 @@ test("agent.credits.depleted posts last words and freezes the persona", async ()
 			event: "agent.credits.depleted",
 			timestamp: "2026-04-24T12:00:00.000Z",
 			agentId: "waifu-demo-01",
-			data: {},
+			data: { containerId: "container-1" },
 		},
 		{
-			elizaCloud: elizaStub(),
+			elizaCloud: elizaStub(cloudCalls),
 			logger: {},
 			personaStore: store,
 			async emitEvent(input) {
@@ -155,6 +162,74 @@ test("agent.credits.depleted posts last words and freezes the persona", async ()
 	assert.ok(lastWordsPostedAt);
 	assert.ok(dormantAt);
 	assert.deepEqual(tweets, ["going dormant. patron can top me up anytime. see you on the other side."]);
+	assert.deepEqual(cloudCalls.paused, ["container-1"]);
 	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.last_words_posted");
 	assert.equal((emitted[1] as { eventType: string }).eventType, "agent.dormant");
+});
+
+test("kill and resume events control the Eliza Cloud container id from event data", async () => {
+	const cloudCalls: { paused: string[]; resumed: string[] } = { paused: [], resumed: [] };
+
+	await dispatchEvent(
+		{
+			event: "agent.killed",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { containerId: "container-1" },
+		},
+		{ elizaCloud: elizaStub(cloudCalls), logger: {} },
+	);
+	await dispatchEvent(
+		{
+			event: "agent.resumed",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { containerId: "container-1" },
+		},
+		{ elizaCloud: elizaStub(cloudCalls), logger: {} },
+	);
+
+	assert.deepEqual(cloudCalls.paused, ["container-1"]);
+	assert.deepEqual(cloudCalls.resumed, ["container-1"]);
+});
+
+test("credit depletion can suspend a service-provisioned cloud agent id", async () => {
+	let dormantAt: Date | null = null;
+	const emitted: unknown[] = [];
+	const cloudCalls: { paused: string[] } = { paused: [] };
+	const store: WebhookConsumerPersonaStore = {
+		async get(agentId) {
+			return { agentId, modelTier: "free", lastWordsPostedAt: new Date("2026-04-24T11:00:00.000Z") };
+		},
+		async setModelTier() {},
+		async markLastWordsPosted() {},
+		async markDormant(_agentId, now) {
+			dormantAt = now;
+		},
+	};
+
+	await dispatchEvent(
+		{
+			event: "agent.credits.depleted",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { cloudAgentId: "cloud-agent-1" },
+		},
+		{
+			elizaCloud: elizaStub(cloudCalls),
+			logger: {},
+			personaStore: store,
+			async emitEvent(input) {
+				emitted.push(input);
+				return {} as Awaited<ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>>;
+			},
+			async getXClient() {
+				return null;
+			},
+		},
+	);
+
+	assert.ok(dormantAt);
+	assert.deepEqual(cloudCalls.paused, ["cloud-agent-1"]);
+	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.dormant");
 });

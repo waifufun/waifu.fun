@@ -24,6 +24,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
@@ -45,6 +46,18 @@ import type { AgentListItem } from "./types";
 // Premium ease curve (apple-ish). Used on the hero image scale so the
 // interaction feels weighty rather than springy.
 const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+const CHAIN_BADGE: Record<number, { label: string; icon: string }> = {
+	56: { label: "BSC", icon: "/chain-icons/bsc.svg" },
+	8453: { label: "Base", icon: "/chain-icons/base.svg" },
+	101: { label: "Solana", icon: "/chain-icons/solana.svg" },
+};
+
+const LAUNCHPAD_BADGE: Record<string, { label: string; icon: string }> = {
+	flap: { label: "Flap", icon: "/venue-logos/flap.svg" },
+	bags: { label: "Bags", icon: "/venue-logos/bags.png" },
+	bankr: { label: "Bankr", icon: "/venue-logos/bankr.svg" },
+};
 
 export interface AgentCardV2Props {
 	agent: AgentListItem;
@@ -94,6 +107,9 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 					<div className="absolute right-2.5 top-2.5">
 						<StatusBadge status={agent.status} />
 					</div>
+					<div className="absolute inset-x-2.5 bottom-2.5 flex items-center gap-1.5">
+						<LaunchMetaBadges agent={agent} />
+					</div>
 				</div>
 
 				{/* body */}
@@ -118,6 +134,28 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 				</div>
 			</Link>
 		</SurfaceCard>
+	);
+}
+
+function LaunchMetaBadges({ agent }: { agent: AgentListItem }) {
+	const chain = CHAIN_BADGE[agent.chainId ?? 56] ?? null;
+	const launchpad = LAUNCHPAD_BADGE[(agent.launchPlatform ?? "flap").toLowerCase()] ?? null;
+	return (
+		<>
+			{launchpad ? <LogoBadge label={launchpad.label} icon={launchpad.icon} /> : null}
+			{chain ? <LogoBadge label={chain.label} icon={chain.icon} /> : null}
+		</>
+	);
+}
+
+function LogoBadge({ label, icon }: { label: string; icon: string }) {
+	return (
+		<span className="inline-flex h-6 items-center gap-1.5 rounded-sm border border-white/15 bg-black/70 px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/70 backdrop-blur-sm">
+			<span className="relative h-3.5 w-3.5 overflow-hidden rounded-[2px] bg-black">
+				<Image src={icon} alt="" fill sizes="14px" className="object-cover" />
+			</span>
+			{label}
+		</span>
 	);
 }
 

@@ -65,6 +65,7 @@
 		"sync": "dotenv -e .env -- bun run --filter @waifufun/sync -- sync tokens",
 		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test --continue --filter=@waifufun/api --filter=@waifufun/brain --filter=@waifufun/frontend --filter=@waifufun/evm-indexer --filter=@waifufun/agent-actions --filter=@waifufun/db --filter=@waifufun/launchpad",
 		"test:e2e": "bun run test:contracts",
+		"test:eliza-cloud:live": "node scripts/eliza-cloud-live-smoke.mjs",
 		"test-migration": "bun run --filter @waifufun/migrations test",
 		"test:contracts": "node ./scripts/run-local-contract-tests.mjs",
 		"typecheck": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run check"

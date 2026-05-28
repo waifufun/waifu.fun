@@ -1,0 +1,56 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { buildProvisionOptions } from "./provisioning.js";
+
+test("buildProvisionOptions uses agent wallet for account and creator/safe wallet for admin fallback", () => {
+	const options = buildProvisionOptions(
+		"waifu-demo-01",
+		{
+			name: "Demo",
+			bio: null,
+			avatarUrl: null,
+			systemPrompt: null,
+			claimedByXHandle: null,
+			ownerAddress: "0x0000000000000000000000000000000000000001",
+			tokenAddress: "0x0000000000000000000000000000000000000004",
+			chain: "bsc",
+			prelaunchParams: { symbol: "DEMO" },
+		},
+		{
+			agentWalletAddress: "0x0000000000000000000000000000000000000009",
+		},
+		"0x0000000000000000000000000000000000000002",
+	);
+
+	assert.deepEqual(options.account, {
+		primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+		walletKeyRef: "steward:waifu-demo-01",
+	});
+	assert.deepEqual(options.access?.adminWallets, ["0x0000000000000000000000000000000000000001"]);
+	assert.equal(options.access?.guestMinTokens, 1_000);
+	assert.equal(options.access?.userMinTokens, 100_000);
+	assert.equal(options.access?.thresholdMode, "strict_gt");
+});
+
+test("buildProvisionOptions does not treat creator wallet as the agent Eliza Cloud account", () => {
+	const options = buildProvisionOptions(
+		"waifu-demo-02",
+		{
+			name: "Demo",
+			bio: null,
+			avatarUrl: null,
+			systemPrompt: null,
+			claimedByXHandle: null,
+			ownerAddress: "0x0000000000000000000000000000000000000001",
+			tokenAddress: "0x0000000000000000000000000000000000000004",
+			chain: "bsc",
+			prelaunchParams: null,
+		},
+		{},
+		"0x0000000000000000000000000000000000000002",
+	);
+
+	assert.equal(options.account, undefined);
+	assert.deepEqual(options.access?.adminWallets, ["0x0000000000000000000000000000000000000001"]);
+});

@@ -1,4 +1,4 @@
-import type { Address } from "@waifufun/queue";
+import type { Address } from "./address.js";
 
 export type PortalEventName =
 	| "TokenCreated"

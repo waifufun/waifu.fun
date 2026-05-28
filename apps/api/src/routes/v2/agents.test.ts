@@ -11,8 +11,29 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 	const updates: unknown[] = [];
 	const wheres: unknown[] = [];
 	const toppedUp: unknown[] = [];
+	const resumed: unknown[] = [];
 	const emitted: unknown[] = [];
 	const db = {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								limit() {
+									return Promise.resolve([
+										{
+											metadata: { provisioning: { containerId: "container-1" } },
+											tokenAddress: null,
+										},
+									]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
 		update(table: unknown) {
 			return {
 				set(values: unknown) {
@@ -33,6 +54,10 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 		elizaClient: {
 			async topUpCredits(agentId, amount) {
 				toppedUp.push({ agentId, amount });
+				return undefined;
+			},
+			async resumeAgent(agentId) {
+				resumed.push(agentId);
 			},
 		},
 		async emitEvent(input) {
@@ -41,8 +66,14 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 		},
 	});
 
-	assert.deepEqual(result, { agentId: "waifu-demo-01", creditsAmount: 2500, modelTier: "premium" });
-	assert.deepEqual(toppedUp, [{ agentId: "waifu-demo-01", amount: 2500 }]);
+	assert.deepEqual(result, {
+		agentId: "waifu-demo-01",
+		creditsAmount: 2500,
+		modelTier: "premium",
+		containerId: "container-1",
+	});
+	assert.deepEqual(toppedUp, [{ agentId: "waifu-demo-01", amount: 25 }]);
+	assert.deepEqual(resumed, ["container-1"]);
 	assert.equal(updates.length, 1);
 	const values = (updates[0] as { values: Record<string, unknown> }).values;
 	assert.equal(values.dormantAt, null);
@@ -199,11 +230,17 @@ function createProvisionDb(
 			return {
 				from() {
 					return {
+						leftJoin() {
+							return this;
+						},
 						where() {
 							return {
 								limit() {
 									if (fields && typeof fields === "object" && "maxUses" in fields) {
 										return Promise.resolve([inviteDb.state.invite]);
+									}
+									if (fields && typeof fields === "object" && "token" in fields) {
+										return Promise.resolve([{ token: { id: "token-row-1", agentId: null }, agent: null }]);
 									}
 									if (fields && typeof fields === "object" && "taxRecipientAddress" in fields) {
 										return Promise.resolve(duplicateRows);
@@ -217,6 +254,13 @@ function createProvisionDb(
 						},
 					};
 				},
+			};
+		},
+		insert() {
+			return {
+				values: () => ({
+					returning: () => Promise.resolve([{ id: "agent-row-1" }]),
+				}),
 			};
 		},
 		update() {
@@ -312,9 +356,9 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 		assert.equal(body.data.apps.length, 2);
 		assert.deepEqual(
 			body.data.apps.map((appRow) => appRow.id),
-			["1", "2"],
+			["2", "1"],
 		);
-		assert.equal(body.data.apps[1]?.revenue7dUsd, 10.25);
+		assert.equal(body.data.apps[0]?.revenue7dUsd, 10.25);
 		assert.equal(body.data.totalRevenue7d, 10.25);
 		assert.equal(body.data.totalLifetime, 42.5);
 	} finally {
@@ -455,7 +499,7 @@ test("POST /v2/agents/provision launches as patron and returns one-time keys", a
 		body: JSON.stringify(provisionPayload()),
 	});
 
-	assert.equal(res.status, 200);
+	assert.equal(res.status, 200, await res.clone().text());
 	const json = (await res.json()) as { agentApiKey?: string; safeAddress?: string };
 	assert.equal(json.agentApiKey, "agk_test_key");
 	assert.equal(json.safeAddress, "0x0000000000000000000000000000000000000003");
@@ -517,7 +561,7 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 		body: JSON.stringify(payload),
 	});
 
-	assert.equal(res.status, 200);
+	assert.equal(res.status, 200, await res.clone().text());
 	const json = (await res.json()) as {
 		cloudAgentId?: string;
 		cloudStatus?: string;
@@ -528,16 +572,20 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 	assert.deepEqual(json.cloud, {
 		provider: "eliza-cloud",
 		agentId: "cloud-waifu-test-waifu",
+		containerId: null,
+		containerUrl: null,
 		status: "queued",
 		jobId: "job-1",
 		polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
 		characterId: null,
+		account: null,
 	});
 	assert.equal(cloudInputs.length, 1);
 	assert.equal(
 		(cloudInputs[0] as { tokenContractAddress?: string }).tokenContractAddress,
 		"0x0000000000000000000000000000000000000004",
 	);
+	assert.equal((cloudInputs[0] as { access?: { thresholdMode?: string } }).access?.thresholdMode, "strict_gt");
 	assert.equal(launches.length, 1);
 	resetProvisionDeps();
 });
@@ -581,7 +629,7 @@ test("POST /v2/agents/provision accepts wizard persona limits", async () => {
 		body: JSON.stringify(payload),
 	});
 
-	assert.equal(res.status, 200);
+	assert.equal(res.status, 200, await res.clone().text());
 	assert.equal((launches[0] as { name?: string; symbol?: string }).name, payload.persona.name);
 	assert.equal((launches[0] as { name?: string; symbol?: string }).symbol, "W18BOT");
 	resetProvisionDeps();

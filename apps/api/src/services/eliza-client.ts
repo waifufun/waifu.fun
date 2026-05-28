@@ -42,25 +42,30 @@ export interface ProvisionWaifuCloudAgentInput {
 		mode: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
 		initialReserveUsd?: number;
 	};
-	webhookUrl?: string;
-	modelDefaults?: Record<string, string>;
-}
-
-interface ElizaServiceCreateAgentBody {
-	tokenContractAddress: string;
-	chain: string;
-	chainId: number;
-	tokenName: string;
-	tokenTicker: string;
-	launchType: "native" | "imported";
-	character: {
-		name: string;
-		bio?: string;
-		avatar?: string;
-		config: Record<string, unknown>;
+	account?: {
+		primaryWalletAddress?: string | null;
+		walletKeyRef?: string | null;
 	};
-	billing: NonNullable<ProvisionWaifuCloudAgentInput["billing"]>;
+	access?: {
+		guestMinTokens?: number;
+		userMinTokens?: number;
+		thresholdMode?: "strict_gt";
+		adminWallets?: string[];
+	};
+	container?: {
+		imageUri?: string;
+		projectName?: string;
+		port?: number;
+		cpu?: number;
+		memory?: number;
+		desiredCount?: number;
+		architecture?: "arm64" | "x86_64";
+		healthCheckPath?: string;
+		environmentVars?: Record<string, string>;
+	};
 	webhookUrl?: string;
+	webhookSecret?: string;
+	modelDefaults?: Record<string, string>;
 }
 
 export interface Logger {
@@ -116,9 +121,13 @@ export interface ElizaCreateResult {
 export interface ElizaCloudProvisionResult {
 	agentId: string;
 	cloudAgentId: string;
+	containerId?: string;
+	containerUrl?: string;
 	characterId?: string;
 	jobId?: string;
 	status: string;
+	walletProvisioning?: ElizaAgentWalletProvisionResult | null;
+	account?: ElizaCloudAccountProvisionResult | null;
 	polling?: {
 		endpoint: string;
 		intervalMs: number;
@@ -130,10 +139,73 @@ export interface ElizaCloudProvisionResult {
 	tokenTicker?: string | null;
 }
 
+export interface ElizaAgentWalletProvisionResult {
+	id?: string;
+	address?: string;
+	chainType?: "evm" | "solana" | string;
+	clientAddress?: string;
+	[key: string]: unknown;
+}
+
+export interface ElizaCloudAccountProvisionResult {
+	primaryWalletAddress?: string | null;
+	organizationId?: string;
+	userId?: string;
+	isNewAccount?: boolean;
+	initialFreeCreditsUsd?: number;
+	[key: string]: unknown;
+}
+
+export interface ElizaContainer {
+	id: string;
+	name?: string;
+	project_name?: string;
+	status?: string;
+	url?: string;
+	created_at?: string;
+	updated_at?: string;
+	[key: string]: unknown;
+}
+
 export interface ElizaJobResult {
 	jobId: string;
 	status: string;
 	message: string;
+}
+
+export interface ElizaAgentRuntimeStatus {
+	agentId?: string;
+	cloudAgentId?: string;
+	containerId?: string;
+	containerUrl?: string;
+	status?: string;
+	webUiUrl?: string | null;
+	updatedAt?: string;
+	updated_at?: string;
+	[key: string]: unknown;
+}
+
+export interface ElizaCreditCheckoutResult {
+	url?: string | null;
+	checkoutUrl?: string | null;
+	sessionId?: string | null;
+	clientSecret?: string | null;
+	publishableKey?: string | null;
+	[key: string]: unknown;
+}
+
+export interface ElizaAppCreditBalanceResult {
+	balance: number;
+	totalPurchased?: number;
+	totalSpent?: number;
+	isLow: boolean;
+	[key: string]: unknown;
+}
+
+export interface ElizaAppCreditVerifyResult {
+	amount?: number;
+	message?: string;
+	[key: string]: unknown;
 }
 
 // ─── Client ───────────────────────────────────────────────────────
@@ -206,7 +278,7 @@ export class ElizaClient {
 			throw new ElizaCloudNotConfiguredError();
 		}
 
-		const url = `${this.baseUrl}${path}`;
+		const url = `${this.baseUrl}${this.normalizePath(path)}`;
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 		};
@@ -216,6 +288,7 @@ export class ElizaClient {
 		if (needsAuth) {
 			if (this.config.serviceKey) {
 				headers["X-Service-Key"] = this.config.serviceKey;
+				headers["X-API-Key"] = this.config.serviceKey;
 			} else if (this.config.apiKey) {
 				headers.authorization = `Bearer ${this.config.apiKey}`;
 			} else {
@@ -269,7 +342,14 @@ export class ElizaClient {
 			});
 		}
 
-		return json.data as T;
+		return (json.data ?? (json as { agent?: unknown }).agent ?? json) as T;
+	}
+
+	private normalizePath(path: string): string {
+		if (this.baseUrl.endsWith("/api/v1") && path.startsWith("/api/v1/")) {
+			return path.slice("/api/v1".length);
+		}
+		return path;
 	}
 
 	private async generateUserToken(userId: string): Promise<string> {
@@ -292,16 +372,29 @@ export class ElizaClient {
 	// ── Public API ──────────────────────────────────────────────────
 
 	async getAvailability(): Promise<ElizaAvailability> {
-		return this.request<ElizaAvailability>("GET", "/api/availability", {
+		return this.request<ElizaAvailability>("GET", "/api/compat/availability", {
 			authenticated: false,
 		});
 	}
 
 	async createAgent(userId: string, data: CreateAgentInput): Promise<ElizaCreateResult> {
-		return this.request<ElizaCreateResult>("POST", "/api/agents", {
-			body: data,
+		const agent = await this.request<Record<string, unknown>>("POST", "/api/v1/app/agents", {
+			body: {
+				name: data.agentName,
+				...(typeof data.agentConfig?.bio === "string" ? { bio: data.agentConfig.bio } : {}),
+				...(data.agentConfig ? { metadata: data.agentConfig } : {}),
+			},
 			asUserId: userId,
 		});
+		const agentId = stringField(agent, "id") ?? stringField(agent, "agentId") ?? userId;
+		return {
+			agentId,
+			agentName: stringField(agent, "name") ?? data.agentName,
+			jobId: stringField(agent, "jobId") ?? "",
+			status: stringField(agent, "status") ?? "created",
+			nodeId: stringField(agent, "nodeId") ?? "",
+			message: stringField(agent, "message") ?? "agent created",
+		};
 	}
 
 	/** Compatibility alias for the W3.7 webhook bridge. */
@@ -318,53 +411,139 @@ export class ElizaClient {
 	}
 
 	async provisionWaifuAgent(input: ProvisionWaifuCloudAgentInput): Promise<ElizaCloudProvisionResult> {
-		const characterConfig = {
-			...(input.character?.config ?? {}),
-			waifuAgentId: input.agentId,
-			...(input.modelDefaults ? { modelDefaults: input.modelDefaults, settings: input.modelDefaults } : {}),
+		const primaryWalletAddress = input.account?.primaryWalletAddress?.trim();
+		if (!primaryWalletAddress) {
+			throw new ElizaCloudNotConfiguredError("agent EVM wallet is required to provision a hosted Eliza Cloud agent");
+		}
+		const walletKeyRef = input.account?.walletKeyRef?.trim() || `steward:${input.agentId}`;
+		const imageUri = input.container?.imageUri ?? process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
+		if (!imageUri) {
+			throw new ElizaCloudNotConfiguredError("ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI is required to deploy hosted agents");
+		}
+		const billing = input.billing ?? { mode: "owner_credits", initialReserveUsd: 5 };
+		const webhookUrl = input.webhookUrl ?? defaultElizaCloudWebhookUrl();
+		const webhookSecret = input.webhookSecret ?? (webhookUrl ? defaultElizaCloudWebhookSecret() : undefined);
+		const access = {
+			guestMinTokens: input.access?.guestMinTokens ?? 1_000,
+			userMinTokens: input.access?.userMinTokens ?? 100_000,
+			adminWallets: input.access?.adminWallets ?? [],
 		};
-		const body: ElizaServiceCreateAgentBody = {
-			tokenContractAddress: input.tokenContractAddress,
-			chain: input.chain,
-			chainId: input.chainId,
-			tokenName: input.tokenName,
-			tokenTicker: input.tokenTicker,
-			launchType: input.launchType,
-			character: {
-				name: input.character?.name ?? input.tokenName,
-				...(input.character?.bio ? { bio: input.character.bio } : {}),
-				...(input.character?.avatar ? { avatar: input.character.avatar } : {}),
-				config: characterConfig,
-			},
-			billing: input.billing ?? { mode: "owner_credits" },
-			...(input.webhookUrl ? { webhookUrl: input.webhookUrl } : {}),
+		const environmentVars = {
+			WAIFU_AGENT_ID: input.agentId,
+			TOKEN_CONTRACT_ADDRESS: input.tokenContractAddress,
+			TOKEN_CHAIN: input.chain,
+			TOKEN_CHAIN_ID: String(input.chainId),
+			TOKEN_NAME: input.tokenName,
+			TOKEN_TICKER: input.tokenTicker,
+			WAIFU_BILLING_MODE: billing.mode,
+			WAIFU_INITIAL_CREDIT_USD: String(billing.initialReserveUsd ?? 5),
+			WAIFU_ACCESS_GUEST_MIN_TOKENS: String(access.guestMinTokens),
+			WAIFU_ACCESS_USER_MIN_TOKENS: String(access.userMinTokens),
+			WAIFU_ACCESS_THRESHOLD_MODE: input.access?.thresholdMode ?? "strict_gt",
+			WAIFU_ACCESS_ADMIN_WALLETS: access.adminWallets.join(","),
+			WAIFU_AGENT_EVM_ADDRESS: primaryWalletAddress,
+			WAIFU_AGENT_EVM_KEY_REF: walletKeyRef,
+			...(process.env.WAIFU_CHAT_ACCESS_JWT_SECRET
+				? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
+				: {}),
+			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
+			...(input.modelDefaults ?? {}),
+			...(input.container?.environmentVars ?? {}),
 		};
 
-		const result = await this.request<Record<string, unknown>>("POST", "/api/v1/agents", { body });
+		const agent = await this.request<Record<string, unknown>>("POST", "/api/v1/agents", {
+			body: {
+				tokenContractAddress: input.tokenContractAddress,
+				chain: input.chain,
+				chainId: input.chainId,
+				tokenName: input.tokenName,
+				tokenTicker: input.tokenTicker,
+				launchType: input.launchType,
+				character: {
+					name: input.character?.name ?? input.tokenName,
+					...(input.character?.bio ? { bio: input.character.bio } : {}),
+					...(input.character?.avatar ? { avatar: input.character.avatar } : {}),
+					config: {
+						...(input.character?.config ?? {}),
+						waifuAgentId: input.agentId,
+						account: { primaryWalletAddress, walletKeyRef },
+					},
+				},
+				billing,
+				account: {
+					primaryWalletAddress,
+					chainType: "evm",
+				},
+				access: {
+					guestTokenThreshold: access.guestMinTokens,
+					userTokenThreshold: access.userMinTokens,
+					adminWalletAddress: access.adminWallets[0],
+					roles: {
+						guest: { minTokens: access.guestMinTokens, comparison: "gt" },
+						user: { minTokens: access.userMinTokens, comparison: "gt" },
+						admin: { wallets: access.adminWallets },
+					},
+				},
+				container: {
+					image: imageUri,
+					env: environmentVars,
+				},
+				...(input.modelDefaults ? { modelDefaults: input.modelDefaults } : {}),
+				...(webhookUrl ? { webhookUrl } : {}),
+				...(webhookSecret ? { webhookSecret } : {}),
+			},
+		});
 		const cloudAgentId =
-			stringField(result, "cloudAgentId") ??
-			stringField(result, "agentId") ??
-			stringField(result, "id") ??
-			input.agentId;
-		const polling = normalizePolling(result.polling);
-		const characterId = stringField(result, "characterId");
-		const jobId = stringField(result, "jobId");
+			stringField(agent, "cloudAgentId") ?? stringField(agent, "agentId") ?? stringField(agent, "id") ?? input.agentId;
+		const walletProvisioning = objectField(agent, "walletProvisioning");
+		const account = objectField(agent, "account");
+		const polling = normalizePolling(agent.polling);
+		const characterId = stringField(agent, "characterId") ?? cloudAgentId;
+		const jobId = stringField(agent, "jobId") ?? stringField(agent, "id") ?? cloudAgentId;
 		const normalized: ElizaCloudProvisionResult = {
 			agentId: input.agentId,
 			cloudAgentId,
-			status: stringField(result, "status") ?? "pending",
+			status: stringField(agent, "status") ?? "pending",
+			...(stringField(agent, "containerId") ? { containerId: stringField(agent, "containerId") as string } : {}),
+			...(stringField(agent, "containerUrl") ? { containerUrl: stringField(agent, "containerUrl") as string } : {}),
 			...(characterId ? { characterId } : {}),
 			...(jobId ? { jobId } : {}),
+			...(walletProvisioning ? { walletProvisioning: walletProvisioning as ElizaAgentWalletProvisionResult } : {}),
+			...(account ? { account: account as ElizaCloudAccountProvisionResult } : {}),
 			...(polling ? { polling } : {}),
 			tokenAddress:
-				stringField(result, "token_address") ??
-				stringField(result, "tokenAddress") ??
-				stringField(result, "tokenContractAddress"),
-			tokenChain: stringField(result, "token_chain") ?? stringField(result, "tokenChain"),
-			tokenName: stringField(result, "token_name") ?? stringField(result, "tokenName"),
-			tokenTicker: stringField(result, "token_ticker") ?? stringField(result, "tokenTicker"),
+				stringField(agent, "token_address") ?? stringField(agent, "tokenAddress") ?? input.tokenContractAddress,
+			tokenChain: stringField(agent, "token_chain") ?? stringField(agent, "tokenChain") ?? input.chain,
+			tokenName: stringField(agent, "token_name") ?? stringField(agent, "tokenName") ?? input.tokenName,
+			tokenTicker: stringField(agent, "token_ticker") ?? stringField(agent, "tokenTicker") ?? input.tokenTicker,
 		};
 		return normalized;
+	}
+
+	async provisionAgentWallet(input: {
+		cloudAgentId: string;
+		clientAddress: string;
+		chainType?: "evm" | "solana";
+	}): Promise<ElizaAgentWalletProvisionResult> {
+		return this.request<ElizaAgentWalletProvisionResult>("POST", "/api/v1/user/wallets/provision", {
+			body: {
+				chainType: input.chainType ?? "evm",
+				clientAddress: input.clientAddress,
+				characterId: input.cloudAgentId,
+			},
+		});
+	}
+
+	async createContainer(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request<Record<string, unknown>>("POST", "/api/v1/containers", { body });
+	}
+
+	async getContainer(containerId: string): Promise<ElizaContainer> {
+		return this.request<ElizaContainer>("GET", `/api/v1/containers/${encodeURIComponent(containerId)}`);
+	}
+
+	async getAgentRuntimeStatus(agentId: string): Promise<ElizaAgentRuntimeStatus> {
+		return this.request<ElizaAgentRuntimeStatus>("GET", `/api/v1/agents/${encodeURIComponent(agentId)}/status`);
 	}
 
 	async getAgents(userId: string): Promise<ElizaAgent[]> {
@@ -396,20 +575,69 @@ export class ElizaClient {
 	}
 
 	async pauseAgent(agentId: string): Promise<ElizaJobResult> {
-		return this.request<ElizaJobResult>("POST", `/api/agents/${encodeURIComponent(agentId)}/pause`);
+		return this.request<ElizaJobResult>("POST", `/api/v1/agents/${encodeURIComponent(agentId)}/suspend`, {
+			body: { reason: "waifu runtime pause" },
+		});
 	}
 
 	async resumeAgent(agentId: string): Promise<ElizaJobResult> {
-		return this.request<ElizaJobResult>("POST", `/api/agents/${encodeURIComponent(agentId)}/resume`);
+		return this.request<ElizaJobResult>("POST", `/api/v1/agents/${encodeURIComponent(agentId)}/resume`);
 	}
 
 	async deprovisionAgent(agentId: string): Promise<ElizaJobResult> {
-		return this.request<ElizaJobResult>("DELETE", `/api/agents/${encodeURIComponent(agentId)}`);
+		return this.request<ElizaJobResult>("DELETE", `/api/v1/containers/${encodeURIComponent(agentId)}`);
 	}
 
-	async topUpCredits(agentId: string, amount: number): Promise<void> {
-		await this.request<void>("POST", `/api/agents/${encodeURIComponent(agentId)}/credits`, {
-			body: { amount },
+	async topUpCredits(agentId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult> {
+		return this.request<ElizaCreditCheckoutResult>("POST", "/api/v1/credits/checkout", {
+			body: {
+				credits: amountUsd,
+				agent_id: agentId,
+				success_url: defaultCreditSuccessUrl(agentId),
+				cancel_url: defaultCreditCancelUrl(agentId),
+			},
+		});
+	}
+
+	async topUpAppCredits(appId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult> {
+		return this.request<ElizaCreditCheckoutResult>("POST", "/api/v1/app-credits/checkout", {
+			body: {
+				app_id: appId,
+				amount: amountUsd,
+				success_url: defaultCreditSuccessUrl(appId),
+				cancel_url: defaultCreditCancelUrl(appId),
+			},
+		});
+	}
+
+	async getAppCreditBalance(appId: string): Promise<ElizaAppCreditBalanceResult> {
+		return this.request<ElizaAppCreditBalanceResult>(
+			"GET",
+			`/api/v1/app-credits/balance?app_id=${encodeURIComponent(appId)}`,
+		);
+	}
+
+	async getCreditBalance(agentId?: string): Promise<ElizaAppCreditBalanceResult> {
+		const query = agentId ? `?fresh=true&agent_id=${encodeURIComponent(agentId)}` : "?fresh=true";
+		const result = await this.request<Record<string, unknown>>("GET", `/api/v1/credits/balance${query}`);
+		const balance = typeof result.balance === "number" ? result.balance : Number(result.balance ?? 0);
+		return {
+			balance: Number.isFinite(balance) ? balance : 0,
+			isLow: Number.isFinite(balance) ? balance < 5 : true,
+			...result,
+		};
+	}
+
+	async verifyAppCreditCheckout(sessionId: string): Promise<ElizaAppCreditVerifyResult> {
+		return this.request<ElizaAppCreditVerifyResult>(
+			"GET",
+			`/api/v1/app-credits/verify?session_id=${encodeURIComponent(sessionId)}`,
+		);
+	}
+
+	async verifyCreditCheckout(sessionId: string): Promise<ElizaAppCreditVerifyResult> {
+		return this.request<ElizaAppCreditVerifyResult>("POST", "/api/billing/checkout/verify", {
+			body: { session_id: sessionId, from: "waifu-agent-runtime" },
 		});
 	}
 
@@ -423,10 +651,21 @@ export class ElizaClient {
 export interface ElizaCloudClient {
 	provisionAgent(input: ProvisionAgentInput): Promise<ElizaCreateResult | { containerId: string }>;
 	provisionWaifuAgent?(input: ProvisionWaifuCloudAgentInput): Promise<ElizaCloudProvisionResult>;
+	provisionAgentWallet?(input: {
+		cloudAgentId: string;
+		clientAddress: string;
+		chainType?: "evm" | "solana";
+	}): Promise<ElizaAgentWalletProvisionResult>;
 	pauseAgent(agentId: string): Promise<unknown>;
 	resumeAgent(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
-	topUpCredits(agentId: string, amount: number): Promise<void>;
+	topUpCredits(agentId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult | undefined>;
+	topUpAppCredits?(appId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult>;
+	getCreditBalance?(agentId?: string): Promise<ElizaAppCreditBalanceResult>;
+	getAppCreditBalance?(appId: string): Promise<ElizaAppCreditBalanceResult>;
+	verifyCreditCheckout?(sessionId: string): Promise<ElizaAppCreditVerifyResult>;
+	verifyAppCreditCheckout?(sessionId: string): Promise<ElizaAppCreditVerifyResult>;
+	getAgentRuntimeStatus?(agentId: string): Promise<ElizaAgentRuntimeStatus>;
 }
 
 // ─── Error classes ────────────────────────────────────────────────
@@ -464,13 +703,13 @@ export function getElizaClient(): ElizaClient {
 	if (!_instance) {
 		const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
 		const serviceKey = nonEmpty(process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY);
-		const apiKey = nonEmpty(process.env.ELIZA_CLOUD_API_KEY);
+		const apiKey = resolveElizaCloudApiKey();
 		const jwtSecret = process.env.ELIZA_JWT_SECRET;
 		const serviceUserId = nonEmpty(process.env.ELIZA_SERVICE_USER_ID);
 
 		if (!serviceKey && !apiKey && !jwtSecret) {
 			throw new Error(
-				"ELIZA_CLOUD_SERVICE_KEY, ELIZA_CLOUD_API_KEY, or ELIZA_JWT_SECRET env var is required for the agent bridge",
+				"ELIZA_CLOUD_SERVICE_KEY, ELIZAOS_CLOUD_API_KEY, ELIZA_CLOUD_API_KEY, or ELIZA_JWT_SECRET env var is required for the agent bridge",
 			);
 		}
 
@@ -494,14 +733,56 @@ export function createElizaCloudClient(opts: {
 	});
 }
 
+export function resolveElizaCloudApiKey(): string | undefined {
+	return nonEmpty(
+		process.env.ELIZA_CLOUD_API_KEY ??
+			process.env.ELIZAOS_CLOUD_API_KEY ??
+			process.env.ELIZAOS_API_KEY ??
+			process.env.ELIZACLOUD_API_KEY,
+	);
+}
+
 function nonEmpty(value: string | undefined): string | undefined {
 	const trimmed = value?.trim();
 	return trimmed ? trimmed : undefined;
 }
 
+function defaultFrontendUrl(): string {
+	return (process.env.FRONTEND_URL ?? "https://waifu.fun").replace(/\/+$/, "");
+}
+
+function defaultCreditSuccessUrl(agentId: string): string {
+	const configured = nonEmpty(process.env.WAIFU_ELIZA_CREDITS_SUCCESS_URL);
+	if (configured) return configured;
+	return `${defaultFrontendUrl()}/admin/ops/eliza-cloud?checkout=success&agent=${encodeURIComponent(agentId)}`;
+}
+
+function defaultCreditCancelUrl(agentId: string): string {
+	const configured = nonEmpty(process.env.WAIFU_ELIZA_CREDITS_CANCEL_URL);
+	if (configured) return configured;
+	return `${defaultFrontendUrl()}/admin/ops/eliza-cloud?checkout=cancel&agent=${encodeURIComponent(agentId)}`;
+}
+
+function defaultElizaCloudWebhookUrl(): string | undefined {
+	const configured = nonEmpty(process.env.ELIZA_CLOUD_WEBHOOK_URL ?? process.env.WAIFU_ELIZA_CLOUD_WEBHOOK_URL);
+	if (configured) return configured.replace(/\/+$/, "");
+	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
+	if (!apiBase) return undefined;
+	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/credits`;
+}
+
+function defaultElizaCloudWebhookSecret(): string | undefined {
+	return nonEmpty(process.env.ELIZA_CLOUD_WEBHOOK_SECRET ?? process.env.WEBHOOK_RECEIVER_SECRET);
+}
+
 function stringField(data: Record<string, unknown>, key: string): string | null {
 	const value = data[key];
 	return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function objectField(data: Record<string, unknown>, key: string): Record<string, unknown> | null {
+	const value = data[key];
+	return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function normalizePolling(value: unknown): ElizaCloudProvisionResult["polling"] | null {

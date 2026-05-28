@@ -54,6 +54,20 @@ export type FlapLaunchpadConfig = {
 	customVaultAddress?: `0x${string}`;
 };
 
+export type BankrLaunchpadConfig = {
+	kind: "bankr";
+	platformCutBps: number;
+	creatorFeeBps: number;
+	feeRecipientType: "wallet";
+};
+
+export type BagsLaunchpadConfig = {
+	kind: "bags";
+	platformCutBps: number;
+	creatorFeeBps: number;
+	initialBuyLamports: number;
+};
+
 type ProvisionLaunchpad =
 	| {
 			launchpad_id: "four-meme-tax";
@@ -71,6 +85,18 @@ type ProvisionLaunchpad =
 			launchpad_id: "flap";
 			chain: "bsc";
 			launchpad_config: FlapLaunchpadConfig;
+			fee_mode: string | null;
+	  }
+	| {
+			launchpad_id: "bankr";
+			chain: "base";
+			launchpad_config: BankrLaunchpadConfig;
+			fee_mode: string | null;
+	  }
+	| {
+			launchpad_id: "bags";
+			chain: "solana";
+			launchpad_config: BagsLaunchpadConfig;
 			fee_mode: string | null;
 	  };
 
@@ -209,6 +235,26 @@ function parseFlapConfig(value: unknown, fallbackPlatformBps: number): FlapLaunc
 	};
 }
 
+function parseExternalConfig(value: unknown, kind: "bankr", fallbackPlatformBps: number): BankrLaunchpadConfig | null;
+function parseExternalConfig(value: unknown, kind: "bags", fallbackPlatformBps: number): BagsLaunchpadConfig | null;
+function parseExternalConfig(value: unknown, kind: "bankr" | "bags", fallbackPlatformBps: number) {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	const feeConfig = nestedFeeConfig(value as Record<string, unknown>);
+	if (feeConfig.kind !== kind) return null;
+	if (kind === "bankr") {
+		const platformCutBps = parseBps(feeConfig.platformCutBps) ?? 1805;
+		const creatorFeeBps = parseBps(feeConfig.creatorFeeBps) ?? 5700;
+		if (platformCutBps > 3610 || creatorFeeBps !== 5700) return null;
+		return { kind, platformCutBps, creatorFeeBps, feeRecipientType: "wallet" as const };
+	}
+	const platformCutBps = parseBps(feeConfig.platformCutBps) ?? fallbackPlatformBps;
+	const creatorFeeBps = parseBps(feeConfig.creatorFeeBps) ?? 10_000 - platformCutBps;
+	if (creatorFeeBps + platformCutBps !== 10_000) return null;
+	const initialBuyLamports = readNumber(feeConfig.initialBuyLamports) ?? 10_000_000;
+	if (!Number.isInteger(initialBuyLamports) || initialBuyLamports < 0) return null;
+	return { kind, platformCutBps, creatorFeeBps, initialBuyLamports };
+}
+
 function parseProvisionLaunchpad(
 	value: unknown,
 	config: ProvisionAdapterConfig,
@@ -218,8 +264,20 @@ function parseProvisionLaunchpad(
 	const input = value as Record<string, unknown>;
 	const launchpadId = input.launchpad_id;
 	const chain = input.chain === undefined || input.chain === null ? "bsc" : input.chain;
-	if (chain !== "bsc") return "unsupported";
 	const feeMode = readNullableString(input.fee_mode);
+	if (launchpadId === "bankr") {
+		if (chain !== "base") return "unsupported";
+		const launchpadConfig = parseExternalConfig(input.launchpad_config, "bankr", config.fourMemePlatformBps);
+		if (!launchpadConfig) return null;
+		return { launchpad_id: "bankr", chain, launchpad_config: launchpadConfig, fee_mode: feeMode };
+	}
+	if (launchpadId === "bags") {
+		if (chain !== "solana") return "unsupported";
+		const launchpadConfig = parseExternalConfig(input.launchpad_config, "bags", config.fourMemePlatformBps);
+		if (!launchpadConfig) return null;
+		return { launchpad_id: "bags", chain, launchpad_config: launchpadConfig, fee_mode: feeMode };
+	}
+	if (chain !== "bsc") return "unsupported";
 	if (launchpadId === "four-meme-regular") {
 		return {
 			launchpad_id: "four-meme-regular",
@@ -357,6 +415,10 @@ export function provisionPayloadToLaunchInput(
 						: {}),
 				},
 			};
+		case "bankr":
+			return { ...base, launchpad: { id: "bankr", feeConfig: launchpadConfig } };
+		case "bags":
+			return { ...base, launchpad: { id: "bags", feeConfig: launchpadConfig } };
 		default:
 			return assertNever(launchpadId);
 	}

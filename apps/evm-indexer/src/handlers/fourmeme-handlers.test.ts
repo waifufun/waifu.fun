@@ -2,16 +2,26 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { schema } from "@waifufun/db";
 
-import type { TokenCreateEvent, TokenPurchaseEvent, TokenSaleEvent } from "../lib/fourmeme-events.js";
+import type { LaunchedToDexEvent } from "../lib/events.js";
+import type {
+	LiquidityAddedEvent,
+	TokenCreateEvent,
+	TokenPurchaseEvent,
+	TokenSaleEvent,
+} from "../lib/fourmeme-events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
+import { buildLiquidityAddedProvisioningJob } from "./fourmeme-liquidity-added.js";
 import { handleTokenCreateEvent } from "./fourmeme-token-create.js";
 import { handleTokenPurchaseEvent } from "./fourmeme-token-purchase.js";
 import { handleTokenSaleEvent } from "./fourmeme-token-sale.js";
+import { buildLaunchedToDexProvisioningJob } from "./launched-to-dex.js";
 
 const tokenAddress = "0x00000000000000000000000000000000000000a1" as const;
 const creatorAddress = "0x00000000000000000000000000000000000000b2" as const;
 const traderAddress = "0x00000000000000000000000000000000000000c3" as const;
 const contractAddress = "0x00000000000000000000000000000000000000d4" as const;
+
+process.env.INDEXER_DISABLE_QUEUE_JOBS = "1";
 
 class InsertBuilder {
 	constructor(
@@ -194,6 +204,41 @@ function tokenSaleEvent(): TokenSaleEvent {
 	};
 }
 
+function liquidityAddedEvent(): LiquidityAddedEvent {
+	return {
+		eventName: "LiquidityAdded",
+		chainId: 56,
+		contractAddress,
+		blockNumber: 126n,
+		txHash: "0x0000000000000000000000000000000000000000000000000000000000000126",
+		logIndex: 4,
+		blockTimestamp: new Date("2026-04-24T00:03:00.000Z"),
+		data: {
+			base: tokenAddress,
+			offers: "1000000",
+			quote: "0x00000000000000000000000000000000000000e5",
+			funds: "500000",
+		},
+	};
+}
+
+function launchedToDexEvent(): LaunchedToDexEvent {
+	return {
+		eventName: "LaunchedToDEX",
+		chainId: 56,
+		portalAddress: contractAddress,
+		blockNumber: 127n,
+		txHash: "0x0000000000000000000000000000000000000000000000000000000000000127",
+		logIndex: 5,
+		blockTimestamp: new Date("2026-04-24T00:04:00.000Z"),
+		data: {
+			tokenAddress,
+			poolAddress: "0x00000000000000000000000000000000000000f6",
+			dexName: "pancakeswap",
+		},
+	};
+}
+
 test("TokenCreate writes token, curve state, and token.created webhook", async () => {
 	const { runtime, db, emitted } = createRuntime();
 
@@ -236,4 +281,39 @@ test("TokenSale writes sell trade, updates token metrics, and emits trade webhoo
 		true,
 	);
 	assert.deepEqual((emitted[0] as { event: string }).event, "trade.happened");
+});
+
+test("LiquidityAdded provisioning job payload launches Eliza Cloud for graduated agent token", () => {
+	assert.deepEqual(buildLiquidityAddedProvisioningJob("agent-test", liquidityAddedEvent()), {
+		agentId: "agent-test",
+		source: "agent.graduated",
+		data: {
+			tokenAddress,
+			tokenContractAddress: tokenAddress,
+			chain: "bsc",
+			chainId: 56,
+			launchType: "native",
+			txHash: "0x0000000000000000000000000000000000000000000000000000000000000126",
+			blockNumber: "126",
+			quoteAddress: "0x00000000000000000000000000000000000000e5",
+		},
+	});
+});
+
+test("LaunchedToDEX provisioning job payload launches Eliza Cloud for migrated token", () => {
+	assert.deepEqual(buildLaunchedToDexProvisioningJob("agent-test", launchedToDexEvent()), {
+		agentId: "agent-test",
+		source: "token.migrated",
+		data: {
+			tokenAddress,
+			tokenContractAddress: tokenAddress,
+			chain: "bsc",
+			chainId: 56,
+			launchType: "native",
+			txHash: "0x0000000000000000000000000000000000000000000000000000000000000127",
+			blockNumber: "127",
+			poolAddress: "0x00000000000000000000000000000000000000f6",
+			dexName: "pancakeswap",
+		},
+	});
 });

@@ -8,13 +8,24 @@ import {
 	getAuthStatus,
 	getOwnerTokenBilling,
 	getOwnerTokenRuntime,
+	restartOwnerTokenRuntime,
 	resumeOwnerTokenRuntime,
 	suspendOwnerTokenRuntime,
+	topUpOwnerTokenRuntime,
 } from "@/lib/api";
 import { cn, formatNumber, isSameWalletAddress, shortenAddress } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { IToken } from "@waifufun/types";
-import { AlertCircle, CheckCircle2, LoaderCircle, PauseCircle, PlayCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+	AlertCircle,
+	CheckCircle2,
+	CircleDollarSign,
+	LoaderCircle,
+	PauseCircle,
+	PlayCircle,
+	RefreshCw,
+	ShieldCheck,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -183,9 +194,45 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		onError: (e: Error) => toast.error(fmtErr(e)),
 	});
 
+	const restartMut = useMutation({
+		mutationFn: () =>
+			restartOwnerTokenRuntime({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
+		onSuccess: async () => {
+			toast.success("runtime restarted");
+			await refreshAll();
+		},
+		onError: (e: Error) => toast.error(fmtErr(e)),
+	});
+
+	const topUpMut = useMutation({
+		mutationFn: () =>
+			topUpOwnerTokenRuntime({
+				chain: token.chain,
+				chainId: token.chainId,
+				contractAddress: token.contractAddress,
+				amountUsdCents: 500,
+			}),
+		onSuccess: async (result) => {
+			if (result.checkoutUrl) {
+				toast.success("checkout created");
+				window.location.assign(result.checkoutUrl);
+				return;
+			}
+			toast.success("credit top-up requested");
+			await refreshAll();
+		},
+		onError: (e: Error) => toast.error(fmtErr(e)),
+	});
+
 	const runtime = rtQuery.data?.runtime;
 	const runtimeStatus = runtime?.agentStatus ?? "none";
-	const anyPending = claimMut.isPending || activateMut.isPending || suspendMut.isPending || resumeMut.isPending;
+	const anyPending =
+		claimMut.isPending ||
+		activateMut.isPending ||
+		suspendMut.isPending ||
+		resumeMut.isPending ||
+		restartMut.isPending ||
+		topUpMut.isPending;
 	const reserveUsd = [runtime?.infraReserveUsd, billingQuery.data?.infraReserveUsd, token.infraReserveUsd].find(
 		(value) => typeof value === "number" && Number.isFinite(value),
 	);
@@ -298,6 +345,21 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 						{!rtQuery.isLoading && !rtQuery.error && (
 							<>
 								<div className="flex items-center gap-1.5 flex-wrap">
+									{runtime?.hasAgent && (
+										<Button
+											variant="outline"
+											onClick={() => topUpMut.mutate()}
+											disabled={topUpMut.isPending}
+											className="h-6 px-2 text-[10px] font-mono uppercase border-[#00ff87]/15 text-[#00ff87]/80 hover:text-[#00ff87]"
+										>
+											{topUpMut.isPending ? (
+												<LoaderCircle className="size-3 animate-spin" />
+											) : (
+												<CircleDollarSign className="size-3" />
+											)}
+											add $5
+										</Button>
+									)}
 									{(runtimeStatus === "none" || runtimeStatus === "failed" || runtimeStatus === "deleted") && (
 										<Button
 											onClick={() => activateMut.mutate()}
@@ -313,19 +375,34 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 										</Button>
 									)}
 									{runtimeStatus === "running" && (
-										<Button
-											variant="outline"
-											onClick={() => suspendMut.mutate()}
-											disabled={suspendMut.isPending}
-											className="h-6 px-2 text-[10px] font-mono uppercase text-amber-300/80 hover:text-amber-200 border-amber-500/15"
-										>
-											{suspendMut.isPending ? (
-												<LoaderCircle className="size-3 animate-spin" />
-											) : (
-												<PauseCircle className="size-3" />
-											)}
-											pause
-										</Button>
+										<>
+											<Button
+												variant="outline"
+												onClick={() => restartMut.mutate()}
+												disabled={restartMut.isPending}
+												className="h-6 px-2 text-[10px] font-mono uppercase text-sky-300/80 hover:text-sky-200 border-sky-500/15"
+											>
+												{restartMut.isPending ? (
+													<LoaderCircle className="size-3 animate-spin" />
+												) : (
+													<RefreshCw className="size-3" />
+												)}
+												restart
+											</Button>
+											<Button
+												variant="outline"
+												onClick={() => suspendMut.mutate()}
+												disabled={suspendMut.isPending}
+												className="h-6 px-2 text-[10px] font-mono uppercase text-amber-300/80 hover:text-amber-200 border-amber-500/15"
+											>
+												{suspendMut.isPending ? (
+													<LoaderCircle className="size-3 animate-spin" />
+												) : (
+													<PauseCircle className="size-3" />
+												)}
+												pause
+											</Button>
+										</>
 									)}
 									{runtimeStatus === "suspended" && (
 										<Button

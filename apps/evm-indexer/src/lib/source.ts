@@ -3,7 +3,7 @@ import { http, type Chain, type PublicClient, type Transport, createPublicClient
 import { bsc, bscTestnet } from "viem/chains";
 
 import { portalAbi } from "@waifufun/flap";
-import type { Address } from "@waifufun/queue";
+import type { Address } from "./address.js";
 
 import type { IndexerCursor } from "./cursor-store.js";
 import type { PortalEvent } from "./events.js";

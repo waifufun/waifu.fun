@@ -1,4 +1,6 @@
 import {
+	type BagsFeeConfig,
+	type BankrFeeConfig,
 	DEFAULT_PLATFORM_CUT_BPS,
 	type FlapFeeConfig,
 	type FourMemeRegularFeeConfig,
@@ -41,6 +43,20 @@ export const DEFAULT_FLAP: FlapFeeConfig = {
 	recipient: "agent-treasury",
 };
 
+export const DEFAULT_BANKR: BankrFeeConfig = {
+	kind: "bankr",
+	platformCutBps: 1805,
+	creatorFeeBps: 5700,
+	feeRecipientType: "wallet",
+};
+
+export const DEFAULT_BAGS: BagsFeeConfig = {
+	kind: "bags",
+	platformCutBps: DEFAULT_PLATFORM_CUT_BPS,
+	creatorFeeBps: 10_000 - DEFAULT_PLATFORM_CUT_BPS,
+	initialBuyLamports: 10_000_000,
+};
+
 export function getDefaultFeeConfig(id: LaunchpadId): LaunchpadFeeConfig | null {
 	switch (id) {
 		case "four-meme-tax":
@@ -49,6 +65,10 @@ export function getDefaultFeeConfig(id: LaunchpadId): LaunchpadFeeConfig | null 
 			return DEFAULT_FOUR_MEME_REGULAR;
 		case "flap":
 			return DEFAULT_FLAP;
+		case "bankr":
+			return DEFAULT_BANKR;
+		case "bags":
+			return DEFAULT_BAGS;
 		default:
 			return null;
 	}

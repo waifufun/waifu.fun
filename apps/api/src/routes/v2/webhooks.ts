@@ -6,7 +6,7 @@ import { agentPersonas, getDatabase, webhookInbox } from "@waifufun/db";
 import { eq, or } from "drizzle-orm";
 import { emitAgentEvent } from "../../services/events/emit.js";
 
-import { type ElizaCloudClient, createElizaCloudClient } from "../../services/eliza-client.js";
+import { type ElizaCloudClient, createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
 import { type WebhookConsumerEvent, dispatchEvent } from "../../services/webhook-consumer/index.js";
 
 type Logger = Console;
@@ -19,6 +19,7 @@ type WebhookRoutesOptions = {
 	elizaCloud?: ElizaCloudClient;
 	logger?: Logger;
 	dispatch?: typeof dispatchEvent;
+	emitEvent?: typeof emitAgentEvent;
 };
 
 const app = createWebhookRoutes();
@@ -82,7 +83,7 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 				options.elizaCloud ??
 				createElizaCloudClient({
 					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
-					apiKey: process.env.ELIZA_CLOUD_API_KEY ?? "",
+					apiKey: resolveElizaCloudApiKey() ?? "",
 					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
 				});
@@ -236,7 +237,18 @@ async function receiveDirectAgentEvent(
 	try {
 		const mapped = mapper(body);
 		const agentId = await resolveWebhookAgentId(db, mapped.agentLookup ?? stringField(body, "agentId"), source);
-		await emitAgentEvent({
+		const idempotencyKey = `${source}:${directIdempotencyKey(body)}`;
+		const duplicate = await insertInboxRow(db, {
+			event: mapped.eventType,
+			timestamp,
+			agentId,
+			data: mapped.data,
+			idempotencyKey,
+		});
+		if (duplicate) {
+			return c.json({ status: "ok", duplicate: true }, 200);
+		}
+		await (options.emitEvent ?? emitAgentEvent)({
 			agentId,
 			eventType: mapped.eventType,
 			data: { ...mapped.data, source },
@@ -245,6 +257,31 @@ async function receiveDirectAgentEvent(
 			correlationId: stringField(mapped.data, "correlationId") ?? stringField(mapped.data, "safeTxHash"),
 			occurredAt: mapped.occurredAt ?? new Date(timestamp),
 		});
+		if (
+			mapped.eventType === "agent.credits.low" ||
+			mapped.eventType === "agent.credits.depleted" ||
+			mapped.eventType === "credits.topped_up"
+		) {
+			const logger = options.logger ?? console;
+			const elizaCloud =
+				options.elizaCloud ??
+				createElizaCloudClient({
+					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
+					apiKey: resolveElizaCloudApiKey() ?? "",
+					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
+					logger,
+				});
+			await (options.dispatch ?? dispatchEvent)(
+				{
+					event: mapped.eventType,
+					timestamp,
+					agentId,
+					data: { ...mapped.data, source },
+					idempotencyKey,
+				},
+				{ elizaCloud, logger },
+			);
+		}
 		return c.json({ status: "accepted" }, 202);
 	} catch (err) {
 		return c.json(
@@ -294,8 +331,17 @@ function mapStewardSign(payload: Record<string, unknown>): DirectMapResult {
 }
 
 function mapElizaCredits(payload: Record<string, unknown>): DirectMapResult {
+	const status = stringField(payload, "event", "type", "status", "state", "creditStatus")?.toLowerCase() ?? "";
+	const remaining =
+		numberField(payload, "creditsRemaining", "remainingCredits", "balance", "balanceUsd", "balanceUsdCents") ?? null;
+	const eventType =
+		status.includes("depleted") || status.includes("exhausted") || status.includes("empty") || remaining === 0
+			? "agent.credits.depleted"
+			: status.includes("low") || status.includes("warning")
+				? "agent.credits.low"
+				: "credits.topped_up";
 	return {
-		eventType: "credits.topped_up",
+		eventType,
 		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId"),
 		data: payload,
 		sourceEventId: `eliza:${stringField(payload, "eventId", "creditId") ?? crypto.randomUUID()}`,
@@ -319,6 +365,18 @@ function stringField(payload: Record<string, unknown>, ...keys: string[]): strin
 	for (const key of keys) {
 		const value = payload[key];
 		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return null;
+}
+
+function numberField(payload: Record<string, unknown>, ...keys: string[]): number | null {
+	for (const key of keys) {
+		const value = payload[key];
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+		if (typeof value === "string" && value.trim().length > 0) {
+			const parsed = Number(value);
+			if (Number.isFinite(parsed)) return parsed;
+		}
 	}
 	return null;
 }
