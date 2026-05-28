@@ -108,3 +108,6 @@ testem.log
 # Waifu-core (optional local store artifacts + tracked CI seed env)
 .pnpm-store/
 !.env.ci
+
+# Frontend static export stash (temp files moved aside during Next.js static export build)
+apps/.frontend-static-export-stash/
