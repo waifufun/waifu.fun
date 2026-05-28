@@ -10,7 +10,7 @@ import {
 } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 
-import type { Address } from "@waifufun/queue";
+import type { Address } from "./address.js";
 
 import type { IndexerCursor } from "./cursor-store.js";
 import type { StakingEvent } from "./staking-events.js";

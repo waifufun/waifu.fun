@@ -50,6 +50,7 @@ import {
 	createStewardClient,
 } from "../../services/agent-launch/index.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
+import { provisionClaimedAgent } from "../../services/provisioning.js";
 
 const app = new Hono();
 
@@ -78,6 +79,15 @@ const DEFAULT_CLAIM_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 function hashToken(raw: string): string {
 	return createHash("sha256").update(raw).digest("hex");
+}
+
+function recordFromUnknown(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function stringField(data: Record<string, unknown>, key: string): string | null {
+	const value = data[key];
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
 function mintRawToken(): string {
@@ -887,17 +897,55 @@ app.post("/claim/:token/launch", requirePatronAuth(), async (c) => {
 			launchTxHash: broadcastResult.txHash,
 		});
 
+		const [walletRow] = await db
+			.select({ walletAddress: agentWallets.walletAddress })
+			.from(agentWallets)
+			.where(eq(agentWallets.internalAgentId, claim.agentId))
+			.limit(1);
+		const agentWalletAddress = walletRow?.walletAddress ?? null;
+		const adminWallets = claim.taxRecipientAddress ? [claim.taxRecipientAddress] : [];
+
 		await emitAgentEvent({
 			agentId: claim.agentId,
 			eventType: "agent.launched",
 			data: {
 				tokenAddress: broadcastResult.tokenAddress,
+				tokenContractAddress: broadcastResult.tokenAddress,
+				tokenName: stringField(recordFromUnknown(claim.prelaunchParams), "name") ?? claim.name,
+				tokenTicker:
+					stringField(recordFromUnknown(claim.prelaunchParams), "symbol") ?? claim.agentId.slice(0, 10).toUpperCase(),
+				walletAddress: agentWalletAddress,
+				primaryWalletAddress: agentWalletAddress,
+				adminWallets,
+				guestMinTokens: 1_000,
+				userMinTokens: 100_000,
 				claimedByXHandle: patronUser.xHandle,
 				txHash: broadcastResult.txHash,
 			},
-			tokenAddress: broadcastResult.tokenAddress,
-			txHash: broadcastResult.txHash,
 		});
+
+		let runtimeProvisioning: unknown = null;
+		let runtimeProvisioningError: string | null = null;
+		try {
+			runtimeProvisioning = await provisionClaimedAgent(claim.agentId, {
+				tokenAddress: broadcastResult.tokenAddress,
+				tokenContractAddress: broadcastResult.tokenAddress,
+				tokenName: stringField(recordFromUnknown(claim.prelaunchParams), "name") ?? claim.name,
+				tokenTicker:
+					stringField(recordFromUnknown(claim.prelaunchParams), "symbol") ?? claim.agentId.slice(0, 10).toUpperCase(),
+				chain: "bsc",
+				chainId: Number(process.env.FOURMEME_CHAIN_ID ?? process.env.BSC_CHAIN_ID ?? 56),
+				launchType: "native",
+				walletAddress: agentWalletAddress,
+				primaryWalletAddress: agentWalletAddress,
+				adminWallets,
+				guestMinTokens: 1_000,
+				userMinTokens: 100_000,
+				claimedByXHandle: patronUser.xHandle,
+			});
+		} catch (err) {
+			runtimeProvisioningError = err instanceof Error ? err.message : String(err);
+		}
 
 		return c.json(
 			{
@@ -907,6 +955,8 @@ app.post("/claim/:token/launch", requirePatronAuth(), async (c) => {
 					tokenAddress: broadcastResult.tokenAddress,
 					txHash: broadcastResult.txHash,
 					claimedByXHandle: patronUser.xHandle,
+					runtimeProvisioning,
+					runtimeProvisioningError,
 				},
 			},
 			200,

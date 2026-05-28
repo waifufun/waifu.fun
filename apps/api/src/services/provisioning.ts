@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 
 import {
@@ -13,9 +13,11 @@ import {
 	agentPersonaQueries,
 	type agentPersonas,
 	agentSafes,
+	agents,
 	creators,
 	getDatabase,
 	launches,
+	tokens,
 } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
@@ -96,6 +98,7 @@ export async function provisionClaimedAgent(
 	try {
 		const result = await adapter.provision(provisionOptions);
 		await storeProvisioningSuccess(db, agentId, runtimeKind, provisionOptions, result);
+		await syncProvisioningTokenOverlay(db, provisionOptions, result);
 		await ensureProvisionedLaunch(db, persona, safe);
 		await emit({
 			agentId,
@@ -189,6 +192,7 @@ export function buildProvisionOptions(
 		systemPrompt: string | null;
 		claimedByXHandle: string | null;
 		twitterHandle?: string | null;
+		ownerAddress?: string | null;
 		runtimeWebhookUrl?: string | null;
 		tokenAddress?: string | null;
 		chain?: string | null;
@@ -231,6 +235,26 @@ export function buildProvisionOptions(
 			persona.claimedByXHandle ??
 			persona.twitterHandle ??
 			null,
+	};
+
+	const primaryWalletAddress =
+		stringField(eventData, "walletAddress") ??
+		stringField(eventData, "agentWalletAddress") ??
+		stringField(eventData, "primaryWalletAddress");
+	if (primaryWalletAddress) {
+		opts.account = {
+			primaryWalletAddress,
+			walletKeyRef: `steward:${agentId}`,
+		};
+	}
+
+	const adminWallets = stringArrayField(eventData, "adminWallets");
+	const fallbackAdminWallet = persona.ownerAddress ?? safeAddress;
+	opts.access = {
+		guestMinTokens: numberField(eventData, "guestMinTokens") ?? 1_000,
+		userMinTokens: numberField(eventData, "userMinTokens") ?? 100_000,
+		thresholdMode: "strict_gt",
+		adminWallets: adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [],
 	};
 
 	const webhookUrl = stringField(eventData, "webhookUrl") ?? persona.runtimeWebhookUrl;
@@ -403,12 +427,72 @@ async function storeProvisioningSuccess(
 		},
 		{
 			runtimeKind,
+			...(runtimeKind === "eliza-cloud" ? { elizaCloudAgentId: result.runtimeAgentId } : {}),
 			runtimeWebhookUrl: runtimeKind === "third-party-webhook" ? (options.webhookUrl ?? null) : null,
 			runtimeWebhookSecretHash: result.runtimeWebhookSecretHash ?? null,
 			runtimeApiKeyHash: result.runtimeApiKeyHash ?? null,
 			runtimeLastSeenAt: new Date(),
 		},
 	);
+}
+
+async function syncProvisioningTokenOverlay(
+	db: Database,
+	options: ProvisionOptions,
+	result: ProvisionResult,
+): Promise<void> {
+	if (!options.tokenAddress) return;
+	const [row] = await db
+		.select({ token: tokens, agent: agents })
+		.from(tokens)
+		.leftJoin(agents, eq(agents.tokenId, tokens.id))
+		.where(sql`lower(${tokens.contractAddress}) = lower(${options.tokenAddress})`)
+		.limit(1);
+	if (!row) return;
+
+	const now = new Date();
+	const agentValues = {
+		name: options.tokenName ?? options.agentName,
+		bio: options.persona.bio ?? null,
+		avatarUrl: options.persona.image ?? null,
+		cloudAgentId: result.runtimeAgentId,
+		runtimeProvider: "eliza-cloud",
+		agentStatus: "provisioning",
+		lifecycleState: "birth",
+		webUiUrl: result.livenessCheckUrl ?? null,
+		bridgeUrl: result.containerId ?? null,
+		billingMode: "owner_credits",
+		infraReserveUsd: "5",
+		suspendedReason: null,
+		updatedAt: now,
+	};
+
+	if (row.agent) {
+		await db.update(agents).set(agentValues).where(eq(agents.id, row.agent.id));
+		await db
+			.update(tokens)
+			.set({ agentId: row.agent.id, agentStatus: "provisioning", ownerClaimStatus: "claimed", updatedAt: now })
+			.where(eq(tokens.id, row.token.id));
+		return;
+	}
+
+	const [created] = await db
+		.insert(agents)
+		.values({
+			tokenId: row.token.id,
+			...agentValues,
+		})
+		.returning({ id: agents.id });
+
+	await db
+		.update(tokens)
+		.set({
+			agentId: created?.id ?? row.token.agentId ?? null,
+			agentStatus: "provisioning",
+			ownerClaimStatus: "claimed",
+			updatedAt: now,
+		})
+		.where(eq(tokens.id, row.token.id));
 }
 
 async function storeProvisioningFailure(db: Database, agentId: string, err: unknown): Promise<void> {
@@ -474,6 +558,12 @@ function numberField(data: Record<string, unknown>, key: string): number | null 
 		return Number.isFinite(parsed) ? parsed : null;
 	}
 	return null;
+}
+
+function stringArrayField(data: Record<string, unknown>, key: string): string[] {
+	const value = data[key];
+	if (!Array.isArray(value)) return [];
+	return value.filter((item): item is string => typeof item === "string" && item.length > 0);
 }
 
 function tokenParam(value: unknown, key: string): string | null {

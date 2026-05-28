@@ -22,6 +22,16 @@ export interface ProvisionOptions {
 	tokenName?: string | null;
 	tokenTicker?: string | null;
 	launchType?: "native" | "imported" | null;
+	account?: {
+		primaryWalletAddress?: string | null;
+		walletKeyRef?: string | null;
+	};
+	access?: {
+		guestMinTokens?: number;
+		userMinTokens?: number;
+		thresholdMode?: "strict_gt";
+		adminWallets?: string[];
+	};
 	webhookUrl?: string;
 	webhookSecret?: string;
 	apiKey?: string;

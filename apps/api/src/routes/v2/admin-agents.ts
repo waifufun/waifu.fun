@@ -5,6 +5,7 @@ import type { Context } from "hono";
 
 import { constantTimeEqual } from "../../lib/agent-keys.js";
 import type { AppBindings } from "../../lib/bindings.js";
+import { createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
 
 const app = new Hono<AppBindings>();
 
@@ -197,6 +198,387 @@ async function withDb(c: AdminAgentContext) {
 	}
 	return { db, response: null };
 }
+
+function stringField(data: Record<string, unknown>, key: string): string | null {
+	const value = data[key];
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function numberField(data: Record<string, unknown>, key: string, fallback: number): number {
+	const value = data[key];
+	const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function booleanField(data: Record<string, unknown>, key: string): boolean {
+	return data[key] === true || data[key] === "true";
+}
+
+function recordField(data: Record<string, unknown>, key: string): Record<string, unknown> | null {
+	const value = data[key];
+	return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function provisioningSourceField(value: string | null): "agent.graduated" | "token.migrated" | "manual" {
+	if (value === "agent.graduated" || value === "token.migrated" || value === "manual") return value;
+	return "agent.graduated";
+}
+
+function isElizaCloudTestEnabled(): boolean {
+	return process.env.NODE_ENV !== "production" || process.env.WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE === "true";
+}
+
+function configuredElizaCloudClient() {
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
+	const apiKey = resolveElizaCloudApiKey();
+	if (!serviceKey && !apiKey) return null;
+	return createElizaCloudClient({
+		baseUrl,
+		...(serviceKey ? { serviceKey } : {}),
+		...(apiKey ? { apiKey } : {}),
+		logger: console,
+	});
+}
+
+function getElizaCloudReadiness() {
+	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
+	const apiKey = resolveElizaCloudApiKey();
+	const imageUri = process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
+	const chatSecret = process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+	const databaseConfigured = testDbOverride !== undefined ? testDbOverride !== null : Boolean(process.env.DATABASE_URL);
+	const testPageEnabled = isElizaCloudTestEnabled();
+	const checks = {
+		serviceAuth: Boolean(serviceKey || apiKey),
+		containerImage: Boolean(imageUri),
+		chatAccessSecret: Boolean(chatSecret),
+		database: databaseConfigured,
+		testPageEnabled,
+	};
+	return {
+		ready: Object.values(checks).every(Boolean),
+		baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
+		checks,
+		missing: Object.entries(checks)
+			.filter(([, value]) => !value)
+			.map(([key]) => key),
+		productionGate: process.env.NODE_ENV === "production" ? "WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true" : null,
+	};
+}
+
+async function readJsonObject(c: AdminAgentContext): Promise<Record<string, unknown> | Response> {
+	try {
+		const parsed = await c.req.json();
+		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("object required");
+		return parsed as Record<string, unknown>;
+	} catch {
+		return c.json({ ok: false, error: "INVALID_JSON", message: "JSON object body required" }, 400);
+	}
+}
+
+app.get("/eliza-cloud/status", (c) => {
+	return c.json({ ok: true, data: getElizaCloudReadiness() });
+});
+
+app.post("/eliza-cloud/test-provision", async (c) => {
+	if (!isElizaCloudTestEnabled()) {
+		return c.json(
+			{
+				ok: false,
+				error: "TEST_PROVISION_DISABLED",
+				message: "Set WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true to enable this production test endpoint.",
+			},
+			403,
+		);
+	}
+
+	const body = await readJsonObject(c);
+	if (body instanceof Response) return body;
+
+	const tokenContractAddress = stringField(body, "tokenContractAddress");
+	if (!tokenContractAddress || !/^0x[0-9a-fA-F]{40}$/.test(tokenContractAddress)) {
+		return c.json({ ok: false, error: "INVALID_TOKEN", message: "tokenContractAddress must be an EVM address" }, 400);
+	}
+
+	const client = configuredElizaCloudClient();
+	if (!client) {
+		return c.json({ ok: false, error: "ELIZA_CLOUD_NOT_CONFIGURED", message: "Set ELIZA_CLOUD_SERVICE_KEY" }, 503);
+	}
+
+	try {
+		const agentId = stringField(body, "agentId") ?? `waifu-test-${crypto.randomUUID().slice(0, 8)}`;
+		const result = await client.provisionWaifuAgent?.({
+			agentId,
+			tokenContractAddress,
+			chain: stringField(body, "chain") ?? "bsc",
+			chainId: numberField(body, "chainId", 56),
+			tokenName: stringField(body, "tokenName") ?? "Waifu Test Agent",
+			tokenTicker: stringField(body, "tokenTicker") ?? "WTEST",
+			launchType: "native",
+			character: {
+				name: stringField(body, "name") ?? stringField(body, "tokenName") ?? "Waifu Test Agent",
+				...(stringField(body, "bio") ? { bio: stringField(body, "bio") as string } : {}),
+				config: { testProvision: true, requestedAt: new Date().toISOString() },
+			},
+			billing: { mode: "owner_credits", initialReserveUsd: 5 },
+			account: {
+				primaryWalletAddress: stringField(body, "agentEvmAddress"),
+				walletKeyRef: stringField(body, "walletKeyRef"),
+			},
+			access: {
+				guestMinTokens: 1_000,
+				userMinTokens: 100_000,
+				adminWallets: stringField(body, "adminWallet") ? [stringField(body, "adminWallet") as string] : [],
+			},
+			container: {
+				...(stringField(body, "containerImageUri")
+					? { imageUri: stringField(body, "containerImageUri") as string }
+					: {}),
+				...(stringField(body, "projectName") ? { projectName: stringField(body, "projectName") as string } : {}),
+			},
+		});
+		return c.json({ ok: true, data: result });
+	} catch (err) {
+		return c.json(
+			{
+				ok: false,
+				error: "ELIZA_CLOUD_PROVISION_FAILED",
+				message: err instanceof Error ? err.message : String(err),
+			},
+			502,
+		);
+	}
+});
+
+app.post("/eliza-cloud/test-enqueue-provisioning", async (c) => {
+	if (!isElizaCloudTestEnabled()) {
+		return c.json(
+			{
+				ok: false,
+				error: "TEST_PROVISION_DISABLED",
+				message: "Set WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true to enable this production test endpoint.",
+			},
+			403,
+		);
+	}
+
+	const body = await readJsonObject(c);
+	if (body instanceof Response) return body;
+
+	const agentId = stringField(body, "agentId");
+	if (!agentId) return c.json({ ok: false, error: "AGENT_REQUIRED", message: "agentId is required" }, 400);
+
+	const tokenContractAddress = stringField(body, "tokenContractAddress");
+	if (!tokenContractAddress || !/^0x[0-9a-fA-F]{40}$/.test(tokenContractAddress)) {
+		return c.json({ ok: false, error: "INVALID_TOKEN", message: "tokenContractAddress must be an EVM address" }, 400);
+	}
+
+	const source = provisioningSourceField(stringField(body, "source"));
+	const chain = stringField(body, "chain") ?? "bsc";
+	const chainId = numberField(body, "chainId", 56);
+	const payload = {
+		agentId,
+		source,
+		data: {
+			tokenContractAddress,
+			tokenAddress: tokenContractAddress,
+			chain,
+			chainId,
+			tokenName: stringField(body, "tokenName") ?? stringField(body, "name") ?? "Waifu Test Agent",
+			tokenTicker: stringField(body, "tokenTicker") ?? "WTEST",
+			launchType: "native",
+			...(stringField(body, "agentEvmAddress") ? { agentWalletAddress: stringField(body, "agentEvmAddress") } : {}),
+			...(stringField(body, "adminWallet") ? { adminWallets: [stringField(body, "adminWallet") as string] } : {}),
+			...(stringField(body, "containerImageUri") ? { containerImageUri: stringField(body, "containerImageUri") } : {}),
+			...(numberField(body, "initialReserveUsd", Number.NaN) > 0
+				? { initialReserveUsd: numberField(body, "initialReserveUsd", 5) }
+				: {}),
+		},
+	};
+	const jobId = stringField(body, "jobId") ?? `admin-${source}-${agentId}-${Date.now()}`;
+	const dryRun = booleanField(body, "dryRun");
+	if (!dryRun) {
+		const { addAgentProvisioningJob } = await import("@waifufun/queue");
+		await addAgentProvisioningJob(payload, { jobId });
+	}
+	return c.json({ ok: true, data: { enqueued: !dryRun, dryRun, jobId, payload } });
+});
+
+app.get("/eliza-cloud/test-runtime-ref", async (c) => {
+	if (!isElizaCloudTestEnabled()) {
+		return c.json(
+			{
+				ok: false,
+				error: "TEST_PROVISION_DISABLED",
+				message: "Set WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true to enable this production test endpoint.",
+			},
+			403,
+		);
+	}
+
+	const agentId = c.req.query("agentId")?.trim();
+	if (!agentId) return c.json({ ok: false, error: "AGENT_REQUIRED", message: "agentId is required" }, 400);
+
+	const { db, response } = await withDb(c);
+	if (!db) return response;
+	const [row] = await db
+		.select({
+			agentId: agentPersonas.agentId,
+			elizaCloudAgentId: agentPersonas.elizaCloudAgentId,
+			metadata: agentPersonas.metadata,
+			runtimeKind: agentPersonas.runtimeKind,
+		})
+		.from(agentPersonas)
+		.where(eq(agentPersonas.agentId, agentId))
+		.limit(1);
+	if (!row) return c.json({ ok: false, error: "AGENT_NOT_FOUND", message: `agent ${agentId} not found` }, 404);
+
+	const metadata = row.metadata && typeof row.metadata === "object" ? (row.metadata as Record<string, unknown>) : {};
+	const provisioning = recordField(metadata, "provisioning") ?? {};
+	const cloudAgentId =
+		row.elizaCloudAgentId ??
+		stringField(provisioning, "cloudAgentId") ??
+		stringField(provisioning, "runtimeAgentId") ??
+		null;
+	if (!cloudAgentId) {
+		return c.json(
+			{
+				ok: false,
+				error: "RUNTIME_NOT_READY",
+				message: `agent ${agentId} does not have Eliza Cloud runtime metadata yet`,
+				data: { agentId, runtimeKind: row.runtimeKind, provisioning },
+			},
+			409,
+		);
+	}
+
+	return c.json({
+		ok: true,
+		data: {
+			agentId,
+			cloudAgentId,
+			containerId: stringField(provisioning, "containerId"),
+			containerUrl: stringField(provisioning, "containerUrl"),
+			status: stringField(provisioning, "status"),
+			account: recordField(provisioning, "account"),
+			walletProvisioning: recordField(provisioning, "walletProvisioning"),
+			polling: recordField(provisioning, "polling"),
+		},
+	});
+});
+
+app.post("/eliza-cloud/test-control", async (c) => {
+	if (!isElizaCloudTestEnabled()) {
+		return c.json(
+			{
+				ok: false,
+				error: "TEST_PROVISION_DISABLED",
+				message: "Set WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true to enable this production test endpoint.",
+			},
+			403,
+		);
+	}
+
+	const body = await readJsonObject(c);
+	if (body instanceof Response) return body;
+	const action = stringField(body, "action");
+	const containerId = stringField(body, "containerId");
+	const cloudAgentId = stringField(body, "cloudAgentId");
+	const sessionId = stringField(body, "sessionId");
+	const amountUsdCents = numberField(body, "amountUsdCents", 500);
+
+	const client = configuredElizaCloudClient();
+	if (!client) {
+		return c.json({ ok: false, error: "ELIZA_CLOUD_NOT_CONFIGURED", message: "Set ELIZA_CLOUD_SERVICE_KEY" }, 503);
+	}
+
+	try {
+		if (action === "pause") {
+			const runtimeId = containerId ?? cloudAgentId;
+			if (!runtimeId)
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "containerId or cloudAgentId required" }, 400);
+			const result = await client.pauseAgent(runtimeId);
+			return c.json({ ok: true, data: { action, containerId: runtimeId, result } });
+		}
+		if (action === "resume") {
+			const runtimeId = containerId ?? cloudAgentId;
+			if (!runtimeId)
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "containerId or cloudAgentId required" }, 400);
+			const result = await client.resumeAgent(runtimeId);
+			return c.json({ ok: true, data: { action, containerId: runtimeId, result } });
+		}
+		if (action === "restart") {
+			const runtimeId = containerId ?? cloudAgentId;
+			if (!runtimeId)
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "containerId or cloudAgentId required" }, 400);
+			const pauseResult = await client.pauseAgent(runtimeId);
+			const resumeResult = await client.resumeAgent(runtimeId);
+			return c.json({
+				ok: true,
+				data: { action, containerId: runtimeId, result: { pause: pauseResult, resume: resumeResult } },
+			});
+		}
+		if (action === "status") {
+			const runtimeId = cloudAgentId ?? containerId;
+			if (!runtimeId)
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "cloudAgentId or containerId required" }, 400);
+			if (!client.getAgentRuntimeStatus) {
+				return c.json({ ok: false, error: "UNSUPPORTED_ACTION", message: "agent runtime status is unavailable" }, 400);
+			}
+			const status = await client.getAgentRuntimeStatus(runtimeId);
+			return c.json({ ok: true, data: { action, cloudAgentId: runtimeId, status } });
+		}
+		if (action === "top-up") {
+			if (!cloudAgentId) {
+				return c.json({ ok: false, error: "CLOUD_AGENT_REQUIRED", message: "cloudAgentId required" }, 400);
+			}
+			if (!Number.isFinite(amountUsdCents) || amountUsdCents <= 0) {
+				return c.json({ ok: false, error: "INVALID_AMOUNT", message: "amountUsdCents must be positive" }, 400);
+			}
+			const checkout = await client.topUpCredits(cloudAgentId, amountUsdCents / 100);
+			return c.json({ ok: true, data: { action, cloudAgentId, amountUsdCents, checkout } });
+		}
+		if (action === "balance") {
+			if (!cloudAgentId && !client.getCreditBalance) {
+				return c.json({ ok: false, error: "CLOUD_AGENT_REQUIRED", message: "cloudAgentId required" }, 400);
+			}
+			if (!client.getCreditBalance && !client.getAppCreditBalance) {
+				return c.json({ ok: false, error: "UNSUPPORTED_ACTION", message: "credit balance is unavailable" }, 400);
+			}
+			const balance = client.getCreditBalance
+				? await client.getCreditBalance(cloudAgentId ?? undefined)
+				: await client.getAppCreditBalance?.(cloudAgentId as string);
+			return c.json({ ok: true, data: { action, cloudAgentId, balance } });
+		}
+		if (action === "verify-top-up") {
+			if (!sessionId) return c.json({ ok: false, error: "SESSION_REQUIRED", message: "sessionId required" }, 400);
+			if (!client.verifyCreditCheckout && !client.verifyAppCreditCheckout) {
+				return c.json({ ok: false, error: "UNSUPPORTED_ACTION", message: "credit verification is unavailable" }, 400);
+			}
+			const verification = client.verifyCreditCheckout
+				? await client.verifyCreditCheckout(sessionId)
+				: await client.verifyAppCreditCheckout?.(sessionId);
+			return c.json({ ok: true, data: { action, sessionId, verification } });
+		}
+		return c.json(
+			{
+				ok: false,
+				error: "INVALID_ACTION",
+				message: "action must be pause, resume, restart, status, top-up, balance, or verify-top-up",
+			},
+			400,
+		);
+	} catch (err) {
+		return c.json(
+			{
+				ok: false,
+				error: "ELIZA_CLOUD_CONTROL_FAILED",
+				message: err instanceof Error ? err.message : String(err),
+			},
+			502,
+		);
+	}
+});
 
 app.post("/:agentId/brain/pause", async (c) => {
 	const agentId = c.req.param("agentId");

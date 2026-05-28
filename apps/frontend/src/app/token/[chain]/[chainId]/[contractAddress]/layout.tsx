@@ -1,7 +1,7 @@
 import { getToken } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
 
@@ -57,9 +57,8 @@ export default async function Page({
 	children,
 }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }>; children: ReactNode }) {
 	const rawParams = await params;
-	// bsc tokens now live as agents -- redirect to the agent home
 	if (isBscAgent(rawParams)) {
-		redirect(`/agent/${rawParams.contractAddress}`);
+		return <>{children}</>;
 	}
 
 	const tokenParams = rawParams as unknown as ITokenLookUp;

@@ -1,7 +1,7 @@
 import { schema } from "@waifufun/db";
 import { eq, sql } from "drizzle-orm";
 
-import type { Address } from "@waifufun/queue";
+import type { Address } from "../lib/address.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
 
 /**

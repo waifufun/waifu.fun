@@ -1,4 +1,5 @@
 import { schema } from "@waifufun/db";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 import { and, eq } from "drizzle-orm";
 
 import type { LiquidityAddedEvent } from "../lib/fourmeme-events.js";
@@ -121,13 +122,17 @@ export async function handleLiquidityAddedEvent(
 			});
 	});
 
+	let agentId: string | null = null;
+	const enqueuedJobs: string[] = [];
 	if (process.env.INDEXER_DISABLE_QUEUE_JOBS !== "1") {
-		const { addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
+		const { addAgentProvisioningJob, addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
+		agentId = await lookupAgentIdByToken(runtime, event.data.base);
 
 		await addCacheWarmJob(
 			{ target: "token", tokenAddress: event.data.base, reason: "fourmeme-liquidity-added" },
 			{ jobId: `indexer-${eventId}-cache-warm-${event.data.base}` },
 		);
+		enqueuedJobs.push("cache-warm");
 
 		await addNotificationJob(
 			{
@@ -145,6 +150,14 @@ export async function handleLiquidityAddedEvent(
 			},
 			{ jobId: `indexer-${eventId}-notification-liquidity-added` },
 		);
+		enqueuedJobs.push("notification");
+
+		if (agentId) {
+			await addAgentProvisioningJob(buildLiquidityAddedProvisioningJob(agentId, event), {
+				jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
+			});
+			enqueuedJobs.push("agent-provisioning");
+		}
 	}
 
 	runtime.webhooks.emit({
@@ -163,7 +176,7 @@ export async function handleLiquidityAddedEvent(
 		},
 	});
 
-	const agentId = await lookupAgentIdByToken(runtime, event.data.base);
+	agentId ??= await lookupAgentIdByToken(runtime, event.data.base);
 	await emitAgentEvent(runtime, {
 		agentId,
 		tokenAddress: event.data.base,
@@ -176,5 +189,22 @@ export async function handleLiquidityAddedEvent(
 		},
 	});
 
-	return { handled: true, enqueuedJobs: ["cache-warm", "notification"] };
+	return { handled: true, enqueuedJobs };
+}
+
+export function buildLiquidityAddedProvisioningJob(agentId: string, event: LiquidityAddedEvent): AgentProvisioningJob {
+	return {
+		agentId,
+		source: "agent.graduated",
+		data: {
+			tokenAddress: event.data.base,
+			tokenContractAddress: event.data.base,
+			chain: "bsc",
+			chainId: event.chainId,
+			launchType: "native",
+			txHash: event.txHash,
+			blockNumber: event.blockNumber.toString(),
+			quoteAddress: event.data.quote,
+		},
+	};
 }

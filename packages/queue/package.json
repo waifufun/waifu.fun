@@ -9,6 +9,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./jobs": {
+			"types": "./dist/jobs.d.ts",
+			"import": "./dist/jobs.js"
 		}
 	},
 	"scripts": {

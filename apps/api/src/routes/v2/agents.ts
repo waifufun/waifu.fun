@@ -6,10 +6,12 @@ import {
 	agentPersonaQueries,
 	agentPersonas,
 	agentQueries,
+	agents,
 	creators,
 	getDatabase,
 	inviteCodes,
 	inviteRedemptions,
+	tokens,
 } from "@waifufun/db";
 import type { Database } from "@waifufun/db";
 import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
@@ -36,6 +38,7 @@ import {
 	type ElizaCloudProvisionResult,
 	type ProvisionWaifuCloudAgentInput,
 	createElizaCloudClient,
+	resolveElizaCloudApiKey,
 } from "../../services/eliza-client.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
 import {
@@ -217,7 +220,7 @@ function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifu
 	if (agentsRouteDepsForTest.elizaCloudClient) return agentsRouteDepsForTest.elizaCloudClient;
 	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
-	const apiKey = process.env.ELIZA_CLOUD_API_KEY;
+	const apiKey = resolveElizaCloudApiKey();
 	if (!serviceKey && !apiKey) return null;
 	return createElizaCloudClient({
 		baseUrl,
@@ -259,6 +262,8 @@ function recordFromUnknown(value: unknown): Record<string, unknown> {
 function cloudResponseFields(cloud: ElizaCloudProvisionResult) {
 	return {
 		cloudAgentId: cloud.cloudAgentId,
+		containerId: cloud.containerId ?? null,
+		containerUrl: cloud.containerUrl ?? null,
 		cloudStatus: cloud.status,
 		cloudJobId: cloud.jobId ?? null,
 		cloudPolling: cloud.polling ?? null,
@@ -266,10 +271,13 @@ function cloudResponseFields(cloud: ElizaCloudProvisionResult) {
 		cloud: {
 			provider: "eliza-cloud",
 			agentId: cloud.cloudAgentId,
+			containerId: cloud.containerId ?? null,
+			containerUrl: cloud.containerUrl ?? null,
 			status: cloud.status,
 			jobId: cloud.jobId ?? null,
 			polling: cloud.polling ?? null,
 			characterId: cloud.characterId ?? null,
+			account: cloud.account ?? null,
 		},
 	};
 }
@@ -277,6 +285,7 @@ function cloudResponseFields(cloud: ElizaCloudProvisionResult) {
 function buildCloudProvisionInput(args: {
 	agentId: string;
 	tokenAddress: string;
+	walletAddress?: string | null;
 	treasuryAddress: string | null;
 	launchInput: AgentLaunchInput;
 	body: import("../../services/provision/payload-adapter.js").ProvisionRequest;
@@ -304,6 +313,16 @@ function buildCloudProvisionInput(args: {
 			},
 		},
 		billing: { mode: "owner_credits" },
+		account: {
+			primaryWalletAddress: args.walletAddress ?? null,
+			walletKeyRef: args.walletAddress ? `steward:${args.agentId}` : null,
+		},
+		access: {
+			guestMinTokens: 1_000,
+			userMinTokens: 100_000,
+			thresholdMode: "strict_gt",
+			adminWallets: args.body.safe.owners,
+		},
 		modelDefaults: defaultHostedModelSettings(),
 	};
 }
@@ -321,6 +340,7 @@ async function mergeCloudProvisioningMetadata(
 		.update(agentPersonas)
 		.set({
 			runtimeKind: "eliza-cloud",
+			elizaCloudAgentId: cloud.cloudAgentId,
 			metadata: {
 				...metadata,
 				provisioning: {
@@ -329,6 +349,8 @@ async function mergeCloudProvisioningMetadata(
 					provider: "eliza-cloud",
 					cloudAgentId: cloud.cloudAgentId,
 					runtimeAgentId: cloud.cloudAgentId,
+					containerId: cloud.containerId ?? null,
+					containerUrl: cloud.containerUrl ?? null,
 					characterId: cloud.characterId ?? null,
 					jobId: cloud.jobId ?? null,
 					status: cloud.status,
@@ -342,6 +364,69 @@ async function mergeCloudProvisioningMetadata(
 		.where(eq(agentPersonas.agentId, agentId));
 }
 
+async function syncTokenRuntimeOverlay(
+	db: Database,
+	args: {
+		tokenAddress: string;
+		launchInput: AgentLaunchInput;
+		cloud: ElizaCloudProvisionResult;
+	},
+): Promise<void> {
+	const [row] = await db
+		.select({ token: tokens, agent: agents })
+		.from(tokens)
+		.leftJoin(agents, eq(agents.tokenId, tokens.id))
+		.where(sql`lower(${tokens.contractAddress}) = lower(${args.tokenAddress})`)
+		.limit(1);
+	if (!row) return;
+
+	const now = new Date();
+	const agentStatus = args.cloud.status === "running" ? "running" : "provisioning";
+	const lifecycleState = args.cloud.status === "running" ? "live" : "birth";
+	const agentValues = {
+		name: args.launchInput.name,
+		bio: args.launchInput.description ?? null,
+		avatarUrl: args.launchInput.imageUrl ?? null,
+		cloudAgentId: args.cloud.cloudAgentId,
+		runtimeProvider: "eliza-cloud",
+		agentStatus,
+		lifecycleState,
+		webUiUrl: args.cloud.containerUrl ?? null,
+		bridgeUrl: args.cloud.containerId ?? null,
+		billingMode: "owner_credits",
+		infraReserveUsd: "5",
+		suspendedReason: null,
+		updatedAt: now,
+	};
+
+	if (row.agent) {
+		await db.update(agents).set(agentValues).where(eq(agents.id, row.agent.id));
+		await db
+			.update(tokens)
+			.set({ agentId: row.agent.id, agentStatus, ownerClaimStatus: "claimed", updatedAt: now })
+			.where(eq(tokens.id, row.token.id));
+		return;
+	}
+
+	const [created] = await db
+		.insert(agents)
+		.values({
+			tokenId: row.token.id,
+			...agentValues,
+		})
+		.returning({ id: agents.id });
+
+	await db
+		.update(tokens)
+		.set({
+			agentId: created?.id ?? row.token.agentId ?? null,
+			agentStatus,
+			ownerClaimStatus: "claimed",
+			updatedAt: now,
+		})
+		.where(eq(tokens.id, row.token.id));
+}
+
 async function provisionHostedRuntimeAfterLaunch(
 	db: Database,
 	body: import("../../services/provision/payload-adapter.js").ProvisionRequest,
@@ -349,15 +434,16 @@ async function provisionHostedRuntimeAfterLaunch(
 	result: {
 		agentId: string;
 		tokenAddress: string;
+		walletAddress?: string | null;
 		treasuryAddress?: string | null;
 	},
 ): Promise<ElizaCloudProvisionResult | null> {
 	if (runtimeKindFromProvisionBody(body) !== "eliza-cloud") return null;
 	const existing = await agentPersonaQueries.getAgentPersonaByAgentId(db, result.agentId).catch(() => null);
-	const existingProvisioning = recordFromUnknown(recordFromUnknown(existing?.metadata).provisioning);
-	const existingCloudAgentId = existingProvisioning.cloudAgentId ?? existingProvisioning.runtimeAgentId;
+	const existingProvisioning = recordFromUnknown(recordFromUnknown(existing?.metadata)?.provisioning);
+	const existingCloudAgentId = existingProvisioning?.cloudAgentId ?? existingProvisioning?.runtimeAgentId;
 	if (typeof existingCloudAgentId === "string" && existingCloudAgentId.length > 0) {
-		return {
+		const cloud = {
 			agentId: result.agentId,
 			cloudAgentId: existingCloudAgentId,
 			status: typeof existingProvisioning.status === "string" ? existingProvisioning.status : "pending",
@@ -366,6 +452,8 @@ async function provisionHostedRuntimeAfterLaunch(
 				: {}),
 			...(typeof existingProvisioning.jobId === "string" ? { jobId: existingProvisioning.jobId } : {}),
 		};
+		await syncTokenRuntimeOverlay(db, { tokenAddress: result.tokenAddress, launchInput, cloud });
+		return cloud;
 	}
 	const client = getConfiguredElizaCloudClient();
 	if (!client?.provisionWaifuAgent) {
@@ -375,31 +463,38 @@ async function provisionHostedRuntimeAfterLaunch(
 		buildCloudProvisionInput({
 			agentId: result.agentId,
 			tokenAddress: result.tokenAddress,
+			walletAddress: result.walletAddress ?? null,
 			treasuryAddress: result.treasuryAddress ?? null,
 			launchInput,
 			body,
 		}),
 	);
 	await mergeCloudProvisioningMetadata(db, result.agentId, cloud);
+	await syncTokenRuntimeOverlay(db, { tokenAddress: result.tokenAddress, launchInput, cloud });
 	return cloud;
 }
 
 export type ResurrectAgentDeps = {
 	db: ReturnType<typeof getDatabase>["db"];
-	elizaClient: Pick<ElizaCloudClient, "topUpCredits">;
+	elizaClient: Pick<ElizaCloudClient, "resumeAgent" | "topUpCredits">;
 	emitEvent?: typeof emitAgentEvent;
 };
 
 /**
  * Resurrect a dormant agent after a patron credit top-up.
- * `creditsAmount` is currently a numeric credit amount in USD cents.
+ * `creditsAmount` is accepted from waifu.fun clients in USD cents; Eliza Cloud
+ * checkout receives dollar amounts.
  */
 export async function resurrectAgent(
 	agentId: string,
 	creditsAmount: number,
 	deps: ResurrectAgentDeps,
-): Promise<{ agentId: string; creditsAmount: number; modelTier: "premium" }> {
-	await deps.elizaClient.topUpCredits(agentId, creditsAmount);
+): Promise<{ agentId: string; creditsAmount: number; modelTier: "premium"; containerId?: string }> {
+	await deps.elizaClient.topUpCredits(agentId, creditsAmount / 100);
+	const runtimeRefs = await resolveAgentRuntimeRefs(deps.db, agentId);
+	if (runtimeRefs.containerId) {
+		await deps.elizaClient.resumeAgent(runtimeRefs.containerId);
+	}
 	const now = new Date();
 	await deps.db
 		.update(agentPersonas)
@@ -414,21 +509,94 @@ export async function resurrectAgent(
 		})
 		.where(eq(agentPersonas.agentId, agentId));
 
+	if (runtimeRefs.overlayAgentId) {
+		await deps.db
+			.update(agents)
+			.set({
+				agentStatus: "running",
+				lifecycleState: "live",
+				suspendedReason: null,
+				updatedAt: now,
+			})
+			.where(eq(agents.id, runtimeRefs.overlayAgentId));
+	}
+	if (runtimeRefs.tokenId) {
+		await deps.db
+			.update(tokens)
+			.set({ agentStatus: "running", updatedAt: now })
+			.where(eq(tokens.id, runtimeRefs.tokenId));
+	}
+
 	const emit = deps.emitEvent ?? emitAgentEvent;
 	await emit({
 		agentId,
 		eventType: "agent.resurrected",
-		data: { creditsAmount, modelTier: "premium", resurrectedAt: now.toISOString() },
+		data: {
+			creditsAmount,
+			modelTier: "premium",
+			resurrectedAt: now.toISOString(),
+			containerId: runtimeRefs.containerId ?? null,
+		},
 	});
 
-	return { agentId, creditsAmount, modelTier: "premium" };
+	return {
+		agentId,
+		creditsAmount,
+		modelTier: "premium",
+		...(runtimeRefs.containerId ? { containerId: runtimeRefs.containerId } : {}),
+	};
+}
+
+async function resolveAgentRuntimeRefs(
+	db: Database,
+	agentId: string,
+): Promise<{ containerId: string | null; overlayAgentId: string | null; tokenId: string | null }> {
+	const [persona] = await db
+		.select({
+			metadata: agentPersonas.metadata,
+			tokenAddress: agentPersonas.tokenAddress,
+		})
+		.from(agentPersonas)
+		.where(eq(agentPersonas.agentId, agentId))
+		.limit(1);
+	if (!persona) return { containerId: null, overlayAgentId: null, tokenId: null };
+
+	const provisioning = recordFromUnknown(recordFromUnknown(persona.metadata).provisioning);
+	const metadataContainerId =
+		stringRecordField(provisioning, "containerId") ??
+		stringRecordField(provisioning, "cloudAgentId") ??
+		stringRecordField(provisioning, "runtimeAgentId");
+	if (!persona.tokenAddress) return { containerId: metadataContainerId, overlayAgentId: null, tokenId: null };
+
+	const [overlay] = await db
+		.select({
+			tokenId: tokens.id,
+			overlayAgentId: agents.id,
+			containerId: agents.bridgeUrl,
+			cloudAgentId: agents.cloudAgentId,
+		})
+		.from(tokens)
+		.leftJoin(agents, eq(agents.tokenId, tokens.id))
+		.where(sql`lower(${tokens.contractAddress}) = lower(${persona.tokenAddress})`)
+		.limit(1);
+
+	return {
+		containerId: metadataContainerId ?? overlay?.containerId ?? overlay?.cloudAgentId ?? null,
+		overlayAgentId: overlay?.overlayAgentId ?? null,
+		tokenId: overlay?.tokenId ?? null,
+	};
+}
+
+function stringRecordField(data: Record<string, unknown>, key: string): string | null {
+	const value = data[key];
+	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 /**
  * POST /v2/agents/:id/resurrect
  *
  * Patron top-up endpoint. Body: { creditsAmount: number } where creditsAmount
- * is represented in USD cents until Eliza Cloud finalizes credit units.
+ * is represented in USD cents in waifu.fun API responses.
  */
 app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (c) => {
 	const db = requireDb();
@@ -449,7 +617,7 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 	}
 
 	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
-	const apiKey = process.env.ELIZA_CLOUD_API_KEY ?? "";
+	const apiKey = resolveElizaCloudApiKey() ?? "";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "";
 
 	try {
