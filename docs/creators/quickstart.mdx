@@ -33,7 +33,7 @@ everything else the platform handles.
   </Step>
   <Step title="deploy the launch">
     the platform calls `LaunchFactory.createLaunch(config)`. this deploys five
-    contracts: `LaunchVault`, `BundleRouter`, `TreasuryLP4`, `TaxSplitter`, and
+    contracts: `LaunchVault`, `BundleRouter`, `TreasuryLP5`, `TaxSplitter`, and
     an `AgentSafe` (Gnosis Safe v1.4.1) for your token treasury. you pay the
     gas plus the platform creation fee.
 
@@ -64,7 +64,7 @@ everything else the platform handles.
 
 - announce the launch with the vault address so depositors know where to send BNB
 - engage with the community during the OPEN window
-- after launch, your `AgentSafe` receives BNB drips from the TreasuryLP4 V3
+- after launch, your `AgentSafe` receives BNB drips from the TreasuryLP5 V3
   LP ladder as the token's market cap rises. signers configured at launch
-  can call `treasuryLp4.claim()` to pull accumulated BNB. see
+  can call `treasuryLp5.claim()` to pull accumulated BNB. see
   [after launch](/creators/after-launch).

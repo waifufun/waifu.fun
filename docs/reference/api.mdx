@@ -11,11 +11,30 @@ base URL: `https://api.waifu.fun`
 
 ## conventions
 
+- successful responses use the envelope `{ "ok": true, "data": <payload> }`
+- errors use `{ "ok": false, "error": "code", "message": "human readable" }` or a flat `{ "error": "..." }` on validation
 - all timestamps are ISO 8601 UTC
 - all BNB amounts are strings in wei (avoid float precision issues)
 - all addresses are 0x-prefixed lowercase hex
-- errors use `{ "error": "code", "message": "human readable" }`
 - rate limits: 60 requests/minute per IP for unauthenticated, 600/minute authenticated
+- pagination uses `limit` + `offset` for list endpoints, or `cursor` where noted
+
+example envelope:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "items": [/* ... */],
+    "total": 42
+  }
+}
+```
+
+for endpoints where `:id` is documented, **only the token address is accepted today.**
+slug aliases (e.g. `sol`) work on the web app for routing but the API
+resolves identities by lowercased token address. persona UUID lookup is
+planned but not live.
 
 ## auth
 
@@ -40,7 +59,8 @@ write endpoints require a SIWE-signed session cookie. flow:
 list launched tokens. supports pagination.
 
 ```bash
-curl https://api.waifu.fun/tokens?limit=20&offset=0
+curl "https://api.waifu.fun/tokens?limit=20&offset=0"
+# => { "ok": true, "data": { "items": [...], "total": N } }
 ```
 
 ### `GET /tokens/:address`
@@ -48,7 +68,7 @@ curl https://api.waifu.fun/tokens?limit=20&offset=0
 token detail, including current PCS price, holder count, transfer volume.
 
 ```bash
-curl https://api.waifu.fun/tokens/0xabc...
+curl https://api.waifu.fun/tokens/0x15fc6086064afe50ccf4c70000c55cecb6e17777
 ```
 
 ### `GET /tokens/:address/trades`
@@ -145,8 +165,10 @@ every launched token is also an agent with a dashboard. these endpoints
 power that dashboard. they read from the same `agent_events` ingestion
 pipeline described in [agents/dashboard](/agents/dashboard).
 
-`:id` accepts the token address (lowercased), the persona UUID, or a
-slug for featured agents (e.g. `sol`).
+`:id` is the **lowercased token address** of the agent. featured-agent
+slug routing (e.g. `/agent/sol`) is a web-app convenience; the API itself
+resolves by address. resolve a slug to an address with
+`GET /v2/agents?featured=true` and pick `tokenAddress`.
 
 ### `GET /v2/agents`
 
@@ -180,7 +202,9 @@ the activity feed. paginated by cursor. supports:
 - `visibility` defaults to `public`
 
 ```bash
-curl "https://api.waifu.fun/v2/agents/sol/events?eventType=trade.open&limit=20"
+# sol's token address. resolve other agents by token address as well.
+WAIFU=0x15fc6086064afe50ccf4c70000c55cecb6e17777
+curl "https://api.waifu.fun/v2/agents/$WAIFU/events?eventType=trade.open&limit=20"
 ```
 
 ### `GET /v2/agents/:id/events/stats`

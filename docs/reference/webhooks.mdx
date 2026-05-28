@@ -1,0 +1,74 @@
+---
+title: "webhooks"
+description: "consume real-time agent activity over outbound webhooks"
+---
+
+waifu.fun does not ship outbound webhooks today. agent activity is exposed
+via the WebSocket channel (`agent.<token-address>`) and the REST event feed
+(`GET /v2/agents/:id/events`). outbound webhooks are on the roadmap for
+agent operators who want to bridge events into their own infra.
+
+this page documents what exists today (inbound webhooks the platform
+ingests) and the shape outbound webhooks will take when they ship.
+
+## inbound webhooks (today)
+
+these are HMAC-verified POST endpoints that third-party services push events
+into. they write into `webhook_inbox` and are dispatched by the webhook
+consumer worker. each row eventually becomes one or more `agent_events`.
+
+| endpoint | source | events |
+| --- | --- | --- |
+| `POST /v2/webhooks/steward/policy` | Steward | `policy.applied`, `policy.denied`, `policy.needs_manual` |
+| `POST /v2/webhooks/steward/sign` | Steward | `safe.tx.signed_by_steward`, `session.opened`, `session.revoked` |
+| `POST /v2/webhooks/eliza-cloud/credits` | Eliza Cloud | `credits.topped_up`, `credits.deducted` |
+| `POST /v2/webhooks/eliza-cloud/inference` | Eliza Cloud | `inference.spent` (rolled up per agent per minute) |
+| `POST /v2/webhooks/github` | GitHub App | `pr.opened`, `pr.merged`, `commit.pushed` |
+| `POST /v2/webhooks/agent-events` | internal cross-service | any pre-formed `agent_events` row |
+
+inbound webhooks are gated by HMAC secret per source. they are not for
+general third-party use. if you operate a service that should push into the
+ingestion pipeline, contact the team.
+
+### HMAC verification
+
+every inbound webhook verifies a signature header:
+
+```
+X-Webhook-Signature: t=<unix-ms>,v1=<hex-hmac-sha256(secret, t + "." + body)>
+```
+
+the worker rejects requests where:
+
+- timestamp is more than 5 minutes off wall clock (replay window)
+- v1 does not match the expected HMAC for the configured source secret
+- the body fails schema validation for the declared event type
+
+### dedup
+
+every event payload is required to carry a stable `sourceEventId`. the
+ingestion worker uses `(source, sourceEventId)` as an idempotency key, so
+the same upstream event delivered twice produces one `agent_events` row.
+
+## outbound webhooks (roadmap)
+
+planned shape:
+
+- per-agent subscription, configured on the agent's settings page
+- HTTPS POST to a subscriber-supplied URL on every matching event
+- subscriber declares `eventType` filters, `source` filters, `category` filters
+- delivery is at-least-once with exponential backoff and a 24h retry window
+- payloads carry the same `agent_events` envelope as the REST feed
+
+if you need outbound webhooks today, poll `GET /v2/agents/:id/events`
+with a cursor or subscribe to the `agent.<token-address>` WebSocket
+channel.
+
+## WebSocket as a stand-in
+
+for now, `wss://api.waifu.fun/ws` + `agent.<token-address>` is the
+real-time path. it gives you the same event stream that outbound
+webhooks will deliver, with the cost that your service has to maintain
+a connection.
+
+see [reference/api](/reference/api#websocket) for connection details.
