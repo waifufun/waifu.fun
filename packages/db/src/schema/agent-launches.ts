@@ -33,7 +33,7 @@ import { type JsonMap, emptyJsonObject } from "./_common.js";
  */
 /**
  * Sentinel for pre-waifufun#601 event rows that predate block_hash capture.
- * 32 zero bytes — never a real BSC block hash, so it cannot mask a genuine
+ * 32 zero bytes, never a real BSC block hash, so it cannot mask a genuine
  * reorg collision.
  */
 export const ZERO_BLOCK_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -155,18 +155,16 @@ export const launchDeposits = pgTable(
 		amount: text("amount").notNull(),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-		// Reorg guard (waifufun#601): the dedupe key includes block_hash so a
-		// reverted-then-replayed (tx_hash, log_index) at a different block can't
-		// silently collide with the original row. Pre-#601 rows backfill to the
-		// zero hash sentinel; since (tx_hash, log_index) was already unique,
-		// adding a constant column preserves their uniqueness.
+		// Keep the observed block hash for diagnostics, but vault event identity
+		// is tx_hash plus log_index so reorg variants cannot double-apply
+		// aggregate state.
 		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => ({
 		launchUserIdx: index("idx_launch_deposits_launch_user").on(table.launchId, table.userAddress),
-		txLogUq: uniqueIndex("launch_deposits_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
+		txLogUq: uniqueIndex("launch_deposits_tx_log_unique").on(table.txHash, table.logIndex),
 	}),
 );
 
@@ -188,14 +186,14 @@ export const launchWithdrawals = pgTable(
 		penalty: text("penalty").notNull().default("0"),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-		// See launch_deposits.blockHash — reorg dedupe guard (waifufun#601).
+		// See launch_deposits.blockHash.
 		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => ({
 		launchUserIdx: index("idx_launch_withdrawals_launch_user").on(table.launchId, table.userAddress),
-		txLogUq: uniqueIndex("launch_withdrawals_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
+		txLogUq: uniqueIndex("launch_withdrawals_tx_log_unique").on(table.txHash, table.logIndex),
 	}),
 );
 
@@ -216,14 +214,14 @@ export const launchClaims = pgTable(
 		amount: text("amount").notNull(),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-		// See launch_deposits.blockHash — reorg dedupe guard (waifufun#601).
+		// See launch_deposits.blockHash.
 		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => ({
 		launchUserIdx: index("idx_launch_claims_launch_user").on(table.launchId, table.userAddress),
-		txLogUq: uniqueIndex("launch_claims_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
+		txLogUq: uniqueIndex("launch_claims_tx_log_unique").on(table.txHash, table.logIndex),
 	}),
 );
 
