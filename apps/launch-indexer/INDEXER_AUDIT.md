@@ -82,15 +82,23 @@ the stuck detector currently only logs. firing `enableRefundUnderSubscribed()` o
 
 current strategy: every handler is keyed on `(tx_hash, log_index)` for inserts, and the launch row is unique on `tokenAddress`. that's enough to survive a clean replay, but a real reorg where the same `(tx_hash, log_index)` reappears at a different block number would slip through because we don't store `block_hash`.
 
-**status: deferred, accepted risk (wave J).** safety bound: BSC reorg depth has empirically been bounded by 1-2 blocks since the 2022 hard fork; we wait `confirmations >= 3` (set via `LAUNCH_INDEXER_CONFIRMATIONS`, default 3) before processing, which puts the probability of a reverted `(txHash, logIndex)` re-appearing at a different block number well below the cost of the migration. **what to monitor:** if BSC drops below 3-block reorg resistance, OR we lower `LAUNCH_INDEXER_CONFIRMATIONS` to chase latency, OR we port the indexer to a chain with deeper reorgs (any L2 sequencer), the `block_hash` migration becomes mandatory. operationally: if a depositor reports a 'phantom' Deposited row with no on-chain receipt after a reorg, that's the signal to ship the migration.
+**status: SHIPPED (waifufun#601).** previously deferred as an accepted risk (wave J) on the reorg-depth safety bound described below; shipped proactively rather than waiting for the phantom-row trigger. _historical rationale:_ BSC reorg depth has empirically been bounded by 1-2 blocks since the 2022 hard fork; we wait `confirmations >= 3` (set via `LAUNCH_INDEXER_CONFIRMATIONS`, default 3) before processing, which put the probability of a reverted `(txHash, logIndex)` re-appearing at a different block number well below the cost of the migration. that bound still holds — the migration just closes the gap unconditionally, which also unblocks lowering `LAUNCH_INDEXER_CONFIRMATIONS` or porting the indexer to a deeper-reorg chain (L2 sequencer) without revisiting dedup safety.
 
-**followup (P2):** add `block_hash` to the `*_tx_log_unique` keys (4 tables: `launch_deposits`, `launch_withdrawals`, `launch_refunds_log`, `launch_claims`) plus a backfill that reads the original `block_number → block_hash` for existing rows. schema change only; handlers already have `event.blockNumber` in scope and viem returns `blockHash` on every log, so the wiring is trivial.
+**followup (P2): DONE in `0038_condemned_mercury.sql`.** `block_hash varchar(66) NOT NULL DEFAULT '0x00…00'` added to `launch_deposits`, `launch_withdrawals`, `launch_claims`; each `*_tx_log_unique` key swapped to `(tx_hash, log_index, block_hash)`. (`launch_refunds_log` named in the original followup does not exist — refunds are recorded as `launch_withdrawals` rows.) handlers now populate `block_hash` from `event.blockHash` (threaded through `decode.ts` → `events.ts` → `source.ts`). pre-migration rows backfill to the zero-hash sentinel; since `(tx_hash, log_index)` was already unique, the constant sentinel preserves their uniqueness, so a historical `block_number → block_hash` RPC backfill is optional cosmetic cleanup, not a correctness requirement.
 
 ### gap #20 resolution — predicted-address mismatch warn log + metric
 
 gap #20 (from `packages/contracts-evm/AUDIT/USER_FLOW_COVERAGE.md`): `handlePortalTokenCreated` would silently return `null` when the portal-emitted token address did not match any stored `predictedTokenAddress`. router-level `PredictedAddressMismatch` already protects funds, but the indexer dropped the only visible observation event.
 
 **FIXED in wave J:** `apps/launch-indexer/src/handlers/flap.ts` now warn-logs `"portal TokenCreated has no matching predicted address (gap #20)"` with `{token, creator, nonce, name, symbol, txHash, blockNumber}` AND bumps the `indexer_portal_token_created_unmatched_total` counter on every mismatch. symmetric coverage added for the `LaunchedToDEX` orphan path (`indexer_flap_launched_to_dex_unmatched_total`). unit tests pin the behavior.
+
+### gap F16 — TreasuryLP4 events were never indexed (waifufun#599)
+
+the indexer covered LaunchFactory, LaunchVault, BundleRouter, the Flap portal, and Flap graduation, but **nothing** from `TreasuryLP4` — the contract that owns post-launch LP, buybacks, and fee distribution. the #599 issue assumed event names that do not exist on the deployed contract; the real events live in `packages/contracts-evm/contracts/TreasuryLP4.sol` (events block).
+
+**status: SHIPPED (waifufun#599).** indexed 11 lifecycle/value events — `TierEpochAdvanced`, `TierEpochsReset`, `TierDeployed`, `TierPaused`, `V3PoolInitialized`, `BuybackExecuted`, `BnbClaimed`, `TokenFeesClaimed`, `BuybackBpsSet`, `EpochLengthSet`, `FlapV2PairSet`. `OraclePoked` is deliberately excluded as high-frequency TWAP telemetry with no per-launch lifecycle meaning.
+
+**implementation:** new `treasuryLpEventsAbi` (added to `allLaunchEventAbis`, which auto-extends the getLogs topic filter); per-event types + decode cases (`events.ts`, `decode.ts`); new `treasuryLpCursorId` + poller Phase 3 that polls each launch's `treasury_lp_address` with its own cursor (bootstrapped from the non-zero `treasuryLp` on `LaunchCreated`); discriminated `treasury_lp_events` table (migration `0039_broken_puck.sql`) keyed on `(tx_hash, log_index, block_hash)` per #601, with `event_kind` discriminator, full decoded args in `payload` jsonb, and promoted `tier_idx` / `agent_safe_address` columns for filtering; dispatcher `handlers/treasury-lp.ts`. unit tests cover decode round-trips (indexed + non-indexed + bool variants) and the dispatcher's discriminator/promotion logic.
 
 ## fix summary
 
@@ -99,7 +107,8 @@ gap #20 (from `packages/contracts-evm/AUDIT/USER_FLOW_COVERAGE.md`): `handlePort
 - P1 auto-refund cron: FIXED in wave J (`tier-cron/refund-cron.ts`, feature-flagged).
 - P2 wallet-pool stuck-lock detection: FIXED in wave J (`tier-cron/wallet-pool-health.ts`).
 - P2 portal handler tests: FIXED in wave J (`launch-indexer/handlers/flap.test.ts`).
-- P2 `block_hash` unique key: DEFERRED, accepted risk (see above).
+- P2 `block_hash` unique key: SHIPPED (waifufun#601) — migration `0038_condemned_mercury.sql` + handler/event wiring.
 - gap #20 (silent no-op on predicted-addr mismatch): FIXED in wave J (warn log + counter).
+- gap F16 (TreasuryLP4 events unindexed): SHIPPED (waifufun#599) — `treasuryLpEventsAbi` + decode/events wiring + poller Phase 3 + `treasury_lp_events` table (migration `0039_broken_puck.sql`).
 
-15/15 launch-indexer tests pass. 16/16 tier-cron tests pass. no contract changes, no new dependencies, no schema migrations needed (every column already exists on `agent_launches`).
+29/29 launch-indexer tests pass. 16/16 tier-cron tests pass. schema migrations: `0038_condemned_mercury.sql` (block_hash dedupe, #601), `0039_broken_puck.sql` (treasury_lp_events, #599).

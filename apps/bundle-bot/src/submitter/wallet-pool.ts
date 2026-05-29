@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 
 import { schema } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { type Address, type Hex, getAddress, isHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -60,6 +60,26 @@ export async function selectAvailableWallet(
 			.where(eq(schema.bundleWalletPool.address, address));
 		return { address: getAddress(row.address), encryptedPk: row.encrypted_pk };
 	});
+}
+
+/**
+ * Look up a single active pool wallet by its exact address, returning the
+ * encrypted key envelope. Used by the auto-refund path, which must send from
+ * the precise EOA the vault registered as `bundleBot` (the gated
+ * `enableRefundBundleFailed()` reverts `NotBundleBot` from any other sender).
+ * Unlike {@link selectAvailableWallet} this does not reserve/cooldown the
+ * wallet — refund-enable is a one-shot, low-frequency call.
+ */
+export async function getActiveWalletByAddress(db: Database, address: string): Promise<BundleWalletSelection | null> {
+	const normalized = normalizeAddress(address);
+	const rows = await db
+		.select({ address: schema.bundleWalletPool.address, encryptedPk: schema.bundleWalletPool.encryptedPk })
+		.from(schema.bundleWalletPool)
+		.where(and(eq(schema.bundleWalletPool.address, normalized), eq(schema.bundleWalletPool.isActive, true)))
+		.limit(1);
+	const row = rows[0];
+	if (!row) return null;
+	return { address: getAddress(row.address), encryptedPk: row.encryptedPk };
 }
 
 export async function markUsed(db: Database, address: string, createdAt: Date = new Date()): Promise<void> {

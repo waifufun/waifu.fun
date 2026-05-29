@@ -41,6 +41,7 @@ import {
 	resolveElizaCloudApiKey,
 } from "../../services/eliza-client.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
+import { buildTreasurySummary } from "../../services/nav/treasury-summary.js";
 import {
 	type PatronContext,
 	type ProvisionAdapterConfig,
@@ -708,7 +709,31 @@ app.get("/", maybeRequirePatron, async (c) => {
 			...(!mine && patron && ownerRaw ? { ownerStewardUserId: patron.stewardUserId } : {}),
 			...(!mine && ownerAddress ? { ownerAddress } : {}),
 		});
-		return c.json(result);
+
+		// Surface treasury for agents whose Safe isn't captured by a NAV
+		// snapshot yet (graduated LaunchFactory launches): read the Safe's BNB
+		// balance and price it once for the page. Best-effort — an RPC/price
+		// hiccup must never fail the list. waifufun#744.
+		let bnbPriceUsd: number | null = null;
+		try {
+			const pending = result.agents.filter(
+				(a) => (a.treasuryUsd === null || a.treasuryUsd === 0) && a.agentSafeAddress,
+			);
+			if (pending.length > 0) {
+				const summary = await buildTreasurySummary(pending.map((a) => a.agentSafeAddress));
+				bnbPriceUsd = summary.bnbPriceUsd;
+				for (const agent of result.agents) {
+					if (!agent.agentSafeAddress) continue;
+					if (agent.treasuryUsd !== null && agent.treasuryUsd > 0) continue;
+					const usd = summary.treasuryUsdByAddress.get(agent.agentSafeAddress.toLowerCase());
+					if (usd !== undefined) agent.treasuryUsd = usd;
+				}
+			}
+		} catch {
+			// leave treasuryUsd as-is; frontend renders a dash for null
+		}
+
+		return c.json({ ...result, bnbPriceUsd });
 	} catch (err) {
 		return c.json(
 			{

@@ -25,13 +25,25 @@ export type LaunchEventName =
 	| "BundleExecuted"
 	| "BundleFailed"
 	| "TokenCreated"
-	| "LaunchedToDEX";
+	| "LaunchedToDEX"
+	| "TierEpochAdvanced"
+	| "TierEpochsReset"
+	| "TierDeployed"
+	| "TierPaused"
+	| "V3PoolInitialized"
+	| "BuybackExecuted"
+	| "BnbClaimed"
+	| "TokenFeesClaimed"
+	| "BuybackBpsSet"
+	| "EpochLengthSet"
+	| "FlapV2PairSet";
 
 export interface LaunchEventEnvelope<TEventName extends LaunchEventName, TData> {
 	eventName: TEventName;
 	chainId: number;
 	contractAddress: Address;
 	blockNumber: bigint;
+	blockHash: `0x${string}`;
 	txHash: `0x${string}`;
 	logIndex: number;
 	blockTimestamp: Date;
@@ -180,6 +192,117 @@ export type FlapLaunchedToDexEvent = LaunchEventEnvelope<
 	}
 >;
 
+// --- TreasuryLP4 events (gap F16, waifufun#599) ----------------------------
+
+export type TierEpochAdvancedEvent = LaunchEventEnvelope<
+	"TierEpochAdvanced",
+	{
+		tierIdx: number;
+		newEpochsAbove: number;
+		currentMcUSD: string;
+	}
+>;
+
+export type TierEpochsResetEvent = LaunchEventEnvelope<
+	"TierEpochsReset",
+	{
+		tierIdx: number;
+		prevEpochsAbove: number;
+		currentMcUSD: string;
+	}
+>;
+
+export type TierDeployedEvent = LaunchEventEnvelope<
+	"TierDeployed",
+	{
+		tierIdx: number;
+		positionId: string;
+		liquidity: string;
+		tokenAmount: string;
+	}
+>;
+
+export type TierPausedEvent = LaunchEventEnvelope<
+	"TierPaused",
+	{
+		tierIdx: number;
+		by: Address;
+	}
+>;
+
+export type V3PoolInitializedEvent = LaunchEventEnvelope<
+	"V3PoolInitialized",
+	{
+		pool: Address;
+		sqrtPriceX96: string;
+		tickAtInit: number;
+	}
+>;
+
+export type BuybackExecutedEvent = LaunchEventEnvelope<
+	"BuybackExecuted",
+	{
+		bnbSpent: string;
+		tokensBurned: string;
+	}
+>;
+
+export type BnbClaimedEvent = LaunchEventEnvelope<
+	"BnbClaimed",
+	{
+		agentSafe: Address;
+		bnbToAgent: string;
+		bnbBuyback: string;
+		bnbPlatform: string;
+		bnbPatron: string;
+	}
+>;
+
+export type TokenFeesClaimedEvent = LaunchEventEnvelope<
+	"TokenFeesClaimed",
+	{
+		agentSafe: Address;
+		tokenAmount: string;
+	}
+>;
+
+export type BuybackBpsSetEvent = LaunchEventEnvelope<
+	"BuybackBpsSet",
+	{
+		oldBps: number;
+		newBps: number;
+	}
+>;
+
+export type EpochLengthSetEvent = LaunchEventEnvelope<
+	"EpochLengthSet",
+	{
+		oldSecs: number;
+		newSecs: number;
+	}
+>;
+
+export type FlapV2PairSetEvent = LaunchEventEnvelope<
+	"FlapV2PairSet",
+	{
+		pair: Address;
+		tokenIsPair0: boolean;
+	}
+>;
+
+export type TreasuryLpEvent =
+	| TierEpochAdvancedEvent
+	| TierEpochsResetEvent
+	| TierDeployedEvent
+	| TierPausedEvent
+	| V3PoolInitializedEvent
+	| BuybackExecutedEvent
+	| BnbClaimedEvent
+	| TokenFeesClaimedEvent
+	| BuybackBpsSetEvent
+	| EpochLengthSetEvent
+	| FlapV2PairSetEvent;
+
 export type LaunchEvent =
 	| LaunchCreatedEvent
 	| RouterSetEvent
@@ -194,7 +317,18 @@ export type LaunchEvent =
 	| BundleExecutedEvent
 	| BundleFailedEvent
 	| PortalTokenCreatedEvent
-	| FlapLaunchedToDexEvent;
+	| FlapLaunchedToDexEvent
+	| TierEpochAdvancedEvent
+	| TierEpochsResetEvent
+	| TierDeployedEvent
+	| TierPausedEvent
+	| V3PoolInitializedEvent
+	| BuybackExecutedEvent
+	| BnbClaimedEvent
+	| TokenFeesClaimedEvent
+	| BuybackBpsSetEvent
+	| EpochLengthSetEvent
+	| FlapV2PairSetEvent;
 
 export type LaunchVaultEvent =
 	| RouterSetEvent

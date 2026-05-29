@@ -13,8 +13,10 @@
  *   - Refunded         → launch_withdrawals + totalDeposited + bonusPool
  *   - Claimed          → launch_claims
  *
- * All inserts are idempotent on (tx_hash, log_index) so that re-running the
- * indexer over the same block range does not create duplicates.
+ * All inserts are idempotent on (tx_hash, log_index, block_hash) so that
+ * re-running the indexer over the same block range does not create duplicates,
+ * while a reorg that replays the same (tx_hash, log_index) at a different
+ * block hash is recorded distinctly rather than silently dropped (waifufun#601).
  */
 
 import { schema } from "@waifufun/db";
@@ -60,6 +62,7 @@ export async function handleDeposited(
 			amount: event.data.amount,
 			txHash: event.txHash,
 			blockNumber: event.blockNumber,
+			blockHash: event.blockHash,
 			logIndex: event.logIndex,
 		})
 		.onConflictDoNothing()
@@ -124,6 +127,7 @@ export async function handleWithdrawn(
 			penalty: event.data.penalty,
 			txHash: event.txHash,
 			blockNumber: event.blockNumber,
+			blockHash: event.blockHash,
 			logIndex: event.logIndex,
 		})
 		.onConflictDoNothing()
@@ -274,6 +278,7 @@ export async function handleRefunded(
 			penalty: "0",
 			txHash: event.txHash,
 			blockNumber: event.blockNumber,
+			blockHash: event.blockHash,
 			logIndex: event.logIndex,
 		})
 		.onConflictDoNothing()
@@ -318,6 +323,7 @@ export async function handleClaimed(
 			amount: event.data.amount,
 			txHash: event.txHash,
 			blockNumber: event.blockNumber,
+			blockHash: event.blockHash,
 			logIndex: event.logIndex,
 		})
 		.onConflictDoNothing();

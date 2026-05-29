@@ -48,6 +48,7 @@ async function main(): Promise<void> {
 					factoryEventCount: result.factoryEventCount,
 					vaultEventCount: result.vaultEventCount,
 					routerEventCount: result.routerEventCount,
+					treasuryLpEventCount: result.treasuryLpEventCount,
 				},
 				"poll tick complete",
 			);

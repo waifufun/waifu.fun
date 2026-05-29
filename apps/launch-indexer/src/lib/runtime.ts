@@ -96,3 +96,7 @@ export function portalCursorId(chainId: number, portal: Address): string {
 export function flapCursorId(chainId: number, flap: Address): string {
 	return `launch:bsc:${chainId}:flap:${flap.toLowerCase()}:live`;
 }
+
+export function treasuryLpCursorId(chainId: number, treasuryLp: Address): string {
+	return `launch:bsc:${chainId}:treasury-lp:${treasuryLp.toLowerCase()}:live`;
+}

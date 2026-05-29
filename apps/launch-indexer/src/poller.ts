@@ -16,6 +16,7 @@ import { eq } from "drizzle-orm";
 import { handleFlapLaunchedToDex, handlePortalTokenCreated } from "./handlers/flap.js";
 import { handleLaunchCreated } from "./handlers/launch-created.js";
 import { handleBundleExecuted, handleBundleFailed } from "./handlers/router.js";
+import { handleTreasuryLpEvent } from "./handlers/treasury-lp.js";
 import {
 	handleClaimed,
 	handleClosed,
@@ -27,13 +28,14 @@ import {
 	handleRouterSet,
 	handleWithdrawn,
 } from "./handlers/vault.js";
-import type { LaunchVaultEvent } from "./lib/events.js";
+import type { LaunchEvent, LaunchVaultEvent, TreasuryLpEvent } from "./lib/events.js";
 import {
 	type LaunchIndexerRuntime,
 	factoryCursorId,
 	flapCursorId,
 	portalCursorId,
 	routerCursorId,
+	treasuryLpCursorId,
 	vaultCursorId,
 } from "./lib/runtime.js";
 
@@ -41,6 +43,26 @@ interface AgentLaunchRow {
 	id: string;
 	vaultAddress: string;
 	routerAddress: string;
+	treasuryLpAddress: string | null;
+	createBlockNumber: bigint | null;
+}
+
+const TREASURY_LP_EVENT_NAMES: ReadonlySet<LaunchEvent["eventName"]> = new Set([
+	"TierEpochAdvanced",
+	"TierEpochsReset",
+	"TierDeployed",
+	"TierPaused",
+	"V3PoolInitialized",
+	"BuybackExecuted",
+	"BnbClaimed",
+	"TokenFeesClaimed",
+	"BuybackBpsSet",
+	"EpochLengthSet",
+	"FlapV2PairSet",
+]);
+
+function isTreasuryLpEvent(event: LaunchEvent): event is TreasuryLpEvent {
+	return TREASURY_LP_EVENT_NAMES.has(event.eventName);
 }
 
 export async function listAgentLaunches(runtime: LaunchIndexerRuntime): Promise<AgentLaunchRow[]> {
@@ -49,6 +71,8 @@ export async function listAgentLaunches(runtime: LaunchIndexerRuntime): Promise<
 			id: schema.agentLaunches.id,
 			vaultAddress: schema.agentLaunches.vaultAddress,
 			routerAddress: schema.agentLaunches.routerAddress,
+			treasuryLpAddress: schema.agentLaunches.treasuryLpAddress,
+			createBlockNumber: schema.agentLaunches.createBlockNumber,
 		})
 		.from(schema.agentLaunches);
 	return rows;
@@ -120,6 +144,7 @@ export interface PollOnceResult {
 	flapEventCount: number;
 	vaultEventCount: number;
 	routerEventCount: number;
+	treasuryLpEventCount: number;
 }
 
 export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceOptions = {}): Promise<PollOnceResult> {
@@ -134,6 +159,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 			flapEventCount: 0,
 			vaultEventCount: 0,
 			routerEventCount: 0,
+			treasuryLpEventCount: 0,
 		};
 	}
 
@@ -172,6 +198,9 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 					contractAddress: event.data.router,
 					initialBlock: event.blockNumber - 1n,
 				});
+				// Note: the treasury-LP cursor is bootstrapped in Phase 3 (per
+				// launch) rather than here, so that launches created *before*
+				// treasury indexing existed also get a cursor and backfill.
 				factoryEventCount += 1;
 				runtime.logger.debug({ launchId, block: event.blockNumber.toString() }, "registered launch contracts");
 			} catch (error) {
@@ -265,6 +294,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 	const launches = await listAgentLaunches(runtime);
 	let vaultEventCount = 0;
 	let routerEventCount = 0;
+	let treasuryLpEventCount = 0;
 
 	// Group cursors by chunk window for efficiency. Each contract has its own
 	// cursor (since they came online at different blocks), so we still issue
@@ -291,7 +321,8 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 					event.eventName === "BundleExecuted" ||
 					event.eventName === "BundleFailed" ||
 					event.eventName === "TokenCreated" ||
-					event.eventName === "LaunchedToDEX"
+					event.eventName === "LaunchedToDEX" ||
+					isTreasuryLpEvent(event)
 				)
 					continue;
 				try {
@@ -350,6 +381,55 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 			}
 			if (!failed) await runtime.cursors.advance(rCursorId, toBlock);
 		}
+
+		// TreasuryLP4 (gap F16). Not every launch has one wired (zero address →
+		// skip). We `ensure` rather than `read` so launches that predate
+		// treasury indexing get a cursor seeded at their creation block and
+		// backfill historical events, instead of being silently skipped.
+		if (launch.treasuryLpAddress && launch.treasuryLpAddress !== "0x0000000000000000000000000000000000000000") {
+			const tCursorId = treasuryLpCursorId(runtime.config.chainId, launch.treasuryLpAddress as `0x${string}`);
+			const treasurySeed =
+				launch.createBlockNumber != null && launch.createBlockNumber > 0n
+					? launch.createBlockNumber - 1n
+					: runtime.config.startBlock > 0n
+						? runtime.config.startBlock - 1n
+						: 0n;
+			const tCursor = await runtime.cursors.ensure({
+				id: tCursorId,
+				contractAddress: launch.treasuryLpAddress as `0x${string}`,
+				initialBlock: treasurySeed,
+			});
+			if (tCursor.lastBlock < targetBlock) {
+				const fromBlock = tCursor.lastBlock + 1n;
+				const toBlock = clampUpper(fromBlock + runtime.config.maxBlocksPerPoll - 1n, targetBlock);
+				const events = await runtime.source.getEvents({
+					addresses: [launch.treasuryLpAddress as `0x${string}`],
+					fromBlock,
+					toBlock,
+				});
+				let failed = false;
+				for (const event of events) {
+					if (!isTreasuryLpEvent(event)) continue;
+					try {
+						await handleTreasuryLpEvent(runtime, event, { launchId: launch.id });
+						treasuryLpEventCount += 1;
+					} catch (error) {
+						runtime.logger.error(
+							{
+								err: error instanceof Error ? error.message : String(error),
+								launchId: launch.id,
+								eventName: event.eventName,
+								tx: event.txHash,
+							},
+							"treasury-lp handler failed",
+						);
+						failed = true;
+						break;
+					}
+				}
+				if (!failed) await runtime.cursors.advance(tCursorId, toBlock);
+			}
+		}
 	}
 
 	return {
@@ -359,6 +439,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 		flapEventCount,
 		vaultEventCount,
 		routerEventCount,
+		treasuryLpEventCount,
 	};
 }
 

@@ -40,10 +40,36 @@ export const flapEventsAbi = parseAbi([
 	"event LaunchedToDEX(address indexed token, address indexed pair, uint256 quoteAmt)",
 ]);
 
+/**
+ * TreasuryLP4 lifecycle/value events (gap F16, waifufun#599).
+ *
+ * Authoritative source: packages/contracts-evm/contracts/TreasuryLP4.sol
+ * (events block, currently lines 102-119). The issue's assumed event names
+ * do not exist on the deployed contract; these signatures are the real ones.
+ *
+ * `OraclePoked` is intentionally excluded — it is high-frequency telemetry
+ * (emitted on every TWAP poke) with no per-launch lifecycle meaning, and
+ * indexing it would balloon the events table without analytical value.
+ */
+export const treasuryLpEventsAbi = parseAbi([
+	"event TierEpochAdvanced(uint8 indexed tierIdx, uint8 newEpochsAbove, uint256 currentMcUSD)",
+	"event TierEpochsReset(uint8 indexed tierIdx, uint8 prevEpochsAbove, uint256 currentMcUSD)",
+	"event TierDeployed(uint8 indexed tierIdx, uint256 indexed positionId, uint128 liquidity, uint256 tokenAmount)",
+	"event TierPaused(uint8 indexed tierIdx, address indexed by)",
+	"event V3PoolInitialized(address indexed pool, uint160 sqrtPriceX96, int24 tickAtInit)",
+	"event BuybackExecuted(uint256 bnbSpent, uint256 tokensBurned)",
+	"event BnbClaimed(address indexed agentSafe, uint256 bnbToAgent, uint256 bnbBuyback, uint256 bnbPlatform, uint256 bnbPatron)",
+	"event TokenFeesClaimed(address indexed agentSafe, uint256 tokenAmount)",
+	"event BuybackBpsSet(uint16 oldBps, uint16 newBps)",
+	"event EpochLengthSet(uint32 oldSecs, uint32 newSecs)",
+	"event FlapV2PairSet(address indexed pair, bool tokenIsPair0)",
+]);
+
 export const allLaunchEventAbis = [
 	...launchFactoryEventsAbi,
 	...launchVaultEventsAbi,
 	...bundleRouterEventsAbi,
 	...portalEventsAbi,
 	...flapEventsAbi,
+	...treasuryLpEventsAbi,
 ];

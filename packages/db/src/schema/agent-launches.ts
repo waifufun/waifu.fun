@@ -31,6 +31,13 @@ import { type JsonMap, emptyJsonObject } from "./_common.js";
  *   launched: BundleExecuted fired, V2 pair live
  *   failed: terminal failure (vault closed without graduation)
  */
+/**
+ * Sentinel for pre-waifufun#601 event rows that predate block_hash capture.
+ * 32 zero bytes — never a real BSC block hash, so it cannot mask a genuine
+ * reorg collision.
+ */
+export const ZERO_BLOCK_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
 export const agentLaunchStates = ["open", "closed", "launched", "failed", "mining_failed"] as const;
 export type AgentLaunchState = (typeof agentLaunchStates)[number];
 
@@ -148,12 +155,18 @@ export const launchDeposits = pgTable(
 		amount: text("amount").notNull(),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
+		// Reorg guard (waifufun#601): the dedupe key includes block_hash so a
+		// reverted-then-replayed (tx_hash, log_index) at a different block can't
+		// silently collide with the original row. Pre-#601 rows backfill to the
+		// zero hash sentinel; since (tx_hash, log_index) was already unique,
+		// adding a constant column preserves their uniqueness.
+		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => ({
 		launchUserIdx: index("idx_launch_deposits_launch_user").on(table.launchId, table.userAddress),
-		txLogUq: uniqueIndex("launch_deposits_tx_log_unique").on(table.txHash, table.logIndex),
+		txLogUq: uniqueIndex("launch_deposits_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
 	}),
 );
 
@@ -175,12 +188,14 @@ export const launchWithdrawals = pgTable(
 		penalty: text("penalty").notNull().default("0"),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
+		// See launch_deposits.blockHash — reorg dedupe guard (waifufun#601).
+		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => ({
 		launchUserIdx: index("idx_launch_withdrawals_launch_user").on(table.launchId, table.userAddress),
-		txLogUq: uniqueIndex("launch_withdrawals_tx_log_unique").on(table.txHash, table.logIndex),
+		txLogUq: uniqueIndex("launch_withdrawals_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
 	}),
 );
 
@@ -201,14 +216,73 @@ export const launchClaims = pgTable(
 		amount: text("amount").notNull(),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
+		// See launch_deposits.blockHash — reorg dedupe guard (waifufun#601).
+		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => ({
 		launchUserIdx: index("idx_launch_claims_launch_user").on(table.launchId, table.userAddress),
-		txLogUq: uniqueIndex("launch_claims_tx_log_unique").on(table.txHash, table.logIndex),
+		txLogUq: uniqueIndex("launch_claims_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
 	}),
 );
 
 export type LaunchClaimRow = typeof launchClaims.$inferSelect;
 export type NewLaunchClaim = typeof launchClaims.$inferInsert;
+
+/**
+ * TreasuryLP4 lifecycle/value events (gap F16, waifufun#599).
+ *
+ * One row per indexed TreasuryLP4 event (see treasuryLpEventsAbi in the
+ * launch-indexer). A single discriminated table keeps the schema flat: the
+ * `eventKind` column tells consumers which variant a row is, the full decoded
+ * args live in `payload`, and the two most-queried fields (`tierIdx`,
+ * `agentSafeAddress`) are promoted to typed columns for cheap filtering.
+ *
+ * Dedupe matches the launch_* tables: unique on (tx_hash, log_index,
+ * block_hash) so re-runs are idempotent while a reorg replaying the same
+ * (tx_hash, log_index) at a new block hash is recorded distinctly (waifufun#601).
+ */
+export const treasuryLpEventKinds = [
+	"TierEpochAdvanced",
+	"TierEpochsReset",
+	"TierDeployed",
+	"TierPaused",
+	"V3PoolInitialized",
+	"BuybackExecuted",
+	"BnbClaimed",
+	"TokenFeesClaimed",
+	"BuybackBpsSet",
+	"EpochLengthSet",
+	"FlapV2PairSet",
+] as const;
+export type TreasuryLpEventKind = (typeof treasuryLpEventKinds)[number];
+
+export const treasuryLpEvents = pgTable(
+	"treasury_lp_events",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		launchId: uuid("launch_id")
+			.notNull()
+			.references(() => agentLaunches.id, { onDelete: "cascade" }),
+		treasuryLpAddress: varchar("treasury_lp_address", { length: 42 }).notNull(),
+		eventKind: text("event_kind").$type<TreasuryLpEventKind>().notNull(),
+		// Promoted from payload for cheap filtering; null when the event carries no tier/safe.
+		tierIdx: smallint("tier_idx"),
+		agentSafeAddress: varchar("agent_safe_address", { length: 42 }),
+		payload: jsonb("payload").$type<JsonMap>().notNull().default(emptyJsonObject),
+		txHash: varchar("tx_hash", { length: 66 }).notNull(),
+		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
+		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
+		logIndex: integer("log_index").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(table) => ({
+		launchKindIdx: index("idx_treasury_lp_events_launch_kind").on(table.launchId, table.eventKind),
+		treasuryAddrIdx: index("idx_treasury_lp_events_treasury_addr").on(table.treasuryLpAddress),
+		txLogUq: uniqueIndex("treasury_lp_events_tx_log_unique").on(table.txHash, table.logIndex, table.blockHash),
+	}),
+);
+
+export type TreasuryLpEventRow = typeof treasuryLpEvents.$inferSelect;
+export type NewTreasuryLpEvent = typeof treasuryLpEvents.$inferInsert;
