@@ -17,6 +17,9 @@ export type AgentEvent = {
 	type: string;
 	status: string;
 	createdAt: string;
+	grouped?: true;
+	count?: number;
+	items?: AgentEvent[];
 };
 
 type UseAgentEventsOptions = {
