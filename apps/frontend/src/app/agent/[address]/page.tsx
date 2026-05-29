@@ -408,6 +408,8 @@ function emptyTokenMetrics(address: string): TokenMetrics {
 		txs24h: 0,
 		change24h: 0,
 		totalSupply: 0n,
+		burnedSupply: 0n,
+		decimals: 18,
 	};
 }
 
