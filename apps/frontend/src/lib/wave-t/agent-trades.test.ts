@@ -102,6 +102,34 @@ describe("fetchAgentOwnTrades", () => {
 		expect(t?.amount).toBeCloseTo(1.87);
 		expect(t?.usdValue).toBeCloseTo(1002.3574);
 		expect(Number.isFinite(t?.timestamp)).toBe(true);
+		// HL fills must be tagged hyperliquid so the feed skips the bscscan path.
+		expect(t?.venue).toBe("hyperliquid");
+	});
+
+	it("renders HL fills with the hyperliquid venue and no bscscan link", async () => {
+		mockFetch(200, {
+			trades: [
+				{
+					id: "hl:445800059452:739205643264533",
+					venue: "hyperliquid",
+					asset: "ZEC",
+					side: "buy",
+					size: "1.87",
+					price: "536.02",
+					notionalUsd: "1002.3574",
+					timestamp: "2026-05-28T04:39:23.664Z",
+				},
+			],
+		});
+
+		const trades = await fetchAgentOwnTrades(ADDRESS);
+		const rows = mergeActivityWithTrades({ activity: [], trades, ticker: "WAIFU" });
+		expect(rows).toHaveLength(1);
+		const [row] = rows;
+		if (row?.type !== "trade") throw new Error("expected a trade row");
+		expect(row.venue).toBe("Hyperliquid");
+		// no bogus bscscan tx link for an HL fill id (it is not an on-chain tx).
+		expect((row as { url?: string }).url).toBeUndefined();
 	});
 
 	it("falls back to empty when the backend 404s", async () => {

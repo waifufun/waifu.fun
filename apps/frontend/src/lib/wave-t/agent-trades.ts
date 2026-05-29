@@ -89,6 +89,10 @@ function mapHlTrade(raw: HlActivityTradeResponse): AgentTrade {
 		amount: Number.isFinite(size) ? size : 0,
 		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
 		tokenSymbol: raw.asset.toUpperCase(),
+		// HL fills are perp fills, not BSC swaps. Tag the venue so the
+		// activity feed renders the hyperliquid mark and skips the bscscan
+		// tx-link path (raw.id is a fill id, not an on-chain tx hash).
+		venue: "hyperliquid",
 	};
 	if (usd !== undefined && Number.isFinite(usd)) trade.usdValue = usd;
 	return trade;

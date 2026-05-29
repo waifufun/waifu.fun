@@ -23,6 +23,10 @@ export function mergeActivityWithTrades(opts: {
 		const ms = t.timestamp > 1e12 ? t.timestamp : t.timestamp * 1000;
 		const amountNum = typeof t.amount === "number" ? t.amount : Number.parseFloat(t.amount);
 		const asset = t.tokenSymbol ? t.tokenSymbol.toUpperCase() : fallbackAsset;
+		// Hyperliquid fills are not BSC swaps: their `txId` is an HL fill id,
+		// not an on-chain tx hash, so a bscscan link + PancakeSwap venue would
+		// both be wrong. Only spot (pancakeswap) trades get a bscscan tx link.
+		const isHl = t.venue === "hyperliquid";
 		const row: ActivityRowInput = {
 			id: `trade-${t.txId || idx}-${t.timestamp}`,
 			type: "trade",
@@ -31,8 +35,8 @@ export function mergeActivityWithTrades(opts: {
 			asset,
 			amount: Number.isFinite(amountNum) ? amountNum : 0,
 			priceBnb: 0,
-			venue: "PancakeSwap",
-			...(t.txId ? { url: `https://bscscan.com/tx/${t.txId}` } : {}),
+			venue: isHl ? "Hyperliquid" : "PancakeSwap",
+			...(t.txId && !isHl ? { url: `https://bscscan.com/tx/${t.txId}` } : {}),
 		};
 		return row;
 	});
