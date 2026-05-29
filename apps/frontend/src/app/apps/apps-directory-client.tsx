@@ -373,25 +373,25 @@ function SummaryStrip({ directory }: { directory: AppsDirectory }) {
 			<div className="grid grid-cols-2 gap-4 md:grid-cols-4">
 				<div className="flex flex-col gap-1">
 					<SectionTitle>apps live</SectionTitle>
-					<span className="font-sans text-[30px] font-light leading-none text-[var(--accent)] tabular-nums">
+					<span className="font-mono text-[30px] font-light leading-none text-[var(--accent)] tabular-nums">
 						{liveCount}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
 					<SectionTitle>registered</SectionTitle>
-					<span className="font-sans text-[30px] font-light leading-none text-[var(--text-primary)] tabular-nums">
+					<span className="font-mono text-[30px] font-light leading-none text-[var(--text-primary)] tabular-nums">
 						{apps.length}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
 					<SectionTitle>rev 7d</SectionTitle>
-					<span className="font-sans text-[30px] font-light leading-none text-[var(--text-primary)] tabular-nums">
+					<span className="font-mono text-[30px] font-light leading-none text-[var(--text-primary)] tabular-nums">
 						{formatCompactUsd(totalRevenue7d)}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
 					<SectionTitle>lifetime</SectionTitle>
-					<span className="font-sans text-[30px] font-light leading-none text-[var(--text-primary)] tabular-nums">
+					<span className="font-mono text-[30px] font-light leading-none text-[var(--text-primary)] tabular-nums">
 						{formatCompactUsd(totalLifetime)}
 					</span>
 				</div>
