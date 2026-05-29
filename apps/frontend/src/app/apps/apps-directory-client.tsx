@@ -174,10 +174,18 @@ function DeltaTag({ delta }: { delta: number }) {
 	);
 }
 
-// The action affordance. live apps with a url get a green "use" button;
-// scheduled apps get an honest "scheduled" tag; everything else degrades
-// to the shipped/registry caption. No dead "no entry yet" buttons.
+// The action affordance. live (and paused) apps with a url get a "use" button;
+// scheduled apps NEVER get a live link even if the registry already carries a
+// url, since the app is explicitly not open yet, they show "coming soon".
+// everything else degrades to a quiet caption. No dead "no entry yet" buttons.
 function AppAction({ app, prominent = false }: { app: DirectoryApp; prominent?: boolean }) {
+	if (app.status === "scheduled") {
+		return (
+			<span className="inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-soft)] bg-white/[0.02] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+				coming soon
+			</span>
+		);
+	}
 	const appUrl = app.appUrl;
 	const isExternal = Boolean(appUrl?.startsWith("http"));
 	if (appUrl) {
@@ -215,13 +223,6 @@ function AppAction({ app, prominent = false }: { app: DirectoryApp; prominent?: 
 					/>
 				</svg>
 			</a>
-		);
-	}
-	if (app.status === "scheduled") {
-		return (
-			<span className="inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-soft)] bg-white/[0.02] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-				coming soon
-			</span>
 		);
 	}
 	return (
@@ -404,7 +405,7 @@ function SummaryStrip({ directory }: { directory: AppsDirectory }) {
 				{totalRevenue7d === 0 && hasApps ? (
 					<>
 						<span className="text-[var(--border-mid)]">·</span>
-						<span>revenue counters live, steward billing wires soon</span>
+						<span>revenue counters wire on eliza cloud billing</span>
 					</>
 				) : null}
 			</div>

@@ -85,12 +85,21 @@ const CATEGORY_BY_APP_ID: Record<string, AppCategory> = {
 	"image-generation": "image",
 };
 
+function asCategory(value: unknown): AppCategory | null {
+	if (typeof value !== "string") return null;
+	const c = value.toLowerCase();
+	if (c === "chat" || c === "trading" || c === "content" || c === "image" || c === "infra") return c;
+	return null;
+}
+
 export function appCategory(app: App): AppCategory {
 	const m = app.metadata as Record<string, unknown> | null | undefined;
-	const explicit = m && typeof m === "object" ? m.category : undefined;
-	if (typeof explicit === "string") {
-		const c = explicit.toLowerCase();
-		if (c === "chat" || c === "trading" || c === "content" || c === "image" || c === "infra") return c;
+	// explicit source of truth: metadata.category first, then metadata.kind.
+	// kind is often a producer label like "platform-product" that is not a
+	// category, so only honor it when it actually names a known bucket.
+	if (m && typeof m === "object") {
+		const explicit = asCategory(m.category) ?? asCategory(m.kind);
+		if (explicit) return explicit;
 	}
 	const byId = CATEGORY_BY_APP_ID[app.appId];
 	if (byId) return byId;
