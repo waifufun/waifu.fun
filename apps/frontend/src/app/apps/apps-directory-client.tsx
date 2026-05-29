@@ -31,6 +31,7 @@ import {
 import { StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 import type { AppStatus } from "@/lib/wave-t/apps";
+import { fetchAppsDirectory } from "@/lib/wave-t/apps-directory";
 import {
 	type AppCategory,
 	type AppsDirectory,
@@ -492,9 +493,99 @@ function FilterTabs({
 	);
 }
 
+// ── page shell + loading/error ──────────────────────────────────────
+
+// Shared chrome so the loading and error states sit inside the same cockpit
+// frame the loaded directory uses (one max-w container, one theme application).
+function DirectoryShell({ children }: { children: React.ReactNode }) {
+	return (
+		<main
+			className="min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
+			style={THEME_TOKENS as React.CSSProperties}
+		>
+			<div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6">
+				<header className="mb-5">
+					<div className="flex items-end justify-between gap-4">
+						<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">
+							waifu.fun / apps
+						</div>
+						<Link
+							href="/agents"
+							className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
+						>
+							browse all agents →
+						</Link>
+					</div>
+					<p className="mt-3 max-w-[62ch] text-[12.5px] leading-relaxed text-[var(--text-secondary)]">
+						monetized mini-apps agents run on-chain. pay per use, revenue flows back to the agent treasury.
+					</p>
+				</header>
+				{children}
+			</div>
+		</main>
+	);
+}
+
+function DirectoryLoading() {
+	return (
+		<div className="flex flex-col gap-3">
+			<Panel className="py-8">
+				<p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+					loading apps directory
+				</p>
+			</Panel>
+		</div>
+	);
+}
+
+function DirectoryFetchFailed() {
+	return (
+		<div className="flex flex-col gap-3">
+			<Panel className="py-8">
+				<p className="text-center font-mono text-[12px] text-[var(--text-tertiary)]">
+					no data yet · onchain feed quiet
+				</p>
+			</Panel>
+		</div>
+	);
+}
+
 // ── page ─────────────────────────────────────────────────────────
 
-export default function AppsDirectoryClient({ directory }: { directory: AppsDirectory }) {
+// The frontend ships as a static export (`output: "export"`), so fetching the
+// directory in the server component would freeze it to a build-time snapshot.
+// Instead we fetch client-side in a `useEffect`, the same pattern `/agents`
+// uses, so the directory is LIVE on every visit. The page renders an honest
+// loading state until the first fetch lands, then paints the real directory.
+export default function AppsDirectoryClient() {
+	const [directory, setDirectory] = React.useState<AppsDirectory | null>(null);
+	const [errored, setErrored] = React.useState(false);
+
+	React.useEffect(() => {
+		let cancelled = false;
+		setErrored(false);
+		fetchAppsDirectory()
+			.then((next) => {
+				if (!cancelled) setDirectory(next);
+			})
+			.catch((err: unknown) => {
+				if (cancelled) return;
+				console.error("apps directory fetch failed", err);
+				setErrored(true);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	if (!directory) {
+		return <DirectoryShell>{errored ? <DirectoryFetchFailed /> : <DirectoryLoading />}</DirectoryShell>;
+	}
+
+	return <AppsDirectoryView directory={directory} />;
+}
+
+function AppsDirectoryView({ directory }: { directory: AppsDirectory }) {
 	const [filter, setFilter] = React.useState<Filter>("all");
 
 	const counts: Record<Filter, number> = {

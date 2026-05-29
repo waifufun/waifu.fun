@@ -1,5 +1,12 @@
 /**
- * Apps directory data source (server-only adapter).
+ * Apps directory data source (client-safe adapter).
+ *
+ * Runs on the client so the directory is LIVE, not a build-time snapshot. The
+ * frontend ships as a static export (`output: "export"`), so fetching this in
+ * a server component would freeze the page to whatever the registry returned
+ * at build (and strand a permanent empty page if the api was down then). The
+ * directory client calls this from a `useEffect`, the same way `/agents`
+ * fetches live, so it refetches on every visit.
  *
  * DATA SOURCE STATUS (2026-05-29): the apps registry is LIVE and populated.
  * `GET /v2/agents/:address/apps` returns 200 from the waifu.fun monorepo
