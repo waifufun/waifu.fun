@@ -17,9 +17,7 @@ class FakeTable {
 	public updateCount = 0;
 
 	insert(value: Row): Row[] {
-		const existing = this.rows.find(
-			(row) => row.txHash === value.txHash && row.logIndex === value.logIndex,
-		);
+		const existing = this.rows.find((row) => row.txHash === value.txHash && row.logIndex === value.logIndex);
 		if (existing) {
 			return [];
 		}
@@ -114,9 +112,7 @@ function runInsert(state: InsertState): Row[] {
 
 function tableNameOf(table: unknown): string {
 	return (
-		(table as { _?: { name?: string }; name?: string })?._?.name ??
-		(table as { name?: string })?.name ??
-		"unknown"
+		(table as { _?: { name?: string }; name?: string })?._?.name ?? (table as { name?: string })?.name ?? "unknown"
 	);
 }
 
