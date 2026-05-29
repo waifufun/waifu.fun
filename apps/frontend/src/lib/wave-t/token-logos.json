@@ -1,6 +1,14 @@
 {
-	"$comment": "Hand-override registry for token logos. Keys are 'chain:address' (address lowercased) or 'symbol:SYMBOL' for chain-agnostic overrides. Values are public URLs or workspace-relative paths under /public. resolveTokenLogo() checks this map first, then cascades DexScreener, TrustWallet, CoinGecko. Use this to ship $WAIFU's logo the moment it mints, or to override an ugly auto-resolved icon. To enable an override, add the key here and ensure the file exists under apps/frontend/public.",
-	"symbol:BNB": "/chain-icons/bnb.svg",
-	"symbol:ETH": "/chain-icons/ethereum.svg",
-	"symbol:SOL": "/chain-icons/solana.svg"
+	"$comment": "Hand-override registry for token logos. Keys are 'chain:address' (address lowercased) or 'symbol:SYMBOL' for chain-agnostic overrides. Values are public URLs or workspace-relative paths under /public. resolveTokenLogo() checks this map first, then cascades DexScreener, TrustWallet, CoinGecko. Use this to ship $WAIFU's logo the moment it mints, or to override an auto-resolved icon, or to give symbol-only assets (hyperliquid perps have no contract) a real mark. Perp marks live under /token-logos and are crisp brand vectors: btc/eth/sol/bnb/zec/usdc from the cryptocurrency-icons CC0 set, near from web3icons, hype from hyperliquid's own coin svg.",
+	"symbol:BNB": "/token-logos/bnb.svg",
+	"symbol:WBNB": "/token-logos/bnb.svg",
+	"symbol:ETH": "/token-logos/eth.svg",
+	"symbol:WETH": "/token-logos/eth.svg",
+	"symbol:SOL": "/token-logos/sol.svg",
+	"symbol:BTC": "/token-logos/btc.svg",
+	"symbol:WBTC": "/token-logos/btc.svg",
+	"symbol:USDC": "/token-logos/usdc.svg",
+	"symbol:NEAR": "/token-logos/near.svg",
+	"symbol:HYPE": "/token-logos/hype.svg",
+	"symbol:ZEC": "/token-logos/zec.svg"
 }
