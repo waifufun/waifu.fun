@@ -111,3 +111,7 @@ testem.log
 
 # Frontend static export stash (temp files moved aside during Next.js static export build)
 apps/.frontend-static-export-stash/
+
+# Nested project checkout that can reappear from workspace/submodule restructuring.
+# It is a separate git repo and must never be committed into this tree.
+/waifu.fun/
