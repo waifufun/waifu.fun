@@ -45,6 +45,19 @@ test("serializePublicLaunch returns the public lifecycle shape", () => {
 	);
 });
 
+test("GET /gate returns the launch gate response before the launch id route", async () => {
+	const app = createLaunchV2Routes({
+		db: {} as never,
+		async getLaunch() {
+			throw new Error("gate should not hit launch lookup");
+		},
+	});
+
+	const res = await app.request("/gate");
+	assert.equal(res.status, 200);
+	assert.deepEqual(await res.json(), { data: { allowed: true, accessSource: "open" } });
+});
+
 test("GET /:id returns launch details", async () => {
 	const app = createLaunchV2Routes({
 		db: {} as never,

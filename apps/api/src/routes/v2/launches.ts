@@ -4,6 +4,9 @@ import { Hono } from "hono";
 import { getDatabase, launches } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
+import type { AppBindings } from "../../lib/bindings.js";
+import { respondOk } from "../../lib/http.js";
+
 type PublicLaunchRow = {
 	id: string;
 	agentId: string | null;
@@ -101,7 +104,37 @@ export function createLaunchV2Routes(
 		getLaunch?: (db: Database, id: string) => Promise<PublicLaunchResponse | null>;
 	} = {},
 ) {
-	const app = new Hono();
+	const app = new Hono<AppBindings>();
+
+	app.get("/gate", async (c) => {
+		const deps = c.get("deps");
+		const inviteCode = c.req.query("inviteCode");
+
+		if (!deps?.config.features.curatedLaunchOnly) {
+			return respondOk(c, { allowed: true, accessSource: "open" });
+		}
+
+		if (inviteCode) {
+			const result = await deps.db.validateInviteCode(inviteCode);
+			if (result.valid) {
+				return respondOk(c, {
+					allowed: true,
+					accessSource: "invite",
+					remainingUses: result.remainingUses,
+				});
+			}
+
+			return respondOk(c, {
+				allowed: false,
+				reason: result.reason ?? "Invalid or expired invite code",
+			});
+		}
+
+		return respondOk(c, {
+			allowed: false,
+			reason: "An invite code is required to create tokens during the curated launch period.",
+		});
+	});
 
 	app.get("/:id", async (c) => {
 		const id = c.req.param("id");
