@@ -24,7 +24,8 @@ function serverAgentApiBase(): string {
 
 const API_BASE = serverAgentApiBase();
 
-type AgentActivityTradeResponse = {
+/** Legacy BSC-swap shape returned for spot agents. */
+type BscActivityTradeResponse = {
 	txHash: string;
 	trader: string;
 	traderRole: "agent-safe" | "agent-hot";
@@ -37,7 +38,30 @@ type AgentActivityTradeResponse = {
 	blockTimestamp: string;
 };
 
-function mapAgentOwnTrade(raw: AgentActivityTradeResponse): AgentTrade {
+/** Hyperliquid perp-fill shape returned for venue traders. */
+type HlActivityTradeResponse = {
+	id: string;
+	venue: string;
+	orderId?: string;
+	asset: string;
+	side: "buy" | "sell";
+	size: string;
+	price: string;
+	notionalUsd?: string;
+	feeUsd?: string;
+	closedPnlUsd?: string;
+	timestamp: string;
+	isPositionOpen?: boolean;
+};
+
+function isHlTrade(raw: Record<string, unknown>): raw is HlActivityTradeResponse {
+	// HL fills carry an `asset` + `size` + `price` and no `txHash`. BSC swaps
+	// carry `txHash` + `amountIn`/`amountOut`. Branch on the presence of the
+	// HL-only fields so the same endpoint can feed both venues.
+	return typeof raw.txHash !== "string" && typeof raw.asset === "string" && typeof raw.size === "string";
+}
+
+function mapBscTrade(raw: BscActivityTradeResponse): AgentTrade {
 	const timestamp = Date.parse(raw.blockTimestamp);
 	const rawAmount = raw.side === "buy" ? raw.amountOut : raw.amountIn;
 	const trade: AgentTrade = {
@@ -54,6 +78,27 @@ function mapAgentOwnTrade(raw: AgentActivityTradeResponse): AgentTrade {
 	return trade;
 }
 
+function mapHlTrade(raw: HlActivityTradeResponse): AgentTrade {
+	const timestamp = Date.parse(raw.timestamp);
+	const size = Number.parseFloat(raw.size);
+	const usd = raw.notionalUsd !== undefined ? Number.parseFloat(raw.notionalUsd) : undefined;
+	const trade: AgentTrade = {
+		txId: raw.id,
+		type: raw.side === "sell" ? "sell" : "buy",
+		address: "",
+		amount: Number.isFinite(size) ? size : 0,
+		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+		tokenSymbol: raw.asset.toUpperCase(),
+	};
+	if (usd !== undefined && Number.isFinite(usd)) trade.usdValue = usd;
+	return trade;
+}
+
+function mapAgentOwnTrade(raw: Record<string, unknown>): AgentTrade {
+	if (isHlTrade(raw)) return mapHlTrade(raw);
+	return mapBscTrade(raw as unknown as BscActivityTradeResponse);
+}
+
 /**
  * Fetch the agent's own swap history.
  *
@@ -67,8 +112,14 @@ export async function fetchAgentOwnTrades(address: string): Promise<AgentTrade[]
 		});
 		if (!res.ok) return [];
 		const data = (await res.json()) as unknown;
-		const trades = Array.isArray(data) ? data : [];
-		return trades.slice(0, 20).map((trade) => mapAgentOwnTrade(trade as AgentActivityTradeResponse));
+		// The endpoint returns either a bare array (BSC) or `{ trades: [...] }`
+		// (hyperliquid). Normalize both into one trade list.
+		const raw = Array.isArray(data)
+			? data
+			: data && typeof data === "object" && Array.isArray((data as { trades?: unknown }).trades)
+				? (data as { trades: unknown[] }).trades
+				: [];
+		return raw.slice(0, 20).map((trade) => mapAgentOwnTrade(trade as Record<string, unknown>));
 	} catch (e) {
 		console.error("agent own-trades fetch failed", e);
 		return [];

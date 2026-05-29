@@ -1,8 +1,7 @@
 import type { AgentTrade } from "@/components/agent-home/types";
 import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-feed";
 
-export const EMPTY_ACTIVITY_COPY =
-	"no activity yet · swaps, ships, tweets, and treasury moves stream here once the agent acts on-chain";
+export const EMPTY_ACTIVITY_COPY = "no activity yet · onchain feed quiet";
 
 /**
  * Project raw AgentTrade swap events into the wave-T activity feed's
@@ -38,9 +37,26 @@ export function mergeActivityWithTrades(opts: {
 		return row;
 	});
 
+	// Rich hyperliquid fills already arrive as `perpTrade` rows (id
+	// `hl-fill-${fillId}`) from the live events stream. The same fills also
+	// surface through /activity-trades as generic `trade` rows. Collect the
+	// fill ids already present so the generic duplicate collapses into the
+	// richer perp row (which carries side/price/notional).
+	const perpFillIds = new Set<string>();
+	for (const r of opts.activity) {
+		if (r.id.startsWith("hl-fill-")) perpFillIds.add(r.id.slice("hl-fill-".length));
+	}
+
 	const seen = new Set<string>();
 	const out: ActivityRowInput[] = [];
 	for (const r of [...tradeRows, ...opts.activity]) {
+		// Drop a generic trade row whose tx/fill id matches a perp fill we
+		// already render richer.
+		if (r.type === "trade") {
+			const fillId = (r as { url?: string }).url?.match(/0x[a-fA-F0-9]{40,}/)?.[0];
+			const tradeId = r.id.replace(/^trade-/, "").replace(/-\d+$/, "");
+			if ((fillId && perpFillIds.has(fillId)) || perpFillIds.has(tradeId)) continue;
+		}
 		const key = rowDedupeKey(r);
 		if (seen.has(key)) continue;
 		seen.add(key);

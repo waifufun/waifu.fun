@@ -7,7 +7,7 @@
  * Source of truth: \`SOL_BURNER\` is the same address across every EVM chain.
  */
 
-import type { AgentHoldingsSnapshot } from "./agent-holdings";
+import { type AgentHoldingsSnapshot, holdingsRowsOf } from "./agent-holdings";
 
 export const SOL_BURNER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
 
@@ -150,7 +150,7 @@ export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): Holdin
 	// half bridged to a venue) keep the EVM chain name, since collapsing
 	// would be misleading.
 	const bucketVenues = new Map<string, Set<string>>();
-	for (const h of snapshot.holdings) {
+	for (const h of holdingsRowsOf(snapshot)) {
 		if (h.valueUsd == null) continue;
 		const chain = chainKeyMap[h.chain.toLowerCase()] ?? "bsc";
 		// Group by (chain, contract). Falls back to symbol when contract is

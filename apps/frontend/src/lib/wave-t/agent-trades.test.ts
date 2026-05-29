@@ -74,7 +74,34 @@ describe("fetchAgentOwnTrades", () => {
 		const rows = mergeActivityWithTrades({ activity: [], trades, ticker: "WAIFU" });
 		expect(rows).toEqual([]);
 		expect(EMPTY_ACTIVITY_COPY).toMatch(/no activity yet/);
-		expect(EMPTY_ACTIVITY_COPY).toMatch(/stream here once the agent acts on-chain/);
+		expect(EMPTY_ACTIVITY_COPY).toMatch(/onchain feed quiet/);
+	});
+
+	it("parses the hyperliquid /activity-trades shape (no txHash, asset+size+price)", async () => {
+		mockFetch(200, {
+			trades: [
+				{
+					id: "hl:445800059452:739205643264533",
+					venue: "hyperliquid",
+					orderId: "445800059452",
+					asset: "ZEC",
+					side: "buy",
+					size: "1.87",
+					price: "536.02",
+					notionalUsd: "1002.3574",
+					timestamp: "2026-05-28T04:39:23.664Z",
+				},
+			],
+		});
+
+		const trades = await fetchAgentOwnTrades(ADDRESS);
+		expect(trades).toHaveLength(1);
+		const [t] = trades;
+		expect(t?.tokenSymbol).toBe("ZEC");
+		expect(t?.type).toBe("buy");
+		expect(t?.amount).toBeCloseTo(1.87);
+		expect(t?.usdValue).toBeCloseTo(1002.3574);
+		expect(Number.isFinite(t?.timestamp)).toBe(true);
 	});
 
 	it("falls back to empty when the backend 404s", async () => {

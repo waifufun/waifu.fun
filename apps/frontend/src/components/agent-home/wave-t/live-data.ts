@@ -32,7 +32,12 @@
 import { useEffect, useState } from "react";
 
 import type { AgentTrade } from "@/components/agent-home/types";
-import { type AgentHoldingsSnapshot, fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
+import {
+	type AgentHoldingsSnapshot,
+	fetchAgentHoldingsSnapshot,
+	perpPositionsFromSnapshot,
+} from "@/lib/wave-t/agent-holdings";
 import { type TwitterStats, fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
@@ -117,6 +122,31 @@ export function useLiveHoldings(
 		[address],
 	);
 	return state;
+}
+
+/**
+ * Poll the agent's open perp positions, derived from the live /holdings
+ * snapshot's `perpsPositions[]`. The dedicated /hyperliquid/positions
+ * endpoint does not exist, so the holdings snapshot is the canonical
+ * source. Seeds from the SSG-prefetched list so the first paint has data,
+ * then refreshes on the holdings cadence (30s by default).
+ */
+export function useLivePerpPositions(
+	address: string,
+	initialPositions: HyperliquidPosition[],
+	intervalMs = 30_000,
+): HyperliquidPosition[] {
+	const [positions, setPositions] = useState<HyperliquidPosition[]>(initialPositions);
+	usePoller(
+		async () => {
+			const raw = await fetchAgentHoldingsSnapshot(address);
+			if (!raw) return;
+			setPositions(perpPositionsFromSnapshot(raw));
+		},
+		intervalMs,
+		[address],
+	);
+	return positions;
 }
 
 // ── twitter stats ──────────────────────────────────────────────
