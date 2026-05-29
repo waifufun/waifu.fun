@@ -17,6 +17,7 @@ import { InMemoryCursorStore } from "./lib/cursor-store.js";
 import type {
 	BundleExecutedEvent,
 	BundleFailedEvent,
+	BuybackExecutedEvent,
 	ClaimedEvent,
 	ClosedEvent,
 	DepositedEvent,
@@ -30,7 +31,14 @@ import type {
 	WithdrawnEvent,
 } from "./lib/events.js";
 import type { LaunchIndexerConfig, LaunchIndexerRuntime } from "./lib/runtime.js";
-import { factoryCursorId, flapCursorId, portalCursorId, routerCursorId, vaultCursorId } from "./lib/runtime.js";
+import {
+	factoryCursorId,
+	flapCursorId,
+	portalCursorId,
+	routerCursorId,
+	treasuryLpCursorId,
+	vaultCursorId,
+} from "./lib/runtime.js";
 import { pollOnce } from "./poller.js";
 
 // ---------------------------------------------------------------------------
@@ -247,6 +255,7 @@ function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 		chainId: 56,
 		contractAddress: factoryAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: "0xa0",
 		logIndex: 0,
 		blockTimestamp: new Date("2026-05-08T00:00:00Z"),
@@ -273,6 +282,7 @@ function depositedEvent(blockNumber: bigint, user: `0x${string}`, amount: string
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xd${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -286,6 +296,7 @@ function withdrawnEvent(blockNumber: bigint): WithdrawnEvent {
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xe${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -299,6 +310,7 @@ function closedEvent(blockNumber: bigint): ClosedEvent {
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xc${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -312,6 +324,7 @@ function launchExecutedEvent(blockNumber: bigint): LaunchExecutedEvent {
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xb${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -325,6 +338,7 @@ function distributedEvent(blockNumber: bigint): DistributedEvent {
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xdd${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -338,6 +352,7 @@ function refundEnabledEvent(blockNumber: bigint, reason: string): RefundEnabledE
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xre${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -351,6 +366,7 @@ function bundleExecutedEvent(blockNumber: bigint): BundleExecutedEvent {
 		chainId: 56,
 		contractAddress: routerAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xf${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -375,6 +391,7 @@ function bundleFailedEvent(blockNumber: bigint, reason: string): BundleFailedEve
 		chainId: 56,
 		contractAddress: routerAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xbf${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -388,6 +405,7 @@ function claimedEvent(blockNumber: bigint, user: `0x${string}`): ClaimedEvent {
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0xc${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 1,
 		blockTimestamp: new Date(),
@@ -405,6 +423,7 @@ function portalTokenCreatedEvent(
 		chainId: 56,
 		contractAddress: defaultPortalAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0x70${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
@@ -426,10 +445,25 @@ function flapLaunchedToDexEvent(blockNumber: bigint, pair: unknown = v2Pair): Fl
 		chainId: 56,
 		contractAddress: flapFactoryAddress,
 		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
 		txHash: `0x71${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
 		data: { token: tokenAddress, pair: pair as `0x${string}`, quoteAmt: "5000000000000000000" },
+	};
+}
+
+function buybackExecutedEvent(blockNumber: bigint): BuybackExecutedEvent {
+	return {
+		eventName: "BuybackExecuted",
+		chainId: 56,
+		contractAddress: treasuryReserveAddress,
+		blockNumber,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1",
+		txHash: `0xbb${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
+		logIndex: 0,
+		blockTimestamp: new Date(),
+		data: { bnbSpent: "1000", tokensBurned: "2000" },
 	};
 }
 
@@ -512,6 +546,53 @@ test("pollOnce: indexes LaunchCreated → Deposited → Closed → BundleExecute
 
 	const routerCursor = await runtime.cursors.read(routerCursorId(56, routerAddress));
 	assert.equal(routerCursor?.lastBlock, 200n);
+});
+
+test("pollOnce: indexes a TreasuryLP event for a newly-created launch (gap F16)", async () => {
+	const events: LaunchEvent[] = [launchCreatedEvent(100n), buybackExecutedEvent(105n)];
+	const { runtime, db } = buildRuntime(events, 200n);
+
+	const result = await pollOnce(runtime);
+
+	assert.equal(result.treasuryLpEventCount, 1);
+
+	const treasuryRows = db.tables.get("treasury_lp_events")?.rows ?? [];
+	assert.equal(treasuryRows.length, 1);
+	assert.equal(treasuryRows[0]?.eventKind, "BuybackExecuted");
+	assert.equal(treasuryRows[0]?.treasuryLpAddress, treasuryReserveAddress.toLowerCase());
+
+	const tCursor = await runtime.cursors.read(treasuryLpCursorId(56, treasuryReserveAddress));
+	assert.equal(tCursor?.lastBlock, 200n);
+});
+
+test("pollOnce: backfills TreasuryLP events for a pre-existing launch with no cursor (gap F16)", async () => {
+	// Simulate a launch the indexer already processed BEFORE treasury indexing
+	// existed: its row is in the DB, but there is no LaunchCreated event this
+	// tick (so Phase 1 never bootstraps a treasury cursor) and no cursor yet.
+	// Phase 3 must `ensure` the cursor seeded at createBlockNumber-1 and backfill.
+	const events: LaunchEvent[] = [buybackExecutedEvent(105n)];
+	const { runtime, db } = buildRuntime(events, 200n);
+
+	db.getTable(schema.agentLaunches).insert({
+		id: "pre-existing-launch",
+		vaultAddress: vaultAddress.toLowerCase(),
+		routerAddress: routerAddress.toLowerCase(),
+		treasuryLpAddress: treasuryReserveAddress.toLowerCase(),
+		createBlockNumber: 100n,
+	});
+
+	// No treasury cursor exists yet.
+	assert.equal(await runtime.cursors.read(treasuryLpCursorId(56, treasuryReserveAddress)), null);
+
+	const result = await pollOnce(runtime);
+
+	assert.equal(result.treasuryLpEventCount, 1, "pre-existing launch should backfill its treasury event");
+	const treasuryRows = db.tables.get("treasury_lp_events")?.rows ?? [];
+	assert.equal(treasuryRows.length, 1);
+	assert.equal(treasuryRows[0]?.launchId, "pre-existing-launch");
+
+	const tCursor = await runtime.cursors.read(treasuryLpCursorId(56, treasuryReserveAddress));
+	assert.equal(tCursor?.lastBlock, 200n);
 });
 
 test("pollOnce: respects confirmations (target = latest - confirmations)", async () => {

@@ -11,7 +11,7 @@ import { test } from "node:test";
 
 import { type Hex, encodeAbiParameters, encodeEventTopics, keccak256, toHex } from "viem";
 
-import { bundleRouterEventsAbi, launchFactoryEventsAbi, launchVaultEventsAbi } from "./abis.js";
+import { bundleRouterEventsAbi, launchFactoryEventsAbi, launchVaultEventsAbi, treasuryLpEventsAbi } from "./abis.js";
 import { decodeLaunchLog } from "./decode.js";
 
 const factoryAddress = "0x1111111111111111111111111111111111111111" as const;
@@ -38,6 +38,7 @@ function buildLog(input: {
 		topics: input.topics,
 		data: input.data,
 		blockNumber: input.blockNumber ?? 100n,
+		blockHash: "0x00000000000000000000000000000000000000000000000000000000000000b1" as `0x${string}`,
 		transactionHash:
 			input.txHash ?? ("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as `0x${string}`),
 		logIndex: input.logIndex ?? 0,
@@ -408,4 +409,123 @@ test("decodeLaunchLog: returns null for unrelated topic", () => {
 		blockTimestamp,
 	});
 	assert.equal(decoded, null);
+});
+
+// --- TreasuryLP4 events (gap F16, waifufun#599) ----------------------------
+
+test("decodeLaunchLog: TierDeployed round-trips (indexed tierIdx + positionId)", () => {
+	const topics = encodeEventTopics({
+		abi: treasuryLpEventsAbi,
+		eventName: "TierDeployed",
+		args: { tierIdx: 2, positionId: 123n },
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters(
+		[
+			{ name: "liquidity", type: "uint128" },
+			{ name: "tokenAmount", type: "uint256" },
+		],
+		[999n, 1_000_000n],
+	);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: treasuryLpAddress, topics, data, logIndex: 3 }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "TierDeployed") {
+		assert.fail(`expected TierDeployed, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.tierIdx, 2);
+	assert.equal(decoded.data.positionId, "123");
+	assert.equal(decoded.data.liquidity, "999");
+	assert.equal(decoded.data.tokenAmount, "1000000");
+	assert.equal(decoded.contractAddress.toLowerCase(), treasuryLpAddress);
+});
+
+test("decodeLaunchLog: BnbClaimed round-trips (indexed agentSafe + four amounts)", () => {
+	const topics = encodeEventTopics({
+		abi: treasuryLpEventsAbi,
+		eventName: "BnbClaimed",
+		args: { agentSafe: agentSafeAddress },
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters(
+		[
+			{ name: "bnbToAgent", type: "uint256" },
+			{ name: "bnbBuyback", type: "uint256" },
+			{ name: "bnbPlatform", type: "uint256" },
+			{ name: "bnbPatron", type: "uint256" },
+		],
+		[10n, 20n, 30n, 40n],
+	);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: treasuryLpAddress, topics, data }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "BnbClaimed") {
+		assert.fail(`expected BnbClaimed, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.agentSafe.toLowerCase(), agentSafeAddress);
+	assert.equal(decoded.data.bnbToAgent, "10");
+	assert.equal(decoded.data.bnbBuyback, "20");
+	assert.equal(decoded.data.bnbPlatform, "30");
+	assert.equal(decoded.data.bnbPatron, "40");
+});
+
+test("decodeLaunchLog: BuybackExecuted round-trips (no indexed args)", () => {
+	const topics = encodeEventTopics({
+		abi: treasuryLpEventsAbi,
+		eventName: "BuybackExecuted",
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters(
+		[
+			{ name: "bnbSpent", type: "uint256" },
+			{ name: "tokensBurned", type: "uint256" },
+		],
+		[5n, 7n],
+	);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: treasuryLpAddress, topics, data }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "BuybackExecuted") {
+		assert.fail(`expected BuybackExecuted, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.bnbSpent, "5");
+	assert.equal(decoded.data.tokensBurned, "7");
+});
+
+test("decodeLaunchLog: FlapV2PairSet round-trips bool", () => {
+	const topics = encodeEventTopics({
+		abi: treasuryLpEventsAbi,
+		eventName: "FlapV2PairSet",
+		args: { pair: poolAddress },
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters([{ name: "tokenIsPair0", type: "bool" }], [true]);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: treasuryLpAddress, topics, data }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "FlapV2PairSet") {
+		assert.fail(`expected FlapV2PairSet, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.pair.toLowerCase(), poolAddress);
+	assert.equal(decoded.data.tokenIsPair0, true);
 });

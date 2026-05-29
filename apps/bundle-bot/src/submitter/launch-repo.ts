@@ -87,6 +87,29 @@ export async function listBundlePendingReady(db: Database, nowSeconds: bigint): 
 		);
 }
 
+/**
+ * Launches whose presale closed, never graduated, and are now past the
+ * on-chain bundle grace period (`LaunchVault.BUNDLE_GRACE_PERIOD`, 24h after
+ * close). These are candidates for auto-enabling depositor refunds — the
+ * bundle clearly failed if the vault is still CLOSED this long after close.
+ *
+ * The DB `state` mirrors the on-chain enum: a row at `state = "closed"` maps
+ * to `LaunchVault.State.CLOSED`. We filter on that here as a cheap pre-check;
+ * the auto-refund module re-reads the authoritative on-chain state before
+ * sending, so a stale snapshot only ever wastes an RPC read, never a tx.
+ */
+export async function listBundleRefundCandidates(
+	db: Database,
+	nowSeconds: bigint,
+	graceSeconds: bigint,
+): Promise<AgentLaunchRow[]> {
+	const cutoff = nowSeconds - graceSeconds;
+	return db
+		.select()
+		.from(agentLaunches)
+		.where(and(eq(agentLaunches.state, "closed"), lte(agentLaunches.closeTimestamp, cutoff)));
+}
+
 export interface InsertLaunchInput {
 	tokenAddress: string;
 	vaultAddress: string;

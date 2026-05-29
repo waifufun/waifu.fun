@@ -17,6 +17,7 @@ export interface RawLog {
 	data: Hex;
 	topics: [Hex, ...Hex[]] | [];
 	blockNumber: bigint;
+	blockHash: `0x${string}`;
 	transactionHash: `0x${string}`;
 	logIndex: number;
 }
@@ -36,6 +37,17 @@ const KNOWN_EVENTS: ReadonlySet<LaunchEventName> = new Set<LaunchEventName>([
 	"BundleFailed",
 	"TokenCreated",
 	"LaunchedToDEX",
+	"TierEpochAdvanced",
+	"TierEpochsReset",
+	"TierDeployed",
+	"TierPaused",
+	"V3PoolInitialized",
+	"BuybackExecuted",
+	"BnbClaimed",
+	"TokenFeesClaimed",
+	"BuybackBpsSet",
+	"EpochLengthSet",
+	"FlapV2PairSet",
 ]);
 
 function bn(value: unknown): string {
@@ -44,7 +56,7 @@ function bn(value: unknown): string {
 
 export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTimestamp: Date }): LaunchEvent | null {
 	const { log, chainId, blockTimestamp } = input;
-	if (log.blockNumber == null || log.transactionHash == null) {
+	if (log.blockNumber == null || log.transactionHash == null || log.blockHash == null) {
 		return null;
 	}
 
@@ -67,6 +79,7 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 		chainId,
 		contractAddress: log.address,
 		blockNumber: log.blockNumber,
+		blockHash: log.blockHash,
 		txHash: log.transactionHash,
 		logIndex: log.logIndex,
 		blockTimestamp,
@@ -242,6 +255,124 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 					token: args.token as `0x${string}`,
 					pair: args.pair as `0x${string}`,
 					quoteAmt: bn(args.quoteAmt),
+				},
+			};
+
+		case "TierEpochAdvanced":
+			return {
+				...base,
+				eventName: "TierEpochAdvanced",
+				data: {
+					tierIdx: Number(args.tierIdx as bigint | number),
+					newEpochsAbove: Number(args.newEpochsAbove as bigint | number),
+					currentMcUSD: bn(args.currentMcUSD),
+				},
+			};
+
+		case "TierEpochsReset":
+			return {
+				...base,
+				eventName: "TierEpochsReset",
+				data: {
+					tierIdx: Number(args.tierIdx as bigint | number),
+					prevEpochsAbove: Number(args.prevEpochsAbove as bigint | number),
+					currentMcUSD: bn(args.currentMcUSD),
+				},
+			};
+
+		case "TierDeployed":
+			return {
+				...base,
+				eventName: "TierDeployed",
+				data: {
+					tierIdx: Number(args.tierIdx as bigint | number),
+					positionId: bn(args.positionId),
+					liquidity: bn(args.liquidity),
+					tokenAmount: bn(args.tokenAmount),
+				},
+			};
+
+		case "TierPaused":
+			return {
+				...base,
+				eventName: "TierPaused",
+				data: {
+					tierIdx: Number(args.tierIdx as bigint | number),
+					by: args.by as `0x${string}`,
+				},
+			};
+
+		case "V3PoolInitialized":
+			return {
+				...base,
+				eventName: "V3PoolInitialized",
+				data: {
+					pool: args.pool as `0x${string}`,
+					sqrtPriceX96: bn(args.sqrtPriceX96),
+					tickAtInit: Number(args.tickAtInit as bigint | number),
+				},
+			};
+
+		case "BuybackExecuted":
+			return {
+				...base,
+				eventName: "BuybackExecuted",
+				data: {
+					bnbSpent: bn(args.bnbSpent),
+					tokensBurned: bn(args.tokensBurned),
+				},
+			};
+
+		case "BnbClaimed":
+			return {
+				...base,
+				eventName: "BnbClaimed",
+				data: {
+					agentSafe: args.agentSafe as `0x${string}`,
+					bnbToAgent: bn(args.bnbToAgent),
+					bnbBuyback: bn(args.bnbBuyback),
+					bnbPlatform: bn(args.bnbPlatform),
+					bnbPatron: bn(args.bnbPatron),
+				},
+			};
+
+		case "TokenFeesClaimed":
+			return {
+				...base,
+				eventName: "TokenFeesClaimed",
+				data: {
+					agentSafe: args.agentSafe as `0x${string}`,
+					tokenAmount: bn(args.tokenAmount),
+				},
+			};
+
+		case "BuybackBpsSet":
+			return {
+				...base,
+				eventName: "BuybackBpsSet",
+				data: {
+					oldBps: Number(args.oldBps as bigint | number),
+					newBps: Number(args.newBps as bigint | number),
+				},
+			};
+
+		case "EpochLengthSet":
+			return {
+				...base,
+				eventName: "EpochLengthSet",
+				data: {
+					oldSecs: Number(args.oldSecs as bigint | number),
+					newSecs: Number(args.newSecs as bigint | number),
+				},
+			};
+
+		case "FlapV2PairSet":
+			return {
+				...base,
+				eventName: "FlapV2PairSet",
+				data: {
+					pair: args.pair as `0x${string}`,
+					tokenIsPair0: Boolean(args.tokenIsPair0),
 				},
 			};
 

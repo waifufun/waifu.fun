@@ -267,6 +267,20 @@
       "when": 1779735916091,
       "tag": "0037_thick_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1780023071824,
+      "tag": "0038_condemned_mercury",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1780023640707,
+      "tag": "0039_broken_puck",
+      "breakpoints": true
     }
   ]
 }

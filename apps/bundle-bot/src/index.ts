@@ -17,10 +17,20 @@
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import type { Address, Hex } from "viem";
+import { http, createPublicClient, createWalletClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { bsc, bscTestnet } from "viem/chains";
 
 import { schema } from "@waifufun/db";
 import { createLogger } from "@waifufun/logger";
 
+import {
+	BUNDLE_GRACE_PERIOD_SECONDS,
+	type RefundFunction,
+	launchVaultRefundAbi,
+	runAutoRefund,
+} from "./auto-refund.js";
 import { loadBundleBotConfig } from "./config.js";
 import { pollOnce } from "./loop.js";
 
@@ -29,7 +39,8 @@ import { pollOnce } from "./loop.js";
 // the shared code is hoisted into `packages/bundle-runtime/`. See the
 // header comments on each submitter/ module.
 import { submitLaunchBundle } from "./submitter/index.js";
-import { listBundlePendingReady } from "./submitter/launch-repo.js";
+import { listBundlePendingReady, listBundleRefundCandidates } from "./submitter/launch-repo.js";
+import { decryptBundleWalletPk, getActiveWalletByAddress, selectAvailableWallet } from "./submitter/wallet-pool.js";
 
 function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -51,6 +62,34 @@ async function main(): Promise<void> {
 	const client = postgres(dbUrl);
 	const db = drizzle(client, { schema });
 	const runOnce = process.env.BUNDLE_BOT_RUN_ONCE === "1";
+	const autoRefundEnabled = process.env.ENABLE_BUNDLE_BOT_AUTO_REFUND === "true";
+
+	const chain = config.chainId === 97 ? bscTestnet : bsc;
+	const publicClient = createPublicClient({ chain, transport: http(config.rpcUrl) });
+	const allowPlaintextKeys = config.dryRun || process.env.BUNDLE_ALLOW_PLAINTEXT_WALLET_KEYS === "true";
+
+	const readVault = async (vault: Address): Promise<{ state: number; bundleBot: Address }> => {
+		const [state, bundleBot] = await Promise.all([
+			publicClient.readContract({ address: vault, abi: launchVaultRefundAbi, functionName: "state" }),
+			publicClient.readContract({ address: vault, abi: launchVaultRefundAbi, functionName: "bundleBot" }),
+		]);
+		return { state: Number(state), bundleBot: bundleBot as Address };
+	};
+	const resolveBundleBotKey = async (address: Address): Promise<Hex | null> => {
+		const wallet = await getActiveWalletByAddress(db, address);
+		if (!wallet) return null;
+		return decryptBundleWalletPk(wallet.encryptedPk, { allowPlaintext: allowPlaintextKeys });
+	};
+	const resolveAnyPoolKey = async (): Promise<Hex | null> => {
+		const wallet = await selectAvailableWallet(db);
+		if (!wallet) return null;
+		return decryptBundleWalletPk(wallet.encryptedPk, { allowPlaintext: allowPlaintextKeys });
+	};
+	const sendRefund = async (vault: Address, fn: RefundFunction, pk: Hex): Promise<string> => {
+		const account = privateKeyToAccount(pk);
+		const walletClient = createWalletClient({ account, chain, transport: http(config.rpcUrl) });
+		return walletClient.writeContract({ address: vault, abi: launchVaultRefundAbi, functionName: fn, account, chain });
+	};
 
 	logger.info(
 		{
@@ -63,6 +102,7 @@ async function main(): Promise<void> {
 			dryRun: config.dryRun,
 			walletPoolRequired: config.walletPoolRequired,
 			dryRunWriteStatus: config.dryRunWriteStatus,
+			autoRefundEnabled,
 			runOnce,
 		},
 		"bundle-bot booting",
@@ -103,6 +143,35 @@ async function main(): Promise<void> {
 						errors: result.errors,
 					},
 					"poll round complete",
+				);
+			}
+
+			const refund = await runAutoRefund({
+				db,
+				config,
+				logger,
+				enabled: autoRefundEnabled,
+				nowSeconds: BigInt(Math.floor(Date.now() / 1000)),
+				graceSeconds: BUNDLE_GRACE_PERIOD_SECONDS,
+				listCandidates: listBundleRefundCandidates,
+				readVault,
+				resolveBundleBotKey,
+				resolveAnyPoolKey,
+				sendRefund,
+			});
+			if (refund.scanned > 0) {
+				logger.info(
+					{
+						scanned: refund.scanned,
+						sentBundleFailed: refund.sentBundleFailed,
+						sentLaunchExpired: refund.sentLaunchExpired,
+						skippedNotClosed: refund.skippedNotClosed,
+						skippedFlagOff: refund.skippedFlagOff,
+						skippedDryRun: refund.skippedDryRun,
+						errors: refund.errors,
+						autoRefundEnabled,
+					},
+					"auto-refund round complete",
 				);
 			}
 		} catch (error) {
