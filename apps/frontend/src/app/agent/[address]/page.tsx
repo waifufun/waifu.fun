@@ -6,7 +6,7 @@ import { fetchOnchainHistory } from "@/lib/onchain-history";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { buildActivity } from "@/lib/wave-t/activity";
 import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
-import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
+import { fetchAgentHoldingsSnapshot, perpPositionsFromSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
@@ -514,6 +514,11 @@ export default async function AgentPage({
 	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
 	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
 
+	// Open perp positions are carried on the /holdings snapshot under
+	// perpsPositions[]. Derive the SSG seed here; the live wrapper refreshes
+	// them off the same endpoint. Empty for spot-only / unfunded agents.
+	const hyperliquidPositions = perpPositionsFromSnapshot(aggregatedHoldings);
+
 	// AgentSafe BNB balance fetched after the launch row resolves (it
 	// supplies the safe address). Null on legacy launches or RPC blips;
 	// the Hero falls back to holdings.navUsd in that case.
@@ -551,6 +556,7 @@ export default async function AgentPage({
 			runwayDays={burnRate?.runwayDays ?? null}
 			twitterStats={twitterStats}
 			positions={positions}
+			hyperliquidPositions={hyperliquidPositions}
 			activity={activity}
 			apps={mergedApps}
 			agentSafeBalance={agentSafeBalance}
