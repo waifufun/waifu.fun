@@ -98,9 +98,29 @@ function mapHlTrade(raw: HlActivityTradeResponse): AgentTrade {
 	return trade;
 }
 
-function mapAgentOwnTrade(raw: Record<string, unknown>): AgentTrade {
+/**
+ * Normalize a single raw /activity-trades record (BSC swap or HL fill)
+ * into an AgentTrade. Exported so the client-side live poll can share
+ * the exact same HL normalization instead of reimplementing it.
+ */
+export function mapAgentOwnTrade(raw: Record<string, unknown>): AgentTrade {
 	if (isHlTrade(raw)) return mapHlTrade(raw);
 	return mapBscTrade(raw as unknown as BscActivityTradeResponse);
+}
+
+/**
+ * Unwrap the /activity-trades response into a raw record array. The
+ * endpoint returns either a bare array (BSC spot) or `{ trades: [...] }`
+ * (hyperliquid). Both server fetch and client poll funnel through this
+ * so the envelope handling never drifts between the two.
+ */
+export function unwrapActivityTrades(data: unknown): Record<string, unknown>[] {
+	const raw = Array.isArray(data)
+		? data
+		: data && typeof data === "object" && Array.isArray((data as { trades?: unknown }).trades)
+			? (data as { trades: unknown[] }).trades
+			: [];
+	return raw.slice(0, 20).map((trade) => trade as Record<string, unknown>);
 }
 
 /**
@@ -118,12 +138,7 @@ export async function fetchAgentOwnTrades(address: string): Promise<AgentTrade[]
 		const data = (await res.json()) as unknown;
 		// The endpoint returns either a bare array (BSC) or `{ trades: [...] }`
 		// (hyperliquid). Normalize both into one trade list.
-		const raw = Array.isArray(data)
-			? data
-			: data && typeof data === "object" && Array.isArray((data as { trades?: unknown }).trades)
-				? (data as { trades: unknown[] }).trades
-				: [];
-		return raw.slice(0, 20).map((trade) => mapAgentOwnTrade(trade as Record<string, unknown>));
+		return unwrapActivityTrades(data).map((trade) => mapAgentOwnTrade(trade));
 	} catch (e) {
 		console.error("agent own-trades fetch failed", e);
 		return [];
