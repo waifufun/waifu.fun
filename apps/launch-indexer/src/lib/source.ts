@@ -122,7 +122,7 @@ class ViemLaunchEventSource implements LaunchEventSource {
 			);
 
 			for (const log of logs) {
-				if (log.blockNumber == null || log.transactionHash == null) continue;
+				if (log.blockNumber == null || log.transactionHash == null || log.blockHash == null) continue;
 				const blockNumber = typeof log.blockNumber === "bigint" ? log.blockNumber : hexToBigInt(log.blockNumber);
 				const logIndex = typeof log.logIndex === "number" ? log.logIndex : log.logIndex ? hexToNumber(log.logIndex) : 0;
 				const blockTimestamp = await this.getBlockTimestamp(blockNumber, blockTimestamps);
@@ -132,6 +132,7 @@ class ViemLaunchEventSource implements LaunchEventSource {
 						data: log.data as Hex,
 						topics: log.topics as [Hex, ...Hex[]] | [],
 						blockNumber,
+						blockHash: log.blockHash,
 						transactionHash: log.transactionHash,
 						logIndex,
 					},

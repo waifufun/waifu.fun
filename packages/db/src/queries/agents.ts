@@ -1,8 +1,9 @@
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
 
 import type { Database } from "../client.js";
 import { type AgentAppRow, agentApps } from "../schema/agent-apps.js";
 import { agentEvents } from "../schema/agent-events.js";
+import { agentLaunches } from "../schema/agent-launches.js";
 import { type AgentPersonaRow, agentPersonas } from "../schema/agent-personas.js";
 import { type AgentWalletRow, agentWallets } from "../schema/agent-wallets.js";
 import { curveState } from "../schema/curve-state.js";
@@ -73,6 +74,20 @@ export interface AgentSummary {
 	priceChange24hPct: number | null;
 	holderCount: number | null;
 	treasuryNavUsd: number | null;
+	/**
+	 * Safe (treasury) address for V3 LaunchFactory launches. Lives on
+	 * `agent_launches.agent_safe_address`, which `agent_wallets.safe_address`
+	 * (→ `treasuryAddress`) does not cover for graduated agents. List-shaped
+	 * consumers (leaderboard, /agents grid) need it to attribute treasury value
+	 * without a per-row detail roundtrip. See waifufun#744.
+	 */
+	agentSafeAddress: string | null;
+	/**
+	 * Canonical treasury value in USD surfaced to list consumers. Sourced from
+	 * the latest `nav_snapshots` row when present; the API layer fills the
+	 * remainder via a lightweight safe-BNB × price read (see waifufun#744).
+	 */
+	treasuryUsd: number | null;
 	createdAt: string;
 }
 
@@ -228,6 +243,8 @@ function toSummary(row: JoinRow): AgentSummary {
 		priceChange24hPct: finiteNumberOrNull(token?.priceChange24h),
 		holderCount: typeof token?.holderCount === "number" ? token.holderCount : null,
 		treasuryNavUsd: null,
+		agentSafeAddress: null,
+		treasuryUsd: null,
 		createdAt: persona.createdAt.toISOString(),
 	};
 }
@@ -340,7 +357,8 @@ export async function listAgents(db: Database, filters: AgentListFilters): Promi
 	// Hydrate live-ish card stats for the paginated slice only.
 	const withMarketStats = await hydrateTokenSnapshotStats(db, page);
 	const withTreasury = await hydrateTreasuryNav(db, withMarketStats);
-	const hydrated = await hydrateLastActions(db, withTreasury);
+	const withSafe = await hydrateAgentSafe(db, withTreasury);
+	const hydrated = await hydrateLastActions(db, withSafe);
 
 	return { agents: hydrated, total, limit, offset };
 }
@@ -454,7 +472,54 @@ async function hydrateTreasuryNav<T extends AgentSummary>(db: Database, items: T
 		if (!tokenAddress) return item;
 		const treasuryNavUsd = latest.get(tokenAddress);
 		if (treasuryNavUsd === undefined) return item;
-		return { ...item, treasuryNavUsd };
+		// `treasuryUsd` is the field list consumers read; seed it from the NAV
+		// snapshot when we have one. The API layer fills the rest (graduated
+		// agents whose safe isn't in the NAV wallet registry yet). See #744.
+		return { ...item, treasuryNavUsd, treasuryUsd: treasuryNavUsd };
+	});
+}
+
+/**
+ * Attach the V3 launch Safe (treasury) address for the paginated slice.
+ * `agent_wallets.safe_address` doesn't cover LaunchFactory launches; the Safe
+ * lives on `agent_launches.agent_safe_address` keyed by token address. List
+ * consumers need it to attribute treasury value (waifufun#744).
+ */
+async function hydrateAgentSafe<T extends AgentSummary>(db: Database, items: T[]): Promise<T[]> {
+	if (items.length === 0) return items;
+	const tokenAddresses = items
+		.map((a) => a.tokenAddress?.toLowerCase())
+		.filter((addr): addr is string => typeof addr === "string" && addr.length > 0);
+	if (tokenAddresses.length === 0) return items;
+
+	const rows = await db
+		.select({
+			tokenAddress: agentLaunches.tokenAddress,
+			flapTokenAddress: agentLaunches.flapTokenAddress,
+			agentSafeAddress: agentLaunches.agentSafeAddress,
+		})
+		.from(agentLaunches)
+		.where(
+			or(
+				inArray(sql`lower(${agentLaunches.tokenAddress})`, tokenAddresses),
+				inArray(sql`lower(${agentLaunches.flapTokenAddress})`, tokenAddresses),
+			),
+		);
+
+	const byToken = new Map<string, string>();
+	for (const row of rows) {
+		if (!row.agentSafeAddress) continue;
+		const safe = row.agentSafeAddress.toLowerCase();
+		if (row.tokenAddress) byToken.set(row.tokenAddress.toLowerCase(), safe);
+		if (row.flapTokenAddress) byToken.set(row.flapTokenAddress.toLowerCase(), safe);
+	}
+
+	return items.map((item) => {
+		const tokenAddress = item.tokenAddress?.toLowerCase();
+		if (!tokenAddress) return item;
+		const safe = byToken.get(tokenAddress);
+		if (!safe) return item;
+		return { ...item, agentSafeAddress: safe };
 	});
 }
 
@@ -571,7 +636,10 @@ export async function getAgentByTokenAddress(db: Database, tokenAddress: string)
 	});
 	const [summaryWithMarketStats] = await hydrateTokenSnapshotStats(db, [baseSummary]);
 	const [summaryWithTreasury] = await hydrateTreasuryNav(db, [summaryWithMarketStats ?? baseSummary]);
-	const [summary] = await hydrateLastActions(db, [summaryWithTreasury ?? summaryWithMarketStats ?? baseSummary]);
+	const [summaryWithSafe] = await hydrateAgentSafe(db, [summaryWithTreasury ?? summaryWithMarketStats ?? baseSummary]);
+	const [summary] = await hydrateLastActions(db, [
+		summaryWithSafe ?? summaryWithTreasury ?? summaryWithMarketStats ?? baseSummary,
+	]);
 
 	// Trades in the last 24h
 	const since = new Date(Date.now() - 24 * 60 * 60 * 1000);

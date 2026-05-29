@@ -43,6 +43,11 @@ type RawAgent = {
 	image?: string | null;
 	treasuryUsd?: number;
 	treasury_usd?: number;
+	// `/v2/agents` seeds treasury from the NAV snapshot under this field; the
+	// API also fills `treasuryUsd` directly for graduated agents (waifufun#744).
+	treasuryNavUsd?: number;
+	treasury_nav_usd?: number;
+	agentSafeAddress?: string | null;
 	dailyBurnUsd?: number;
 	daily_burn_usd?: number;
 	runwayDays?: number;
@@ -97,7 +102,8 @@ function computeRunway(treasuryUsd: number, dailyBurnUsd: number, given?: number
 }
 
 export function normalizeEntry(raw: RawAgent): LeaderboardEntry {
-	const treasuryUsd = Number(raw.treasuryUsd ?? raw.treasury_usd ?? 0) || 0;
+	const treasuryUsd =
+		Number(raw.treasuryUsd ?? raw.treasury_usd ?? raw.treasuryNavUsd ?? raw.treasury_nav_usd ?? 0) || 0;
 	const dailyBurnUsd = Number(raw.dailyBurnUsd ?? raw.daily_burn_usd ?? 0) || 0;
 	const runwayDays = computeRunway(treasuryUsd, dailyBurnUsd, raw.runwayDays ?? raw.runway_days);
 	// Prefer the token address for the row link since `/agent/[address]` is
