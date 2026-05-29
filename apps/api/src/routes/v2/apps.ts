@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 
 import { agentApps, agentPersonas, getDatabase } from "@waifufun/db";
-import { uploadBase64Image } from "@waifufun/s3-uploader";
 import { and, eq, sql } from "drizzle-orm";
 
 import { type StewardAuthPrincipal, verifyStewardJwt } from "../../middleware/steward-auth.js";
@@ -10,7 +9,7 @@ import { type StewardAuthPrincipal, verifyStewardJwt } from "../../middleware/st
 const app = new Hono();
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
-const DEFAULT_IMAGE_GEN_PRICE_USD = 0.1;
+const DEFAULT_IMAGE_GEN_MARKUP_PERCENTAGE = 100;
 const DEFAULT_IMAGE_GEN_MODEL = "google/gemini-2.5-flash-image";
 const VALID_ASPECTS = new Set(["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]);
 
@@ -99,15 +98,14 @@ async function assertCanRegisterApp(
 	return { ok: true };
 }
 
-function priceFromMetadata(metadata: unknown): number {
-	const fallback = Number(process.env.WAIFU_IMAGE_GEN_PRICE_USD ?? DEFAULT_IMAGE_GEN_PRICE_USD);
-	const defaultPrice = Number.isFinite(fallback) && fallback >= 0 ? fallback : DEFAULT_IMAGE_GEN_PRICE_USD;
-	if (!metadata || typeof metadata !== "object") return defaultPrice;
-	const value = (metadata as JsonRecord).priceUsd;
-	const price = typeof value === "number" || typeof value === "string" ? Number(value) : Number.NaN;
-	return Number.isFinite(price) && price >= 0 ? price : defaultPrice;
+function metadataRecord(metadata: unknown): JsonRecord {
+	return metadata && typeof metadata === "object" ? (metadata as JsonRecord) : {};
 }
 
+function stringFromMetadata(metadata: unknown, key: string): string | null {
+	const value = metadataRecord(metadata)[key];
+	return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 function normalizePrompt(
 	body: ImageGenBody,
 ): { prompt: string; style: string | null; aspect: string } | { error: string } {
@@ -123,130 +121,147 @@ function composePrompt(input: { prompt: string; style: string | null }): string 
 	return `${input.prompt}\n\nStyle: ${input.style}`;
 }
 
-function parseOpenRouterImage(json: unknown): { dataUrl: string; mimeType: string; base64: string } | null {
-	if (!json || typeof json !== "object") return null;
-	const root = json as JsonRecord;
-	const choices = Array.isArray(root.choices) ? root.choices : [];
-	const firstChoice = choices[0] as JsonRecord | undefined;
-	const message = firstChoice?.message as JsonRecord | undefined;
-	const images = Array.isArray(message?.images) ? message.images : [];
-	const firstImage = images[0] as JsonRecord | undefined;
-	const imageUrl = firstImage?.image_url as JsonRecord | undefined;
-	const url = typeof imageUrl?.url === "string" ? imageUrl.url : null;
-	if (!url) return null;
-	const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s.exec(url);
-	if (!match) return null;
-	return { dataUrl: url, mimeType: match[1] ?? "image/png", base64: match[2] ?? "" };
+function elizaCloudBaseUrl(): string {
+	return (process.env.ELIZA_CLOUD_BASE_URL ?? "https://api.elizacloud.ai").replace(/\/+$/, "");
 }
 
-function dimensionsForAspect(aspect: string): { width: number; height: number } {
-	switch (aspect) {
-		case "16:9":
-			return { width: 1024, height: 576 };
-		case "9:16":
-			return { width: 576, height: 1024 };
-		case "3:2":
-			return { width: 960, height: 640 };
-		case "2:3":
-			return { width: 640, height: 960 };
-		case "4:3":
-			return { width: 1024, height: 768 };
-		case "3:4":
-			return { width: 768, height: 1024 };
-		case "5:4":
-			return { width: 1000, height: 800 };
-		case "4:5":
-			return { width: 800, height: 1000 };
-		case "21:9":
-			return { width: 1176, height: 504 };
-		default:
-			return { width: 1024, height: 1024 };
-	}
+function elizaCloudCreatorApiKey(): string | null {
+	return (
+		(
+			process.env.ELIZA_CLOUD_API_KEY ??
+			process.env.ELIZAOS_CLOUD_API_KEY ??
+			process.env.ELIZAOS_API_KEY ??
+			process.env.ELIZA_CLOUD_APPS_API_KEY ??
+			null
+		)?.trim() || null
+	);
 }
 
-async function generateImage(input: { prompt: string; aspect: string }): Promise<{
-	imageUrl: string;
-	provider: string;
-	model: string;
-}> {
-	const apiKey = process.env.OPENROUTER_API_KEY;
-	if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured");
-	const model = process.env.WAIFU_IMAGE_GEN_OPENROUTER_MODEL ?? DEFAULT_IMAGE_GEN_MODEL;
-	const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-		method: "POST",
+function elizaCloudCallerApiKey(c: Context): string | null {
+	const headerKey = c.req.header("x-eliza-cloud-api-key")?.trim();
+	if (headerKey) return headerKey;
+	return process.env.ELIZA_CLOUD_IMAGE_GEN_CALLER_API_KEY?.trim() || null;
+}
+
+async function elizaJson<T>(path: string, apiKey: string, init?: RequestInit): Promise<T> {
+	const res = await fetch(`${elizaCloudBaseUrl()}${path}`, {
+		...init,
 		headers: {
 			Authorization: `Bearer ${apiKey}`,
 			"Content-Type": "application/json",
-			"HTTP-Referer": process.env.WAIFU_PUBLIC_URL ?? "https://waifu.fun",
-			"X-Title": "waifu.fun agent image-gen app",
+			...(init?.headers ?? {}),
 		},
-		body: JSON.stringify({
-			model,
-			messages: [{ role: "user", content: input.prompt }],
-			modalities: ["image"],
-			image_config: { aspect_ratio: input.aspect },
-		}),
-	});
-	const json = (await res.json().catch(() => null)) as unknown;
-	if (!res.ok) {
-		const message =
-			json && typeof json === "object" && "error" in json
-				? JSON.stringify((json as JsonRecord).error).slice(0, 400)
-				: res.statusText;
-		throw new Error(`OpenRouter image generation failed: ${message}`);
-	}
-	const image = parseOpenRouterImage(json);
-	if (!image?.base64) throw new Error("OpenRouter response did not include an image");
-
-	try {
-		const fileName = `image-gen/${Date.now()}-${crypto.randomUUID()}`;
-		const { width, height } = dimensionsForAspect(input.aspect);
-		const imageUrl = await uploadBase64Image(image.base64, fileName, "agent-apps", width, height);
-		return { imageUrl: String(imageUrl), provider: "openrouter", model };
-	} catch (err) {
-		if (process.env.WAIFU_IMAGE_GEN_ALLOW_DATA_URL_FALLBACK === "true") {
-			return { imageUrl: image.dataUrl, provider: "openrouter", model };
-		}
-		throw err;
-	}
-}
-
-async function recordStewardMetering(input: {
-	tokenAddress: string;
-	appId: string;
-	callerId: string;
-	amountUsd: number;
-	idempotencyKey: string;
-}): Promise<{ status: "charged" | "recorded_not_charged"; receiptId: string | null; detail: string }> {
-	const meterUrl = process.env.STEWARD_APP_METER_URL?.trim();
-	const apiKey = process.env.STEWARD_API_KEY?.trim();
-	if (!meterUrl || !apiKey) {
-		return {
-			status: "recorded_not_charged",
-			receiptId: null,
-			detail: "STEWARD_APP_METER_URL is not configured, so waifu records intended app revenue only.",
-		};
-	}
-
-	const res = await fetch(meterUrl, {
-		method: "POST",
-		headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-		body: JSON.stringify({
-			tenantId: process.env.STEWARD_TENANT_ID ?? "waifu",
-			agentTokenAddress: input.tokenAddress,
-			appId: input.appId,
-			callerId: input.callerId,
-			amountUsd: input.amountUsd,
-			currency: "USD",
-			idempotencyKey: input.idempotencyKey,
-		}),
 	});
 	const json = (await res.json().catch(() => null)) as JsonRecord | null;
 	if (!res.ok) {
-		throw new Error(`Steward app metering rejected the charge with ${res.status}`);
+		const detail = json?.error || json?.message || res.statusText;
+		throw new Error(`Eliza Cloud request failed (${res.status}): ${String(detail).slice(0, 240)}`);
 	}
-	const receiptId = typeof json?.receiptId === "string" ? json.receiptId : null;
-	return { status: "charged", receiptId, detail: "Steward app metering accepted the charge." };
+	return json as T;
+}
+
+type ElizaCreateAppResponse = {
+	success?: boolean;
+	app?: { id?: string; name?: string; inference_markup_percentage?: number; monetization_enabled?: boolean };
+};
+
+type ElizaImageResponse = {
+	success?: boolean;
+	appId?: string;
+	model?: string;
+	images?: Array<{ image?: string; url?: string; text?: string }>;
+	cost?: unknown;
+	charge: {
+		status?: string;
+		currency?: string;
+		baseCost?: number;
+		creatorMarkup?: number;
+		totalCost?: number;
+		creatorEarnings?: number;
+		balance?: number;
+	};
+};
+
+type ElizaEarningsResponse = {
+	success?: boolean;
+	earnings?: {
+		summary?: { totalLifetimeEarnings?: number | string };
+		breakdown?: {
+			today?: { total?: number | string };
+			thisWeek?: { total?: number | string };
+			allTime?: { total?: number | string };
+		};
+	};
+	monetization?: { totalCreatorEarnings?: number | string };
+};
+
+function toUsdString(value: unknown): string {
+	const number = typeof value === "number" || typeof value === "string" ? Number(value) : 0;
+	return (Number.isFinite(number) ? number : 0).toFixed(6);
+}
+
+async function createElizaImageApp(input: {
+	tokenAddress: string;
+	name: string;
+	description: string;
+	appUrl: string;
+	markupPercentage: number;
+}): Promise<string> {
+	const apiKey = elizaCloudCreatorApiKey();
+	if (!apiKey)
+		throw new Error("ELIZA_CLOUD_API_KEY or ELIZAOS_CLOUD_API_KEY is required to register the Eliza Cloud app");
+	const response = await elizaJson<ElizaCreateAppResponse>("/api/v1/apps", apiKey, {
+		method: "POST",
+		body: JSON.stringify({
+			name: `${input.name} ${input.tokenAddress.slice(2, 8)}`.slice(0, 100),
+			description: input.description,
+			app_url: input.appUrl,
+			skipGitHubRepo: true,
+			monetization_enabled: true,
+			inference_markup_percentage: input.markupPercentage,
+		}),
+	});
+	const id = response.app?.id;
+	if (!id) throw new Error("Eliza Cloud app registration did not return an app id");
+	return id;
+}
+
+async function generateImageThroughEliza(input: {
+	apiKey: string;
+	elizaCloudAppId: string;
+	prompt: string;
+	aspect: string;
+}): Promise<ElizaImageResponse> {
+	const response = await elizaJson<ElizaImageResponse>(
+		`/api/v1/apps/${input.elizaCloudAppId}/generate-image`,
+		input.apiKey,
+		{
+			method: "POST",
+			body: JSON.stringify({
+				prompt: input.prompt,
+				model: process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
+				numImages: 1,
+				aspectRatio: input.aspect,
+			}),
+		},
+	);
+	const firstImage = response.images?.[0];
+	const imageUrl = firstImage?.url ?? firstImage?.image;
+	if (!response.success || !imageUrl) {
+		throw new Error("Eliza Cloud image generation did not return an image");
+	}
+	if (response.charge?.status !== "charged" || typeof response.charge.totalCost !== "number") {
+		throw new Error("Eliza Cloud image generation did not return a settled charged receipt");
+	}
+	return response;
+}
+
+async function fetchElizaEarnings(elizaCloudAppId: string): Promise<ElizaEarningsResponse | null> {
+	const apiKey = elizaCloudCreatorApiKey();
+	if (!apiKey) return null;
+	return await elizaJson<ElizaEarningsResponse>(`/api/v1/apps/${elizaCloudAppId}/earnings?days=30`, apiKey, {
+		method: "GET",
+	});
 }
 
 function imageGenAppUrl(tokenAddress: string): string {
@@ -274,32 +289,58 @@ app.post("/agents/:token/apps/image-gen/register", async (c) => {
 		);
 
 	const body = (await c.req.json().catch(() => ({}))) as JsonRecord;
-	const rawPrice = Number(body.priceUsd ?? process.env.WAIFU_IMAGE_GEN_PRICE_USD ?? DEFAULT_IMAGE_GEN_PRICE_USD);
-	const priceUsd = Number.isFinite(rawPrice) && rawPrice >= 0 ? rawPrice : DEFAULT_IMAGE_GEN_PRICE_USD;
+	const rawMarkup = Number(
+		body.inferenceMarkupPercentage ??
+			process.env.WAIFU_IMAGE_GEN_INFERENCE_MARKUP_PERCENTAGE ??
+			DEFAULT_IMAGE_GEN_MARKUP_PERCENTAGE,
+	);
+	const inferenceMarkupPercentage =
+		Number.isFinite(rawMarkup) && rawMarkup >= 0 ? rawMarkup : DEFAULT_IMAGE_GEN_MARKUP_PERCENTAGE;
 	const now = new Date();
+	const appUrl = imageGenAppUrl(tokenAddress);
+	const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 80) : "Image Generator";
+	const description =
+		typeof body.description === "string" && body.description.trim()
+			? body.description.trim().slice(0, 300)
+			: "Generate images from prompts through this agent. Calls are metered by Eliza Cloud credits.";
+	const existingRows = await db
+		.select()
+		.from(agentApps)
+		.where(and(eq(agentApps.agentTokenAddress, tokenAddress), eq(agentApps.appId, "image-gen")))
+		.limit(1);
+	const existingElizaAppId = stringFromMetadata(existingRows[0]?.metadata, "elizaCloudAppId");
+	const elizaCloudAppId =
+		existingElizaAppId ??
+		(await createElizaImageApp({
+			tokenAddress,
+			name,
+			description,
+			appUrl,
+			markupPercentage: inferenceMarkupPercentage,
+		}));
+
 	const values = {
 		agentTokenAddress: tokenAddress,
 		appId: "image-gen",
-		name: typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 80) : "Image Generator",
-		description:
-			typeof body.description === "string" && body.description.trim()
-				? body.description.trim().slice(0, 300)
-				: "Generate images from prompts through this agent. Calls are metered per image.",
+		name,
+		description,
 		icon: typeof body.icon === "string" && body.icon.trim() ? body.icon.trim().slice(0, 80) : "image",
-		appUrl: imageGenAppUrl(tokenAddress),
+		appUrl,
 		status: "live" as const,
 		shippedAt: now,
 		metadata: {
 			kind: "agent-mini-app",
 			category: "image-generation",
-			priceUsd,
 			currency: "USD",
 			unit: "image",
-			endpoint: imageGenAppUrl(tokenAddress),
-			provider: "openrouter",
-			model: process.env.WAIFU_IMAGE_GEN_OPENROUTER_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
-			billingReality: process.env.STEWARD_APP_METER_URL ? "steward_metered" : "recorded_not_charged",
+			endpoint: appUrl,
+			provider: "eliza-cloud",
+			model: process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
+			billingReality: "eliza_cloud_metered",
+			elizaCloudAppId,
+			inferenceMarkupPercentage,
 			cloudCallable: true,
+			readCacheSource: "eliza-cloud-earnings",
 		},
 		updatedAt: now,
 	};
@@ -353,8 +394,22 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 	const normalized = normalizePrompt(body);
 	if ("error" in normalized) return c.json({ ok: false, error: "BAD_REQUEST", message: normalized.error }, 400);
 
-	const priceUsd = priceFromMetadata(existing.metadata);
-	const callerId = auth.mode === "steward" ? auth.principal.userId : auth.principal.userId;
+	const metadata = metadataRecord(existing.metadata);
+	const elizaCloudAppId = stringFromMetadata(metadata, "elizaCloudAppId");
+	if (!elizaCloudAppId) {
+		return c.json({ ok: false, error: "MISCONFIGURED", message: "image-gen app is missing Eliza Cloud app id" }, 503);
+	}
+	const callerKey = elizaCloudCallerApiKey(c);
+	if (!callerKey) {
+		return c.json(
+			{
+				ok: false,
+				error: "MISCONFIGURED",
+				message: "Eliza Cloud caller API key is required for metered image generation",
+			},
+			503,
+		);
+	}
 	const idempotencyKey =
 		typeof body.idempotencyKey === "string" && body.idempotencyKey.trim()
 			? body.idempotencyKey.trim().slice(0, 120)
@@ -385,16 +440,13 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 		);
 	}
 
-	let generated: Awaited<ReturnType<typeof generateImage>>;
-	let metering: Awaited<ReturnType<typeof recordStewardMetering>>;
+	let generated: Awaited<ReturnType<typeof generateImageThroughEliza>>;
 	try {
-		generated = await generateImage({ prompt: composePrompt(normalized), aspect: normalized.aspect });
-		metering = await recordStewardMetering({
-			tokenAddress,
-			appId: "image-gen",
-			callerId,
-			amountUsd: priceUsd,
-			idempotencyKey,
+		generated = await generateImageThroughEliza({
+			apiKey: callerKey,
+			elizaCloudAppId,
+			prompt: composePrompt(normalized),
+			aspect: normalized.aspect,
 		});
 	} catch (err) {
 		await db
@@ -407,23 +459,36 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 		throw err;
 	}
 
+	const earnings = await fetchElizaEarnings(elizaCloudAppId).catch(() => null);
 	const now = new Date();
+	const image = generated.images?.[0];
+	const imageUrl = image?.url ?? image?.image;
+	const revenueLifetime =
+		earnings?.monetization?.totalCreatorEarnings ??
+		earnings?.earnings?.summary?.totalLifetimeEarnings ??
+		earnings?.earnings?.breakdown?.allTime?.total ??
+		existing.revenueLifetimeUsd ??
+		0;
+	const revenue24h = earnings?.earnings?.breakdown?.today?.total ?? existing.revenue24hUsd ?? 0;
+	const revenue7d = earnings?.earnings?.breakdown?.thisWeek?.total ?? existing.revenue7dUsd ?? 0;
 	const metadataPatch = {
 		lastInvocationAt: now.toISOString(),
-		lastChargeStatus: metering.status,
-		billingReality: metering.status === "charged" ? "steward_metered" : "recorded_not_charged",
-		priceUsd,
+		lastChargeStatus: generated.charge.status,
+		billingReality: "eliza_cloud_metered",
 		unit: "image",
-		provider: generated.provider,
-		model: generated.model,
+		provider: "eliza-cloud",
+		model: generated.model ?? process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
 		cloudCallable: true,
+		readCacheSource: "eliza-cloud-earnings",
+		elizaCloudAppId,
+		lastElizaCharge: generated.charge ?? null,
 	};
 	await db
 		.update(agentApps)
 		.set({
-			revenueLifetimeUsd: sql`${agentApps.revenueLifetimeUsd} + ${priceUsd}`,
-			revenue24hUsd: sql`${agentApps.revenue24hUsd} + ${priceUsd}`,
-			revenue7dUsd: sql`${agentApps.revenue7dUsd} + ${priceUsd}`,
+			revenueLifetimeUsd: toUsdString(revenueLifetime),
+			revenue24hUsd: toUsdString(revenue24h),
+			revenue7dUsd: toUsdString(revenue7d),
 			metadata: sql`coalesce(${agentApps.metadata}, '{}'::jsonb) || ${JSON.stringify(metadataPatch)}::jsonb`,
 			updatedAt: now,
 		})
@@ -433,21 +498,25 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 		ok: true,
 		data: {
 			appId: "image-gen",
+			elizaCloudAppId,
 			agentTokenAddress: tokenAddress,
-			imageUrl: generated.imageUrl,
+			imageUrl,
 			prompt: normalized.prompt,
 			aspect: normalized.aspect,
 			charge: {
-				amountUsd: priceUsd,
-				currency: "USD",
-				status: metering.status,
-				receiptId: metering.receiptId,
-				detail: metering.detail,
+				...generated.charge,
+				status: generated.charge.status,
+				currency: generated.charge.currency ?? "USD",
+				detail: "Eliza Cloud metered app image generation charged caller org credits and recorded creator earnings.",
 			},
-			billingReality:
-				metering.status === "charged"
-					? "charged through configured Steward app metering endpoint"
-					: "image generated and intended charge recorded in agent_apps counters, but no Steward debit occurred",
+			earnings: earnings
+				? {
+						revenueLifetimeUsd: toUsdString(revenueLifetime),
+						revenue24hUsd: toUsdString(revenue24h),
+						revenue7dUsd: toUsdString(revenue7d),
+					}
+				: null,
+			billingReality: "charged through Eliza Cloud app metered generate-image endpoint",
 		},
 	});
 });
