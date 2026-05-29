@@ -14,7 +14,7 @@
 
 "use client";
 
-import { ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
+import { ChevronDown, ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
@@ -159,6 +159,16 @@ export type ActivityRowInput =
 			status?: string;
 			renderedText?: string;
 			url?: string;
+	  }
+	| {
+			id: string;
+			type: "githubGroup";
+			timestamp: string;
+			eventType: string;
+			repo: string;
+			count: number;
+			latestLabel: string;
+			items: Exclude<ActivityRowInput, { type: "githubGroup" }>[];
 	  };
 
 // ── Tab definitions ──────────────────────────────────────────────
@@ -194,6 +204,8 @@ function categoryOf(row: ActivityRowInput): ActivityCategory {
 			return "system";
 		case "tradeSession":
 			return "trading";
+		case "githubGroup":
+			return "apps";
 		case "revenue":
 			return "treasury";
 		case "tx":
@@ -359,6 +371,7 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 	switch (row.type) {
 		case "pr":
 		case "tweet":
+		case "githubGroup":
 			return null; // handled by dedicated row components
 		case "tx":
 			return {
@@ -600,6 +613,63 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 	}
 }
 
+function githubGroupCopy(row: Extract<ActivityRowInput, { type: "githubGroup" }>): string {
+	if (row.eventType === "pr.merged" || row.eventType === "gh_pr_merged") return `merged ${row.count} prs`;
+	if (row.eventType === "pr.opened" || row.eventType === "gh_pr_opened") return `opened ${row.count} prs`;
+	return `pushed ${row.count} commits`;
+}
+
+function GithubGroupRow({ row }: { row: Extract<ActivityRowInput, { type: "githubGroup" }> }) {
+	const [expanded, setExpanded] = useState(false);
+	return (
+		<div className="-mx-2 rounded px-2 py-2.5">
+			<button
+				type="button"
+				onClick={() => setExpanded((value) => !value)}
+				aria-expanded={expanded}
+				className="flex w-full items-start gap-3 rounded text-left transition-colors hover:bg-white/[0.025]"
+			>
+				<span
+					className={cn(
+						"mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+						NEUTRAL_ICON_CHIP,
+					)}
+				>
+					<GithubIcon className="h-3.5 w-3.5" />
+				</span>
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2 text-[12.5px] text-[var(--text-primary)]">
+						<span>
+							{githubGroupCopy(row)} to {row.repo.toLowerCase()}
+						</span>
+						<ChevronDown
+							className={cn("h-3.5 w-3.5 text-[var(--text-tertiary)] transition-transform", expanded && "rotate-180")}
+						/>
+					</div>
+					<div className="mt-0.5 truncate text-[11px] text-[var(--text-secondary)] lowercase">
+						latest: {row.latestLabel}
+					</div>
+				</div>
+				<div className="flex shrink-0 flex-col items-end gap-0.5">
+					<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
+						{relativeTime(row.timestamp)}
+					</span>
+					<span className="font-mono text-[11px] text-[var(--positive)] tabular-nums">{row.count} events</span>
+				</div>
+			</button>
+			{expanded ? (
+				<ul className="ml-10 mt-2 space-y-1 border-l border-[var(--border-soft)] pl-3">
+					{row.items.map((item) => (
+						<li key={item.id}>
+							{item.type === "pr" ? <ShipRow row={item} /> : item.type === "tweet" ? null : <CompactRow row={item} />}
+						</li>
+					))}
+				</ul>
+			) : null}
+		</div>
+	);
+}
+
 function CompactRow({ row }: { row: ActivityRowInput }) {
 	const v = visualForCompact(row);
 	if (!v) return null;
@@ -757,6 +827,8 @@ export function ActivityFeed({
 								<TweetRow row={r} avatarUrl={avatarUrl} handle={handle} />
 							) : r.type === "pr" ? (
 								<ShipRow row={r} />
+							) : r.type === "githubGroup" ? (
+								<GithubGroupRow row={r} />
 							) : (
 								<CompactRow row={r} />
 							)}

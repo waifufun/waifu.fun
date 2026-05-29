@@ -161,7 +161,41 @@ function renderedText(event: AgentEvent): string | undefined {
 	return typeof event.data?.renderedText === "string" ? event.data.renderedText.toLowerCase() : undefined;
 }
 
+function githubRepoLabel(event: AgentEvent): string {
+	const payload = event.payload ?? {};
+	const repo = asString(payload.repo, "github");
+	const org = asString(payload.org);
+	return org && !repo.includes("/") ? `${org}/${repo}` : repo;
+}
+
+function githubLatestLabel(event: AgentEvent): string {
+	const payload = event.payload ?? {};
+	const sha = asString(payload.sha, asString(payload.mergeCommitSha));
+	if (sha) return sha.slice(0, 7);
+	const number = asNumber(payload.number, 0);
+	if (number > 0) return `pr #${number}`;
+	return asString(payload.title, "github event").toLowerCase();
+}
+
 function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
+	if (event.grouped && event.items && event.items.length > 1) {
+		const items = event.items
+			.map(eventToActivityRow)
+			.filter((row): row is Exclude<ActivityRowInput, { type: "githubGroup" }> => Boolean(row));
+		if (items.length > 1) {
+			return {
+				id: `agent-event-group-${event.id}`,
+				type: "githubGroup",
+				timestamp: event.createdAt,
+				eventType: event.eventType,
+				repo: githubRepoLabel(event),
+				count: event.count ?? items.length,
+				latestLabel: githubLatestLabel(event.items[0] ?? event),
+				items,
+			};
+		}
+	}
+
 	const payload = event.payload ?? {};
 	const url = explorerTxUrl(event.chainId, event.txHash);
 	switch (event.eventType) {
@@ -247,7 +281,8 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				...(url ? { url } : {}),
 			};
 		}
-		case "commit.pushed": {
+		case "commit.pushed":
+		case "gh_commit_pushed": {
 			const text = renderedText(event);
 			const commitUrl = asString(payload.url);
 			return {
@@ -260,14 +295,19 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				...(commitUrl ? { url: commitUrl } : {}),
 			};
 		}
-		case "pr.merged": {
+		case "pr.merged":
+		case "pr.opened":
+		case "gh_pr_merged":
+		case "gh_pr_opened": {
 			const text = renderedText(event);
 			const number = asNumber(payload.number, 0);
 			return {
 				id: `agent-event-${event.id}`,
 				type: "pr",
 				timestamp: event.createdAt,
-				title: text ?? asString(payload.title, "merged pull request"),
+				title:
+					text ??
+					asString(payload.title, event.eventType.includes("opened") ? "opened pull request" : "merged pull request"),
 				number,
 				url: asString(payload.url),
 			};
@@ -559,8 +599,8 @@ export function LiveActivityFeed({
 			const repo = String((p as Record<string, unknown>).repo ?? "");
 			if (org && repo) prMergedRepoTimes.push({ repo: `${org}/${repo}`, t: new Date(e.createdAt).getTime() });
 		}
-		const filteredEvents = agentEvents.events.filter((e) => {
-			if (e.eventType !== "commit.pushed") return true;
+		const shouldKeepCommit = (e: AgentEvent) => {
+			if (e.eventType !== "commit.pushed" && e.eventType !== "gh_commit_pushed") return true;
 			const p = (e.payload ?? {}) as Record<string, unknown>;
 			const sha = typeof p.sha === "string" ? p.sha.toLowerCase() : "";
 			if (sha && prMergedShas.has(sha)) return false;
@@ -571,7 +611,16 @@ export function LiveActivityFeed({
 			if (!orgRepo) return true;
 			const t = new Date(e.createdAt).getTime();
 			return !prMergedRepoTimes.some((p2) => p2.repo === orgRepo && Math.abs(p2.t - t) < 60_000);
-		});
+		};
+		const filteredEvents = agentEvents.events
+			.map((e) => {
+				if (!e.grouped || !e.items || (e.eventType !== "commit.pushed" && e.eventType !== "gh_commit_pushed")) return e;
+				const items = e.items.filter(shouldKeepCommit);
+				if (items.length === 0) return null;
+				if (items.length === 1) return items[0] ?? null;
+				return { ...e, count: items.length, items };
+			})
+			.filter((e): e is AgentEvent => e !== null && shouldKeepCommit(e));
 
 		const eventRows = filteredEvents.map(eventToActivityRow).filter((row): row is ActivityRowInput => Boolean(row));
 		const merged = [...nonTweet, ...tweetRows, ...eventRows];
