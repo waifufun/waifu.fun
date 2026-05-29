@@ -55,7 +55,7 @@ test("GET /gate returns the launch gate response before the launch id route", as
 
 	const res = await app.request("/gate");
 	assert.equal(res.status, 200);
-	assert.deepEqual(await res.json(), { data: { allowed: true, accessSource: "open" } });
+	assert.deepEqual(await res.json(), { ok: true, data: { allowed: true, accessSource: "open" } });
 });
 
 test("GET /:id returns launch details", async () => {
