@@ -32,12 +32,9 @@
 import { useEffect, useState } from "react";
 
 import type { AgentTrade } from "@/components/agent-home/types";
+import { apiFetch } from "@/lib/api/_fetcher";
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
-import {
-	type AgentHoldingsSnapshot,
-	fetchAgentHoldingsSnapshot,
-	perpPositionsFromSnapshot,
-} from "@/lib/wave-t/agent-holdings";
+import { type AgentHoldingsSnapshot, fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { mapAgentOwnTrade, unwrapActivityTrades } from "@/lib/wave-t/agent-trades";
 import { type TwitterStats, fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
@@ -126,11 +123,13 @@ export function useLiveHoldings(
 }
 
 /**
- * Poll the agent's open perp positions, derived from the live /holdings
- * snapshot's `perpsPositions[]`. The dedicated /hyperliquid/positions
- * endpoint does not exist, so the holdings snapshot is the canonical
- * source. Seeds from the SSG-prefetched list so the first paint has data,
- * then refreshes on the holdings cadence (30s by default).
+ * Poll the agent's open perp positions from the dedicated
+ * `/v2/agents/:address/hyperliquid/positions` endpoint, which serves the
+ * live Hyperliquid snapshot (positions already in the `HyperliquidPosition`
+ * shape the ActivePositions panel renders). The `/holdings` snapshot does
+ * NOT carry `perpsPositions`, so reading from it returned empty. Seeds from
+ * the SSG-prefetched list so the first paint has data, then refreshes on
+ * the given cadence (30s by default).
  */
 export function useLivePerpPositions(
 	address: string,
@@ -140,9 +139,9 @@ export function useLivePerpPositions(
 	const [positions, setPositions] = useState<HyperliquidPosition[]>(initialPositions);
 	usePoller(
 		async () => {
-			const raw = await fetchAgentHoldingsSnapshot(address);
-			if (!raw) return;
-			setPositions(perpPositionsFromSnapshot(raw));
+			const path = `/v2/agents/${encodeURIComponent(address)}/hyperliquid/positions`;
+			const data = await apiFetch<{ positions?: HyperliquidPosition[] }>(path);
+			if (Array.isArray(data?.positions)) setPositions(data.positions);
 		},
 		intervalMs,
 		[address],

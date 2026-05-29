@@ -2,11 +2,12 @@ import AgentHomeV2 from "@/components/agent-home/agent-home-v2";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
 import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-feed";
 import { fetchAgentIdentity } from "@/lib/erc8004/client";
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
 import { fetchOnchainHistory } from "@/lib/onchain-history";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { buildActivity } from "@/lib/wave-t/activity";
 import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
-import { fetchAgentHoldingsSnapshot, perpPositionsFromSnapshot } from "@/lib/wave-t/agent-holdings";
+import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
@@ -408,6 +409,8 @@ function emptyTokenMetrics(address: string): TokenMetrics {
 		txs24h: 0,
 		change24h: 0,
 		totalSupply: 0n,
+		burnedSupply: 0n,
+		decimals: 18,
 	};
 }
 
@@ -514,10 +517,12 @@ export default async function AgentPage({
 	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
 	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
 
-	// Open perp positions are carried on the /holdings snapshot under
-	// perpsPositions[]. Derive the SSG seed here; the live wrapper refreshes
-	// them off the same endpoint. Empty for spot-only / unfunded agents.
-	const hyperliquidPositions = perpPositionsFromSnapshot(aggregatedHoldings);
+	// Open perp positions come from the dedicated
+	// /v2/agents/:address/hyperliquid/positions endpoint, polled client-side
+	// by LiveActivePositions. Seed empty here: with `output: export` a
+	// build-time fetch would freeze to a stale snapshot, so we let the live
+	// wrapper populate on mount. Empty for spot-only / unfunded agents.
+	const hyperliquidPositions: HyperliquidPosition[] = [];
 
 	// AgentSafe BNB balance fetched after the launch row resolves (it
 	// supplies the safe address). Null on legacy launches or RPC blips;
