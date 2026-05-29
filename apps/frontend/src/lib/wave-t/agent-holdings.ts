@@ -20,6 +20,8 @@
  * directory.
  */
 
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
+
 export type AgentHoldingsHolding = {
 	walletId: string;
 	walletAddress: string;
@@ -44,6 +46,23 @@ export type AgentHoldingsHolding = {
 	venue?: string;
 };
 
+/**
+ * Raw hyperliquid perp position as it lands in the /holdings snapshot's
+ * `perpsPositions[]` array. Numbers arrive as strings on the wire.
+ */
+export type AgentPerpPosition = {
+	venue: string;
+	asset: string;
+	side: "long" | "short" | string;
+	size: string | number;
+	entryPrice: string | number | null;
+	markPrice: string | number | null;
+	notionalUsd: string | number | null;
+	leverage: string | number | null;
+	unrealizedPnlUsd: string | number | null;
+	liquidationPrice: string | number | null;
+};
+
 export type AgentHoldingsSnapshot = {
 	agentTokenAddress: string;
 	generatedAt: number;
@@ -53,7 +72,21 @@ export type AgentHoldingsSnapshot = {
 	byWallet: Record<string, number>;
 	byRole: Record<string, number>;
 	holdings: AgentHoldingsHolding[];
+	/**
+	 * Newer NAV-aggregator shape names the spot rows `tokenHoldings` and
+	 * splits perps into `perpsPositions`. Older callers read `holdings`.
+	 * Consumers should normalize via `holdingsRowsOf()`. Optional because
+	 * the legacy shape only carries `holdings`.
+	 */
+	tokenHoldings?: AgentHoldingsHolding[];
 	stale: { source: string; reason: string }[];
+	/**
+	 * Open perp positions across venues (hyperliquid today). Present on the
+	 * live snapshot; absent on legacy / spot-only agents. The ActivePositions
+	 * panel reads this directly instead of the (non-existent)
+	 * /hyperliquid/positions endpoint.
+	 */
+	perpsPositions?: AgentPerpPosition[];
 };
 
 function serverApiBase(): string {
@@ -65,6 +98,68 @@ function serverApiBase(): string {
 		return "http://localhost:3100";
 	}
 	return "https://api.waifu.fun";
+}
+
+/**
+ * Spot holdings rows, tolerant of both API shapes. The NAV aggregator
+ * emits `tokenHoldings`; the legacy aggregator emitted `holdings`. Returns
+ * an empty array when neither is present so consumers never iterate undefined.
+ */
+export function holdingsRowsOf(snapshot: AgentHoldingsSnapshot | null | undefined): AgentHoldingsHolding[] {
+	if (!snapshot) return [];
+	if (Array.isArray(snapshot.holdings)) return snapshot.holdings;
+	if (Array.isArray(snapshot.tokenHoldings)) return snapshot.tokenHoldings;
+	return [];
+}
+
+function num(value: string | number | null | undefined): number {
+	if (value === null || value === undefined) return 0;
+	const n = typeof value === "number" ? value : Number.parseFloat(value);
+	return Number.isFinite(n) ? n : 0;
+}
+
+function optNum(value: string | number | null | undefined): number | null {
+	if (value === null || value === undefined || value === "") return null;
+	const n = typeof value === "number" ? value : Number.parseFloat(value);
+	return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Map the /holdings snapshot's `perpsPositions[]` into the
+ * `HyperliquidPosition` shape the ActivePositions table renders. Derives
+ * unrealized pnl % from entry/mark + size + leverage when the API does not
+ * carry it directly. Data-driven: returns [] when no perps are present.
+ */
+export function perpPositionsFromSnapshot(snapshot: AgentHoldingsSnapshot | null | undefined): HyperliquidPosition[] {
+	const raw = snapshot?.perpsPositions;
+	if (!Array.isArray(raw) || raw.length === 0) return [];
+	return raw.map((p) => {
+		const size = num(p.size);
+		const entryPrice = optNum(p.entryPrice);
+		const markPrice = optNum(p.markPrice);
+		const notionalUsd = num(p.notionalUsd);
+		const leverage = optNum(p.leverage);
+		const unrealizedPnlUsd = num(p.unrealizedPnlUsd);
+		const side: "long" | "short" = p.side === "short" ? "short" : "long";
+		// Margin = notional / leverage. ROE = pnl / margin. Both derived when
+		// the venue supplies leverage; null otherwise so the cell shows a middot.
+		const marginUsd = leverage && leverage > 0 ? notionalUsd / leverage : 0;
+		const unrealizedPnlPct = marginUsd > 0 ? (unrealizedPnlUsd / marginUsd) * 100 : null;
+		return {
+			coin: p.asset.toUpperCase(),
+			side,
+			size,
+			entryPrice,
+			currentPrice: markPrice,
+			leverage,
+			notionalUsd,
+			marginUsd,
+			liquidationPrice: optNum(p.liquidationPrice),
+			unrealizedPnlUsd,
+			unrealizedPnlPct,
+			roe: unrealizedPnlPct,
+		};
+	});
 }
 
 /**

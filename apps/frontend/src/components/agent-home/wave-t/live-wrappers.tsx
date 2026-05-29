@@ -29,6 +29,9 @@ import type { CandleSeries } from "@/lib/wave-t/candles";
 import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
+import type { Position } from "@/lib/wave-t/positions";
+import { ActivePositions } from "./active-positions";
 import { ActivityFeed, type ActivityFeedAuthor, type ActivityRowInput } from "./activity-feed";
 import type { HeroIdentity, HeroProps, HeroTreasuryOverride } from "./hero";
 import { HeroV2 } from "./hero-v2";
@@ -36,6 +39,7 @@ import { HoldingsAllocation } from "./holdings-allocation";
 import {
 	useLiveAgentTrades,
 	useLiveHoldings,
+	useLivePerpPositions,
 	useLiveTokenMetrics,
 	useLiveTweets,
 	useLiveTwitterStats,
@@ -92,6 +96,33 @@ export function LiveHero({
 			twitterStats={twitter}
 			{...(treasuryOverride ? { treasuryValueOverride: treasuryOverride } : {})}
 			livePulse
+		/>
+	);
+}
+
+// ── Active positions ───────────────────────────────────────────
+
+/**
+ * Live-polling wrapper around <ActivePositions>. Seeds from the SSG
+ * perp-position list, then refreshes off the live /holdings snapshot's
+ * `perpsPositions[]` (the /hyperliquid/positions endpoint does not exist).
+ * The live pulse only renders when at least one perp position is open.
+ */
+export function LiveActivePositions({
+	address,
+	positions,
+	initialHyperliquidPositions,
+}: {
+	address: string;
+	positions: Position[];
+	initialHyperliquidPositions: HyperliquidPosition[];
+}) {
+	const hyperliquidPositions = useLivePerpPositions(address, initialHyperliquidPositions);
+	return (
+		<ActivePositions
+			positions={positions}
+			hyperliquidPositions={hyperliquidPositions}
+			live={hyperliquidPositions.length > 0}
 		/>
 	);
 }
@@ -310,6 +341,98 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 					asString(payload.title, event.eventType.includes("opened") ? "opened pull request" : "merged pull request"),
 				number,
 				url: asString(payload.url),
+			};
+		}
+		case "hl_fill": {
+			// Live hyperliquid fill. The producer streams every venue fill as
+			// a discrete hl_fill (buy/sell, size, price, notional). We render
+			// it as a perp `fill` row. closedPnlUsd > 0 means this fill
+			// reduced a position, so we surface the realized pnl on the right.
+			const rawSide = asString(payload.side, "buy").toLowerCase();
+			const side: "long" | "short" = rawSide === "sell" || rawSide === "short" || rawSide === "a" ? "short" : "long";
+			const asset = asString(payload.asset, asString(payload.coin, asString(payload.symbol, "asset"))).toUpperCase();
+			const size = asNumber(payload.size, asNumber(payload.amount, 0));
+			const price = asNumber(payload.price, asNumber(payload.fillPriceUsd, 0));
+			const notionalUsd = asNumber(payload.notionalUsd, price * size);
+			const closedPnl = asNumber(payload.closedPnlUsd, asNumber(payload.closedPnl, 0));
+			const venue = asString(payload.venue, "hyperliquid");
+			const text = renderedText(event);
+			const fillId = asString(payload.fillId, asString(payload.orderId, event.id));
+			const row: ActivityRowInput = {
+				id: `hl-fill-${fillId}`,
+				type: "perpTrade",
+				kind: "fill",
+				timestamp: asString(payload.timestamp, event.createdAt),
+				venue,
+				asset,
+				side,
+				size,
+				notionalUsd,
+				fillPriceUsd: price,
+				...(closedPnl !== 0 ? { pnlUsd: closedPnl } : {}),
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+			return row;
+		}
+		case "hl_position_changed": {
+			// A position open / resize snapshot. Carries leverage, entry, and
+			// live unrealized pnl. Rendered as a perp `open` row so the feed
+			// reads "opened ZEC long" with notional + leverage in the sub.
+			const rawSide = asString(payload.side, "long").toLowerCase();
+			const side: "long" | "short" = rawSide === "short" || rawSide === "sell" || rawSide === "a" ? "short" : "long";
+			const asset = asString(payload.asset, asString(payload.coin, asString(payload.symbol, "asset"))).toUpperCase();
+			const leverage = asNumber(payload.leverage, 0) || null;
+			const entryPrice = asNumber(payload.entryPrice, asNumber(payload.entryPriceUsd, 0));
+			const notionalUsd = asNumber(payload.notionalUsd, 0);
+			const unrealizedPnl = asNumber(payload.unrealizedPnlUsd, asNumber(payload.pnlUsd, 0));
+			const venue = asString(payload.venue, "hyperliquid");
+			const text = renderedText(event);
+			const row: ActivityRowInput = {
+				id: `agent-event-${event.id}`,
+				type: "perpTrade",
+				kind: "open",
+				timestamp: asString(payload.timestamp, event.createdAt),
+				venue,
+				asset,
+				side,
+				notionalUsd,
+				entryPriceUsd: entryPrice,
+				leverage,
+				...(unrealizedPnl !== 0 ? { pnlUsd: unrealizedPnl } : {}),
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+			return row;
+		}
+		case "tax.received": {
+			// Platform fee revenue swept to the agent. Rendered as a revenue
+			// row (treasury category) with a positive usd delta.
+			const usd = asNumber(payload.usd, asNumber(payload.amountUsd, 0));
+			return {
+				id: `agent-event-${event.id}`,
+				type: "revenue",
+				timestamp: event.createdAt,
+				source: "tax",
+				usd,
+			};
+		}
+		case "treasury.swept": {
+			// Treasury sweep: fees consolidated into the agent treasury. Shows
+			// as a treasury convert row with the swept usd value.
+			const amountUsd = asNumber(payload.amountUsd, asNumber(payload.usd, 0));
+			const asset = asString(payload.asset, asString(payload.symbol, "")).toUpperCase();
+			const amount = renderedText(event) ?? `${asString(payload.amount, "")} ${asset}`.trim();
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "deposit",
+				from: asString(payload.fromLabel, "tax stream"),
+				to: asString(payload.toLabel, "treasury"),
+				amount: amount || "treasury swept",
+				deltaUsd: Math.abs(amountUsd),
+				...(url ? { url } : {}),
 			};
 		}
 		case "trade.open":
