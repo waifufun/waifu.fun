@@ -15,7 +15,7 @@
  *   LiveHoldingsAllocation (1fr)  | ActivePositions (1.4fr)
  *   PnlChart                       | AppsShipped (merged: platform products + revenue apps)
  *   BurnRatePanel                  (renders only when agent.burn is populated)
- *   ThesisPanel
+ *   TokenomicsPanel                (supply, burn, treasury, tax-stream split)
  *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3)
  *   TopUpPanel
  *   footer (days since launch, generic)
@@ -60,7 +60,7 @@ import {
 } from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
-import { ThesisPanel } from "./wave-t/thesis-panel";
+import { TokenomicsPanel } from "./wave-t/tokenomics-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
 
 export interface AgentHomeV2Props {
@@ -252,12 +252,20 @@ export default function AgentHomeV2({
 					</div>
 				)}
 
-				{/* Row 5: thesis. */}
-				<div className="mt-6 md:mt-8" id="thesis">
-					<ThesisPanel
-						hasLiveRevenue={false}
-						ticker={agent.ticker}
-						holderCount={token.holders || agent.holderCount || null}
+				{/* Row 5: tokenomics. supply, burn, treasury, tax-stream split.
+				    All figures real on-chain reads or honest empty states. */}
+				<div className="mt-6 md:mt-8" id="tokenomics">
+					<TokenomicsPanel
+						token={{
+							symbol: token.symbol || agent.ticker,
+							priceUsd: token.priceUsd,
+							marketCap: token.marketCap || agent.marketCapUsd || 0,
+							holders: token.holders || agent.holderCount || 0,
+							totalSupply: token.totalSupply,
+							burnedSupply: token.burnedSupply,
+							decimals: token.decimals,
+						}}
+						treasuryUsd={burnTreasuryUsd ?? agent.treasuryNavUsd ?? null}
 					/>
 				</div>
 
