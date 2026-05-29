@@ -13,10 +13,9 @@
  *   - Refunded         → launch_withdrawals + totalDeposited + bonusPool
  *   - Claimed          → launch_claims
  *
- * All inserts are idempotent on (tx_hash, log_index, block_hash) so that
- * re-running the indexer over the same block range does not create duplicates,
- * while a reorg that replays the same (tx_hash, log_index) at a different
- * block hash is recorded distinctly rather than silently dropped (waifufun#601).
+ * Aggregate-affecting inserts are idempotent on (tx_hash, log_index) so that
+ * re-running the indexer over the same block range or replaying a reorged log
+ * at a different block hash does not double-apply launch totals.
  */
 
 import { schema } from "@waifufun/db";
