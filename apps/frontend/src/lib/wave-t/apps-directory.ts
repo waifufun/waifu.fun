@@ -1,18 +1,34 @@
 /**
- * Apps directory aggregator (server-only).
+ * Apps directory data source (server-only adapter).
  *
- * There is no global `/v2/apps` endpoint yet, only the per-agent registry
- * `/v2/agents/:address/apps`. So the directory fans out: it pulls a page of
- * agents from `/v2/agents`, fetches each agent's app registry in parallel,
- * and joins the agent identity (name / ticker / image) onto every app row.
+ * DATA SOURCE STATUS (2026-05-29): the apps registry is LIVE and populated.
+ * `GET /v2/agents/:address/apps` returns 200 from the waifu.fun monorepo
+ * (which absorbed waifu-core and serves api.waifu.fun). Sol's agent already
+ * ships 6 real apps (waifu + steward live, twitter-replies / trading-perps /
+ * predictions / content scheduled), so this directory renders real data. The
+ * revenue counters (`revenue7d/24h/lifetime`) exist on every row but read $0
+ * until billing is wired (see EVENTUAL SOURCE); the page shows them honestly
+ * rather than faking numbers.
  *
- * Everything here is data-driven. If the registry is empty (likely while the
- * first real apps are still being built) the result is an empty array and the
- * page renders the honest wave-t empty state instead of inventing fixtures.
+ * EVENTUAL SOURCE for revenue: the metered-apps / billing rail lives in the
+ * separate Eliza Cloud monorepo (`api.elizacloud.ai`): a metered `/chat` +
+ * `/generate-image` with app credits, creator markup, and an earnings ledger.
+ * waifu integrates over the service-key API and the `agent_apps` registry is
+ * the read-cache that the earnings pull writes back into. Until that pull is
+ * wired the counters stay $0; nothing here fabricates them.
  *
- * When a real global apps endpoint lands, swap `fetchAppsDirectory` to read it
- * directly. The `DirectoryApp` shape (in `apps-directory-types.ts`) is the
- * contract the UI depends on.
+ * ADAPTER SEAM: `fetchAppsDirectory` is the single seam. The UI depends only on
+ * the `DirectoryApp` / `AppsDirectory` shape (in `apps-directory-types.ts`),
+ * never on where the data came from. If a global `/v2/apps` endpoint or a
+ * direct Eliza Cloud earnings feed lands later, replace the body here and map
+ * the response into `DirectoryApp`. No UI change required.
+ *
+ * CURRENT ADAPTER: there is no global apps endpoint, so this fans out over the
+ * per-agent registry: pull a page of agents from `/v2/agents`, fetch each
+ * agent's app registry in parallel, join agent identity onto every row. Agents
+ * with no apps contribute nothing; an agent with no reachable registry simply
+ * drops out (`Promise.allSettled`), never crashing the page. If every agent is
+ * empty the page falls back to the honest wave-t empty state, never fixtures.
  */
 
 import { fetchAgents } from "@/lib/agents-api";
@@ -23,9 +39,16 @@ import { type AppsDirectory, type DirectoryApp, appMeta } from "@/lib/wave-t/app
 export type { AppsDirectory, DirectoryApp } from "@/lib/wave-t/apps-directory-types";
 export { appMeta, appPricePerUseUsd } from "@/lib/wave-t/apps-directory-types";
 
+/** Empty directory: the honest default when the source is unreachable. */
+function emptyDirectory(agentsScanned = 0): AppsDirectory {
+	return { apps: [], agentsScanned, liveCount: 0, totalRevenue7d: 0, totalLifetime: 0 };
+}
+
 /**
- * Aggregate apps across agents. Scans up to `agentLimit` agents (newest first
- * is fine for now; the page sorts by featured + revenue afterwards).
+ * Aggregate apps across agents (the current adapter; see file header).
+ * Scans up to `agentLimit` agents (newest first is fine for now; the page
+ * sorts by featured + revenue afterwards). Returns an empty directory on any
+ * failure so the page never crashes or fabricates rows.
  */
 export async function fetchAppsDirectory(agentLimit = 60): Promise<AppsDirectory> {
 	let agents: Awaited<ReturnType<typeof fetchAgents>>["agents"] = [];
@@ -37,7 +60,7 @@ export async function fetchAppsDirectory(agentLimit = 60): Promise<AppsDirectory
 	}
 
 	if (agents.length === 0) {
-		return { apps: [], agentsScanned: 0, liveCount: 0, totalRevenue7d: 0, totalLifetime: 0 };
+		return emptyDirectory(0);
 	}
 
 	const settled = await Promise.allSettled(
