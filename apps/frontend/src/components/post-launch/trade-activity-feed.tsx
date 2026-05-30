@@ -79,7 +79,7 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 										<span className="inline-flex items-center gap-1 text-[#00ff87]">
 											<ArrowDownLeft className="w-3 h-3" aria-hidden="true" /> {buys.toLocaleString()} buys
 										</span>
-										<span className="inline-flex items-center gap-1 text-orange-300/85">
+										<span className="inline-flex items-center gap-1 text-[var(--negative)]/85">
 											<ArrowUpRight className="w-3 h-3" aria-hidden="true" /> {sells.toLocaleString()} sells
 										</span>
 									</div>
@@ -93,7 +93,7 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 										tabIndex={-1}
 									>
 										<div className="h-full bg-[#00ff87]/70" style={{ width: `${buyShare}%` }} />
-										<div className="h-full bg-orange-300/70" style={{ width: `${100 - buyShare}%` }} />
+										<div className="h-full bg-[var(--negative)]/70" style={{ width: `${100 - buyShare}%` }} />
 									</div>
 								</div>
 								<span className="text-right font-mono text-xs tabular-nums text-white/75">

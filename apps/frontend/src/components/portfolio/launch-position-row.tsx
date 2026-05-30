@@ -18,11 +18,14 @@ type Props = {
 	entry: UserLaunchEntry;
 };
 
+// Single-accent discipline (.impeccable.md), mirrors launch-card.tsx:
+// open earns the accent, failed reads on --negative, closed/launched sit
+// on neutral white tints rather than a yellow/blue rainbow.
 const STATE_BADGE_STYLES: Record<string, string> = {
 	open: "border-[#00ff87]/40 text-[#00ff87] bg-[#00ff87]/5",
-	closed: "border-yellow-400/40 text-yellow-300 bg-yellow-400/5",
-	launched: "border-blue-400/40 text-blue-300 bg-blue-400/5",
-	failed: "border-red-400/40 text-red-300 bg-red-400/5",
+	closed: "border-white/20 text-white/70 bg-white/[0.04]",
+	launched: "border-white/25 text-white/85 bg-white/[0.05]",
+	failed: "border-[var(--negative)]/40 text-[var(--negative)] bg-[var(--negative)]/[0.06]",
 };
 
 export default function LaunchPositionRow({ entry }: Props) {
