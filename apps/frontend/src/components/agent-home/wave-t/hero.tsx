@@ -49,6 +49,7 @@ export type HeroIdentity = {
 	ticker: string;
 	description?: string | undefined;
 	image?: string | undefined;
+	/** Only `true` shows the verified check. Defaults to unverified. */
 	verified?: boolean;
 	/** Optional twitter handle, rendered as @handle next to the name. */
 	twitterHandle?: string | undefined;
@@ -172,7 +173,8 @@ function IdentityBand({
 	const displayName = identity.name || "unknown";
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
 	const description = identity.description;
-	const verified = identity.verified ?? true;
+	// Honest default: unverified unless the identity record says otherwise.
+	const verified = identity.verified === true;
 	const handle = identity.twitterHandle ? `@${identity.twitterHandle.replace(/^@/, "")}` : null;
 
 	return (

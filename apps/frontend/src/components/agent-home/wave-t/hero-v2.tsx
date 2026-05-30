@@ -107,7 +107,10 @@ function CharacterColumn({
 	const displayName = (identity.name || "unknown").toLowerCase();
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
 	const description = identity.description;
-	const verified = identity.verified ?? true;
+	// Honest default: an agent is unverified unless the identity record
+	// explicitly says otherwise. A green check is a claim; we do not make
+	// it on the agent's behalf.
+	const verified = identity.verified === true;
 	const handle = identity.twitterHandle ? `@${identity.twitterHandle.replace(/^@/, "").toLowerCase()}` : null;
 
 	// Mobile-first stacking. Below md the portrait sits centered above
