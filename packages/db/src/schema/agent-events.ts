@@ -63,6 +63,8 @@ export const AGENT_EVENT_TYPES = [
 	"hl.deposit",
 	"hl.withdrawal",
 	"hl_funding",
+	"hl_fill",
+	"hl_position_changed",
 	"safe.tx.proposed",
 	"safe.tx.signed",
 	"safe.tx.executed",
