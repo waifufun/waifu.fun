@@ -10,18 +10,21 @@ type Props = {
 	error: Error | null;
 };
 
+// Single-accent discipline (.impeccable.md): no rainbow palette. live
+// events read on --accent, terminal/error reads on --negative, everything
+// neutral sits on a muted dot. labels stay lowercase TPOT.
 const TYPE_STYLES: Record<string, { dot: string; label: string }> = {
-	trade: { dot: "bg-[#00ff87]", label: "Trade" },
-	tweet: { dot: "bg-sky-400", label: "Tweet" },
-	reconcile: { dot: "bg-purple-400", label: "Reconcile" },
-	pause: { dot: "bg-[#a1a1aa]", label: "Pause" },
-	resume: { dot: "bg-[#00ff87]", label: "Resume" },
-	error: { dot: "bg-red-400", label: "Error" },
+	trade: { dot: "bg-[var(--accent)]", label: "trade" },
+	tweet: { dot: "bg-[var(--text-tertiary)]", label: "tweet" },
+	reconcile: { dot: "bg-[var(--text-tertiary)]", label: "reconcile" },
+	pause: { dot: "bg-[var(--text-tertiary)]", label: "pause" },
+	resume: { dot: "bg-[var(--accent)]", label: "resume" },
+	error: { dot: "bg-[var(--negative)]", label: "error" },
 };
 
 function styleFor(type: string) {
 	const key = type.toLowerCase();
-	return TYPE_STYLES[key] ?? { dot: "bg-neutral-400", label: type };
+	return TYPE_STYLES[key] ?? { dot: "bg-[var(--text-tertiary)]", label: type.toLowerCase() };
 }
 
 function formatTime(iso: string | null | undefined): string {
@@ -40,10 +43,10 @@ function formatTime(iso: string | null | undefined): string {
 
 export default function ActivityFeed({ events, isLoading, error }: Props) {
 	return (
-		<section aria-label="Activity feed" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
+		<section aria-label="activity feed" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
-				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Activity</h2>
-				<span className="text-xs text-neutral-500">Last 30 events</span>
+				<h2 className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/55">activity</h2>
+				<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500">last 30 events</span>
 			</header>
 
 			{isLoading ? (
@@ -55,11 +58,11 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 					))}
 				</ul>
 			) : error ? (
-				<p className="text-sm text-red-300" role="alert">
-					Couldn't load activity. {error.message}
+				<p className="font-mono text-[11px] text-[var(--negative)]" role="alert">
+					couldn't load activity. {error.message}
 				</p>
 			) : !events || events.length === 0 ? (
-				<p className="text-sm text-neutral-500">No activity yet.</p>
+				<p className="font-mono text-[11px] text-neutral-500">no activity yet · onchain feed quiet</p>
 			) : (
 				<ul className="divide-y divide-stroke">
 					{events.map((event) => {
@@ -69,8 +72,10 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 								<span className={cn("mt-1.5 w-2 h-2 rounded-full shrink-0", s.dot)} aria-hidden />
 								<div className="flex-1 min-w-0">
 									<div className="flex items-baseline justify-between gap-3">
-										<span className="text-sm font-medium text-white uppercase tracking-wide">{s.label}</span>
-										<span className="text-xs text-neutral-500 shrink-0">{formatTime(event.ts)}</span>
+										<span className="font-mono text-[11px] lowercase tracking-wide text-white">{s.label}</span>
+										<span className="font-mono text-[10px] tabular-nums text-neutral-500 shrink-0">
+											{formatTime(event.ts)}
+										</span>
 									</div>
 									{event.summary ? (
 										<p className="text-sm text-neutral-300 mt-0.5 break-words">{event.summary}</p>

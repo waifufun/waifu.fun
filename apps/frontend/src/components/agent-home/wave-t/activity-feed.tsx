@@ -176,12 +176,12 @@ export type ActivityRowInput =
 type Tab = "all" | ActivityCategory;
 
 const TABS: { key: Tab; label: string }[] = [
-	{ key: "all", label: "All" },
-	{ key: "trading", label: "Trading" },
-	{ key: "apps", label: "Apps" },
-	{ key: "treasury", label: "Treasury" },
-	{ key: "market", label: "Market" },
-	{ key: "system", label: "System" },
+	{ key: "all", label: "all" },
+	{ key: "trading", label: "trading" },
+	{ key: "apps", label: "apps" },
+	{ key: "treasury", label: "treasury" },
+	{ key: "market", label: "market" },
+	{ key: "system", label: "system" },
 ];
 
 function categoryOf(row: ActivityRowInput): ActivityCategory {
@@ -813,7 +813,7 @@ export function ActivityFeed({
 					) : undefined
 				}
 			>
-				Activity Feed
+				activity feed
 			</Label>
 
 			{/* tabs */}
