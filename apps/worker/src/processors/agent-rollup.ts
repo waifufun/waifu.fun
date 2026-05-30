@@ -3,7 +3,7 @@ import { and, eq, gte } from "drizzle-orm";
 
 import { agentEvents } from "@waifufun/db";
 import { agentDailyBurnUsd, agentRunwayDays, agentTreasuryUsd } from "@waifufun/metrics";
-import { type AgentRollupJob, parseJobPayload } from "@waifufun/queue";
+import { type AgentRollupJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import type { WorkerContext } from "../lib/types.js";
 

@@ -10,11 +10,11 @@ import type {
 	TokenSaleEvent,
 } from "../lib/fourmeme-events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
-import { buildLiquidityAddedProvisioningJob } from "./fourmeme-liquidity-added.js";
+import { buildLiquidityAddedProvisioningJob, handleLiquidityAddedEvent } from "./fourmeme-liquidity-added.js";
 import { handleTokenCreateEvent } from "./fourmeme-token-create.js";
 import { handleTokenPurchaseEvent } from "./fourmeme-token-purchase.js";
 import { handleTokenSaleEvent } from "./fourmeme-token-sale.js";
-import { buildLaunchedToDexProvisioningJob } from "./launched-to-dex.js";
+import { buildLaunchedToDexProvisioningJob, handleLaunchedToDexEvent } from "./launched-to-dex.js";
 
 const tokenAddress = "0x00000000000000000000000000000000000000a1" as const;
 const creatorAddress = "0x00000000000000000000000000000000000000b2" as const;
@@ -300,6 +300,42 @@ test("LiquidityAdded provisioning job payload launches Eliza Cloud for graduated
 	});
 });
 
+test("LiquidityAdded handler enqueues Eliza Cloud provisioning for tracked graduated agent token", async () => {
+	const previousDisable = process.env.INDEXER_DISABLE_QUEUE_JOBS;
+	delete process.env.INDEXER_DISABLE_QUEUE_JOBS;
+	const { runtime } = createRuntime();
+	const enqueued: Array<{ kind: string; payload: unknown; options?: { jobId?: string } }> = [];
+	runtime.enqueueCacheWarm = async (payload, options) => {
+		enqueued.push({ kind: "cache-warm", payload, options });
+	};
+	runtime.enqueueNotification = async (payload, options) => {
+		enqueued.push({ kind: "notification", payload, options });
+	};
+	runtime.enqueueAgentProvisioning = async (payload, options) => {
+		enqueued.push({ kind: "agent-provisioning", payload, options });
+	};
+
+	try {
+		const event = liquidityAddedEvent();
+		const result = await handleLiquidityAddedEvent(runtime, event);
+
+		assert.deepEqual(result.enqueuedJobs, ["cache-warm", "notification", "agent-provisioning"]);
+		assert.deepEqual(
+			enqueued.find((job) => job.kind === "agent-provisioning"),
+			{
+				kind: "agent-provisioning",
+				payload: buildLiquidityAddedProvisioningJob("agent-test", event),
+				options: {
+					jobId: `indexer-fourmeme:${event.txHash}-${event.logIndex}-agent-provisioning-agent-test`,
+				},
+			},
+		);
+	} finally {
+		if (previousDisable === undefined) delete process.env.INDEXER_DISABLE_QUEUE_JOBS;
+		else process.env.INDEXER_DISABLE_QUEUE_JOBS = previousDisable;
+	}
+});
+
 test("LaunchedToDEX provisioning job payload launches Eliza Cloud for migrated token", () => {
 	assert.deepEqual(buildLaunchedToDexProvisioningJob("agent-test", launchedToDexEvent()), {
 		agentId: "agent-test",
@@ -316,4 +352,33 @@ test("LaunchedToDEX provisioning job payload launches Eliza Cloud for migrated t
 			dexName: "pancakeswap",
 		},
 	});
+});
+
+test("LaunchedToDEX handler enqueues Eliza Cloud provisioning for migrated agent token", async () => {
+	const { runtime } = createRuntime();
+	const enqueued: Array<{ kind: string; payload: unknown; options?: { jobId?: string } }> = [];
+	runtime.enqueueCacheWarm = async (payload, options) => {
+		enqueued.push({ kind: "cache-warm", payload, options });
+	};
+	runtime.enqueueNotification = async (payload, options) => {
+		enqueued.push({ kind: "notification", payload, options });
+	};
+	runtime.enqueueAgentProvisioning = async (payload, options) => {
+		enqueued.push({ kind: "agent-provisioning", payload, options });
+	};
+
+	const event = launchedToDexEvent();
+	const result = await handleLaunchedToDexEvent(runtime, event);
+
+	assert.deepEqual(result.enqueuedJobs, ["cache-warm", "notification", "agent-provisioning"]);
+	assert.deepEqual(
+		enqueued.find((job) => job.kind === "agent-provisioning"),
+		{
+				kind: "agent-provisioning",
+				payload: buildLaunchedToDexProvisioningJob("agent-test", event),
+				options: {
+					jobId: `indexer-${event.txHash}-${event.logIndex}-agent-provisioning-agent-test`,
+				},
+			},
+		);
 });

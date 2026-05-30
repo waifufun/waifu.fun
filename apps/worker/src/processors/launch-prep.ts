@@ -4,7 +4,7 @@ import { encodeFunctionData } from "viem";
 
 import { type LaunchStatus, agentPersonas, launches } from "@waifufun/db";
 import { TokenManager2Abi } from "@waifufun/fourmeme";
-import { type LaunchPrepJob, parseJobPayload } from "@waifufun/queue";
+import { type LaunchPrepJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import { emitAgentEvent } from "../lib/emit.js";
 import type { WorkerContext } from "../lib/types.js";

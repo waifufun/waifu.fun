@@ -51,6 +51,12 @@ const seededGenesisToken: TokenDetail = {
 	launchPlatform: "flap",
 	ownerClaimStatus: "unclaimed",
 	agentStatus: "none",
+	agentLifecycleState: null,
+	cloudAgentId: null,
+	webUiUrl: null,
+	billingMode: null,
+	infraReserveUsd: null,
+	hasAgent: false,
 	lastTradeAt: new Date("2026-03-07T18:05:00.000Z").toISOString(),
 	agentId: null,
 };
@@ -281,8 +287,15 @@ function mapTokenSummary(row: {
 	launchPlatform: string;
 	ownerClaimStatus: string;
 	agentStatus: string;
+	agentRowStatus?: string | null;
+	agentLifecycleState?: string | null;
+	cloudAgentId?: string | null;
+	webUiUrl?: string | null;
+	billingMode?: string | null;
+	infraReserveUsd?: string | null;
 	lastTradeAt: Date | null;
 }): TokenSummary {
+	const agentStatus = row.agentRowStatus ?? row.agentStatus;
 	return {
 		address: row.address,
 		name: row.name,
@@ -305,7 +318,13 @@ function mapTokenSummary(row: {
 		isImported: row.isImported,
 		launchPlatform: row.launchPlatform,
 		ownerClaimStatus: row.ownerClaimStatus,
-		agentStatus: row.agentStatus,
+		agentStatus,
+		agentLifecycleState: row.agentLifecycleState ?? null,
+		cloudAgentId: row.cloudAgentId ?? null,
+		webUiUrl: row.webUiUrl ?? null,
+		billingMode: row.billingMode ?? null,
+		infraReserveUsd: row.infraReserveUsd ?? null,
+		hasAgent: Boolean(row.cloudAgentId || row.webUiUrl || agentStatus !== "none" || row.agentLifecycleState),
 		lastTradeAt: row.lastTradeAt?.toISOString() ?? null,
 	};
 }
@@ -545,7 +564,7 @@ function createMemoryDbClient(_config: AppConfig): DbClient {
 }
 
 export function createDrizzleDbClient(config: AppConfig, db: Database): DbClient {
-	const { tokens, trades, creators, launches, inviteCodes, inviteRedemptions } = dbSchema;
+	const { tokens, trades, creators, launches, inviteCodes, inviteRedemptions, agents } = dbSchema;
 
 	function tokenProjection() {
 		return {
@@ -571,6 +590,12 @@ export function createDrizzleDbClient(config: AppConfig, db: Database): DbClient
 			launchPlatform: tokens.launchPlatform,
 			ownerClaimStatus: tokens.ownerClaimStatus,
 			agentStatus: tokens.agentStatus,
+			agentRowStatus: agents.agentStatus,
+			agentLifecycleState: agents.lifecycleState,
+			cloudAgentId: agents.cloudAgentId,
+			webUiUrl: agents.webUiUrl,
+			billingMode: agents.billingMode,
+			infraReserveUsd: agents.infraReserveUsd,
 			lastTradeAt: tokens.lastTradeAt,
 		};
 	}
@@ -770,8 +795,15 @@ export function createDrizzleDbClient(config: AppConfig, db: Database): DbClient
             t.launch_platform AS "launchPlatform",
             t.owner_claim_status AS "ownerClaimStatus",
             t.agent_status AS "agentStatus",
+            a.agent_status AS "agentRowStatus",
+            a.lifecycle_state AS "agentLifecycleState",
+            a.cloud_agent_id AS "cloudAgentId",
+            a.web_ui_url AS "webUiUrl",
+            a.billing_mode AS "billingMode",
+            a.infra_reserve_usd AS "infraReserveUsd",
             t.last_trade_at AS "lastTradeAt"
           FROM canonical_tokens t
+          LEFT JOIN agents a ON a.id = t.agent_id
           WHERE ${whereClause}
           ORDER BY ${orderBy}
           LIMIT ${limit}
@@ -806,6 +838,7 @@ export function createDrizzleDbClient(config: AppConfig, db: Database): DbClient
 					agentId: tokens.agentId,
 				})
 				.from(tokens)
+				.leftJoin(agents, eq(agents.id, tokens.agentId))
 				.where(
 					and(eq(tokens.chainId, config.chain.chainId), sql`lower(${tokens.contractAddress}) = ${normalizedAddress}`),
 				)

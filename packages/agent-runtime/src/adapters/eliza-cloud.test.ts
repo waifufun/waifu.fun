@@ -37,7 +37,18 @@ test("provision uses Eliza Cloud service contract when token metadata is availab
 		tokenName: "Demo Token",
 		tokenTicker: "DEMO",
 		launchType: "native",
+		account: {
+			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+			walletKeyRef: "steward:waifu-demo-01",
+		},
+		access: {
+			guestMinTokens: 1_000,
+			userMinTokens: 100_000,
+			thresholdMode: "strict_gt",
+			adminWallets: ["0x0000000000000000000000000000000000000001"],
+		},
 		webhookUrl: "https://waifu.fun/webhooks/eliza",
+		webhookSecret: "secret_123",
 		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
 	});
 
@@ -62,7 +73,18 @@ test("provision uses Eliza Cloud service contract when token metadata is availab
 				xHandle: "demo",
 			},
 		},
+		account: {
+			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+			walletKeyRef: "steward:waifu-demo-01",
+		},
+		access: {
+			guestMinTokens: 1_000,
+			userMinTokens: 100_000,
+			thresholdMode: "strict_gt",
+			adminWallets: ["0x0000000000000000000000000000000000000001"],
+		},
 		webhookUrl: "https://waifu.fun/webhooks/eliza",
+		webhookSecret: "secret_123",
 		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
 	});
 });

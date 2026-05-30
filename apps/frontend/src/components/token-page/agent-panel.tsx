@@ -1,11 +1,18 @@
 "use client";
 
+import {
+	type PublicAgentSnapshot,
+	canAgentStatusChat,
+	getPublicAgentSnapshot,
+	tokenChatHref,
+} from "@/components/token-page/agent-panel.helpers";
 import { Button } from "@/components/ui/button";
 import { ApiError, getAgentByToken, restartAgent, stopAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { IToken } from "@waifufun/types";
-import { AlertCircle, Bot, Loader2, Lock, RefreshCw, Square } from "lucide-react";
+import { AlertCircle, Bot, Loader2, Lock, MessageCircle, RefreshCw, Square } from "lucide-react";
+import Link from "next/link";
 import { useMemo } from "react";
 import { toast } from "sonner";
 
@@ -65,46 +72,6 @@ const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string }> =
 	},
 };
 
-type PublicAgentSnapshot = {
-	hasAgent: boolean;
-	status: string | null;
-	lifecycle: string | null;
-};
-
-function getPublicAgentSnapshot(token: IToken): PublicAgentSnapshot {
-	const publicToken = token as IToken & {
-		hasAgent?: boolean;
-		agentStatus?: string;
-		agentLifecycleState?: string;
-		cloudAgentId?: string;
-		webUiUrl?: string;
-	};
-	const rawStatus = String(publicToken.agentStatus ?? "")
-		.trim()
-		.toLowerCase();
-	const rawLifecycle = String(publicToken.agentLifecycleState ?? "")
-		.trim()
-		.toLowerCase();
-
-	let status = rawStatus && rawStatus !== "none" ? rawStatus : null;
-	if (status === "suspended") status = "stopped";
-
-	if (!status) {
-		if (rawLifecycle === "birth" || rawLifecycle === "reviving") status = "provisioning";
-		if (rawLifecycle === "live") status = "running";
-		if (rawLifecycle === "dormant") status = "stopped";
-	}
-
-	const hasAgent = Boolean(
-		publicToken.hasAgent || publicToken.cloudAgentId || publicToken.webUiUrl || status || rawLifecycle,
-	);
-	return {
-		hasAgent,
-		status: hasAgent ? (status ?? "unknown") : null,
-		lifecycle: rawLifecycle || null,
-	};
-}
-
 function StatusBadge({ status }: { status: string }) {
 	const cfg = STATUS_CFG[status] ?? DEFAULT_CFG;
 	return (
@@ -145,9 +112,11 @@ function PlatformRow({ platforms }: { platforms?: string[] | undefined }) {
 
 function ReadOnlyAgentPanel({
 	snapshot,
+	chatHref,
 	requiresCreatorAuth = false,
 }: {
 	snapshot: PublicAgentSnapshot;
+	chatHref?: string | null;
 	requiresCreatorAuth?: boolean;
 }) {
 	return (
@@ -176,6 +145,15 @@ function ReadOnlyAgentPanel({
 						? "This token has a creator-managed runtime. Public viewers can see the status here, but controls stay private."
 						: "Runtime controls live here for the creator after an agent is deployed."}
 			</p>
+			{snapshot.canChat && chatHref ? (
+				<Link
+					href={chatHref}
+					className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-sm border border-[#00ff87]/20 px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#00ff87] hover:border-[#00ff87]/40 hover:bg-[#00ff87]/5"
+				>
+					<MessageCircle className="size-3" />
+					chat
+				</Link>
+			) : null}
 		</div>
 	);
 }
@@ -183,6 +161,7 @@ function ReadOnlyAgentPanel({
 export default function AgentPanel({ token, isCreator = false }: { token: IToken; isCreator?: boolean }) {
 	const queryClient = useQueryClient();
 	const publicAgent = useMemo(() => getPublicAgentSnapshot(token), [token]);
+	const chatHref = useMemo(() => tokenChatHref(token), [token]);
 
 	const agentQuery = useQuery({
 		queryKey: ["agent-by-token", token.contractAddress],
@@ -230,7 +209,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 
 	/* ── public viewers / auth fallback ── */
 	if (showReadOnlyPanel) {
-		return <ReadOnlyAgentPanel snapshot={publicAgent} requiresCreatorAuth={authOnlyError} />;
+		return <ReadOnlyAgentPanel snapshot={publicAgent} chatHref={chatHref} requiresCreatorAuth={authOnlyError} />;
 	}
 
 	/* ── loading ── */
@@ -277,6 +256,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 	/* ── owner management row ── */
 	const canRestart = agent.status === "running" || agent.status === "stopped" || agent.status === "failed";
 	const canStop = agent.status === "running";
+	const canChat = canAgentStatusChat(agent.status);
 	const isProvisioning = agent.status === "queued" || agent.status === "provisioning";
 
 	return (
@@ -289,6 +269,15 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 					<PlatformRow platforms={agent.platforms} />
 
 					<div className="ml-auto flex items-center gap-1.5">
+						{canChat ? (
+							<Link
+								href={chatHref}
+								className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-[#00ff87]/20 px-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#00ff87] hover:border-[#00ff87]/40 hover:bg-[#00ff87]/5"
+							>
+								<MessageCircle className="size-3" />
+								chat
+							</Link>
+						) : null}
 						{canRestart && (
 							<Button
 								variant="outline"

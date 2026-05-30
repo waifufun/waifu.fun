@@ -23,7 +23,12 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 								limit() {
 									return Promise.resolve([
 										{
-											metadata: { provisioning: { containerId: "container-1" } },
+											metadata: {
+												provisioning: {
+													cloudAgentId: "cloud-waifu-demo-01",
+													containerId: "container-1",
+												},
+											},
 											tokenAddress: null,
 										},
 									]);
@@ -70,10 +75,10 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 		agentId: "waifu-demo-01",
 		creditsAmount: 2500,
 		modelTier: "premium",
-		containerId: "container-1",
+		containerId: "cloud-waifu-demo-01",
 	});
-	assert.deepEqual(toppedUp, [{ agentId: "waifu-demo-01", amount: 25 }]);
-	assert.deepEqual(resumed, ["container-1"]);
+	assert.deepEqual(toppedUp, [{ agentId: "cloud-waifu-demo-01", amount: 25 }]);
+	assert.deepEqual(resumed, ["cloud-waifu-demo-01"]);
 	assert.equal(updates.length, 1);
 	const values = (updates[0] as { values: Record<string, unknown> }).values;
 	assert.equal(values.dormantAt, null);
@@ -218,6 +223,8 @@ type ProvisionDbForTest = Database & {
 		invite: { maxUses: number; usedCount: number; isActive: boolean; expiresAt: Date | null };
 		redemptions: Set<string>;
 	};
+	__updates: Array<Record<string, unknown>>;
+	__inserts: Array<Record<string, unknown>>;
 };
 
 function createProvisionDb(
@@ -225,6 +232,8 @@ function createProvisionDb(
 	personaMetadata: Record<string, unknown> | null = null,
 ): ProvisionDbForTest {
 	const inviteDb = createInviteRedemptionDb();
+	const updates: Array<Record<string, unknown>> = [];
+	const inserts: Array<Record<string, unknown>> = [];
 	return {
 		select(fields?: unknown) {
 			return {
@@ -258,22 +267,30 @@ function createProvisionDb(
 		},
 		insert() {
 			return {
-				values: () => ({
-					returning: () => Promise.resolve([{ id: "agent-row-1" }]),
-				}),
+				values: (values: Record<string, unknown>) => {
+					inserts.push(values);
+					return {
+						returning: () => Promise.resolve([{ id: "agent-row-1" }]),
+					};
+				},
 			};
 		},
 		update() {
 			return {
 				set: (values: Record<string, unknown>) => ({
-					where: () => ({
-						returning: () => Promise.resolve([{ id: "patron-row-1", ...values }]),
-					}),
+					where: () => {
+						updates.push(values);
+						return {
+							returning: () => Promise.resolve([{ id: "patron-row-1", ...values }]),
+						};
+					},
 				}),
 			};
 		},
 		transaction: (inviteDb.db as { transaction: unknown }).transaction,
 		__inviteState: inviteDb.state,
+		__updates: updates,
+		__inserts: inserts,
 	} as unknown as ProvisionDbForTest;
 }
 
@@ -532,8 +549,15 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 					agentId: input.agentId,
 					cloudAgentId: "cloud-waifu-test-waifu",
 					status: "queued",
+					containerUrl: "http://internal-runtime.example",
+					webUiUrl: "https://public-runtime.example",
 					jobId: "job-1",
 					polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
+					account: {
+						primaryWalletAddress: input.account?.primaryWalletAddress ?? null,
+						walletKeyRef: input.account?.walletKeyRef ?? null,
+						initialFreeCreditsUsd: 5,
+					},
 				};
 			},
 		},
@@ -565,27 +589,59 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 	const json = (await res.json()) as {
 		cloudAgentId?: string;
 		cloudStatus?: string;
-		cloud?: { provider?: string; agentId?: string; status?: string };
+		webUiUrl?: string | null;
+		cloud?: {
+			provider?: string;
+			agentId?: string;
+			status?: string;
+			webUiUrl?: string | null;
+			account?: { walletKeyRef?: string | null };
+		};
 	};
 	assert.equal(json.cloudAgentId, "cloud-waifu-test-waifu");
 	assert.equal(json.cloudStatus, "queued");
+	assert.equal(json.webUiUrl, "https://public-runtime.example");
+	assert.equal(cloudInputs.length, 1);
+	const provisionedAgentId = (cloudInputs[0] as { agentId?: string }).agentId;
+	assert.equal(json.cloud?.account?.walletKeyRef, `steward:${provisionedAgentId}`);
 	assert.deepEqual(json.cloud, {
 		provider: "eliza-cloud",
 		agentId: "cloud-waifu-test-waifu",
 		containerId: null,
-		containerUrl: null,
+		containerUrl: "http://internal-runtime.example",
+		webUiUrl: "https://public-runtime.example",
 		status: "queued",
 		jobId: "job-1",
 		polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
 		characterId: null,
-		account: null,
+		account: {
+			primaryWalletAddress: "0x0000000000000000000000000000000000000002",
+			walletKeyRef: `steward:${provisionedAgentId}`,
+			initialFreeCreditsUsd: 5,
+		},
 	});
-	assert.equal(cloudInputs.length, 1);
 	assert.equal(
 		(cloudInputs[0] as { tokenContractAddress?: string }).tokenContractAddress,
 		"0x0000000000000000000000000000000000000004",
 	);
 	assert.equal((cloudInputs[0] as { access?: { thresholdMode?: string } }).access?.thresholdMode, "strict_gt");
+	assert.equal(
+		(cloudInputs[0] as { account?: { primaryWalletAddress?: string | null } }).account?.primaryWalletAddress,
+		"0x0000000000000000000000000000000000000002",
+	);
+	assert.equal(
+		(cloudInputs[0] as { account?: { walletKeyRef?: string | null } }).account?.walletKeyRef,
+		`steward:${provisionedAgentId}`,
+	);
+	const overlay =
+		db.__updates.find((values) => values.cloudAgentId === "cloud-waifu-test-waifu") ??
+		db.__inserts.find((values) => values.cloudAgentId === "cloud-waifu-test-waifu");
+	assert.equal(overlay?.webUiUrl, "https://public-runtime.example");
+	assert.equal(overlay?.bridgeUrl, "http://internal-runtime.example");
+	const metadataUpdate = db.__updates.find((values) => values.elizaCloudAgentId === "cloud-waifu-test-waifu");
+	const provisioning = (metadataUpdate?.metadata as { provisioning?: Record<string, unknown> } | undefined)?.provisioning;
+	assert.equal(provisioning?.webUiUrl, "https://public-runtime.example");
+	assert.equal((provisioning?.account as { walletKeyRef?: string } | undefined)?.walletKeyRef, `steward:${provisionedAgentId}`);
 	assert.equal(launches.length, 1);
 	resetProvisionDeps();
 });
@@ -805,6 +861,13 @@ test("POST /v2/agents/provision reuses existing hosted cloud metadata on duplica
 				cloudAgentId: "cloud-existing-waifu",
 				status: "running",
 				jobId: "job-existing",
+				containerUrl: "http://existing-internal.example",
+				webUiUrl: "https://existing-public.example",
+				account: {
+					primaryWalletAddress: "0x0000000000000000000000000000000000000002",
+					walletKeyRef: "steward:waifu-test-waifu",
+					initialFreeCreditsUsd: 5,
+				},
 			},
 		},
 	);
@@ -842,10 +905,24 @@ test("POST /v2/agents/provision reuses existing hosted cloud metadata on duplica
 	});
 
 	assert.equal(res.status, 200);
-	const json = (await res.json()) as { cloudAgentId?: string; cloudStatus?: string; agentApiKey?: string };
+	const json = (await res.json()) as {
+		cloudAgentId?: string;
+		cloudStatus?: string;
+		agentApiKey?: string;
+		webUiUrl?: string | null;
+		cloud?: { account?: { walletKeyRef?: string }; webUiUrl?: string | null };
+	};
 	assert.equal(json.cloudAgentId, "cloud-existing-waifu");
 	assert.equal(json.cloudStatus, "running");
 	assert.equal(json.agentApiKey, "agk_rotated_key");
+	assert.equal(json.webUiUrl, "https://existing-public.example");
+	assert.equal(json.cloud?.webUiUrl, "https://existing-public.example");
+	assert.equal(json.cloud?.account?.walletKeyRef, "steward:waifu-test-waifu");
+	const overlay =
+		db.__updates.find((values) => values.cloudAgentId === "cloud-existing-waifu") ??
+		db.__inserts.find((values) => values.cloudAgentId === "cloud-existing-waifu");
+	assert.equal(overlay?.webUiUrl, "https://existing-public.example");
+	assert.equal(overlay?.bridgeUrl, "http://existing-internal.example");
 	assert.equal(cloudInputs.length, 0);
 	resetProvisionDeps();
 });

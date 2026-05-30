@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, beforeEach, describe, test } from "node:test";
 
 import { createDatabase, schema } from "@waifufun/db";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { createDrizzleDbClient } from "../src/compat/db.js";
 
@@ -332,6 +332,38 @@ if (!databaseUrl) {
 			const linked = await apiDb.getTokenByAddress(tokenA.toLowerCase());
 			assert.equal(linked?.agentId, agentId);
 			assert.equal(linked?.agentStatus, "provisioning");
+
+			const [tokenRow] = await db
+				.select({ id: schema.tokens.id })
+				.from(schema.tokens)
+				.where(eq(schema.tokens.contractAddress, tokenA.toLowerCase()))
+				.limit(1);
+			assert.ok(tokenRow);
+			const [agentOverlay] = await db
+				.insert(schema.agents)
+				.values({
+					tokenId: tokenRow.id,
+					name: "Alpha Runtime",
+					cloudAgentId: "cloud-alpha-1",
+					runtimeProvider: "eliza-cloud",
+					agentStatus: "running",
+					lifecycleState: "live",
+					webUiUrl: "https://alpha-runtime.example",
+					billingMode: "owner_credits",
+					infraReserveUsd: "5",
+				})
+				.returning({ id: schema.agents.id });
+			assert.ok(agentOverlay);
+			await db.update(schema.tokens).set({ agentId: agentOverlay.id }).where(eq(schema.tokens.id, tokenRow.id));
+			const hosted = await apiDb.getTokenByAddress(tokenA.toLowerCase());
+			assert.equal(hosted?.agentId, agentOverlay.id);
+			assert.equal(hosted?.agentStatus, "running");
+			assert.equal(hosted?.agentLifecycleState, "live");
+			assert.equal(hosted?.cloudAgentId, "cloud-alpha-1");
+			assert.equal(hosted?.webUiUrl, "https://alpha-runtime.example");
+			assert.equal(hosted?.billingMode, "owner_credits");
+			assert.equal(hosted?.infraReserveUsd, "5");
+			assert.equal(hosted?.hasAgent, true);
 
 			await db.insert(schema.tokens).values({
 				chainId: config.chain.chainId,

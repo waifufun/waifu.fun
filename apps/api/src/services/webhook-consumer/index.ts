@@ -1,7 +1,13 @@
 import { agentPersonas, agents, getDatabase, tokens } from "@waifufun/db";
+import type { Database } from "@waifufun/db/client";
 import { eq, sql } from "drizzle-orm";
 
-import { type ElizaCloudClient, ElizaCloudNotConfiguredError, type Logger } from "../eliza-client.js";
+import {
+	type ElizaAgentRuntimeStatus,
+	type ElizaCloudClient,
+	ElizaCloudNotConfiguredError,
+	type Logger,
+} from "../eliza-client.js";
 import { emitAgentEvent } from "../events/emit.js";
 import { provisionClaimedAgent } from "../provisioning.js";
 import { type XClient, getAgentXClient } from "../x/agent-x-client.js";
@@ -32,6 +38,7 @@ export type WebhookConsumerPersonaStore = {
 export type WebhookConsumerDeps = {
 	elizaCloud: ElizaCloudClient;
 	logger: Logger;
+	db?: Database;
 	emitEvent?: typeof emitAgentEvent;
 	personaStore?: WebhookConsumerPersonaStore;
 	getXClient?: (agentId: string) => Promise<XClient | null>;
@@ -219,6 +226,7 @@ async function handleCreditsDepleted(
 
 	await store.markDormant(agentId, now);
 	await pauseAgentContainer(agentId, data, deps, "agent.credits.depleted");
+	await markRuntimeOverlayDormant(agentId, data, deps, now);
 	await emit({
 		agentId,
 		eventType: "agent.dormant",
@@ -236,9 +244,9 @@ async function handleCreditsToppedUp(
 	deps: WebhookConsumerDeps,
 ): Promise<void> {
 	const now = new Date();
-	await resumeAgentContainer(agentId, data, deps, "credits.topped_up");
+	const resume = await resumeAgentContainer(agentId, data, deps, "credits.topped_up");
 
-	const db = getDatabase().db;
+	const db = consumerDb(deps);
 	await db
 		.update(agentPersonas)
 		.set({
@@ -252,17 +260,19 @@ async function handleCreditsToppedUp(
 		})
 		.where(eq(agentPersonas.agentId, agentId));
 
-	const tokenAddress =
-		stringField(data, "tokenAddress") ??
-		stringField(data, "tokenContractAddress") ??
-		(await resolvePersonaTokenAddress(agentId));
 	const overlayAgentId = stringField(data, "overlayAgentId");
+	const overlay = runtimeOverlayAfterResume(data, resume?.runtimeStatus ?? null);
 	if (overlayAgentId) {
 		await db
 			.update(agents)
-			.set({ agentStatus: "running", lifecycleState: "live", suspendedReason: null, updatedAt: now })
+			.set({ ...overlay.agent, updatedAt: now })
 			.where(eq(agents.id, overlayAgentId));
-	} else if (tokenAddress) {
+	} else {
+		const tokenAddress =
+			stringField(data, "tokenAddress") ??
+			stringField(data, "tokenContractAddress") ??
+			(await resolvePersonaTokenAddress(agentId, db));
+		if (!tokenAddress) return;
 		const [overlay] = await db
 			.select({ agentId: agents.id, tokenId: tokens.id })
 			.from(tokens)
@@ -272,11 +282,14 @@ async function handleCreditsToppedUp(
 		if (overlay?.agentId) {
 			await db
 				.update(agents)
-				.set({ agentStatus: "running", lifecycleState: "live", suspendedReason: null, updatedAt: now })
+				.set({ ...runtimeOverlayAfterResume(data, resume?.runtimeStatus ?? null).agent, updatedAt: now })
 				.where(eq(agents.id, overlay.agentId));
 		}
 		if (overlay?.tokenId) {
-			await db.update(tokens).set({ agentStatus: "running", updatedAt: now }).where(eq(tokens.id, overlay.tokenId));
+			await db
+				.update(tokens)
+				.set({ agentStatus: runtimeOverlayAfterResume(data, resume?.runtimeStatus ?? null).tokenStatus, updatedAt: now })
+				.where(eq(tokens.id, overlay.tokenId));
 		}
 	}
 
@@ -293,8 +306,7 @@ async function handleCreditsToppedUp(
 	});
 }
 
-async function resolvePersonaTokenAddress(agentId: string): Promise<string | null> {
-	const db = getDatabase().db;
+async function resolvePersonaTokenAddress(agentId: string, db = getDatabase().db): Promise<string | null> {
 	const [persona] = await db
 		.select({ tokenAddress: agentPersonas.tokenAddress })
 		.from(agentPersonas)
@@ -303,21 +315,57 @@ async function resolvePersonaTokenAddress(agentId: string): Promise<string | nul
 	return persona?.tokenAddress ?? null;
 }
 
+async function markRuntimeOverlayDormant(
+	agentId: string,
+	data: Record<string, unknown>,
+	deps: WebhookConsumerDeps,
+	now: Date,
+): Promise<void> {
+	const overlayAgentId = stringField(data, "overlayAgentId");
+	const explicitTokenAddress = stringField(data, "tokenAddress") ?? stringField(data, "tokenContractAddress");
+	if (!overlayAgentId && !explicitTokenAddress && !deps.db) return;
+	const db = consumerDb(deps);
+	const values = {
+		agentStatus: "suspended",
+		lifecycleState: "dormant",
+		suspendedReason: "credits_depleted",
+		updatedAt: now,
+	};
+	if (overlayAgentId) {
+		await db.update(agents).set(values).where(eq(agents.id, overlayAgentId));
+		return;
+	}
+	const tokenAddress = explicitTokenAddress ?? (await resolvePersonaTokenAddress(agentId, db));
+	if (!tokenAddress) return;
+	const [overlay] = await db
+		.select({ agentId: agents.id, tokenId: tokens.id })
+		.from(tokens)
+		.leftJoin(agents, eq(agents.tokenId, tokens.id))
+		.where(sql`lower(${tokens.contractAddress}) = lower(${tokenAddress})`)
+		.limit(1);
+	if (overlay?.agentId) {
+		await db.update(agents).set(values).where(eq(agents.id, overlay.agentId));
+	}
+	if (overlay?.tokenId) {
+		await db.update(tokens).set({ agentStatus: "suspended", updatedAt: now }).where(eq(tokens.id, overlay.tokenId));
+	}
+}
+
 async function pauseAgentContainer(
 	agentId: string,
 	data: Record<string, unknown>,
 	deps: WebhookConsumerDeps,
 	sourceEvent: string,
 ): Promise<void> {
-	const containerId = await resolveContainerId(agentId, data);
-	if (!containerId) {
-		deps.logger.warn?.("[webhook-consumer] container id not found; cannot pause eliza cloud container", {
+	const runtimeId = await resolveElizaCloudRuntimeId(agentId, data);
+	if (!runtimeId) {
+		deps.logger.warn?.("[webhook-consumer] runtime id not found; cannot pause eliza cloud agent", {
 			agentId,
 			sourceEvent,
 		});
 		return;
 	}
-	await deps.elizaCloud.pauseAgent(containerId);
+	await deps.elizaCloud.pauseAgent(runtimeId);
 }
 
 async function resumeAgentContainer(
@@ -325,26 +373,31 @@ async function resumeAgentContainer(
 	data: Record<string, unknown>,
 	deps: WebhookConsumerDeps,
 	sourceEvent: string,
-): Promise<void> {
-	const containerId = await resolveContainerId(agentId, data);
-	if (!containerId) {
-		deps.logger.warn?.("[webhook-consumer] container id not found; cannot resume eliza cloud container", {
+): Promise<{ runtimeId: string; runtimeStatus: ElizaAgentRuntimeStatus | null } | null> {
+	const runtimeId = await resolveElizaCloudRuntimeId(agentId, data);
+	if (!runtimeId) {
+		deps.logger.warn?.("[webhook-consumer] runtime id not found; cannot resume eliza cloud agent", {
 			agentId,
 			sourceEvent,
 		});
-		return;
+		return null;
 	}
-	await deps.elizaCloud.resumeAgent(containerId);
+	await deps.elizaCloud.resumeAgent(runtimeId);
+	const runtimeStatus = deps.elizaCloud.getAgentRuntimeStatus
+		? await deps.elizaCloud.getAgentRuntimeStatus(runtimeId)
+		: null;
+	return { runtimeId, runtimeStatus };
 }
 
-async function resolveContainerId(agentId: string, data: Record<string, unknown>): Promise<string | null> {
-	const eventContainerId =
+async function resolveElizaCloudRuntimeId(agentId: string, data: Record<string, unknown>): Promise<string | null> {
+	const eventRuntimeId =
+		stringField(data, "cloudAgentId") ??
+		stringField(data, "elizaCloudAgentId") ??
+		stringField(data, "runtimeAgentId") ??
 		stringField(data, "containerId") ??
 		stringField(data, "cloudContainerId") ??
-		stringField(data, "elizaContainerId") ??
-		stringField(data, "cloudAgentId") ??
-		stringField(data, "runtimeAgentId");
-	if (eventContainerId) return eventContainerId;
+		stringField(data, "elizaContainerId");
+	if (eventRuntimeId) return eventRuntimeId;
 
 	const db = getDatabase().db;
 	const [persona] = await db
@@ -359,12 +412,12 @@ async function resolveContainerId(agentId: string, data: Record<string, unknown>
 
 	const metadata = recordFromUnknown(persona.metadata);
 	const provisioning = recordFromUnknown(metadata?.provisioning);
-	const metadataContainerId = provisioning
-		? (stringField(provisioning, "containerId") ??
-			stringField(provisioning, "cloudAgentId") ??
-			stringField(provisioning, "runtimeAgentId"))
+	const metadataRuntimeId = provisioning
+		? (stringField(provisioning, "cloudAgentId") ??
+			stringField(provisioning, "runtimeAgentId") ??
+			stringField(provisioning, "containerId"))
 		: null;
-	if (metadataContainerId) return metadataContainerId;
+	if (metadataRuntimeId) return metadataRuntimeId;
 	if (!persona.tokenAddress) return null;
 
 	const [overlay] = await db
@@ -373,7 +426,46 @@ async function resolveContainerId(agentId: string, data: Record<string, unknown>
 		.leftJoin(agents, eq(agents.tokenId, tokens.id))
 		.where(sql`lower(${tokens.contractAddress}) = lower(${persona.tokenAddress})`)
 		.limit(1);
-	return overlay?.containerId ?? overlay?.cloudAgentId ?? null;
+	return overlay?.cloudAgentId ?? overlay?.containerId ?? null;
+}
+
+function runtimeOverlayAfterResume(
+	data: Record<string, unknown>,
+	status: ElizaAgentRuntimeStatus | null,
+): {
+	agent: {
+		agentStatus: string;
+		lifecycleState: string;
+		webUiUrl?: string | null;
+		bridgeUrl?: string | null;
+		suspendedReason: null;
+	};
+	tokenStatus: string;
+} {
+	const rawStatus = status?.status ?? "running";
+	const agentStatus = isHostedRuntimeRunning(rawStatus) ? "running" : rawStatus;
+	return {
+		agent: {
+			agentStatus,
+			lifecycleState: agentStatus === "running" ? "live" : "reviving",
+			...(status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl")
+				? { webUiUrl: status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl") }
+				: {}),
+			...(status?.containerId ?? stringField(data, "containerId")
+				? { bridgeUrl: status?.containerId ?? stringField(data, "containerId") }
+				: {}),
+			suspendedReason: null,
+		},
+		tokenStatus: agentStatus,
+	};
+}
+
+function isHostedRuntimeRunning(status: string | null | undefined): boolean {
+	return ["running", "ready", "online", "active", "started"].includes(String(status ?? "").toLowerCase());
+}
+
+function consumerDb(deps: WebhookConsumerDeps): Database {
+	return deps.db ?? getDatabase().db;
 }
 
 function nextDowngradedTier(tier: ModelTier): ModelTier {
@@ -426,9 +518,12 @@ function createDefaultPersonaStore(): WebhookConsumerPersonaStore {
 	};
 }
 
-function stringField(data: Record<string, unknown>, key: string): string | null {
-	const value = data[key];
-	return typeof value === "string" && value.length > 0 ? value : null;
+function stringField(data: Record<string, unknown>, ...keys: string[]): string | null {
+	for (const key of keys) {
+		const value = data[key];
+		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return null;
 }
 
 function recordFromUnknown(value: unknown): Record<string, unknown> | null {

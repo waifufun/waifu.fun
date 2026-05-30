@@ -1,13 +1,16 @@
-import { agentEventQueries, agentPersonas, getDatabase } from "@waifufun/db";
+import { agentEventQueries, agentPersonas, getDatabase, type AgentEvent } from "@waifufun/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context } from "hono";
 
 import { constantTimeEqual } from "../../lib/agent-keys.js";
 import type { AppBindings } from "../../lib/bindings.js";
+import type { EmitAgentEventInput } from "../../services/events/emit.js";
 import { createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
+import { dispatchEvent } from "../../services/webhook-consumer/index.js";
 
 const app = new Hono<AppBindings>();
+const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
 type Db = ReturnType<typeof getDatabase>["db"];
 type AdminAgentContext = Context<AppBindings>;
@@ -296,8 +299,16 @@ app.post("/eliza-cloud/test-provision", async (c) => {
 	if (body instanceof Response) return body;
 
 	const tokenContractAddress = stringField(body, "tokenContractAddress");
-	if (!tokenContractAddress || !/^0x[0-9a-fA-F]{40}$/.test(tokenContractAddress)) {
+	if (!tokenContractAddress || !EVM_ADDRESS_RE.test(tokenContractAddress)) {
 		return c.json({ ok: false, error: "INVALID_TOKEN", message: "tokenContractAddress must be an EVM address" }, 400);
+	}
+	const agentEvmAddress = stringField(body, "agentEvmAddress");
+	if (!agentEvmAddress || !EVM_ADDRESS_RE.test(agentEvmAddress)) {
+		return c.json({ ok: false, error: "INVALID_AGENT_WALLET", message: "agentEvmAddress must be an EVM address" }, 400);
+	}
+	const adminWallet = stringField(body, "adminWallet");
+	if (adminWallet && !EVM_ADDRESS_RE.test(adminWallet)) {
+		return c.json({ ok: false, error: "INVALID_ADMIN_WALLET", message: "adminWallet must be an EVM address" }, 400);
 	}
 
 	const client = configuredElizaCloudClient();
@@ -322,13 +333,13 @@ app.post("/eliza-cloud/test-provision", async (c) => {
 			},
 			billing: { mode: "owner_credits", initialReserveUsd: 5 },
 			account: {
-				primaryWalletAddress: stringField(body, "agentEvmAddress"),
+				primaryWalletAddress: agentEvmAddress,
 				walletKeyRef: stringField(body, "walletKeyRef"),
 			},
 			access: {
 				guestMinTokens: 1_000,
 				userMinTokens: 100_000,
-				adminWallets: stringField(body, "adminWallet") ? [stringField(body, "adminWallet") as string] : [],
+				adminWallets: adminWallet ? [adminWallet] : [],
 			},
 			container: {
 				...(stringField(body, "containerImageUri")
@@ -369,8 +380,16 @@ app.post("/eliza-cloud/test-enqueue-provisioning", async (c) => {
 	if (!agentId) return c.json({ ok: false, error: "AGENT_REQUIRED", message: "agentId is required" }, 400);
 
 	const tokenContractAddress = stringField(body, "tokenContractAddress");
-	if (!tokenContractAddress || !/^0x[0-9a-fA-F]{40}$/.test(tokenContractAddress)) {
+	if (!tokenContractAddress || !EVM_ADDRESS_RE.test(tokenContractAddress)) {
 		return c.json({ ok: false, error: "INVALID_TOKEN", message: "tokenContractAddress must be an EVM address" }, 400);
+	}
+	const agentEvmAddress = stringField(body, "agentEvmAddress");
+	if (agentEvmAddress && !EVM_ADDRESS_RE.test(agentEvmAddress)) {
+		return c.json({ ok: false, error: "INVALID_AGENT_WALLET", message: "agentEvmAddress must be an EVM address" }, 400);
+	}
+	const adminWallet = stringField(body, "adminWallet");
+	if (adminWallet && !EVM_ADDRESS_RE.test(adminWallet)) {
+		return c.json({ ok: false, error: "INVALID_ADMIN_WALLET", message: "adminWallet must be an EVM address" }, 400);
 	}
 
 	const source = provisioningSourceField(stringField(body, "source"));
@@ -387,8 +406,9 @@ app.post("/eliza-cloud/test-enqueue-provisioning", async (c) => {
 			tokenName: stringField(body, "tokenName") ?? stringField(body, "name") ?? "Waifu Test Agent",
 			tokenTicker: stringField(body, "tokenTicker") ?? "WTEST",
 			launchType: "native",
-			...(stringField(body, "agentEvmAddress") ? { agentWalletAddress: stringField(body, "agentEvmAddress") } : {}),
-			...(stringField(body, "adminWallet") ? { adminWallets: [stringField(body, "adminWallet") as string] } : {}),
+			...(agentEvmAddress ? { agentWalletAddress: agentEvmAddress } : {}),
+			...(stringField(body, "walletKeyRef") ? { walletKeyRef: stringField(body, "walletKeyRef") } : {}),
+			...(adminWallet ? { adminWallets: [adminWallet] } : {}),
 			...(stringField(body, "containerImageUri") ? { containerImageUri: stringField(body, "containerImageUri") } : {}),
 			...(numberField(body, "initialReserveUsd", Number.NaN) > 0
 				? { initialReserveUsd: numberField(body, "initialReserveUsd", 5) }
@@ -458,7 +478,8 @@ app.get("/eliza-cloud/test-runtime-ref", async (c) => {
 			agentId,
 			cloudAgentId,
 			containerId: stringField(provisioning, "containerId"),
-			containerUrl: stringField(provisioning, "containerUrl"),
+			containerUrl: stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl"),
+			webUiUrl: stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl"),
 			status: stringField(provisioning, "status"),
 			account: recordField(provisioning, "account"),
 			walletProvisioning: recordField(provisioning, "walletProvisioning"),
@@ -485,6 +506,7 @@ app.post("/eliza-cloud/test-control", async (c) => {
 	const containerId = stringField(body, "containerId");
 	const cloudAgentId = stringField(body, "cloudAgentId");
 	const sessionId = stringField(body, "sessionId");
+	const agentId = stringField(body, "agentId");
 	const amountUsdCents = numberField(body, "amountUsdCents", 500);
 
 	const client = configuredElizaCloudClient();
@@ -494,28 +516,32 @@ app.post("/eliza-cloud/test-control", async (c) => {
 
 	try {
 		if (action === "pause") {
-			const runtimeId = containerId ?? cloudAgentId;
+			const runtimeId = cloudAgentId ?? containerId;
 			if (!runtimeId)
-				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "containerId or cloudAgentId required" }, 400);
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "cloudAgentId or containerId required" }, 400);
 			const result = await client.pauseAgent(runtimeId);
-			return c.json({ ok: true, data: { action, containerId: runtimeId, result } });
+			return c.json({ ok: true, data: { action, cloudAgentId: runtimeId, result } });
 		}
 		if (action === "resume") {
-			const runtimeId = containerId ?? cloudAgentId;
+			const runtimeId = cloudAgentId ?? containerId;
 			if (!runtimeId)
-				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "containerId or cloudAgentId required" }, 400);
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "cloudAgentId or containerId required" }, 400);
 			const result = await client.resumeAgent(runtimeId);
-			return c.json({ ok: true, data: { action, containerId: runtimeId, result } });
+			return c.json({ ok: true, data: { action, cloudAgentId: runtimeId, result } });
 		}
 		if (action === "restart") {
-			const runtimeId = containerId ?? cloudAgentId;
+			const runtimeId = cloudAgentId ?? containerId;
 			if (!runtimeId)
-				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "containerId or cloudAgentId required" }, 400);
-			const pauseResult = await client.pauseAgent(runtimeId);
-			const resumeResult = await client.resumeAgent(runtimeId);
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "cloudAgentId or containerId required" }, 400);
+			const result = client.restartHostedAgent
+				? await client.restartHostedAgent(runtimeId)
+				: {
+						pause: await client.pauseAgent(runtimeId),
+						resume: await client.resumeAgent(runtimeId),
+					};
 			return c.json({
 				ok: true,
-				data: { action, containerId: runtimeId, result: { pause: pauseResult, resume: resumeResult } },
+				data: { action, cloudAgentId: runtimeId, result },
 			});
 		}
 		if (action === "status") {
@@ -558,13 +584,70 @@ app.post("/eliza-cloud/test-control", async (c) => {
 			const verification = client.verifyCreditCheckout
 				? await client.verifyCreditCheckout(sessionId)
 				: await client.verifyAppCreditCheckout?.(sessionId);
-			return c.json({ ok: true, data: { action, sessionId, verification } });
+			const balance =
+				cloudAgentId && client.getCreditBalance
+					? await client.getCreditBalance(cloudAgentId)
+					: cloudAgentId && client.getAppCreditBalance
+						? await client.getAppCreditBalance(cloudAgentId)
+						: undefined;
+			const status =
+				cloudAgentId && client.getAgentRuntimeStatus ? await client.getAgentRuntimeStatus(cloudAgentId) : undefined;
+			return c.json({ ok: true, data: { action, cloudAgentId, sessionId, verification, balance, status } });
+		}
+		if (action === "webhook-depleted" || action === "webhook-topped-up") {
+			const runtimeId = cloudAgentId ?? containerId;
+			if (!runtimeId)
+				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "cloudAgentId or containerId required" }, 400);
+			const { db, response } = await withDb(c);
+			if (!db) return response;
+			const resolvedAgentId = agentId ?? (cloudAgentId ? await resolveAgentIdForElizaCloudRuntime(db, cloudAgentId) : null);
+			if (!resolvedAgentId) {
+				return c.json(
+					{
+						ok: false,
+						error: "AGENT_REQUIRED",
+						message: "agentId is required when no agent can be resolved from cloudAgentId",
+					},
+					400,
+				);
+			}
+			const event =
+				action === "webhook-depleted"
+					? { event: "agent.credits.depleted", data: { creditsRemaining: 0 } }
+					: { event: "credits.topped_up", data: { amountUsdCents, sessionId } };
+			await dispatchEvent(
+				{
+					event: event.event,
+					timestamp: new Date().toISOString(),
+					agentId: resolvedAgentId,
+					idempotencyKey: `admin-eliza-cloud:${action}:${runtimeId}:${Date.now()}`,
+					data: {
+						...event.data,
+						agentId: resolvedAgentId,
+						cloudAgentId: runtimeId,
+						elizaCloudAgentId: runtimeId,
+						...(containerId ? { containerId } : {}),
+						source: "admin-eliza-cloud-test",
+					},
+				},
+				{
+					db,
+					elizaCloud: client,
+					logger: console,
+					personaStore: adminPersonaStore(db),
+					emitEvent: adminEmitEvent(db),
+					getXClient: async () => null,
+				},
+			);
+			const status = client.getAgentRuntimeStatus ? await client.getAgentRuntimeStatus(runtimeId).catch(() => undefined) : undefined;
+			return c.json({ ok: true, data: { action, agentId: resolvedAgentId, cloudAgentId: runtimeId, status } });
 		}
 		return c.json(
 			{
 				ok: false,
 				error: "INVALID_ACTION",
-				message: "action must be pause, resume, restart, status, top-up, balance, or verify-top-up",
+				message:
+					"action must be pause, resume, restart, status, top-up, balance, verify-top-up, webhook-depleted, or webhook-topped-up",
 			},
 			400,
 		);
@@ -579,6 +662,61 @@ app.post("/eliza-cloud/test-control", async (c) => {
 		);
 	}
 });
+
+async function resolveAgentIdForElizaCloudRuntime(db: Db, cloudAgentId: string): Promise<string | null> {
+	const [row] = await db
+		.select({ agentId: agentPersonas.agentId })
+		.from(agentPersonas)
+		.where(eq(agentPersonas.elizaCloudAgentId, cloudAgentId))
+		.limit(1);
+	return row?.agentId ?? null;
+}
+
+function adminPersonaStore(db: Db) {
+	return {
+		async get(agentId: string) {
+			const [row] = await db
+				.select({
+					agentId: agentPersonas.agentId,
+					modelTier: agentPersonas.modelTier,
+					lastWordsPostedAt: agentPersonas.lastWordsPostedAt,
+				})
+				.from(agentPersonas)
+				.where(eq(agentPersonas.agentId, agentId))
+				.limit(1);
+			return row ?? null;
+		},
+		async setModelTier(agentId: string, tier: "premium" | "standard" | "free") {
+			await db.update(agentPersonas).set({ modelTier: tier, updatedAt: new Date() }).where(eq(agentPersonas.agentId, agentId));
+		},
+		async markLastWordsPosted(agentId: string, now: Date) {
+			await db.update(agentPersonas).set({ lastWordsPostedAt: now, updatedAt: now }).where(eq(agentPersonas.agentId, agentId));
+		},
+		async markDormant(agentId: string, now: Date) {
+			await db
+				.update(agentPersonas)
+				.set({
+					dormantAt: now,
+					brainPausedAt: now,
+					brainPausedReason: "credits_depleted",
+					updatedAt: now,
+				})
+				.where(eq(agentPersonas.agentId, agentId));
+		},
+	};
+}
+
+function adminEmitEvent(db: Db) {
+	return async (input: EmitAgentEventInput) => {
+		if (!input.agentId) throw new Error("agentId is required for admin Eliza Cloud lifecycle events");
+		const event = await agentEventQueries.enqueueAgentEvent(db, {
+			agentId: input.agentId,
+			type: input.eventType,
+			payload: input.data ?? {},
+		});
+		return event as AgentEvent;
+	};
+}
 
 app.post("/:agentId/brain/pause", async (c) => {
 	const agentId = c.req.param("agentId");

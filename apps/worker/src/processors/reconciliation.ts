@@ -1,6 +1,6 @@
 import type { Job } from "bullmq";
 
-import { type ReconciliationJob, addCacheWarmJob, parseJobPayload } from "@waifufun/queue";
+import { type ReconciliationJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import { emitAgentEvent } from "../lib/emit.js";
 import type { WorkerContext } from "../lib/types.js";
@@ -20,6 +20,7 @@ export function createReconciliationProcessor(context: WorkerContext) {
 				);
 				const drifts = await emitDriftEvents(context, agents, payload.chainId);
 
+				const { addCacheWarmJob } = await import("@waifufun/queue");
 				await addCacheWarmJob(
 					{ target: "token", tokenAddress: payload.tokenAddress, reason: "post-reconciliation" },
 					{ jobId: `reconcile:${payload.tokenAddress}:cache-warm` },

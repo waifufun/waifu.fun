@@ -1,5 +1,6 @@
 import type { Job } from "bullmq";
 import { eq, sql } from "drizzle-orm";
+import { isAddress } from "viem";
 
 import { agentPersonaQueries, agentPersonas, agentWallets, agents, tokens } from "@waifufun/db";
 import { type AgentProvisioningJob, parseJobPayload } from "@waifufun/queue/jobs";
@@ -12,6 +13,7 @@ interface ElizaProvisionResult {
 	cloudAgentId: string;
 	containerId?: string;
 	containerUrl?: string;
+	webUiUrl?: string;
 	jobId?: string;
 	status: string;
 	walletProvisioning?: Record<string, unknown> | null;
@@ -34,6 +36,7 @@ export function createAgentProvisioningProcessor(context: WorkerContext): Worker
 					runtimeAgentId: result.cloudAgentId,
 					containerId: result.containerId ?? null,
 					containerUrl: result.containerUrl ?? null,
+					webUiUrl: result.webUiUrl ?? result.containerUrl ?? null,
 					jobId: result.jobId ?? null,
 					status: result.status,
 					account: result.account ?? null,
@@ -60,6 +63,15 @@ export function createAgentProvisioningProcessor(context: WorkerContext): Worker
 async function provision(context: WorkerContext, payload: AgentProvisioningJob): Promise<ElizaProvisionResult> {
 	const persona = await agentPersonaQueries.getAgentPersonaByAgentId(context.db, payload.agentId);
 	if (!persona) throw new Error(`agent persona not found for ${payload.agentId}`);
+
+	const existing = existingProvisionResult(payload.agentId, persona.metadata);
+	if (existing) {
+		context.logger.info(
+			{ agentId: payload.agentId, cloudAgentId: existing.cloudAgentId },
+			"agent already has Eliza Cloud runtime metadata; skipping duplicate provisioning",
+		);
+		return existing;
+	}
 
 	const [wallet] = await context.db
 		.select({ walletAddress: agentWallets.walletAddress })
@@ -114,14 +126,27 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	if (!primaryWalletAddress) {
 		throw new Error(`agent EVM wallet is required for Eliza Cloud provisioning (${payload.agentId})`);
 	}
+	if (!isAddress(primaryWalletAddress)) {
+		throw new Error(`agent EVM wallet must be a valid EVM address for Eliza Cloud provisioning (${payload.agentId})`);
+	}
+	const walletKeyRef =
+		stringField(payload.data, "walletKeyRef") ??
+		stringField(payload.data, "agentWalletKeyRef") ??
+		`steward:${payload.agentId}`;
 	const adminWallets = stringArrayField(payload.data, "adminWallets");
 	const fallbackAdminWallet = persona.ownerAddress ?? null;
 	const access = {
 		guestMinTokens: numberField(payload.data, "guestMinTokens") ?? 1_000,
 		userMinTokens: numberField(payload.data, "userMinTokens") ?? 100_000,
 		thresholdMode: "strict_gt",
-		adminWallets: adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [],
+		adminWallets: (adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [])
+			.map((wallet) => wallet.trim())
+			.filter(Boolean),
 	};
+	const invalidAdminWallet = access.adminWallets.find((wallet) => !isAddress(wallet));
+	if (invalidAdminWallet) {
+		throw new Error(`admin wallet must be a valid EVM address for Eliza Cloud provisioning (${payload.agentId})`);
+	}
 	const billing = {
 		mode: "owner_credits",
 		initialReserveUsd: numberField(payload.data, "initialReserveUsd") ?? 5,
@@ -144,68 +169,100 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		WAIFU_ACCESS_THRESHOLD_MODE: "strict_gt",
 		WAIFU_ACCESS_ADMIN_WALLETS: access.adminWallets.join(","),
 		WAIFU_AGENT_EVM_ADDRESS: primaryWalletAddress,
-		WAIFU_AGENT_EVM_KEY_REF: `steward:${payload.agentId}`,
+		WAIFU_AGENT_EVM_KEY_REF: walletKeyRef,
 		...(process.env.WAIFU_CHAT_ACCESS_JWT_SECRET
 			? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 			: {}),
 		...modelDefaults,
 	};
 
-	const cloudAgent = await requestJson<Record<string, unknown>>(baseUrl, "/api/v1/agents", authKey, {
-		tokenContractAddress: tokenAddress,
-		chain,
-		chainId,
-		tokenName,
-		tokenTicker,
-		launchType: launchTypeField(payload.data, "launchType") ?? "native",
-		character: {
-			name: tokenName,
-			...(persona.bio ? { bio: persona.bio } : {}),
-			config: {
-				waifuAgentId: payload.agentId,
+	let cloudAgent: Record<string, unknown>;
+	try {
+		cloudAgent = await requestJson<Record<string, unknown>>(baseUrl, "/api/v1/agents", authKey, {
+			method: "POST",
+			body: {
+				tokenContractAddress: tokenAddress,
+				chain,
+				chainId,
+				tokenName,
+				tokenTicker,
+				launchType: launchTypeField(payload.data, "launchType") ?? "native",
+				character: {
+					name: tokenName,
+					...(persona.bio ? { bio: persona.bio } : {}),
+					config: {
+						waifuAgentId: payload.agentId,
+						account: {
+							primaryWalletAddress,
+							walletKeyRef,
+						},
+					},
+				},
+				billing,
 				account: {
 					primaryWalletAddress,
-					walletKeyRef: `steward:${payload.agentId}`,
+					chainType: "evm",
+					walletKeyRef,
 				},
+				access: {
+					guestTokenThreshold: access.guestMinTokens,
+					userTokenThreshold: access.userMinTokens,
+					adminWalletAddress: access.adminWallets[0],
+					roles: {
+						guest: { minTokens: access.guestMinTokens, comparison: "gt" },
+						user: { minTokens: access.userMinTokens, comparison: "gt" },
+						admin: { wallets: access.adminWallets },
+					},
+				},
+				container: {
+					image: imageUri,
+					env: containerEnv,
+				},
+				modelDefaults,
+				...(webhookUrl ? { webhookUrl } : {}),
+				...(webhookSecret ? { webhookSecret } : {}),
 			},
-		},
-		billing,
-		account: {
-			primaryWalletAddress,
-			chainType: "evm",
-		},
-		access: {
-			guestTokenThreshold: access.guestMinTokens,
-			userTokenThreshold: access.userMinTokens,
-			adminWalletAddress: access.adminWallets[0],
-			roles: {
-				guest: { minTokens: access.guestMinTokens, comparison: "gt" },
-				user: { minTokens: access.userMinTokens, comparison: "gt" },
-				admin: { wallets: access.adminWallets },
-			},
-		},
-		container: {
-			image: imageUri,
-			env: containerEnv,
-		},
-		modelDefaults,
-		...(webhookUrl ? { webhookUrl } : {}),
-		...(webhookSecret ? { webhookSecret } : {}),
-	});
+		});
+	} catch (err) {
+		const existingAgentId =
+			err instanceof ElizaCloudRequestError && err.status === 409
+				? stringField(err.body, "existingAgentId")
+				: null;
+		if (!existingAgentId) throw err;
+		context.logger.warn(
+			{ agentId: payload.agentId, cloudAgentId: existingAgentId },
+			"Eliza Cloud already has an agent for this token; adopting existing runtime",
+		);
+		cloudAgent = {
+			cloudAgentId: existingAgentId,
+			status: "existing",
+		};
+	}
 	const cloudAgentId =
 		stringField(cloudAgent, "cloudAgentId") ?? stringField(cloudAgent, "agentId") ?? stringField(cloudAgent, "id");
 	if (!cloudAgentId) throw new Error("Eliza Cloud agent response did not include an id");
-	const walletData = recordFromUnknown(cloudAgent.walletProvisioning);
-	const accountData = recordFromUnknown(cloudAgent.account);
-	const containerId = stringField(cloudAgent, "containerId") ?? undefined;
-	const containerUrl = stringField(cloudAgent, "containerUrl") ?? undefined;
-	const status = stringField(cloudAgent, "status") ?? "pending";
+	const refreshedCloudAgent = await waitForRuntimeStatus(baseUrl, authKey, cloudAgentId, cloudAgent);
+	const walletData = recordFromUnknown(refreshedCloudAgent.walletProvisioning) ?? recordFromUnknown(cloudAgent.walletProvisioning);
+	const accountData = recordFromUnknown(refreshedCloudAgent.account) ?? recordFromUnknown(cloudAgent.account);
+	const containerId = stringField(refreshedCloudAgent, "containerId") ?? stringField(cloudAgent, "containerId") ?? undefined;
+	const webUiUrl =
+		stringField(refreshedCloudAgent, "webUiUrl") ??
+		stringField(cloudAgent, "webUiUrl") ??
+		undefined;
+	const containerUrl =
+		webUiUrl ??
+		stringField(refreshedCloudAgent, "containerUrl") ??
+		stringField(refreshedCloudAgent, "url") ??
+		stringField(cloudAgent, "containerUrl") ??
+		undefined;
+	const status = stringField(refreshedCloudAgent, "status") ?? stringField(cloudAgent, "status") ?? "pending";
 	const result: ElizaProvisionResult = {
 		agentId: payload.agentId,
 		cloudAgentId,
 		...(containerId ? { containerId } : {}),
 		...(containerUrl ? { containerUrl } : {}),
-		jobId: stringField(cloudAgent, "jobId") ?? containerId ?? cloudAgentId,
+		...(webUiUrl ? { webUiUrl } : {}),
+		jobId: stringField(cloudAgent, "jobId") ?? stringField(refreshedCloudAgent, "jobId") ?? containerId ?? cloudAgentId,
 		status,
 		...(walletData ? { walletProvisioning: walletData } : {}),
 		...(accountData ? { account: accountData } : {}),
@@ -227,28 +284,81 @@ async function requestJson<T>(
 	baseUrl: string,
 	path: string,
 	authKey: string,
-	body: Record<string, unknown>,
+	options: {
+		method?: "GET" | "POST";
+		body?: Record<string, unknown>;
+	},
 ): Promise<T> {
 	const response = await fetch(`${baseUrl}${normalizeApiPath(baseUrl, path)}`, {
-		method: "POST",
+		method: options.method ?? "GET",
 		headers: {
 			"content-type": "application/json",
 			"X-API-Key": authKey,
 			"X-Service-Key": authKey,
 		},
-		body: JSON.stringify(body),
+		...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
 	});
-	if (!response.ok) {
-		const text = await response.text().catch(() => "");
-		throw new Error(`eliza-cloud POST ${path}: ${response.status} ${text}`);
+	const text = await response.text().catch(() => "");
+	let json: unknown = null;
+	try {
+		json = text ? JSON.parse(text) : null;
+	} catch {
+		// Keep the original response text in the request error below.
 	}
-	const json = (await response.json()) as T | { success?: boolean; data?: T; error?: unknown };
+	if (!response.ok) {
+			throw new ElizaCloudRequestError(options.method ?? "GET", path, response.status, text, recordFromUnknown(json) ?? {});
+	}
 	const responseRecord = recordFromUnknown(json);
 	if (responseRecord?.success === false) throw new Error(String(responseRecord.error ?? "Unknown eliza-cloud error"));
 	if (responseRecord && "success" in responseRecord && "data" in responseRecord) {
 		return responseRecord.data as T;
 	}
 	return json as T;
+}
+
+class ElizaCloudRequestError extends Error {
+	constructor(
+		readonly method: string,
+		readonly path: string,
+		readonly status: number,
+		readonly responseText: string,
+		readonly body: Record<string, unknown>,
+	) {
+		super(`eliza-cloud ${method} ${path}: ${status} ${responseText}`);
+	}
+}
+
+async function waitForRuntimeStatus(
+	baseUrl: string,
+	authKey: string,
+	cloudAgentId: string,
+	initial: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+	const initialUrl = stringField(initial, "webUiUrl");
+	const initialStatus = stringField(initial, "status");
+	if (initialUrl && initialStatus && isHostedRuntimeRunning(initialStatus)) return initial;
+
+	const attempts = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS") ?? 18;
+	const intervalMs =
+		numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS") ??
+		numberField(recordFromUnknown(initial.polling) ?? {}, "intervalMs") ??
+		5_000;
+	let latest = initial;
+	for (let attempt = 0; attempt < attempts; attempt++) {
+		if (attempt > 0 && intervalMs > 0) await sleep(intervalMs);
+		const status = await requestJson<Record<string, unknown>>(
+			baseUrl,
+			`/api/v1/agents/${encodeURIComponent(cloudAgentId)}/status`,
+			authKey,
+			{ method: "GET" },
+		);
+		latest = { ...latest, ...status };
+		const publicUrl = stringField(latest, "webUiUrl");
+		const runtimeUrl = publicUrl ?? stringField(latest, "containerUrl") ?? stringField(latest, "url");
+		const runtimeStatus = stringField(latest, "status");
+		if (publicUrl && runtimeUrl && runtimeStatus && isHostedRuntimeRunning(runtimeStatus)) return latest;
+	}
+	return latest;
 }
 
 function normalizeApiPath(baseUrl: string, path: string): string {
@@ -280,6 +390,7 @@ async function storeProvisioningMetadata(
 					runtimeAgentId: result.cloudAgentId,
 					containerId: result.containerId ?? null,
 					containerUrl: result.containerUrl ?? null,
+					webUiUrl: result.webUiUrl ?? result.containerUrl ?? null,
 					status: result.status,
 					walletProvisioning: result.walletProvisioning ?? null,
 					account: result.account ?? null,
@@ -311,8 +422,9 @@ async function syncTokenRuntimeOverlay(
 	if (!row) return;
 
 	const now = new Date();
-	const agentStatus = args.result.status === "running" ? "running" : "provisioning";
-	const lifecycleState = args.result.status === "running" ? "live" : "birth";
+	const isRunning = isHostedRuntimeRunning(args.result.status);
+	const agentStatus = isRunning ? "running" : "provisioning";
+	const lifecycleState = isRunning ? "live" : "birth";
 	const agentValues = {
 		name: args.tokenName,
 		bio: args.persona.bio ?? null,
@@ -321,7 +433,7 @@ async function syncTokenRuntimeOverlay(
 		runtimeProvider: "eliza-cloud",
 		agentStatus,
 		lifecycleState,
-		webUiUrl: args.result.containerUrl ?? null,
+		webUiUrl: args.result.webUiUrl ?? args.result.containerUrl ?? null,
 		bridgeUrl: args.result.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
@@ -395,6 +507,17 @@ function numberField(data: Record<string, unknown>, key: string): number | null 
 	return null;
 }
 
+function numberEnv(key: string): number | null {
+	const value = process.env[key]?.trim();
+	if (!value) return null;
+	const parsed = Number.parseInt(value, 10);
+	return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function stringArrayField(data: Record<string, unknown>, key: string): string[] {
 	const value = data[key];
 	if (!Array.isArray(value)) return [];
@@ -412,7 +535,35 @@ function launchTypeField(data: Record<string, unknown>, key: string): "native" |
 	return null;
 }
 
+function isHostedRuntimeRunning(status: string): boolean {
+	return ["running", "ready", "online", "active", "started"].includes(status.toLowerCase());
+}
+
 function recordFromUnknown(value: unknown): Record<string, unknown> | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 	return value as Record<string, unknown>;
+}
+
+function existingProvisionResult(agentId: string, metadata: unknown): ElizaProvisionResult | null {
+	const provisioning = recordFromUnknown(recordFromUnknown(metadata)?.provisioning);
+	if (!provisioning) return null;
+	const cloudAgentId = stringField(provisioning, "cloudAgentId") ?? stringField(provisioning, "runtimeAgentId");
+	if (!cloudAgentId) return null;
+	const containerId = stringField(provisioning, "containerId") ?? undefined;
+	const webUiUrl = stringField(provisioning, "webUiUrl") ?? undefined;
+	const containerUrl = webUiUrl ?? stringField(provisioning, "containerUrl") ?? undefined;
+	const walletProvisioning = recordFromUnknown(provisioning.walletProvisioning);
+	const account = recordFromUnknown(provisioning.account);
+	return {
+		agentId,
+		cloudAgentId,
+		...(containerId ? { containerId } : {}),
+		...(containerUrl ? { containerUrl } : {}),
+		...(webUiUrl ? { webUiUrl } : {}),
+		jobId: stringField(provisioning, "jobId") ?? cloudAgentId,
+		status: stringField(provisioning, "status") ?? "running",
+		...(walletProvisioning ? { walletProvisioning } : {}),
+		...(account ? { account } : {}),
+		polling: provisioning.polling ?? null,
+	};
 }

@@ -261,7 +261,7 @@ export const jobDefinitions = {
 		jobName: "agent-provisioning",
 		queueKey: "provisioning",
 		schema: agentProvisioningJobSchema,
-		description: "Retry failed eliza-cloud provisioning for claimed agents.",
+		description: "Provision Eliza Cloud containers for claimed, graduated, or migrated agents.",
 	},
 	"agent-rollup": {
 		jobName: "agent-rollup",

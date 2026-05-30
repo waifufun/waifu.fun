@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { dispatchEvent } from "../src/services/webhook-consumer/index.js";
+import { provisionClaimedAgent } from "../src/services/provisioning.js";
 
 const persona = {
 	id: "11111111-1111-1111-1111-111111111111",
@@ -13,21 +13,15 @@ const persona = {
 	metadata: {},
 };
 
-test("agent.claimed provisions eliza agent and emits provisioning events", async () => {
+test("provisionClaimedAgent provisions eliza agent and emits provisioning events", async () => {
 	const events: { agentId: string | null; eventType: string; data: Record<string, unknown> }[] = [];
 	const createCalls: { userId: string; data: Record<string, unknown> }[] = [];
 
-	await dispatchEvent(
-		{
-			event: "agent.claimed",
-			timestamp: "2026-04-24T12:00:00.000Z",
-			agentId: "waifu-demo-01",
-			data: { claimedByXHandle: "eliza" },
-			idempotencyKey: "evt_provision_1",
-		},
+	await provisionClaimedAgent(
+		"waifu-demo-01",
+		{ claimedByXHandle: "eliza" },
 		{
 			db: fakeProvisioningDb() as never,
-			logger: console,
 			elizaClient: {
 				async createAgent(userId: string, data: Record<string, unknown>) {
 					createCalls.push({ userId, data });
@@ -41,7 +35,7 @@ test("agent.claimed provisions eliza agent and emits provisioning events", async
 					};
 				},
 			} as never,
-			async emitEvent(event) {
+			emitEvent: async (event) => {
 				events.push({
 					agentId: event.agentId ?? null,
 					eventType: event.eventType,
@@ -57,10 +51,9 @@ test("agent.claimed provisions eliza agent and emits provisioning events", async
 	assert.deepEqual(createCalls[0]?.data, {
 		agentName: "Demo Waifu",
 		agentConfig: {
-			personaId: "waifu-demo-01",
-			xHandle: "eliza",
-			taxConfig: { feeRate: 3 },
+			persona: { name: "Demo Waifu", bio: "" },
 			safeAddress: "0x1111111111111111111111111111111111111111",
+			xHandle: "eliza",
 		},
 	});
 	assert.deepEqual(

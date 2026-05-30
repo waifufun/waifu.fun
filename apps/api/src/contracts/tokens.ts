@@ -110,6 +110,12 @@ export interface TokenSummary {
 	launchPlatform: string;
 	ownerClaimStatus: string;
 	agentStatus: string;
+	agentLifecycleState: string | null;
+	cloudAgentId: string | null;
+	webUiUrl: string | null;
+	billingMode: string | null;
+	infraReserveUsd: string | null;
+	hasAgent: boolean;
 	lastTradeAt: string | null;
 }
 

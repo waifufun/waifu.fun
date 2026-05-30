@@ -113,6 +113,7 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 			billing: { mode: "owner_credits", initialReserveUsd: 5 },
 			account: {
 				primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+				walletKeyRef: "steward:waifu-demo-01",
 				chainType: "evm",
 			},
 			access: {
@@ -152,10 +153,13 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 			cloudAgentId: "cloud-agent-1",
 			characterId: "character-1",
 			status: "pending",
+			containerUrl: "http://agent-bridge.internal",
+			webUiUrl: "https://agent-public.example",
 			jobId: "job-1",
 			polling: { endpoint: "/api/v1/jobs/job-1", intervalMs: 5000, expectedDurationMs: 90000 },
 			account: {
 				primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+				walletKeyRef: "steward:waifu-demo-01",
 				organizationId: "org-wallet-1",
 				userId: "user-wallet-1",
 				isNewAccount: true,
@@ -194,9 +198,12 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 		cloudAgentId: "cloud-agent-1",
 		characterId: "character-1",
 		status: "pending",
+		containerUrl: "https://agent-public.example",
+		webUiUrl: "https://agent-public.example",
 		jobId: "job-1",
 		account: {
 			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+			walletKeyRef: "steward:waifu-demo-01",
 			organizationId: "org-wallet-1",
 			userId: "user-wallet-1",
 			isNewAccount: true,
@@ -218,6 +225,7 @@ test("provisionWaifuAgent surfaces wallet provisioning returned by Eliza Cloud",
 		assert.equal(init?.method, "POST");
 		assert.deepEqual(JSON.parse(String(init?.body)).account, {
 			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+			walletKeyRef: "steward:waifu-demo-01",
 			chainType: "evm",
 		});
 		return Response.json({
@@ -266,13 +274,16 @@ test("provisionWaifuAgent surfaces wallet provisioning returned by Eliza Cloud",
 });
 
 test("createElizaCloudClient uses service-key agent controls when configured", async () => {
+	const calls: Array<{ url: string; method: string | undefined; body: unknown | undefined }> = [];
 	const fetchMock = mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
-		assert.equal(String(url), "https://cloud.test/api/v1/agents/waifu-demo-01/suspend");
-		assert.equal(init?.method, "POST");
+		calls.push({
+			url: String(url),
+			method: init?.method,
+			body: init?.body ? JSON.parse(String(init.body)) : undefined,
+		});
 		const headers = init?.headers as Record<string, string>;
 		assert.equal(headers["X-Service-Key"], "svc_123");
 		assert.equal(headers.authorization, undefined);
-		assert.deepEqual(JSON.parse(String(init?.body)), { reason: "waifu runtime pause" });
 		return Response.json({ success: true, data: { jobId: "job-1", status: "queued", message: "ok" } });
 	});
 
@@ -283,7 +294,27 @@ test("createElizaCloudClient uses service-key agent controls when configured", a
 		logger: {},
 	});
 	await client.pauseAgent("waifu-demo-01");
-	assert.equal(fetchMock.mock.callCount(), 1);
+	await client.resumeAgent("waifu-demo-01");
+	assert.ok(client.restartHostedAgent);
+	await client.restartHostedAgent("waifu-demo-01");
+	assert.equal(fetchMock.mock.callCount(), 3);
+	assert.deepEqual(calls, [
+		{
+			url: "https://cloud.test/api/v1/agents/waifu-demo-01/suspend",
+			method: "POST",
+			body: { reason: "waifu runtime pause" },
+		},
+		{
+			url: "https://cloud.test/api/v1/agents/waifu-demo-01/resume",
+			method: "POST",
+			body: undefined,
+		},
+		{
+			url: "https://cloud.test/api/v1/agents/waifu-demo-01/restart",
+			method: "POST",
+			body: undefined,
+		},
+	]);
 });
 
 test("createElizaCloudClient uses service-key agent status when configured", async () => {
@@ -342,6 +373,69 @@ test("provisionWaifuAgent requires the agent EVM wallet before creating cloud re
 			});
 		},
 		(err: unknown) => err instanceof ElizaCloudNotConfiguredError && /agent EVM wallet is required/.test(err.message),
+	);
+	assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("provisionWaifuAgent rejects invalid agent EVM wallets before creating cloud resources", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async () => {
+		throw new Error("provisioning should not call Eliza Cloud with an invalid agent wallet");
+	});
+	const client = createElizaCloudClient({
+		baseUrl: "https://cloud.test/",
+		serviceKey: "svc_123",
+		logger: {},
+	});
+
+	await assert.rejects(
+		async () => {
+			if (!client.provisionWaifuAgent) throw new Error("missing provisionWaifuAgent");
+			await client.provisionWaifuAgent({
+				agentId: "waifu-demo-01",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				chain: "bsc",
+				chainId: 56,
+				tokenName: "Test Waifu",
+				tokenTicker: "TEST",
+				launchType: "native",
+				character: { name: "Test Waifu" },
+				account: { primaryWalletAddress: "not-an-address" },
+				container: { imageUri: "ecr.test/waifu-agent:latest" },
+			});
+		},
+		(err: unknown) => err instanceof ElizaCloudNotConfiguredError && /valid EVM address/.test(err.message),
+	);
+	assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("provisionWaifuAgent rejects invalid admin wallets before creating cloud resources", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async () => {
+		throw new Error("provisioning should not call Eliza Cloud with an invalid admin wallet");
+	});
+	const client = createElizaCloudClient({
+		baseUrl: "https://cloud.test/",
+		serviceKey: "svc_123",
+		logger: {},
+	});
+
+	await assert.rejects(
+		async () => {
+			if (!client.provisionWaifuAgent) throw new Error("missing provisionWaifuAgent");
+			await client.provisionWaifuAgent({
+				agentId: "waifu-demo-01",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				chain: "bsc",
+				chainId: 56,
+				tokenName: "Test Waifu",
+				tokenTicker: "TEST",
+				launchType: "native",
+				character: { name: "Test Waifu" },
+				account: { primaryWalletAddress: "0x0000000000000000000000000000000000000009" },
+				access: { adminWallets: ["not-an-address"] },
+				container: { imageUri: "ecr.test/waifu-agent:latest" },
+			});
+		},
+		(err: unknown) => err instanceof ElizaCloudNotConfiguredError && /admin wallet.*valid EVM address/.test(err.message),
 	);
 	assert.equal(fetchMock.mock.callCount(), 0);
 });

@@ -60,6 +60,7 @@ export interface ElizaProvisionWaifuAgentInput {
 		adminWallets?: string[];
 	};
 	webhookUrl?: string;
+	webhookSecret?: string;
 	modelDefaults?: Record<string, string>;
 }
 
@@ -137,6 +138,7 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 				...(opts.account ? { account: opts.account } : {}),
 				...(opts.access ? { access: opts.access } : {}),
 				...(opts.webhookUrl ? { webhookUrl: opts.webhookUrl } : {}),
+				...(opts.webhookSecret ? { webhookSecret: opts.webhookSecret } : {}),
 				...(opts.modelDefaults ? { modelDefaults: opts.modelDefaults } : {}),
 			});
 		}

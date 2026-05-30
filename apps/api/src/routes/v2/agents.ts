@@ -265,6 +265,7 @@ function cloudResponseFields(cloud: ElizaCloudProvisionResult) {
 		cloudAgentId: cloud.cloudAgentId,
 		containerId: cloud.containerId ?? null,
 		containerUrl: cloud.containerUrl ?? null,
+		webUiUrl: cloud.webUiUrl ?? null,
 		cloudStatus: cloud.status,
 		cloudJobId: cloud.jobId ?? null,
 		cloudPolling: cloud.polling ?? null,
@@ -274,6 +275,7 @@ function cloudResponseFields(cloud: ElizaCloudProvisionResult) {
 			agentId: cloud.cloudAgentId,
 			containerId: cloud.containerId ?? null,
 			containerUrl: cloud.containerUrl ?? null,
+			webUiUrl: cloud.webUiUrl ?? null,
 			status: cloud.status,
 			jobId: cloud.jobId ?? null,
 			polling: cloud.polling ?? null,
@@ -352,9 +354,12 @@ async function mergeCloudProvisioningMetadata(
 					runtimeAgentId: cloud.cloudAgentId,
 					containerId: cloud.containerId ?? null,
 					containerUrl: cloud.containerUrl ?? null,
+					webUiUrl: cloud.webUiUrl ?? null,
 					characterId: cloud.characterId ?? null,
 					jobId: cloud.jobId ?? null,
 					status: cloud.status,
+					account: cloud.account ?? null,
+					walletProvisioning: cloud.walletProvisioning ?? null,
 					polling: cloud.polling ?? null,
 					modelDefaults: defaultHostedModelSettings(),
 					updatedAt: new Date().toISOString(),
@@ -382,8 +387,9 @@ async function syncTokenRuntimeOverlay(
 	if (!row) return;
 
 	const now = new Date();
-	const agentStatus = args.cloud.status === "running" ? "running" : "provisioning";
-	const lifecycleState = args.cloud.status === "running" ? "live" : "birth";
+	const isRunning = isHostedRuntimeRunning(args.cloud.status);
+	const agentStatus = isRunning ? "running" : "provisioning";
+	const lifecycleState = isRunning ? "live" : "birth";
 	const agentValues = {
 		name: args.launchInput.name,
 		bio: args.launchInput.description ?? null,
@@ -392,8 +398,8 @@ async function syncTokenRuntimeOverlay(
 		runtimeProvider: "eliza-cloud",
 		agentStatus,
 		lifecycleState,
-		webUiUrl: args.cloud.containerUrl ?? null,
-		bridgeUrl: args.cloud.containerId ?? null,
+		webUiUrl: args.cloud.webUiUrl ?? args.cloud.containerUrl ?? null,
+		bridgeUrl: args.cloud.containerUrl ?? args.cloud.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
 		suspendedReason: null,
@@ -428,6 +434,10 @@ async function syncTokenRuntimeOverlay(
 		.where(eq(tokens.id, row.token.id));
 }
 
+function isHostedRuntimeRunning(status: string | null | undefined): boolean {
+	return ["running", "ready", "online", "active", "started"].includes(String(status ?? "").toLowerCase());
+}
+
 async function provisionHostedRuntimeAfterLaunch(
 	db: Database,
 	body: import("../../services/provision/payload-adapter.js").ProvisionRequest,
@@ -444,6 +454,7 @@ async function provisionHostedRuntimeAfterLaunch(
 	const existingProvisioning = recordFromUnknown(recordFromUnknown(existing?.metadata)?.provisioning);
 	const existingCloudAgentId = existingProvisioning?.cloudAgentId ?? existingProvisioning?.runtimeAgentId;
 	if (typeof existingCloudAgentId === "string" && existingCloudAgentId.length > 0) {
+		const account = recordFromUnknown(existingProvisioning.account);
 		const cloud = {
 			agentId: result.agentId,
 			cloudAgentId: existingCloudAgentId,
@@ -452,6 +463,10 @@ async function provisionHostedRuntimeAfterLaunch(
 				? { characterId: existingProvisioning.characterId }
 				: {}),
 			...(typeof existingProvisioning.jobId === "string" ? { jobId: existingProvisioning.jobId } : {}),
+			...(typeof existingProvisioning.containerId === "string" ? { containerId: existingProvisioning.containerId } : {}),
+			...(typeof existingProvisioning.containerUrl === "string" ? { containerUrl: existingProvisioning.containerUrl } : {}),
+			...(typeof existingProvisioning.webUiUrl === "string" ? { webUiUrl: existingProvisioning.webUiUrl } : {}),
+			...(Object.keys(account).length > 0 ? { account } : {}),
 		};
 		await syncTokenRuntimeOverlay(db, { tokenAddress: result.tokenAddress, launchInput, cloud });
 		return cloud;
@@ -491,8 +506,9 @@ export async function resurrectAgent(
 	creditsAmount: number,
 	deps: ResurrectAgentDeps,
 ): Promise<{ agentId: string; creditsAmount: number; modelTier: "premium"; containerId?: string }> {
-	await deps.elizaClient.topUpCredits(agentId, creditsAmount / 100);
 	const runtimeRefs = await resolveAgentRuntimeRefs(deps.db, agentId);
+	const controlAgentId = runtimeRefs.containerId ?? agentId;
+	await deps.elizaClient.topUpCredits(controlAgentId, creditsAmount / 100);
 	if (runtimeRefs.containerId) {
 		await deps.elizaClient.resumeAgent(runtimeRefs.containerId);
 	}
@@ -564,9 +580,9 @@ async function resolveAgentRuntimeRefs(
 
 	const provisioning = recordFromUnknown(recordFromUnknown(persona.metadata).provisioning);
 	const metadataContainerId =
-		stringRecordField(provisioning, "containerId") ??
 		stringRecordField(provisioning, "cloudAgentId") ??
-		stringRecordField(provisioning, "runtimeAgentId");
+		stringRecordField(provisioning, "runtimeAgentId") ??
+		stringRecordField(provisioning, "containerId");
 	if (!persona.tokenAddress) return { containerId: metadataContainerId, overlayAgentId: null, tokenId: null };
 
 	const [overlay] = await db

@@ -157,6 +157,8 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 	assert.equal(tweets.length, 2);
 	assert.deepEqual(cloudCalls.paused, ["container-1"]);
 	assert.deepEqual(cloudCalls.resumed, ["container-1"]);
-	assert.deepEqual(cloudCalls.toppedUp, [{ agentId: "waifu-demo-01", amount: 25 }]);
+	// Credits live cloud-side keyed by the cloud runtime id, so top-up targets
+	// the container id (same id pause/resume use), not the waifu agent id.
+	assert.deepEqual(cloudCalls.toppedUp, [{ agentId: "container-1", amount: 25 }]);
 	assert.equal(updates.length, 1);
 });

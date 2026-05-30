@@ -10,10 +10,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { schema } from "@waifufun/db";
+
 import type { FlapLaunchedToDexEvent, PortalTokenCreatedEvent } from "../lib/events.js";
 import { getCounter, resetCountersForTests, snapshotCounters } from "../lib/metrics.js";
 import type { LaunchIndexerRuntime } from "../lib/runtime.js";
-import { handleFlapLaunchedToDex, handlePortalTokenCreated } from "./flap.js";
+import { buildFlapLaunchedToDexProvisioningJob, handleFlapLaunchedToDex, handlePortalTokenCreated } from "./flap.js";
 
 // ---------------------------------------------------------------------------
 // Minimal fake DB just for these two handlers. Both follow the same shape:
@@ -30,16 +32,20 @@ interface LogEntry {
 }
 
 class FakeDb {
-	private rows: Row[];
+	private launchRows: Row[];
+	private personaRows: Row[];
 	public updates: Array<{ patch: Row }> = [];
-	constructor(rows: Row[]) {
-		this.rows = rows;
+	constructor(launchRows: Row[], personaRows: Row[] = []) {
+		this.launchRows = launchRows;
+		this.personaRows = personaRows;
 	}
 
 	select(_cols: Record<string, unknown>) {
-		const rows = this.rows;
+		const launchRows = this.launchRows;
+		const personaRows = this.personaRows;
 		return {
-			from(_table: unknown) {
+			from(table: unknown) {
+				const rows = table === schema.agentPersonas ? personaRows : launchRows;
 				return {
 					where(_predicate: unknown) {
 						return {
@@ -68,12 +74,15 @@ class FakeDb {
 	}
 }
 
-function makeRuntime(rows: Row[]): {
+function makeRuntime(
+	launchRows: Row[],
+	personaRows: Row[] = [],
+): {
 	runtime: LaunchIndexerRuntime;
 	logs: LogEntry[];
 	db: FakeDb;
 } {
-	const db = new FakeDb(rows);
+	const db = new FakeDb(launchRows, personaRows);
 	const logs: LogEntry[] = [];
 	const captureLogger = (level: LogEntry["level"]) =>
 		((payload: Record<string, unknown> | string | undefined, message?: string) => {
@@ -191,12 +200,48 @@ test("handleFlapLaunchedToDex: writes v2Pair + curveFillBnb + state when launch 
 
 	const result = await handleFlapLaunchedToDex(runtime, dexEvent(TOKEN, PAIR));
 
-	assert.deepEqual(result, { launchId: "launch-2" });
+	assert.deepEqual(result, { launchId: "launch-2", enqueuedJobs: [] });
 	assert.equal(db.updates.length, 1);
 	const patch = db.updates[0]?.patch ?? {};
 	assert.equal(patch.v2Pair, PAIR.toLowerCase());
 	assert.equal(patch.curveFillBnb, "5000000000000000000");
 	assert.equal(patch.state, "launched");
+});
+
+test("handleFlapLaunchedToDex: enqueues Eliza Cloud provisioning when an agent persona is linked", async () => {
+	resetCountersForTests();
+	const { runtime } = makeRuntime(
+		[
+			{
+				id: "launch-3",
+				flapTokenAddress: TOKEN,
+				tokenAddress: "0x5555555555555555555555555555555555555555",
+			},
+		],
+		[
+			{
+				agentId: "waifu-launch-agent-1",
+				tokenAddress: TOKEN,
+			},
+		],
+	);
+	const enqueued: Array<{ payload: unknown; options?: { jobId?: string } }> = [];
+	runtime.enqueueAgentProvisioning = async (payload, options) => {
+		enqueued.push({ payload, options });
+	};
+
+	const event = dexEvent(TOKEN, PAIR);
+	const result = await handleFlapLaunchedToDex(runtime, event);
+
+	assert.deepEqual(result, { launchId: "launch-3", enqueuedJobs: ["agent-provisioning"] });
+	assert.deepEqual(enqueued, [
+		{
+			payload: buildFlapLaunchedToDexProvisioningJob("waifu-launch-agent-1", "launch-3", event),
+			options: {
+				jobId: `launch-indexer-56-${event.txHash}-${event.logIndex}-agent-provisioning-waifu-launch-agent-1`,
+			},
+		},
+	]);
 });
 
 test("handleFlapLaunchedToDex: warns + bumps metric when launch row missing", async () => {

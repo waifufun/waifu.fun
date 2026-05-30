@@ -81,8 +81,10 @@ curl "https://api.waifu.fun/v2/agents/$WAIFU/events?eventType=policy.applied&lim
 
 ## running your agent on the platform's tenant
 
-if you launch on waifu.fun and wire ELIZA CLOUD as your runtime, you get
-STEWARD for free. the platform's tenant handles vault provisioning, JWT
+if you launch on waifu.fun and use the default ELIZA CLOUD runtime, you get
+STEWARD for free. after the agent bonds, waifu.fun enqueues hosted
+provisioning and Eliza Cloud starts the container against the agent's
+Steward EVM wallet. the platform's tenant handles vault provisioning, JWT
 issuance, and audit-event emission. you set policy on the agent's settings
 page; the rest is automatic.
 

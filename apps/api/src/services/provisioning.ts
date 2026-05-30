@@ -1,5 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
-import type { Address } from "viem";
+import { isAddress, type Address } from "viem";
 
 import {
 	ElizaCloudRuntimeAdapter,
@@ -13,6 +13,7 @@ import {
 	agentPersonaQueries,
 	type agentPersonas,
 	agentSafes,
+	agentWallets,
 	agents,
 	creators,
 	getDatabase,
@@ -90,10 +91,11 @@ export async function provisionClaimedAgent(
 	}
 
 	const safe = await getAgentSafeAddress(db, persona.id);
+	const agentWalletAddress = await getStoredAgentWalletAddress(db, persona.agentId);
 	const registry = deps.runtimeRegistry ?? legacyRegistryFromDeps(deps) ?? getRuntimeRegistry();
 	const adapter = registry.get(runtimeKind);
 	if (!adapter) throw new Error(`runtime adapter not registered for ${runtimeKind}`);
-	const provisionOptions = buildProvisionOptions(agentId, persona, eventData, safe);
+	const provisionOptions = buildProvisionOptions(agentId, persona, eventData, safe, agentWalletAddress);
 
 	try {
 		const result = await adapter.provision(provisionOptions);
@@ -200,6 +202,7 @@ export function buildProvisionOptions(
 	},
 	eventData: Record<string, unknown>,
 	safeAddress: string | null,
+	storedAgentWalletAddress: string | null = null,
 ): ProvisionOptions {
 	const opts: ProvisionOptions = {
 		agentId,
@@ -240,22 +243,33 @@ export function buildProvisionOptions(
 	const primaryWalletAddress =
 		stringField(eventData, "walletAddress") ??
 		stringField(eventData, "agentWalletAddress") ??
-		stringField(eventData, "primaryWalletAddress");
+		stringField(eventData, "primaryWalletAddress") ??
+		storedAgentWalletAddress;
 	if (primaryWalletAddress) {
+		if (!isAddress(primaryWalletAddress)) {
+			throw new Error(`agent EVM wallet must be a valid EVM address for Eliza Cloud provisioning (${agentId})`);
+		}
 		opts.account = {
 			primaryWalletAddress,
-			walletKeyRef: `steward:${agentId}`,
+			walletKeyRef: stringField(eventData, "walletKeyRef") ?? stringField(eventData, "agentWalletKeyRef") ?? `steward:${agentId}`,
 		};
 	}
 
 	const adminWallets = stringArrayField(eventData, "adminWallets");
 	const fallbackAdminWallet = persona.ownerAddress ?? safeAddress;
+	const resolvedAdminWallets = (adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [])
+		.map((wallet) => wallet.trim())
+		.filter(Boolean);
 	opts.access = {
 		guestMinTokens: numberField(eventData, "guestMinTokens") ?? 1_000,
 		userMinTokens: numberField(eventData, "userMinTokens") ?? 100_000,
 		thresholdMode: "strict_gt",
-		adminWallets: adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [],
+		adminWallets: resolvedAdminWallets,
 	};
+	const invalidAdminWallet = resolvedAdminWallets.find((wallet) => !isAddress(wallet));
+	if (invalidAdminWallet) {
+		throw new Error(`admin wallet must be a valid EVM address for Eliza Cloud provisioning (${agentId})`);
+	}
 
 	const webhookUrl = stringField(eventData, "webhookUrl") ?? persona.runtimeWebhookUrl;
 	if (webhookUrl) opts.webhookUrl = webhookUrl;
@@ -404,6 +418,15 @@ async function getAgentSafeAddress(db: Database, personaId: string): Promise<str
 		.where(eq(agentSafes.agentId, personaId))
 		.limit(1);
 	return row?.safeAddress ?? null;
+}
+
+async function getStoredAgentWalletAddress(db: Database, agentId: string): Promise<string | null> {
+	const [row] = await db
+		.select({ walletAddress: agentWallets.walletAddress })
+		.from(agentWallets)
+		.where(eq(agentWallets.internalAgentId, agentId))
+		.limit(1);
+	return row?.walletAddress ?? null;
 }
 
 async function storeProvisioningSuccess(

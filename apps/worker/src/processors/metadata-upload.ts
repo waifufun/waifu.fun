@@ -1,7 +1,7 @@
 import type { Job } from "bullmq";
 
 import { uploadFlapMetadata } from "@waifufun/flap";
-import { type MetadataUploadJob, parseJobPayload } from "@waifufun/queue";
+import { type MetadataUploadJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import { emitAgentEvent } from "../lib/emit.js";
 import { safeFetchBytes } from "../lib/safe-url-fetch.js";
