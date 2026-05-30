@@ -27,8 +27,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref }}
-          persist-credentials: true
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -47,6 +48,7 @@ jobs:
         run: bun run lint
 
       - name: Commit and push if there are changes
+        if: github.event.pull_request.head.repo.full_name == github.repository
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
@@ -60,4 +62,13 @@ jobs:
             git push origin "HEAD:$HEAD_REF"
           else
             echo "No lint changes to commit."
+          fi
+
+      - name: Check for uncommitted lint changes
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Linting made changes. Please run bun run lint locally and push the result."
+            git diff --stat
+            exit 1
           fi

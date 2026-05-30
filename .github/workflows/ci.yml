@@ -147,19 +147,18 @@ jobs:
         # apps/brain, apps/mcp, apps/sol-indexer, apps/evm-indexer plus
         # packages/db, packages/agent-actions, packages/launchpad. Every
         # one of those needs to be in this filter so a breakage anywhere
-        # api-flavored fails CI. Round 1 codex caught worker / brain /
-        # mcp / sol-indexer were missing.
-        # contracts-evm added 2026-05-08 (V3 audit C-1): contract tests
-        # were never running in CI. FORK_BSC required so integration
-        # tests fail loudly instead of silently skipping (V3 audit C-2).
+        # api-flavored fails CI.
+        # contracts-evm runs here, including BSC fork coverage when the
+        # archive RPC secret is available. Fork PRs do not receive secrets,
+        # so they must not fall back to non-archive public RPCs at old pins.
         env:
-          FORK_BSC: "true"
           FORK_BSC_URL: ${{ secrets.ALCHEMY_BSC_URL }}
+          FORK_BSC: ${{ secrets.ALCHEMY_BSC_URL != '' && 'true' || 'false' }}
           # Wave M+N validated against this block (M5 verbose fork run + Nubs sim).
           # Bump quarterly to stay within Alchemy cache window; FLAP Portal evolves
           # state-side and old pinned blocks can trigger VanityAddressRequirementNotMet.
           FORK_BSC_BLOCK: "99073955"
-          REQUIRE_BSC_FORK: "true"
+          REQUIRE_BSC_FORK: ${{ secrets.ALCHEMY_BSC_URL != '' && 'true' || 'false' }}
         run: >-
           bunx turbo run test build
           --filter='@waifufun/api...'
