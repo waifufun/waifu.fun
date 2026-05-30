@@ -572,6 +572,7 @@ export default async function AgentPage({
 			identity={identity}
 			pnlSeries={pnlSeries}
 			pnlBaselineNav={pnlBaselineNav}
+			navSeries={navHistory}
 		/>
 	);
 }
