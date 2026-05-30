@@ -65,7 +65,7 @@ export type HeroIdentity = {
 
 export type HeroTreasuryOverride = {
 	valueUsd: number;
-	source: "aggregated" | "agentSafe" | "burner";
+	source: "aggregated" | "agentSafe" | "none";
 };
 
 export type HeroProps = {
@@ -103,7 +103,7 @@ export function Hero({
 	livePulse = false,
 }: HeroProps) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
-	const treasurySource = treasuryValueOverride?.source ?? "burner";
+	const treasurySource = treasuryValueOverride?.source ?? "none";
 	const followers = twitterStats?.followers ?? null;
 	const showFollowers = followers !== null;
 	return (
@@ -248,11 +248,11 @@ function TreasuryBlock({
 	livePulse,
 }: {
 	navUsd: number;
-	source: "aggregated" | "agentSafe" | "burner";
+	source: "aggregated" | "agentSafe" | "none";
 	livePulse: boolean;
 }) {
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
-	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "sol burner";
+	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "no data";
 	return (
 		<div className="flex flex-col gap-1.5">
 			<Label

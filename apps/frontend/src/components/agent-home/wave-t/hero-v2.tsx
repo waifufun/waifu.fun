@@ -56,7 +56,7 @@ export function HeroV2({
 	livePulse = false,
 }: HeroProps) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
-	const treasurySource = treasuryValueOverride?.source ?? "burner";
+	const treasurySource = treasuryValueOverride?.source ?? "none";
 	const followers = twitterStats?.followers ?? null;
 
 	return (
@@ -230,7 +230,7 @@ function DataColumn({
 	followersSource,
 }: {
 	treasuryValue: number;
-	treasurySource: "aggregated" | "agentSafe" | "burner";
+	treasurySource: "aggregated" | "agentSafe" | "none";
 	livePulse: boolean;
 	pnl24hUsd: number;
 	pnl24hPct: number;
@@ -241,7 +241,7 @@ function DataColumn({
 	followersSource: TwitterStats["source"];
 }) {
 	const sourceLabel =
-		treasurySource === "aggregated" ? "nav aggregated" : treasurySource === "agentSafe" ? "agent safe" : "sol burner";
+		treasurySource === "aggregated" ? "nav aggregated" : treasurySource === "agentSafe" ? "agent safe" : "no data";
 
 	const pnlEmpty = pnl24hUsd === 0;
 	const pnlTone: "positive" | "negative" | "neutral" = pnlEmpty ? "neutral" : pnl24hUsd > 0 ? "positive" : "negative";
