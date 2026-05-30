@@ -68,11 +68,13 @@ export function tierDisplay(tier: number | null | undefined): TierBadgeMeta | nu
 }
 
 /**
- * Format a USD value into a compact form for stat cells. Returns "–" for
- * non-positive or non-finite inputs so the UI never shows "$0" or "$NaN".
+ * Format a USD value into a compact form for stat cells. Returns a middot
+ * for non-positive or non-finite inputs so the UI never shows "$0" or
+ * "$NaN". The middot is the wave-t empty-cell glyph; en/em-dash glyphs are
+ * banned as placeholders (.impeccable.md).
  */
 export function formatUsdShort(n: number): string {
-	if (!Number.isFinite(n) || n <= 0) return "–";
+	if (!Number.isFinite(n) || n <= 0) return "·";
 	if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}b`;
 	if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}m`;
 	if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
@@ -80,12 +82,12 @@ export function formatUsdShort(n: number): string {
 }
 
 /**
- * Format a count (holders, tx) into a compact form. Returns "–" for
+ * Format a count (holders, tx) into a compact form. Returns a middot for
  * negative or non-finite inputs; 0 stays as "0" since it's a meaningful
  * value for a freshly-launched agent.
  */
 export function formatNumberShort(n: number): string {
-	if (!Number.isFinite(n) || n < 0) return "–";
+	if (!Number.isFinite(n) || n < 0) return "·";
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`;
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
 	return n.toLocaleString();
@@ -95,7 +97,7 @@ export function formatNumberShort(n: number): string {
  * Format a signed percentage for the 24h stat cell.
  */
 export function formatPercentShort(n: number): string {
-	if (!Number.isFinite(n)) return "–";
+	if (!Number.isFinite(n)) return "·";
 	const sign = n > 0 ? "+" : "";
 	const abs = Math.abs(n);
 	const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;

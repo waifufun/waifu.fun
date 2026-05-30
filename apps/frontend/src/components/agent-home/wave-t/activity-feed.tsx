@@ -176,12 +176,12 @@ export type ActivityRowInput =
 type Tab = "all" | ActivityCategory;
 
 const TABS: { key: Tab; label: string }[] = [
-	{ key: "all", label: "All" },
-	{ key: "trading", label: "Trading" },
-	{ key: "apps", label: "Apps" },
-	{ key: "treasury", label: "Treasury" },
-	{ key: "market", label: "Market" },
-	{ key: "system", label: "System" },
+	{ key: "all", label: "all" },
+	{ key: "trading", label: "trading" },
+	{ key: "apps", label: "apps" },
+	{ key: "treasury", label: "treasury" },
+	{ key: "market", label: "market" },
+	{ key: "system", label: "system" },
 ];
 
 function categoryOf(row: ActivityRowInput): ActivityCategory {
@@ -485,17 +485,27 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 				};
 			}
 			// fill
+			const notional = row.notionalUsd ?? (row.fillPriceUsd ?? 0) * (row.size ?? 0);
+			const fillPnl = row.pnlUsd ?? 0;
+			const fillTone = deltaTone(fillPnl);
+			const verb = row.side === "short" ? "sold" : "bought";
 			return {
 				icon: pickVenueIcon(row.venue),
-				title: `filled ${row.side} ${asset}`,
+				title: `${verb} ${asset} ${row.side}`,
 				sub:
 					row.renderedText ??
-					`${formatCompactNum(row.size ?? 0)} ${asset} at ${formatCompactUsd(row.fillPriceUsd ?? 0)}`,
-				right: (
-					<span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
-						{formatCompactUsd((row.fillPriceUsd ?? 0) * (row.size ?? 0))}
-					</span>
-				),
+					`${formatCompactNum(row.size ?? 0)} ${asset} at ${formatCompactUsd(row.fillPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+				right:
+					fillPnl !== 0 ? (
+						<span className={cn("tabular-nums", fillTone.cls)}>
+							{fillTone.sign}
+							{formatCompactUsd(fillPnl)}
+						</span>
+					) : (
+						<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
+							{formatCompactUsd(notional)}
+						</span>
+					),
 				url: row.url,
 			};
 		}
@@ -803,7 +813,7 @@ export function ActivityFeed({
 					) : undefined
 				}
 			>
-				Activity Feed
+				activity feed
 			</Label>
 
 			{/* tabs */}

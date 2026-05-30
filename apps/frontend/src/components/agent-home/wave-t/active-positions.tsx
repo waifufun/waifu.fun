@@ -6,12 +6,14 @@
  *  1. Legacy generic mode: takes a `positions: Position[]` prop sourced from
  *     `lib/positions.ts`. Renders a 5-column asset/venue/size/pnl/% table.
  *
- *  2. Live Hyperliquid mode (new, optional): when `hyperliquidAgentId` is
- *     provided, the panel additionally polls `/v2/agents/:id/hyperliquid/
- *     positions` every 5s and renders the much richer perp-position table
+ *  2. Live Hyperliquid mode (new, optional): when `hyperliquidPositions`
+ *     are provided, the panel renders the much richer perp-position table
  *     (asset, side, size, entry, mark, leverage, liq, unrealized pnl, close
- *     stub button) at the top. The legacy generic table still renders below
- *     so cross-venue rows (LP, prediction markets) keep their home.
+ *     stub button) at the top. Positions are derived from the live
+ *     /holdings snapshot's `perpsPositions[]` (the dedicated
+ *     /hyperliquid/positions endpoint does not exist). The legacy generic
+ *     table still renders below so cross-venue rows (LP, prediction
+ *     markets) keep their home.
  *
  * Em-dash glyph placeholders are banned (.impeccable.md); empty numeric
  * cells use a middot.
@@ -24,7 +26,7 @@ import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { type HyperliquidPosition, useHyperliquidPositions } from "@/lib/hooks/use-hyperliquid-positions";
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
 import type { Position } from "@/lib/wave-t/positions";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
 import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
@@ -180,18 +182,24 @@ function ClosePositionButton({ coin, side }: { coin: string; side: "long" | "sho
 
 export function ActivePositions({
 	positions,
-	hyperliquidAgentId,
+	hyperliquidPositions = [],
+	live: livePulse = false,
 }: {
 	positions: Position[];
-	/** Optional. When set, the panel polls live HL positions for this agent. */
-	hyperliquidAgentId?: string | null;
+	/**
+	 * Open hyperliquid perp positions, derived from the /holdings snapshot.
+	 * Empty array renders the honest "no live positions" state.
+	 */
+	hyperliquidPositions?: HyperliquidPosition[];
+	/** When true, a live pulse renders in the panel header. */
+	live?: boolean;
 }) {
 	const live = useMemo(() => positions.filter((p) => p.status === "live"), [positions]);
 	const totalPnl = useMemo(() => live.reduce((acc, p) => acc + p.pnl24h, 0), [live]);
 	const tone = toneOfPnl(totalPnl);
 
-	const hl = useHyperliquidPositions(hyperliquidAgentId ?? null, { pollMs: 5_000 });
-	const hlPositions = hl.snapshot.positions;
+	const hlPositions = hyperliquidPositions;
+	const hlAccountValueUsd = useMemo(() => hlPositions.reduce((acc, p) => acc + p.notionalUsd, 0), [hlPositions]);
 	const hlTotalUnrealized = useMemo(() => hlPositions.reduce((acc, p) => acc + p.unrealizedPnlUsd, 0), [hlPositions]);
 	const hlTone = toneOfPnl(hlTotalUnrealized);
 
@@ -201,7 +209,7 @@ export function ActivePositions({
 		<Panel className="flex h-full flex-col">
 			<Label
 				right={
-					hyperliquidAgentId ? (
+					livePulse ? (
 						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
 							<span className="relative inline-flex h-1.5 w-1.5">
 								<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-60" />
@@ -229,9 +237,8 @@ export function ActivePositions({
 							<VenueIcon size={12} venue="hyperliquid" />
 							<span>hyperliquid perp</span>
 							<span>
-								·{" "}
-								<span className="text-[var(--text-secondary)] tabular-nums">{fmtUsd(hl.snapshot.accountValueUsd)}</span>{" "}
-								account value
+								· <span className="text-[var(--text-secondary)] tabular-nums">{fmtUsd(hlAccountValueUsd)}</span>{" "}
+								notional
 							</span>
 						</div>
 						<HyperliquidPositionsTable positions={hlPositions} />

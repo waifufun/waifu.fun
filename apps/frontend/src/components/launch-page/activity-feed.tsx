@@ -72,9 +72,11 @@ function EventRow({ event }: { event: DepositorEvent }) {
 				<span
 					className={cn(
 						"flex size-7 items-center justify-center border",
+						// single-accent discipline: deposits read on --accent (inflow),
+						// withdraws on --negative (outflow). no orange second accent.
 						isDeposit
 							? "border-[#00ff87]/40 bg-[#00ff87]/10 text-[#00ff87]"
-							: "border-orange-400/40 bg-orange-400/10 text-orange-300",
+							: "border-[var(--negative)]/40 bg-[var(--negative)]/10 text-[var(--negative)]",
 					)}
 				>
 					{isDeposit ? <ArrowDownLeft className="size-3.5" /> : <ArrowUpRight className="size-3.5" />}
@@ -139,7 +141,7 @@ function ActivityFeedSkeleton() {
 }
 
 function shortAddr(value: string): string {
-	if (!value || value.length < 10) return value || "–";
+	if (!value || value.length < 10) return value || "·";
 	return `${value.slice(0, 6)}…${value.slice(-4)}`;
 }
 

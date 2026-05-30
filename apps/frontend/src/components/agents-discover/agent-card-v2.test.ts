@@ -45,10 +45,10 @@ describe("agent-card-v2 helpers", () => {
 	});
 
 	describe("formatUsdShort", () => {
-		it("returns dash for non-positive / non-finite", () => {
-			expect(formatUsdShort(0)).toBe("–");
-			expect(formatUsdShort(-1)).toBe("–");
-			expect(formatUsdShort(Number.NaN)).toBe("–");
+		it("returns middot for non-positive / non-finite", () => {
+			expect(formatUsdShort(0)).toBe("·");
+			expect(formatUsdShort(-1)).toBe("·");
+			expect(formatUsdShort(Number.NaN)).toBe("·");
 		});
 		it("formats billions with b suffix", () => {
 			expect(formatUsdShort(2_500_000_000)).toBe("$2.50b");
@@ -68,9 +68,9 @@ describe("agent-card-v2 helpers", () => {
 		it("preserves zero", () => {
 			expect(formatNumberShort(0)).toBe("0");
 		});
-		it("returns dash for negative / non-finite", () => {
-			expect(formatNumberShort(-3)).toBe("–");
-			expect(formatNumberShort(Number.NaN)).toBe("–");
+		it("returns middot for negative / non-finite", () => {
+			expect(formatNumberShort(-3)).toBe("·");
+			expect(formatNumberShort(Number.NaN)).toBe("·");
 		});
 		it("formats millions / thousands compactly", () => {
 			expect(formatNumberShort(2_300_000)).toBe("2.3m");

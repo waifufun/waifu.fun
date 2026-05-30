@@ -40,18 +40,23 @@ type Props = {
 	variant?: "default" | "compact";
 };
 
+// Single-accent discipline (.impeccable.md): no yellow/blue/red rainbow.
+// open is the only live state, so it earns the accent + pulse. failed reads
+// on --negative (it is a real error). closed/launched are terminal-but-fine
+// states, so they sit on neutral white tints, differentiated by the caption
+// row below rather than by hue.
 const STATE_BADGE: Record<string, string> = {
 	open: "border-[#00ff87]/40 text-[#00ff87] bg-[#00ff87]/[0.05]",
-	closed: "border-yellow-400/40 text-yellow-300 bg-yellow-400/5",
-	launched: "border-blue-400/40 text-blue-300 bg-blue-400/5",
-	failed: "border-red-400/40 text-red-300 bg-red-400/5",
+	closed: "border-white/20 text-white/70 bg-white/[0.04]",
+	launched: "border-white/25 text-white/85 bg-white/[0.05]",
+	failed: "border-[var(--negative)]/40 text-[var(--negative)] bg-[var(--negative)]/[0.06]",
 };
 
 const STATE_DOT: Record<string, string> = {
 	open: "bg-[#00ff87] animate-pulse",
-	closed: "bg-yellow-300",
-	launched: "bg-blue-300",
-	failed: "bg-red-300",
+	closed: "bg-white/45",
+	launched: "bg-white/60",
+	failed: "bg-[var(--negative)]",
 };
 
 export function LaunchCard({ launch, variant = "default" }: Props) {
