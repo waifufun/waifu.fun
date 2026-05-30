@@ -7,6 +7,7 @@ import {
 	isLiquidation,
 	renderClose,
 	renderFill,
+	renderFunding,
 	renderLiquidation,
 	renderOpen,
 } from "../src/lib/hl-listener.js";
@@ -70,4 +71,19 @@ test("isLiquidation detects liquidation-shaped fills", () => {
 	assert.equal(isLiquidation({ dir: "Open Long" }), false);
 	assert.equal(isLiquidation({ dir: "Liquidated Cross Long" }), true);
 	assert.equal(isLiquidation({ liquidation: { liquidatedUser: "0x0" } }), true);
+});
+
+test("renderFunding handles nested Hyperliquid funding delta rows", () => {
+	const text = renderFunding({
+		time: 1780164000038,
+		delta: {
+			type: "funding",
+			coin: "ZEC",
+			usdc: "-0.031384",
+			szi: "4.64",
+			fundingRate: "0.0000125",
+		},
+	});
+	assert.match(text, /paid/);
+	assert.match(text, /zec funding/);
 });
