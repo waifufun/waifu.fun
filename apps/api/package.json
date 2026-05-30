@@ -18,7 +18,7 @@
 		"typecheck": "tsc --noEmit",
 		"precheck": "bun run --filter @waifufun/redis build && bun run --filter @waifufun/identity build",
 		"lint": "biome check src package.json tsconfig.json",
-		"test": "bun run --filter @waifufun/db build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/redis build && bun run --filter @waifufun/metrics build && bun run --filter @waifufun/agent-runtime build && bun run --filter @waifufun/launchpad build && node --import tsx --test test/**/*.test.ts src/**/*.test.ts",
+		"test": "bun run --filter @waifufun/db build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/redis build && bun run --filter @waifufun/metrics build && bun run --filter @waifufun/agent-runtime build && bun run --filter @waifufun/launchpad build && node --import tsx --test $(find test src -name '*.test.ts' -type f | sort)",
 		"check": "tsc --noEmit",
 		"script:backfill-sol": "tsx src/scripts/backfill-sol.ts"
 	},
