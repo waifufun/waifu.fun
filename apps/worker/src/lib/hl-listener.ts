@@ -3,17 +3,19 @@
  *
  * Polls every `pollIntervalMs` (default 10s):
  *
- * 1. `userFills` for each registered HL wallet → emits `trade.fill` /
+ * 1. `userFillsByTime` for each registered HL wallet -> emits `trade.fill` /
  *    `trade.liquidation` events into `agent_events`, idempotent on
  *    Hyperliquid's per-fill `tid` (also exposed as `fillId`).
- * 2. `clearinghouseState` for each wallet → diffs `assetPositions`
+ * 2. `userFunding` for each wallet -> emits `hl_funding` events, idempotent
+ *    on wallet/coin/time so hourly funding backfills can be replayed safely.
+ * 3. `clearinghouseState` for each wallet -> diffs `assetPositions`
  *    against the last in-memory snapshot to emit `trade.open` /
  *    `trade.close` events that summarise net position changes.
  *
  * Why poll instead of websocket?
  *  - HL's public ws is reliable but adds a long-lived connection
  *    we'd need to babysit (reconnect, backoff, multi-account fan-out).
- *  - 10s polling on a single agent costs 6 req/min per endpoint —
+ *  - 10s polling on a single agent costs 6 req/min per endpoint --
  *    well under HL's rate-limit envelope (1200 req/min per IP).
  *  - Idempotency via `tid` means a polled fill that arrives twice is
  *    a no-op insert, so we can crank polling up without dup risk.
@@ -32,7 +34,13 @@ import type { WorkerContext } from "./types.js";
 const HL_BASE_URL = "https://api.hyperliquid.xyz";
 const ARBITRUM_CHAIN_ID = "42161";
 const DEFAULT_POLL_INTERVAL_MS = 10_000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
+const DEFAULT_TICK_WATCHDOG_MS = 60_000;
 const DEFAULT_FILLS_BACKFILL_WINDOW_MS = 24 * 60 * 60 * 1000; // 24h
+const DEFAULT_FUNDING_BACKFILL_WINDOW_MS = 4 * 24 * 60 * 60 * 1000; // 4d, bounded one-shot recovery
+const MAX_FILLS_BACKFILL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_FUNDING_BACKFILL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const CURSOR_FUTURE_SKEW_MS = 5 * 60 * 1000;
 
 export type HyperliquidFill = {
 	coin?: string;
@@ -50,6 +58,21 @@ export type HyperliquidFill = {
 	feeToken?: string;
 	tid?: number;
 	liquidation?: { liquidatedUser?: string; markPx?: string };
+};
+
+export type HyperliquidFundingDelta = {
+	type?: string;
+	coin?: string;
+	fundingRate?: string | number;
+	szi?: string | number;
+	usdc?: string | number;
+	nSamples?: number | null;
+};
+
+export type HyperliquidFunding = HyperliquidFundingDelta & {
+	time?: number;
+	hash?: string;
+	delta?: HyperliquidFundingDelta;
 };
 
 type HyperliquidPosition = {
@@ -85,15 +108,66 @@ type WalletTarget = {
 	agentId: string | null;
 };
 
+type WalletTickMetrics = {
+	fillsFetched: number;
+	fillsSkipped: number;
+	fillsEmitted: number;
+	fundingFetched: number;
+	fundingSkipped: number;
+	fundingEmitted: number;
+	positionEventsEmitted: number;
+};
+
+type TickMetrics = WalletTickMetrics & {
+	walletsPolled: number;
+	walletsFailed: number;
+	durationMs: number;
+};
+
 export interface HyperliquidListenerOptions {
 	pollIntervalMs?: number;
 	fillsBackfillWindowMs?: number;
+	fundingBackfillWindowMs?: number;
+	requestTimeoutMs?: number;
+	tickWatchdogMs?: number;
 	fetch?: typeof fetch;
 	baseUrl?: string;
 }
 
 interface ListenerHandle {
 	stop: () => Promise<void>;
+}
+
+function emptyWalletMetrics(): WalletTickMetrics {
+	return {
+		fillsFetched: 0,
+		fillsSkipped: 0,
+		fillsEmitted: 0,
+		fundingFetched: 0,
+		fundingSkipped: 0,
+		fundingEmitted: 0,
+		positionEventsEmitted: 0,
+	};
+}
+
+function addWalletMetrics(target: WalletTickMetrics, delta: WalletTickMetrics): void {
+	target.fillsFetched += delta.fillsFetched;
+	target.fillsSkipped += delta.fillsSkipped;
+	target.fillsEmitted += delta.fillsEmitted;
+	target.fundingFetched += delta.fundingFetched;
+	target.fundingSkipped += delta.fundingSkipped;
+	target.fundingEmitted += delta.fundingEmitted;
+	target.positionEventsEmitted += delta.positionEventsEmitted;
+}
+
+function errorDetails(err: unknown): Record<string, unknown> {
+	if (err instanceof Error) return { name: err.name, message: err.message, stack: err.stack };
+	return { message: String(err) };
+}
+
+function boundedWindow(value: number | undefined, fallback: number, max: number): number {
+	if (!Number.isFinite(value) || value === undefined || value <= 0) return fallback;
+	return Math.min(value, max);
 }
 
 function numberOr(value: unknown, fallback: number | null = null): number | null {
@@ -171,6 +245,18 @@ export function renderClose(coin: string, side: "long" | "short", pnlUsd: number
 	return `closed ${coin.toLowerCase()} ${side} for ${signedUsd(pnlUsd)}${pct}`;
 }
 
+function fundingDelta(funding: HyperliquidFunding): HyperliquidFundingDelta {
+	return funding.delta ?? funding;
+}
+
+export function renderFunding(funding: HyperliquidFunding): string {
+	const delta = fundingDelta(funding);
+	const coin = (delta.coin ?? "asset").toLowerCase();
+	const usdc = numberOr(delta.usdc) ?? 0;
+	const verb = usdc >= 0 ? "received" : "paid";
+	return `${verb} ${formatUsd(Math.abs(usdc))} ${coin} funding`;
+}
+
 function signedPct(value: number): string {
 	const sign = value > 0 ? "+" : "";
 	return `${sign}${value.toFixed(2)}%`;
@@ -186,24 +272,20 @@ async function postInfo<T>(
 	url: string,
 	body: unknown,
 	fetchImpl: typeof fetch = fetch,
-	timeoutMs = 8000,
-): Promise<T | null> {
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), timeoutMs);
-	try {
-		const res = await fetchImpl(`${url}/info`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(body),
-			signal: controller.signal,
-		});
-		if (!res.ok) return null;
-		return (await res.json()) as T;
-	} catch {
-		return null;
-	} finally {
-		clearTimeout(timer);
+	timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+): Promise<T> {
+	const timeoutSignal = AbortSignal.timeout(timeoutMs);
+	const res = await fetchImpl(`${url}/info`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+		signal: timeoutSignal,
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		throw new Error(`Hyperliquid info request failed: ${res.status} ${res.statusText} ${text.slice(0, 300)}`.trim());
 	}
+	return (await res.json()) as T;
 }
 
 async function listHyperliquidWallets(context: WorkerContext): Promise<WalletTarget[]> {
@@ -230,11 +312,24 @@ async function readLastFillTid(context: WorkerContext, agentTokenAddress: string
 		.select({ data: agentEvents.data })
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
-		.orderBy(desc(agentEvents.createdAt))
+		.orderBy(desc(agentEvents.occurredAt))
 		.limit(1);
 	if (!row) return null;
 	const tid = (row.data as Record<string, unknown>)?.tid;
 	return typeof tid === "number" ? tid : null;
+}
+
+async function readLastFundingTime(context: WorkerContext, agentTokenAddress: string): Promise<number | null> {
+	const [row] = await context.db
+		.select({ data: agentEvents.data, occurredAt: agentEvents.occurredAt })
+		.from(agentEvents)
+		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "hl_funding")))
+		.orderBy(desc(agentEvents.occurredAt))
+		.limit(1);
+	if (!row) return null;
+	const time = (row.data as Record<string, unknown>)?.time;
+	if (typeof time === "number" && Number.isFinite(time)) return time;
+	return row.occurredAt?.getTime() ?? null;
 }
 
 async function insertTradeEvent(
@@ -242,7 +337,7 @@ async function insertTradeEvent(
 	params: {
 		agentId: string | null;
 		agentTokenAddress: string;
-		eventType: "trade.fill" | "trade.open" | "trade.close" | "trade.liquidation";
+		eventType: "trade.fill" | "trade.open" | "trade.close" | "trade.liquidation" | "hl_funding";
 		legacyType: string;
 		payload: Record<string, unknown>;
 		data: Record<string, unknown>;
@@ -250,9 +345,9 @@ async function insertTradeEvent(
 		sourceEventId: string;
 		occurredAt?: Date;
 	},
-): Promise<void> {
+): Promise<boolean> {
 	try {
-		await context.db
+		const rows = await context.db
 			.insert(agentEvents)
 			.values({
 				agentId: params.agentId,
@@ -269,9 +364,12 @@ async function insertTradeEvent(
 				txHash: params.txHash,
 				processedAt: new Date(),
 			})
-			.onConflictDoNothing();
+			.onConflictDoNothing()
+			.returning({ id: agentEvents.id });
+		return rows.length > 0;
 	} catch (err) {
-		context.logger.warn({ err, eventType: params.eventType }, "failed to insert HL trade event");
+		context.logger.error({ err: errorDetails(err), eventType: params.eventType }, "failed to insert HL trade event");
+		return false;
 	}
 }
 
@@ -279,26 +377,49 @@ async function processFills(
 	context: WorkerContext,
 	wallet: WalletTarget,
 	deps: HyperliquidListenerOptions,
-): Promise<void> {
+): Promise<Pick<WalletTickMetrics, "fillsFetched" | "fillsSkipped" | "fillsEmitted">> {
 	const fetchImpl = deps.fetch ?? fetch;
 	const baseUrl = deps.baseUrl ?? HL_BASE_URL;
+	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 	const lastTid = await readLastFillTid(context, wallet.agentTokenAddress);
-	const sinceMs = Date.now() - (deps.fillsBackfillWindowMs ?? DEFAULT_FILLS_BACKFILL_WINDOW_MS);
+	const sinceMs =
+		Date.now() -
+		boundedWindow(deps.fillsBackfillWindowMs, DEFAULT_FILLS_BACKFILL_WINDOW_MS, MAX_FILLS_BACKFILL_WINDOW_MS);
 
-	const body =
-		lastTid !== null
-			? { type: "userFillsByTime", user: wallet.address, startTime: sinceMs }
-			: { type: "userFillsByTime", user: wallet.address, startTime: sinceMs };
+	const fills = await postInfo<HyperliquidFill[]>(
+		baseUrl,
+		{ type: "userFillsByTime", user: wallet.address, startTime: sinceMs },
+		fetchImpl,
+		requestTimeoutMs,
+	);
+	if (!Array.isArray(fills)) throw new Error("Hyperliquid userFillsByTime returned a non-array response");
 
-	const fills = await postInfo<HyperliquidFill[]>(baseUrl, body, fetchImpl);
-	if (!fills || !Array.isArray(fills)) return;
+	const metrics = { fillsFetched: fills.length, fillsSkipped: 0, fillsEmitted: 0 };
+	const maxFetchedTid = fills.reduce<number | null>((max, fill) => {
+		if (typeof fill.tid !== "number") return max;
+		return max === null ? fill.tid : Math.max(max, fill.tid);
+	}, null);
+	const ignoreLastTid = lastTid !== null && maxFetchedTid !== null && lastTid > maxFetchedTid;
+	if (ignoreLastTid) {
+		context.logger.error(
+			{ wallet: wallet.address, lastTid, maxFetchedTid, sinceMs },
+			"hl-listener fill cursor is ahead of fetched data; replaying bounded window with idempotency",
+		);
+	}
 
 	// Sort ascending by tid to preserve insertion order
 	const sorted = [...fills].sort((a, b) => (a.tid ?? 0) - (b.tid ?? 0));
 	for (const fill of sorted) {
 		const tid = fill.tid;
-		if (typeof tid !== "number") continue;
-		if (lastTid !== null && tid <= lastTid) continue;
+		if (typeof tid !== "number") {
+			metrics.fillsSkipped += 1;
+			context.logger.warn({ wallet: wallet.address, fill }, "hl-listener skipped fill without numeric tid");
+			continue;
+		}
+		if (!ignoreLastTid && lastTid !== null && tid <= lastTid) {
+			metrics.fillsSkipped += 1;
+			continue;
+		}
 
 		const coin = fill.coin ?? "";
 		const px = numberOr(fill.px) ?? 0;
@@ -309,6 +430,7 @@ async function processFills(
 
 		const liq = isLiquidation(fill);
 		const payload = {
+			walletAddress: wallet.address.toLowerCase(),
 			tid,
 			fillId: tid,
 			coin,
@@ -324,11 +446,12 @@ async function processFills(
 			venue: "hyperliquid",
 			rawHash: fill.hash ?? null,
 			time: fill.time ?? null,
+			timestamp: typeof fill.time === "number" ? new Date(fill.time).toISOString() : null,
 		};
 		const eventType = liq ? "trade.liquidation" : "trade.fill";
 		const data = renderEventData(eventType, payload);
 
-		await insertTradeEvent(context, {
+		const inserted = await insertTradeEvent(context, {
 			agentId: wallet.agentId,
 			agentTokenAddress: wallet.agentTokenAddress,
 			eventType,
@@ -339,7 +462,105 @@ async function processFills(
 			sourceEventId: `hl:${tid}`,
 			occurredAt: typeof fill.time === "number" ? new Date(fill.time) : undefined,
 		});
+		if (inserted) metrics.fillsEmitted += 1;
 	}
+	if (metrics.fillsSkipped > 0) {
+		context.logger.info(
+			{ wallet: wallet.address, skipped: metrics.fillsSkipped, fetched: metrics.fillsFetched, lastTid },
+			"hl-listener skipped previously seen fills",
+		);
+	}
+	return metrics;
+}
+
+async function processFunding(
+	context: WorkerContext,
+	wallet: WalletTarget,
+	deps: HyperliquidListenerOptions,
+	forceBackfill = false,
+): Promise<Pick<WalletTickMetrics, "fundingFetched" | "fundingSkipped" | "fundingEmitted">> {
+	const fetchImpl = deps.fetch ?? fetch;
+	const baseUrl = deps.baseUrl ?? HL_BASE_URL;
+	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+	const backfillWindowMs = boundedWindow(
+		deps.fundingBackfillWindowMs,
+		DEFAULT_FUNDING_BACKFILL_WINDOW_MS,
+		MAX_FUNDING_BACKFILL_WINDOW_MS,
+	);
+	const boundedSinceMs = Date.now() - backfillWindowMs;
+	const lastFundingTime = await readLastFundingTime(context, wallet.agentTokenAddress);
+	const cursorLooksCorrupt = lastFundingTime !== null && lastFundingTime > Date.now() + CURSOR_FUTURE_SKEW_MS;
+	if (cursorLooksCorrupt) {
+		context.logger.error(
+			{ wallet: wallet.address, lastFundingTime, boundedSinceMs },
+			"hl-listener funding cursor is in the future; replaying bounded window with idempotency",
+		);
+	}
+	if (forceBackfill) {
+		context.logger.info(
+			{ wallet: wallet.address, lastFundingTime, boundedSinceMs },
+			"hl-listener running one-shot funding backfill window",
+		);
+	}
+	const startTime =
+		forceBackfill || cursorLooksCorrupt || lastFundingTime === null
+			? boundedSinceMs
+			: Math.max(boundedSinceMs, lastFundingTime + 1);
+	const funding = await postInfo<HyperliquidFunding[]>(
+		baseUrl,
+		{ type: "userFunding", user: wallet.address, startTime },
+		fetchImpl,
+		requestTimeoutMs,
+	);
+	if (!Array.isArray(funding)) throw new Error("Hyperliquid userFunding returned a non-array response");
+
+	const metrics = { fundingFetched: funding.length, fundingSkipped: 0, fundingEmitted: 0 };
+	const sorted = [...funding].sort((a, b) => (a.time ?? 0) - (b.time ?? 0));
+	for (const entry of sorted) {
+		const delta = fundingDelta(entry);
+		if (typeof entry.time !== "number" || !delta.coin) {
+			metrics.fundingSkipped += 1;
+			context.logger.warn({ wallet: wallet.address, entry }, "hl-listener skipped malformed funding row");
+			continue;
+		}
+		const coin = delta.coin;
+		const usdc = numberOr(delta.usdc) ?? 0;
+		const szi = numberOr(delta.szi) ?? 0;
+		const fundingRate = numberOr(delta.fundingRate) ?? 0;
+		const payload = {
+			walletAddress: wallet.address.toLowerCase(),
+			coin,
+			asset: coin.toLowerCase(),
+			fundingRate,
+			size: Math.abs(szi),
+			szi,
+			usdc,
+			amountUsd: usdc,
+			venue: "hyperliquid",
+			time: entry.time,
+			timestamp: new Date(entry.time).toISOString(),
+		};
+		const data = renderEventData("hl_funding", payload);
+		const inserted = await insertTradeEvent(context, {
+			agentId: wallet.agentId,
+			agentTokenAddress: wallet.agentTokenAddress,
+			eventType: "hl_funding",
+			legacyType: "hl_funding",
+			payload,
+			data,
+			txHash: entry.hash && !/^0x0+$/.test(entry.hash) ? entry.hash : null,
+			sourceEventId: `hl:funding:${wallet.address.toLowerCase()}:${coin}:${entry.time}`,
+			occurredAt: new Date(entry.time),
+		});
+		if (inserted) metrics.fundingEmitted += 1;
+	}
+	if (metrics.fundingSkipped > 0) {
+		context.logger.info(
+			{ wallet: wallet.address, skipped: metrics.fundingSkipped, fetched: metrics.fundingFetched, startTime },
+			"hl-listener skipped funding rows",
+		);
+	}
+	return metrics;
 }
 
 async function processPositions(
@@ -347,15 +568,17 @@ async function processPositions(
 	wallet: WalletTarget,
 	previous: Map<string, PositionSnapshot>,
 	deps: HyperliquidListenerOptions,
-): Promise<Map<string, PositionSnapshot>> {
+): Promise<{ next: Map<string, PositionSnapshot>; emitted: number }> {
 	const fetchImpl = deps.fetch ?? fetch;
 	const baseUrl = deps.baseUrl ?? HL_BASE_URL;
+	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 	const state = await postInfo<HyperliquidClearinghouseState>(
 		baseUrl,
 		{ type: "clearinghouseState", user: wallet.address },
 		fetchImpl,
+		requestTimeoutMs,
 	);
-	if (!state) return previous;
+	if (!state) return { next: previous, emitted: 0 };
 
 	const next = new Map<string, PositionSnapshot>();
 	for (const entry of state.assetPositions ?? []) {
@@ -372,8 +595,9 @@ async function processPositions(
 	}
 
 	// First poll seeds; do not emit synthetic events.
-	if (previous.size === 0 && next.size === 0) return next;
+	if (previous.size === 0 && next.size === 0) return { next, emitted: 0 };
 
+	let emitted = 0;
 	// Compare
 	const coins = new Set<string>([...previous.keys(), ...next.keys()]);
 	for (const coin of coins) {
@@ -381,6 +605,8 @@ async function processPositions(
 		const after = next.get(coin);
 		// Opened from zero
 		if (!before && after) {
+			const lifecycleId =
+				(await readRecentFillTidForCoin(context, wallet.agentTokenAddress, wallet.address, coin)) ?? Date.now();
 			const notional = Math.abs(after.szi) * (after.entryPx ?? 0);
 			const margin = after.leverage ? notional / after.leverage : notional;
 			const payload = {
@@ -394,7 +620,7 @@ async function processPositions(
 				marginUsd: margin,
 				venue: "hyperliquid",
 			};
-			await insertTradeEvent(context, {
+			const inserted = await insertTradeEvent(context, {
 				agentId: wallet.agentId,
 				agentTokenAddress: wallet.agentTokenAddress,
 				eventType: "trade.open",
@@ -402,15 +628,18 @@ async function processPositions(
 				payload,
 				data: renderEventData("trade.open", payload),
 				txHash: null,
-				sourceEventId: `hl:${wallet.address}:${coin}:open:${Date.now()}`,
+				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:open:${lifecycleId}`,
 			});
+			if (inserted) emitted += 1;
 			continue;
 		}
 		// Fully closed
 		if (before && !after) {
 			// We don't have realized PnL on the position diff alone; use the
 			// most recent fill's closedPnl for this coin as a hint.
-			const pnl = await readRecentClosedPnlForCoin(context, wallet.agentTokenAddress, coin);
+			const closeHint = await readRecentClosedPnlForCoin(context, wallet.agentTokenAddress, wallet.address, coin);
+			const pnl = closeHint.pnl;
+			const lifecycleId = closeHint.latestTid ?? Date.now();
 			const notionalAtEntry = Math.abs(before.szi) * (before.entryPx ?? 0);
 			const pnlPct =
 				pnl !== null && notionalAtEntry > 0 && before.leverage
@@ -428,7 +657,7 @@ async function processPositions(
 				pnlPct,
 				venue: "hyperliquid",
 			};
-			await insertTradeEvent(context, {
+			const inserted = await insertTradeEvent(context, {
 				agentId: wallet.agentId,
 				agentTokenAddress: wallet.agentTokenAddress,
 				eventType: "trade.close",
@@ -436,8 +665,9 @@ async function processPositions(
 				payload,
 				data: renderEventData("trade.close", payload),
 				txHash: null,
-				sourceEventId: `hl:${wallet.address}:${coin}:close:${Date.now()}`,
+				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:close:${lifecycleId}`,
 			});
+			if (inserted) emitted += 1;
 			continue;
 		}
 		// Position adjusted: emit as trade.open with adjust marker when
@@ -452,24 +682,51 @@ async function processPositions(
 		}
 	}
 
-	return next;
+	return { next, emitted };
 }
 
-async function readRecentClosedPnlForCoin(
+async function readRecentFillTidForCoin(
 	context: WorkerContext,
 	agentTokenAddress: string,
+	walletAddress: string,
 	coin: string,
 ): Promise<number | null> {
 	const rows = await context.db
 		.select({ data: agentEvents.data })
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
-		.orderBy(desc(agentEvents.createdAt))
+		.orderBy(desc(agentEvents.occurredAt))
 		.limit(10);
-	let total: number | null = null;
+	const wallet = walletAddress.toLowerCase();
 	for (const row of rows) {
 		const data = row.data as Record<string, unknown>;
+		if (typeof data.walletAddress === "string" && data.walletAddress.toLowerCase() !== wallet) continue;
 		if ((data.coin ?? "") !== coin) continue;
+		return typeof data.tid === "number" ? data.tid : null;
+	}
+	return null;
+}
+
+async function readRecentClosedPnlForCoin(
+	context: WorkerContext,
+	agentTokenAddress: string,
+	walletAddress: string,
+	coin: string,
+): Promise<{ pnl: number | null; latestTid: number | null }> {
+	const rows = await context.db
+		.select({ data: agentEvents.data })
+		.from(agentEvents)
+		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
+		.orderBy(desc(agentEvents.occurredAt))
+		.limit(10);
+	let total: number | null = null;
+	let latestTid: number | null = null;
+	const wallet = walletAddress.toLowerCase();
+	for (const row of rows) {
+		const data = row.data as Record<string, unknown>;
+		if (typeof data.walletAddress === "string" && data.walletAddress.toLowerCase() !== wallet) continue;
+		if ((data.coin ?? "") !== coin) continue;
+		if (latestTid === null && typeof data.tid === "number") latestTid = data.tid;
 		const pnl = Number(data.closedPnl);
 		if (!Number.isFinite(pnl) || pnl === 0) continue;
 		total = (total ?? 0) + pnl;
@@ -478,7 +735,7 @@ async function readRecentClosedPnlForCoin(
 		const dir = String(data.direction ?? "").toLowerCase();
 		if (dir.startsWith("open")) break;
 	}
-	return total;
+	return { pnl: total, latestTid };
 }
 
 export function startHyperliquidListener(
@@ -486,41 +743,92 @@ export function startHyperliquidListener(
 	options: HyperliquidListenerOptions = {},
 ): ListenerHandle {
 	const intervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+	const tickWatchdogMs = options.tickWatchdogMs ?? DEFAULT_TICK_WATCHDOG_MS;
 	const positionSnapshots = new Map<string, Map<string, PositionSnapshot>>();
+	const fundingBackfilledWallets = new Set<string>();
 	let stopped = false;
 	let running = false;
 	let timer: NodeJS.Timeout | null = null;
+	let watchdogTimer: NodeJS.Timeout | null = null;
+	let activeTickId = 0;
+
+	const scheduleNext = () => {
+		if (!stopped) timer = setTimeout(() => void tick(), intervalMs);
+	};
 
 	const tick = async () => {
-		if (stopped || running) return;
+		if (stopped) return;
+		if (running) {
+			context.logger.warn({ activeTickId }, "hl-listener tick skipped because previous tick is still running");
+			return;
+		}
 		running = true;
+		const tickId = ++activeTickId;
+		const startedAt = Date.now();
+		const metrics: TickMetrics = { ...emptyWalletMetrics(), walletsPolled: 0, walletsFailed: 0, durationMs: 0 };
+		let watchdogFired = false;
+		const currentWatchdogTimer = setTimeout(() => {
+			if (!running || activeTickId !== tickId || stopped) return;
+			watchdogFired = true;
+			activeTickId += 1;
+			running = false;
+			context.logger.error(
+				{ tickId, durationMs: Date.now() - startedAt, tickWatchdogMs },
+				"hl-listener tick exceeded watchdog; forcing listener state reset",
+			);
+			scheduleNext();
+		}, tickWatchdogMs);
+		watchdogTimer = currentWatchdogTimer;
 		try {
 			const wallets = await listHyperliquidWallets(context);
 			for (const wallet of wallets) {
+				metrics.walletsPolled += 1;
 				try {
-					await processFills(context, wallet, options);
+					const walletMetrics = emptyWalletMetrics();
+					Object.assign(walletMetrics, await processFills(context, wallet, options));
+					if (activeTickId !== tickId || watchdogFired || stopped) break;
+					const forceFundingBackfill = !fundingBackfilledWallets.has(wallet.walletId);
+					Object.assign(walletMetrics, await processFunding(context, wallet, options, forceFundingBackfill));
+					fundingBackfilledWallets.add(wallet.walletId);
+					if (activeTickId !== tickId || watchdogFired || stopped) break;
 					const prev = positionSnapshots.get(wallet.walletId) ?? new Map<string, PositionSnapshot>();
-					const next = await processPositions(context, wallet, prev, options);
+					const { next, emitted } = await processPositions(context, wallet, prev, options);
+					if (activeTickId !== tickId || watchdogFired || stopped) break;
+					walletMetrics.positionEventsEmitted = emitted;
 					positionSnapshots.set(wallet.walletId, next);
+					addWalletMetrics(metrics, walletMetrics);
 				} catch (err) {
-					context.logger.warn({ err, wallet: wallet.address }, "hl-listener wallet tick failed");
+					metrics.walletsFailed += 1;
+					context.logger.error(
+						{ err: errorDetails(err), wallet: wallet.address, agentTokenAddress: wallet.agentTokenAddress },
+						"hl-listener wallet tick failed",
+					);
 				}
 			}
 		} catch (err) {
-			context.logger.error({ err }, "hl-listener tick failed");
+			context.logger.error({ err: errorDetails(err) }, "hl-listener tick failed");
 		} finally {
-			running = false;
-			if (!stopped) timer = setTimeout(() => void tick(), intervalMs);
+			clearTimeout(currentWatchdogTimer);
+			if (watchdogTimer === currentWatchdogTimer) {
+				watchdogTimer = null;
+			}
+			metrics.durationMs = Date.now() - startedAt;
+			context.logger.info(metrics, "hl-listener tick heartbeat");
+			if (activeTickId === tickId && !watchdogFired) {
+				running = false;
+				scheduleNext();
+			}
 		}
 	};
 
-	context.logger.info({ intervalMs }, "starting hyperliquid trade listener");
+	context.logger.info({ intervalMs, tickWatchdogMs }, "starting hyperliquid trade listener");
 	timer = setTimeout(() => void tick(), 100);
 
 	return {
 		stop: async () => {
 			stopped = true;
 			if (timer) clearTimeout(timer);
+			if (watchdogTimer) clearTimeout(watchdogTimer);
 		},
 	};
 }
