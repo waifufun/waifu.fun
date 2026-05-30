@@ -58,7 +58,14 @@ export default function TokenRow({
 							className="object-contain md:w-[40px] md:h-[40px] rounded-sm"
 						/>
 					) : (
-						"N/A"
+						// honest fallback: a neutral monogram tile, never the banned
+						// "N/A" placeholder (.impeccable.md). first letter of the ticker.
+						<span
+							aria-hidden
+							className="inline-flex h-[30px] w-[30px] md:h-[40px] md:w-[40px] shrink-0 items-center justify-center rounded-sm bg-white/[0.04] font-mono text-[11px] uppercase text-[#71717a]"
+						>
+							{(data.ticker || data.title || "?").slice(0, 1)}
+						</span>
 					)}
 				</Link>
 				<div className="flex items-start gap-2 h-full min-w-0 pr-2">

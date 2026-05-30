@@ -29,6 +29,7 @@ import { AnimateNumber } from "@/lib/motion-plus/animate-number";
 import { Typewriter } from "@/lib/motion-plus/typewriter";
 import { cn } from "@/lib/utils";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
+import type { NavHistoryPoint } from "@/lib/wave-t/pnl";
 
 import { Erc8004Badge } from "../erc8004-badge";
 import { Hairline, Panel, Pulse, StatPill } from "./_primitives";
@@ -54,7 +55,8 @@ export function HeroV2({
 	runwayDays,
 	twitterStats,
 	livePulse = false,
-}: HeroProps) {
+	navSeries,
+}: HeroProps & { navSeries?: NavHistoryPoint[] | null }) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
 	const treasurySource = treasuryValueOverride?.source ?? "burner";
 	const followers = twitterStats?.followers ?? null;
@@ -83,6 +85,7 @@ export function HeroV2({
 					runwayDays={runwayDays ?? null}
 					followers={followers}
 					followersSource={twitterStats?.source ?? "cached"}
+					navSeries={navSeries ?? null}
 				/>
 			</div>
 		</Panel>
@@ -104,7 +107,10 @@ function CharacterColumn({
 	const displayName = (identity.name || "unknown").toLowerCase();
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
 	const description = identity.description;
-	const verified = identity.verified ?? true;
+	// Honest default: an agent is unverified unless the identity record
+	// explicitly says otherwise. A green check is a claim; we do not make
+	// it on the agent's behalf.
+	const verified = identity.verified === true;
 	const handle = identity.twitterHandle ? `@${identity.twitterHandle.replace(/^@/, "").toLowerCase()}` : null;
 
 	// Mobile-first stacking. Below md the portrait sits centered above
@@ -228,6 +234,7 @@ function DataColumn({
 	runwayDays,
 	followers,
 	followersSource,
+	navSeries,
 }: {
 	treasuryValue: number;
 	treasurySource: "aggregated" | "agentSafe" | "burner";
@@ -239,7 +246,13 @@ function DataColumn({
 	runwayDays: number | null;
 	followers: number | null;
 	followersSource: TwitterStats["source"];
+	navSeries: NavHistoryPoint[] | null;
 }) {
+	// Real nav-snapshot series only. We draw a sparkline strictly when the
+	// /nav-history feed has at least two finite points; a single point (or
+	// none) cannot honestly describe a trend, so the slot stays empty
+	// rather than inventing one. No synthesized wiggle next to "live".
+	const sparkSeries = useMemo(() => selectSparkSeries(navSeries), [navSeries]);
 	const sourceLabel =
 		treasurySource === "aggregated" ? "nav aggregated" : treasurySource === "agentSafe" ? "agent safe" : "sol burner";
 
@@ -301,7 +314,7 @@ function DataColumn({
 							{Math.max(0, Math.round(treasuryValue))}
 						</AnimateNumber>
 					</div>
-					<TreasurySparkline navUsd={treasuryValue} />
+					{sparkSeries.length >= 2 ? <TreasurySparkline series={sparkSeries} /> : null}
 				</div>
 
 				<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
@@ -409,8 +422,7 @@ function DataCell({ label, children }: { label: string; children: React.ReactNod
 
 // ── Treasury sparkline ─────────────────────────────────────────
 
-function TreasurySparkline({ navUsd }: { navUsd: number }) {
-	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
+function TreasurySparkline({ series }: { series: { v: number }[] }) {
 	const id = useId();
 	return (
 		<div className="h-10 w-[96px] shrink-0 sm:h-12 sm:w-[140px] lg:w-[180px]">
@@ -448,21 +460,25 @@ function formatCompactCount(value: number): string {
 }
 
 /**
- * Synthesize a plausible 12-bar sparkline ending at the current nav.
- * Deterministic so SSG and client agree.
+ * Map a real nav-history series into sparkline points. Honest only:
+ *   - null, undefined, or empty input yields [], so the caller hides
+ *     the sparkline entirely
+ *   - drops points with a non-finite timestamp or a non-finite/negative
+ *     nav, matching selectPnlSeries so malformed api rows cannot draw
+ *     a 'real' trend
+ *   - returns [] when fewer than two valid points survive, since a
+ *     single observation cannot describe a trend
+ *
+ * The shape `{ v }` matches what <TreasurySparkline> renders. There is
+ * no fabrication here: every bar is an observed on-chain nav snapshot.
  */
-function synthesizeSparkline(nav: number): { v: number }[] {
-	const end = Math.max(1, nav);
-	const start = end * 0.86;
-	const points = 12;
-	const out: { v: number }[] = [];
-	for (let i = 0; i < points; i++) {
-		const t = i / (points - 1);
-		const drift = start + (end - start) * t;
-		const wiggle = Math.sin(i * 1.4) * (end * 0.015);
-		out.push({ v: Math.max(0, drift + wiggle) });
-	}
-	return out;
+function selectSparkSeries(navSeries: NavHistoryPoint[] | null | undefined): { v: number }[] {
+	if (!navSeries || navSeries.length < 2) return [];
+	const points = navSeries
+		.filter((p) => Number.isFinite(Date.parse(p.t)) && Number.isFinite(Number(p.nav)) && Number(p.nav) >= 0)
+		.map((p) => ({ v: Number(p.nav) }));
+	if (points.length < 2) return [];
+	return points;
 }
 
 export default HeroV2;
