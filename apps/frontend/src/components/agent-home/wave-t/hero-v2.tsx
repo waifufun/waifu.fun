@@ -461,8 +461,11 @@ function formatCompactCount(value: number): string {
 
 /**
  * Map a real nav-history series into sparkline points. Honest only:
- *   - null / undefined / empty input → [] (caller hides the sparkline)
- *   - drops non-finite or negative nav values
+ *   - null, undefined, or empty input yields [], so the caller hides
+ *     the sparkline entirely
+ *   - drops points with a non-finite timestamp or a non-finite/negative
+ *     nav, matching selectPnlSeries so malformed api rows cannot draw
+ *     a 'real' trend
  *   - returns [] when fewer than two valid points survive, since a
  *     single observation cannot describe a trend
  *
@@ -471,9 +474,11 @@ function formatCompactCount(value: number): string {
  */
 function selectSparkSeries(navSeries: NavHistoryPoint[] | null | undefined): { v: number }[] {
 	if (!navSeries || navSeries.length < 2) return [];
-	const points = navSeries.map((p) => Number(p.nav)).filter((v) => Number.isFinite(v) && v >= 0);
+	const points = navSeries
+		.filter((p) => Number.isFinite(Date.parse(p.t)) && Number.isFinite(Number(p.nav)) && Number(p.nav) >= 0)
+		.map((p) => ({ v: Number(p.nav) }));
 	if (points.length < 2) return [];
-	return points.map((v) => ({ v }));
+	return points;
 }
 
 export default HeroV2;

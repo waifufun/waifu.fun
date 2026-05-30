@@ -298,21 +298,28 @@ function StatBlock({
 		<div className="flex flex-col gap-1.5">
 			<SectionTitle>{label}</SectionTitle>
 			<div className="flex items-baseline gap-2">
-				<span className="font-mono text-[26px] font-light leading-none text-[var(--text-primary)] tabular-nums">
-					{formatCompactUsd(value)}
-				</span>
-				{!isEmpty && (
-					<span
-						className={cn(
-							"font-mono text-[11px] tabular-nums",
-							positive && "text-[var(--positive)]",
-							negative && "text-[var(--negative)]",
-							!positive && !negative && "text-[var(--text-tertiary)]",
-						)}
-					>
-						{positive ? "+" : ""}
-						{change.toFixed(1)}% vs prev 7d
-					</span>
+				{isEmpty ? (
+					// Unknown revenue is not zero revenue. When the metric is not
+					// wired we render an honest empty state, never a $0 that reads
+					// like the agent earned nothing.
+					<span className="font-mono text-[15px] leading-none text-[var(--text-tertiary)]">no data yet</span>
+				) : (
+					<>
+						<span className="font-mono text-[26px] font-light leading-none text-[var(--text-primary)] tabular-nums">
+							{formatCompactUsd(value)}
+						</span>
+						<span
+							className={cn(
+								"font-mono text-[11px] tabular-nums",
+								positive && "text-[var(--positive)]",
+								negative && "text-[var(--negative)]",
+								!positive && !negative && "text-[var(--text-tertiary)]",
+							)}
+						>
+							{positive ? "+" : ""}
+							{change.toFixed(1)}% vs prev 7d
+						</span>
+					</>
 				)}
 			</div>
 			{isEmpty && pendingNote && (
