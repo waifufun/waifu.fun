@@ -70,7 +70,7 @@ export interface AgentHomeV2Props {
 	token: TokenMetrics;
 	candles: CandleSeries;
 	holdings: HoldingsSnapshot;
-	holdingsSource?: "aggregated" | "burner";
+	holdingsSource?: "aggregated" | "empty";
 	runwayDays?: number | null;
 	twitterStats?: TwitterStats | null;
 	positions: Position[];
@@ -123,7 +123,7 @@ export default function AgentHomeV2({
 	token,
 	candles,
 	holdings,
-	holdingsSource = "burner",
+	holdingsSource = "empty",
 	runwayDays = null,
 	twitterStats = null,
 	positions,

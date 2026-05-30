@@ -14,7 +14,7 @@ import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type App, fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { type GithubScope, fetchShipLog, githubScopeFromMetadata } from "@/lib/wave-t/github";
-import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
+import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchNavHistory, selectPnlBaselineNav, selectPnlSeries } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
@@ -446,12 +446,13 @@ export default async function AgentPage({
 	}));
 	// Holdings: prefer the aggregated /v2/agents/:address/holdings endpoint
 	// (PR #712, NAV aggregator). Falls back to the legacy burner-stub when
-	// the endpoint is unavailable (404 in prod today) so the donut still
-	// renders something honest instead of empty.
+	// the agent's keyed source of truth. When it returns null (404 / stale /
+	// not yet funded) we fall back to an honest EMPTY snapshot, NEVER to a
+	// hardcoded shared burner. A non-keyed native-balance read would render
+	// the platform burner's money on this agent's page, a launch-blocking
+	// integrity bug. The hero NAV can still recover a real number from the
+	// agent's OWN AgentSafe balance (keyed off the launch row, below).
 	const aggregatedHoldingsP = fetchAgentHoldingsSnapshot(address).catch(() => null);
-	const legacyHoldingsP = fetchHoldings().catch(
-		() => ({ holdings: [], navUsd: 0, fetchedAt: Date.now() }) as HoldingsSnapshot,
-	);
 	// Burn-rate snapshot powers the hero runway readout. Null when the
 	// endpoint is unavailable (404 in prod today), in which case the hero
 	// renders "not yet measured" rather than inventing a number.
@@ -477,7 +478,6 @@ export default async function AgentPage({
 		token,
 		candles,
 		aggregatedHoldings,
-		legacyHoldings,
 		burnRate,
 		twitterStats,
 		positions,
@@ -491,7 +491,6 @@ export default async function AgentPage({
 		tokenP,
 		candlesP,
 		aggregatedHoldingsP,
-		legacyHoldingsP,
 		burnRateP,
 		twitterStatsP,
 		positionsP,
@@ -518,8 +517,10 @@ export default async function AgentPage({
 		includeTweets,
 	}).catch(() => [] as ActivityRowInput[]);
 
-	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
-	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
+	const holdings: HoldingsSnapshot = aggregatedHoldings
+		? holdingsSnapshotFromApi(aggregatedHoldings)
+		: { holdings: [], navUsd: 0, fetchedAt: Date.now() };
+	const holdingsSource: "aggregated" | "empty" = aggregatedHoldings ? "aggregated" : "empty";
 
 	// Open perp positions come from the dedicated
 	// /v2/agents/:address/hyperliquid/positions endpoint, polled client-side
