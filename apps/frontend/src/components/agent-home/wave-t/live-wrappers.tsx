@@ -386,20 +386,11 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return row;
 		}
 		case "hl_funding": {
-			const asset = asString(payload.asset, asString(payload.coin, "asset")).toUpperCase();
-			const amountUsd = asNumber(payload.amountUsd, asNumber(payload.usdc, 0));
-			const text = renderedText(event);
-			return {
-				id: `agent-event-${event.id}`,
-				type: "treasury",
-				timestamp: asString(payload.timestamp, event.createdAt),
-				action: amountUsd >= 0 ? "deposit" : "withdraw",
-				from: amountUsd >= 0 ? "hyperliquid funding" : "agent margin",
-				to: amountUsd >= 0 ? "agent margin" : "hyperliquid funding",
-				amount: text ?? `${Math.abs(amountUsd).toFixed(4)} USDC ${asset} funding`,
-				deltaUsd: amountUsd,
-				...(url ? { url } : {}),
-			};
+			// Funding payments are hourly micro-accruals on open perp positions.
+			// They are real (kept in the DB for accounting/NAV) but far too noisy
+			// for the activity feed: a single open position emits dozens per day
+			// and would bury actual trades + treasury actions. Skip from the feed.
+			return null;
 		}
 		case "hl_position_changed": {
 			// A position open / resize snapshot. Carries leverage, entry, and
