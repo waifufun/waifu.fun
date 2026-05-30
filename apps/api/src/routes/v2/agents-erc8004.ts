@@ -37,46 +37,58 @@ app.get("/:address/erc8004.json", async (c) => {
 	if (!isAddress(address)) return c.json({ error: "invalid agent address" }, 400);
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
-	const [identity] = await db
-		.select()
-		.from(agentIdentities)
-		.where(
-			and(sql`lower(${agentIdentities.agentAddress}) = lower(${address})`, eq(agentIdentities.standard, "erc-8004")),
-		)
-		.limit(1);
-	if (!identity) return c.json({ error: "ERC-8004 identity not found" }, 404);
-	const [persona] = await db
-		.select()
-		.from(agentPersonas)
-		.where(sql`lower(${agentPersonas.tokenAddress}) = lower(${address})`)
-		.limit(1);
-	if (!persona) return c.json({ error: "agent persona not found" }, 404);
-	const httpsMirror = identity.uriHttps ?? `${normalizeApiBaseUrl()}/v2/agents/${address}/erc8004.json`;
-	const file = buildErc8004RegistrationFile({
-		agent: {
-			address: identity.agentAddress,
-			name: persona.name,
-			bio: persona.bio,
-			avatarUrl: persona.avatarUrl,
-			twitterHandle: persona.twitterHandle,
-			agentId: persona.agentId,
-			tokenAddress: persona.tokenAddress,
-			launchedAt: persona.launchedAt,
-			createdAt: persona.createdAt,
-		},
-		persona,
-		chainId: identity.chainId,
-		registry: identity.registry,
-		agentIdOnchain: identity.agentIdOnchain,
-		waifu: {
-			tokenAddress: identity.agentAddress,
-			httpsMirror,
-			...(identity.uriIpfs ? { ipfsUri: identity.uriIpfs } : {}),
-		},
-	});
-	return c.json(file, 200, {
-		"Cache-Control": "public, max-age=60",
-	});
+	try {
+		const [identity] = await db
+			.select()
+			.from(agentIdentities)
+			.where(
+				and(sql`lower(${agentIdentities.agentAddress}) = lower(${address})`, eq(agentIdentities.standard, "erc-8004")),
+			)
+			.limit(1);
+		if (!identity) return c.json({ error: "ERC-8004 identity not found" }, 404);
+		const [persona] = await db
+			.select()
+			.from(agentPersonas)
+			.where(sql`lower(${agentPersonas.tokenAddress}) = lower(${address})`)
+			.limit(1);
+		if (!persona) return c.json({ error: "agent persona not found" }, 404);
+		const httpsMirror = identity.uriHttps ?? `${normalizeApiBaseUrl()}/v2/agents/${address}/erc8004.json`;
+		const file = buildErc8004RegistrationFile({
+			agent: {
+				address: identity.agentAddress,
+				name: persona.name,
+				bio: persona.bio,
+				avatarUrl: persona.avatarUrl,
+				twitterHandle: persona.twitterHandle,
+				agentId: persona.agentId,
+				tokenAddress: persona.tokenAddress,
+				launchedAt: persona.launchedAt,
+				createdAt: persona.createdAt,
+			},
+			persona,
+			chainId: identity.chainId,
+			registry: identity.registry,
+			agentIdOnchain: identity.agentIdOnchain,
+			waifu: {
+				tokenAddress: identity.agentAddress,
+				httpsMirror,
+				...(identity.uriIpfs ? { ipfsUri: identity.uriIpfs } : {}),
+			},
+		});
+		return c.json(file, 200, {
+			"Cache-Control": "public, max-age=60",
+		});
+	} catch (err) {
+		// Never leak a raw 500 for identity reads. Invalid/incomplete registration
+		// metadata is a 422 with detail; everything else is logged and surfaced as
+		// a generic 500 (e.g. a true DB/runtime failure). A missing identity is
+		// already handled above as an honest 404.
+		const message = err instanceof Error ? err.message : String(err);
+		if (/validation|invalid|required|must be/i.test(message)) {
+			return c.json({ error: "invalid erc-8004 registration metadata", detail: message }, 422);
+		}
+		return c.json({ error: "failed to build erc-8004 registration", detail: message }, 500);
+	}
 });
 
 export default app;
