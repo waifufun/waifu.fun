@@ -144,6 +144,18 @@ export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
 				category: "trading",
 			},
 		),
+	hl_funding: (p) => {
+		const amount = num(p, "amountUsd", "usdc") ?? 0;
+		return withDefaults(
+			"hl_funding",
+			`${amount >= 0 ? "received" : "paid"} ${usd(Math.abs(amount))} ${asset(p)} funding`,
+			{
+				iconKey: "hyperliquid",
+				accentColor: amount >= 0 ? "positive" : "negative",
+				category: "trading",
+			},
+		);
+	},
 	"transfer.in": (p) =>
 		withDefaults(
 			"transfer.in",
