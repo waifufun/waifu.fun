@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
 
 import type { AgentEvent } from "@waifufun/db";
 import { groupGithubAgentEvents } from "../src/routes/v2/agent-event-groups.js";
@@ -41,10 +42,10 @@ describe("groupGithubAgentEvents", () => {
 
 		const grouped = groupGithubAgentEvents(events);
 
-		expect(grouped).toHaveLength(1);
-		expect(grouped[0]?.grouped).toBe(true);
-		expect(grouped[0]?.count).toBe(5);
-		expect(grouped[0]?.items?.map((item) => item.id)).toEqual([
+		assert.equal(grouped.length, 1);
+		assert.equal(grouped[0]?.grouped, true);
+		assert.equal(grouped[0]?.count, 5);
+		assert.deepEqual(grouped[0]?.items?.map((item) => item.id), [
 			"commit-0",
 			"commit-1",
 			"commit-2",
@@ -59,8 +60,8 @@ describe("groupGithubAgentEvents", () => {
 			event({ id: "older", minutesAgo: 31 }),
 		]);
 
-		expect(grouped).toHaveLength(2);
-		expect(grouped.some((item) => item.grouped)).toBe(false);
+		assert.equal(grouped.length, 2);
+		assert.equal(grouped.some((item) => item.grouped), false);
 	});
 
 	test("3 commits + 1 PR open + 2 commits within 30min become 1 commit group of 5 + 1 PR open", () => {
@@ -78,9 +79,9 @@ describe("groupGithubAgentEvents", () => {
 			event({ id: "commit-4", minutesAgo: 18 }),
 		]);
 
-		expect(grouped).toHaveLength(2);
-		expect(grouped[0]?.eventType).toBe("commit.pushed");
-		expect(grouped[0]?.count).toBe(5);
-		expect(grouped[1]?.eventType).toBe("pr.opened");
+		assert.equal(grouped.length, 2);
+		assert.equal(grouped[0]?.eventType, "commit.pushed");
+		assert.equal(grouped[0]?.count, 5);
+		assert.equal(grouped[1]?.eventType, "pr.opened");
 	});
 });

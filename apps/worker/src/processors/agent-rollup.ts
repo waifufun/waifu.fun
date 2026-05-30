@@ -3,11 +3,9 @@ import { and, eq, gte } from "drizzle-orm";
 
 import { agentEvents } from "@waifufun/db";
 import { agentDailyBurnUsd, agentRunwayDays, agentTreasuryUsd } from "@waifufun/metrics";
-import { type AgentRollupJob, parseJobPayload } from "@waifufun/queue";
+import { type AgentRollupJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import type { WorkerContext } from "../lib/types.js";
-
-const PLACEHOLDER_DAILY_BURN_USD = 5;
 
 export function createAgentRollupProcessor(context: WorkerContext) {
 	return async (job: Job<AgentRollupJob>) => {
@@ -19,7 +17,7 @@ export function createAgentRollupProcessor(context: WorkerContext) {
 		for (const agent of agents) {
 			const treasuryUsd = parseUsd(agent.cachedBalance) ?? 0;
 			const inferenceSpendUsd = await readInferenceSpendUsd(context, agent.id, since);
-			const dailyBurnUsd = inferenceSpendUsd > 0 ? inferenceSpendUsd : PLACEHOLDER_DAILY_BURN_USD;
+			const dailyBurnUsd = inferenceSpendUsd;
 			const runwayDays = dailyBurnUsd === 0 ? Number.POSITIVE_INFINITY : treasuryUsd / dailyBurnUsd;
 
 			agentTreasuryUsd.set({ agentId: agent.id }, treasuryUsd);
