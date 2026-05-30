@@ -202,6 +202,23 @@ function renderedText(event: AgentEvent): string | undefined {
 	return typeof event.data?.renderedText === "string" ? event.data.renderedText.toLowerCase() : undefined;
 }
 
+/**
+ * The real source time of an event. trade.open/close rows stamp the matching
+ * fill time onto payload.timestamp (and data.timestamp via the renderer);
+ * occurredAt also carries it from the row. createdAt is ingestion time and is
+ * only a last resort, otherwise every backfilled trade reads as "just now".
+ */
+function eventTimestamp(event: AgentEvent): string {
+	const payload = event.payload ?? {};
+	const data = (event.data ?? {}) as Record<string, unknown>;
+	const candidate =
+		asString(payload.timestamp) ||
+		asString(payload.occurredAt) ||
+		asString(data.timestamp) ||
+		asString(event.occurredAt ?? "");
+	return candidate || event.createdAt;
+}
+
 function githubRepoLabel(event: AgentEvent): string {
 	const payload = event.payload ?? {};
 	const repo = asString(payload.repo, "github");
@@ -474,12 +491,17 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 					: typeof pnlPctRaw === "string" && pnlPctRaw.length > 0
 						? Number(pnlPctRaw)
 						: null;
-			const text = renderedText(event);
+			// Deliberately do NOT pass renderedText for perp trades. The feed
+			// builds a structured title ("opened zec long") + sub ("$2.5k · 10x ·
+			// entry $539.35") from these fields. renderedText ("opened zec long
+			// $2,502.59 10x at $539.35") duplicates the title, so it would stack
+			// the action twice. renderedText stays a fallback for event types the
+			// feed has no structured renderer for.
 			const row: ActivityRowInput = {
 				id: `agent-event-${event.id}`,
 				type: "perpTrade",
 				kind,
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				venue: asString(payload.venue, "hyperliquid"),
 				asset,
 				side,
@@ -491,7 +513,6 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				leverage: asNumber(payload.leverage, 0) || null,
 				pnlUsd: asNumber(payload.pnlUsd, asNumber(payload.closedPnl, 0)),
 				pnlPct: pnlPct !== null && Number.isFinite(pnlPct) ? pnlPct : null,
-				...(text ? { renderedText: text } : {}),
 				...(url ? { url } : {}),
 			};
 			return row;
