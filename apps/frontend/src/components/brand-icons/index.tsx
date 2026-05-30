@@ -128,37 +128,34 @@ export function HetznerIcon(props: IconProps) {
 	);
 }
 
+// Image-backed brand marks: waifu (anime head) + Steward (gold compass rose)
+// render the real PNG marks rather than approximated SVG glyphs. They keep the
+// caller's sizing className (h-3.5 etc) and stay colour-accurate (the real
+// brand colours), unlike the currentColor mono icons.
+const markProps = (extra: IconProps): React.ImgHTMLAttributes<HTMLImageElement> => {
+	const { fill: _fill, stroke: _stroke, ...rest } = extra as Record<string, unknown>;
+	const merged = rest as React.ImgHTMLAttributes<HTMLImageElement>;
+	const className = ["inline-block object-contain", merged.className].filter(Boolean).join(" ");
+	return {
+		loading: "lazy",
+		decoding: "async",
+		"aria-hidden": "true",
+		...merged,
+		className,
+	};
+};
+
 export function WaifuIcon(props: IconProps) {
-	// waifu.fun mark: the anime side-profile head with the glitch / visor band,
-	// the real brand icon. Vectorised straight from the shipped brand asset
-	// (public/brand/icon/icon_512.png) into a single fill-rule=evenodd path so
-	// the face cutout reads as negative space and the whole mark tints via
-	// currentColor like every other icon in this set (no neon multi-colour fill
-	// that would break the single-accent chip tinting). 16x16 viewBox.
 	return (
-		<svg {...baseProps(props)}>
-			<title>waifu.fun</title>
-			<path
-				fillRule="evenodd"
-				d="M 8.92,0.3 C 8.79,0.33 8.37,0.36 7.99,0.37 C 6.77,0.38 5.74,0.83 4.71,1.8 C 4.11,2.37 3.6,3.08 3.6,3.34 C 3.6,3.43 3.54,3.58 3.45,3.68 C 2.96,4.34 2.38,5.96 2.64,5.96 C 2.68,5.96 2.72,5.86 2.72,5.74 C 2.72,5.61 2.76,5.51 2.8,5.51 C 2.85,5.51 2.88,5.71 2.88,5.96 C 2.88,6.73 3.15,7.18 3.72,7.36 C 4.2,7.51 4.05,7.97 3.33,8.54 C 3.06,8.75 2.71,9.06 2.55,9.22 C 2.37,9.4 2.15,9.52 1.91,9.58 C 1.72,9.62 1.42,9.7 1.26,9.75 C 1.04,9.81 0.88,9.81 0.67,9.75 C 0.39,9.67 0.38,9.68 0.53,9.82 C 0.9,10.2 2.02,10.28 2.89,9.96 C 3.48,9.75 3.46,9.8 2.63,10.42 C 1.13,11.55 0.58,12.62 1.06,13.52 C 1.23,13.85 1.23,13.85 1.29,13.47 C 1.36,12.95 1.62,12.51 2.15,11.98 C 2.55,11.58 2.96,11.28 2.86,11.45 C 2.84,11.48 2.69,11.72 2.53,11.98 C 1.87,13.02 1.85,13.91 2.45,14.6 C 2.75,14.94 2.76,14.94 2.76,14.39 C 2.76,13.84 3.02,13.34 3.6,12.73 C 4.02,12.28 4.1,12.38 3.77,12.94 C 3.46,13.45 3.33,13.99 3.43,14.26 C 3.47,14.36 3.53,14.52 3.56,14.6 C 3.6,14.72 3.66,14.66 3.92,14.26 C 4.74,13 5.04,12.75 6.06,12.57 C 7.46,12.32 7.76,12.15 7.76,11.65 C 7.76,11.43 7.81,11.37 8.12,11.2 C 8.5,11 8.54,10.88 8.4,10.54 C 8.33,10.35 8.32,10.35 7.99,10.45 C 7.45,10.63 7.38,10.61 6.58,9.86 C 5.73,9.08 5.62,8.92 5.52,8.32 C 5.47,8.08 5.42,7.8 5.39,7.68 C 5.36,7.52 5.38,7.47 5.47,7.47 C 5.54,7.47 5.6,7.43 5.6,7.4 C 5.6,7.35 5.53,7.32 5.44,7.32 C 5.35,7.32 5.28,7.28 5.28,7.25 C 5.28,7.2 6,7.18 7.3,7.18 C 8.41,7.19 9.14,7.21 8.92,7.22 C 8.04,7.29 8.39,7.4 9.47,7.4 L 10.58,7.4 L 10.54,8.08 C 10.46,9.14 10.19,10.19 9.75,11.22 C 9.33,12.2 9.08,13.12 9.15,13.43 C 9.17,13.54 9.12,13.82 9.03,14.06 C 8.88,14.48 8.89,14.97 9.04,15.06 C 9.08,15.08 9.09,15.03 9.06,14.95 C 9.02,14.78 9.17,14.29 9.29,14.22 C 9.34,14.2 9.5,14.3 9.65,14.47 C 9.92,14.75 9.92,14.75 9.72,14.38 C 9.46,13.89 9.43,13.96 10.22,13.02 C 10.82,12.29 11.15,11.75 11.58,10.79 C 11.67,10.6 11.67,10.6 11.67,10.79 C 11.7,11.6 12.22,12.42 12.94,12.81 C 13.22,12.96 13.47,13.12 13.5,13.18 C 13.52,13.24 13.57,13.27 13.6,13.25 C 13.64,13.22 13.82,13.34 14.02,13.52 C 14.45,13.9 15.01,14.22 15.16,14.16 C 15.31,14.11 15.41,14.28 15.61,14.97 C 15.77,15.51 15.77,15.51 15.73,15.05 C 15.71,14.79 15.62,14.42 15.52,14.22 C 15.42,14.02 15.33,13.74 15.31,13.61 C 15.27,13.32 15,12.86 14.84,12.8 C 14.78,12.78 14.72,12.71 14.72,12.65 C 14.72,12.54 14.55,12.45 14.3,12.45 C 14.17,12.45 14.15,12.42 14.2,12.28 C 14.23,12.19 14.28,11.74 14.31,11.28 C 14.37,10.45 14.37,10.45 14.51,10.89 C 14.59,11.13 14.69,11.55 14.72,11.83 C 14.79,12.33 14.79,12.32 14.76,11.66 C 14.74,11.18 14.66,10.77 14.49,10.23 C 14.07,8.96 13.86,7.26 14.09,7.04 C 14.14,6.99 14.14,6.94 14.1,6.91 C 14.05,6.89 14.05,6.75 14.09,6.55 C 14.38,5.14 14.02,3.43 13.19,2.29 C 12.22,0.94 10.19,0 8.92,0.3 M 5.94,5 C 6.01,5.45 6.28,6.06 6.5,6.24 C 6.62,6.35 6.66,6.35 6.62,6.26 C 6.43,5.74 6.46,5.68 6.71,6.08 C 6.98,6.51 7.82,6.44 7.61,5.98 C 7.5,5.77 7.5,5.77 7.77,6 C 8.02,6.23 8.02,6.23 7.97,6.04 C 7.56,4.61 7.53,4.01 7.89,4.77 C 8.13,5.27 8.46,5.66 8.65,5.66 C 8.83,5.66 8.83,5.62 8.61,5.09 C 8.47,4.79 8.47,4.79 8.82,5.14 C 9.01,5.34 9.3,5.58 9.46,5.7 C 9.62,5.81 9.74,5.94 9.74,5.98 C 9.73,6.04 9.91,6.17 10.14,6.28 C 10.6,6.5 10.54,6.58 9.96,6.55 C 8.85,6.48 7.84,6.57 7.94,6.72 C 7.99,6.8 8.1,6.88 8.16,6.88 C 8.66,6.92 7.18,6.98 6.2,6.96 C 4.98,6.93 4.98,6.93 4.93,6.72 C 4.9,6.62 4.86,6.45 4.84,6.34 C 4.79,6.16 4.79,6.16 4.92,6.36 C 5.1,6.65 5.2,6.55 5.2,6.09 C 5.2,5.7 5.2,5.7 5.38,5.99 C 5.65,6.43 5.76,6.42 5.67,5.98 C 5.6,5.65 5.62,5.37 5.73,4.68 C 5.78,4.35 5.88,4.49 5.94,5 M 13.99,10.88 C 14.1,11.64 14.04,12.08 13.78,12.35 C 13.5,12.62 13.41,12.38 13.58,11.85 C 13.64,11.66 13.71,11.21 13.74,10.85 C 13.79,10.07 13.87,10.08 13.99,10.88 M 10.21,11.33 C 10.1,11.64 9.86,12.17 9.69,12.53 C 9.36,13.17 9.36,13.17 9.4,12.76 C 9.43,12.37 9.72,11.7 10.13,11.03 C 10.42,10.57 10.44,10.68 10.21,11.33"
-			/>
-		</svg>
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/brand/mark/waifu.png" alt="waifu.fun" />
 	);
 }
 
 export function StewardIcon(props: IconProps) {
-	// Steward (steward.fi) mark: the 8-point navigational compass rose, matched
-	// to the real logo at steward.fi/logo.png. Four long cardinal points
-	// (N/E/S/W reaching the edge) and four shorter diagonal points, all meeting
-	// at a tight centre hub via concave notches. Built on a true radial grid so
-	// the geometry is symmetric, then kept as one solid silhouette that tints
-	// via currentColor (steward's gold is applied by the consumer when it stands
-	// alone, like the BNB / FLAP marks). 32x32 viewBox.
 	return (
-		<svg {...baseProps(props, "0 0 32 32")}>
-			<title>Steward</title>
-			<path d="M16 1 16.84 13.97 23.42 8.58 18.03 15.16 31 16 18.03 16.84 23.42 23.42 16.84 18.03 16 31 15.16 18.03 8.58 23.42 13.97 16.84 1 16 13.97 15.16 8.58 8.58 15.16 13.97Z" />
-		</svg>
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/brand/mark/steward.png" alt="Steward" />
 	);
 }
 
