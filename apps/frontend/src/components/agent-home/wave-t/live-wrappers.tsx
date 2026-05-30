@@ -27,6 +27,7 @@ import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 import type { CandleSeries } from "@/lib/wave-t/candles";
 import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
+import type { NavHistoryPoint } from "@/lib/wave-t/pnl";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
@@ -61,6 +62,13 @@ export type LiveHeroProps = Omit<HeroProps, "navUsd" | "twitterStats" | "treasur
 	 * override to avoid contradicting other panels.
 	 */
 	staticTreasuryOverride?: HeroTreasuryOverride | undefined;
+	/**
+	 * Real nav-snapshot series from /v2/agents/:address/nav-history,
+	 * prefetched at build (same source the pnl chart reads). The hero
+	 * sparkline renders only when this has two or more points; otherwise
+	 * the slot stays empty. We never synthesize a trend.
+	 */
+	navSeries?: NavHistoryPoint[] | null;
 };
 
 /**
@@ -75,6 +83,7 @@ export function LiveHero({
 	initialHoldingsHasAggregated,
 	initialTwitterStats,
 	staticTreasuryOverride,
+	navSeries,
 	...rest
 }: LiveHeroProps) {
 	const holdings = useLiveHoldings(address, initialHoldings, initialHoldingsHasAggregated);
@@ -95,6 +104,7 @@ export function LiveHero({
 			navUsd={holdings.snapshot.navUsd}
 			twitterStats={twitter}
 			{...(treasuryOverride ? { treasuryValueOverride: treasuryOverride } : {})}
+			navSeries={navSeries ?? null}
 			livePulse
 		/>
 	);

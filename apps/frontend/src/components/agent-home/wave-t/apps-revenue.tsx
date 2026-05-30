@@ -64,15 +64,15 @@ function AppIcon({ app, className }: { app: App; className?: string }) {
 function StatusBadge({ status }: { status: App["status"] }) {
 	if (status === "live") {
 		return (
-			<span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-emerald-300">
-				<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
+			<span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--positive)]/30 bg-[var(--positive)]/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--positive)]">
+				<Pulse tone="positive" />
 				live
 			</span>
 		);
 	}
 	if (status === "paused") {
 		return (
-			<span className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-yellow-200">
+			<span className="rounded-full border border-[var(--border-mid)] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--text-secondary)]">
 				paused
 			</span>
 		);
@@ -94,9 +94,9 @@ function EmptyAppsState() {
 
 function formatAppDate(app: App): string {
 	const raw = app.shippedAt ?? app.createdAt;
-	if (!raw) return "—";
+	if (!raw) return "no date yet";
 	const date = new Date(raw);
-	if (Number.isNaN(date.getTime())) return "—";
+	if (Number.isNaN(date.getTime())) return "no date yet";
 	return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
@@ -113,7 +113,7 @@ export function AppsShipped({ apps, visibleCount = 4 }: { apps: App[]; visibleCo
 		<Panel>
 			<Label>apps shipped</Label>
 			<div className="flex items-baseline gap-2">
-				<span className="font-sans text-[40px] font-light leading-none text-[var(--accent)] tabular-nums">
+				<span className="font-mono text-[40px] font-light leading-none text-[var(--accent)] tabular-nums">
 					{live.length}
 				</span>
 				<span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -266,11 +266,11 @@ export function TopAppsByRevenue({ apps, limit = 4 }: { apps: App[]; limit?: num
 						href="#apps"
 						className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]"
 					>
-						View all
+						view all
 					</a>
 				}
 			>
-				Top Apps by Revenue (7D)
+				top apps by revenue 7d
 			</Label>
 			<TopAppsList apps={apps} limit={limit} />
 		</Panel>
@@ -298,21 +298,28 @@ function StatBlock({
 		<div className="flex flex-col gap-1.5">
 			<SectionTitle>{label}</SectionTitle>
 			<div className="flex items-baseline gap-2">
-				<span className="font-sans text-[26px] font-light leading-none text-[var(--text-primary)] tabular-nums">
-					{formatCompactUsd(value)}
-				</span>
-				{!isEmpty && (
-					<span
-						className={cn(
-							"font-mono text-[11px] tabular-nums",
-							positive && "text-[var(--positive)]",
-							negative && "text-[var(--negative)]",
-							!positive && !negative && "text-[var(--text-tertiary)]",
-						)}
-					>
-						{positive ? "+" : ""}
-						{change.toFixed(1)}% vs prev 7D
-					</span>
+				{isEmpty ? (
+					// Unknown revenue is not zero revenue. When the metric is not
+					// wired we render an honest empty state, never a $0 that reads
+					// like the agent earned nothing.
+					<span className="font-mono text-[15px] leading-none text-[var(--text-tertiary)]">no data yet</span>
+				) : (
+					<>
+						<span className="font-mono text-[26px] font-light leading-none text-[var(--text-primary)] tabular-nums">
+							{formatCompactUsd(value)}
+						</span>
+						<span
+							className={cn(
+								"font-mono text-[11px] tabular-nums",
+								positive && "text-[var(--positive)]",
+								negative && "text-[var(--negative)]",
+								!positive && !negative && "text-[var(--text-tertiary)]",
+							)}
+						>
+							{positive ? "+" : ""}
+							{change.toFixed(1)}% vs prev 7d
+						</span>
+					</>
 				)}
 			</div>
 			{isEmpty && pendingNote && (
@@ -327,23 +334,18 @@ function StatBlock({
 export function AppsRevenue({ apps, totalRevenue7d, totalLifetime, feesGenerated30d = 0, feesChange30d = 0 }: Props) {
 	return (
 		<Panel>
-			<Label>Apps & Revenue</Label>
+			<Label>apps & revenue</Label>
 			<div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
 				<div className="flex flex-col gap-5 md:border-r md:border-[var(--border-soft)] md:pr-6">
+					<StatBlock label="total revenue 7d" value={totalRevenue7d} change={0} pendingNote="instrumentation pending" />
 					<StatBlock
-						label="Total Revenue (7D)"
-						value={totalRevenue7d}
-						change={0}
-						pendingNote="instrumentation pending"
-					/>
-					<StatBlock
-						label="Lifetime Revenue"
+						label="lifetime revenue"
 						value={totalLifetime}
 						change={0}
 						pendingNote="steward billing wires soon"
 					/>
 					<StatBlock
-						label="Fees Generated (30D)"
+						label="fees generated 30d"
 						value={feesGenerated30d}
 						change={feesChange30d}
 						pendingNote="steward billing wires soon"
@@ -351,9 +353,9 @@ export function AppsRevenue({ apps, totalRevenue7d, totalLifetime, feesGenerated
 				</div>
 				<div className="flex flex-col">
 					<div className="mb-1 flex items-center justify-between">
-						<SectionTitle>Top Apps</SectionTitle>
+						<SectionTitle>top apps</SectionTitle>
 						<a href="#apps" className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							View all
+							view all
 						</a>
 					</div>
 					<TopAppsList apps={apps} limit={4} />
