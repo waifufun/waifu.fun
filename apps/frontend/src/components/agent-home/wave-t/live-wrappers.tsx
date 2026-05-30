@@ -690,12 +690,35 @@ export function LiveActivityFeed({
 	}, [initialActivity]);
 	const tweets = useLiveTweets(twitterPollingEnabled ? address : "", initialTweets);
 
-	// Merge: replace tweet rows in initialActivity with the live set;
-	// keep everything else (PRs, txs, etc) as the SSG seed because we
-	// don't have a runtime endpoint for those yet. Live trades feed in
-	// via mergeActivityWithTrades like before.
+	// The canonical github source is /v2/agents/:address/events (polled
+	// above, keyed to THIS address). Once any live github event hydrates we
+	// drop the build-time ship-log seed (pr / githubGroup rows) so the live,
+	// per-agent feed is authoritative and we never show stale or duplicate
+	// PR rows. Before the first live github event lands we keep the seed so
+	// the panel is not empty on first paint, but that seed is already scoped
+	// to this agent's own github identity at build time.
+	const hasLiveGithub = useMemo(() => {
+		const githubEventTypes = new Set([
+			"pr.merged",
+			"pr.opened",
+			"commit.pushed",
+			"gh_pr_merged",
+			"gh_pr_opened",
+			"gh_commit_pushed",
+		]);
+		return agentEvents.events.some((e) => githubEventTypes.has(e.eventType));
+	}, [agentEvents.events]);
+
+	// Merge: replace tweet rows in initialActivity with the live set; keep
+	// non-github seed rows (txs, etc). Github seed rows (pr / githubGroup)
+	// are dropped once the live github feed has hydrated. Live trades feed
+	// in via mergeActivityWithTrades like before.
 	const rows: ActivityRowInput[] = useMemo(() => {
-		const nonTweet = initialActivity.filter((r) => r.type !== "tweet");
+		const nonTweet = initialActivity.filter((r) => {
+			if (r.type === "tweet") return false;
+			if (hasLiveGithub && (r.type === "pr" || r.type === "githubGroup")) return false;
+			return true;
+		});
 		const tweetRows: ActivityRowInput[] = tweets.map((t) => ({
 			id: `tweet-${t.id}`,
 			type: "tweet" as const,
@@ -749,7 +772,7 @@ export function LiveActivityFeed({
 		const merged = [...nonTweet, ...tweetRows, ...eventRows];
 		merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 		return mergeActivityWithTrades({ activity: merged, trades, ticker });
-	}, [initialActivity, tweets, agentEvents.events, trades, ticker]);
+	}, [initialActivity, hasLiveGithub, tweets, agentEvents.events, trades, ticker]);
 
 	return <ActivityFeed rows={rows} max={max} {...(author ? { author } : {})} live />;
 }
