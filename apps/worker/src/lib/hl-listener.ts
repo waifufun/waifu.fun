@@ -700,6 +700,12 @@ async function processPositions(
 	return { next, emitted };
 }
 
+// Number of recent fill rows to scan when resolving the lifecycle fill for a
+// position-diff open/close. Wide enough that a busy multi-coin agent's
+// relevant fill stays in the window (it is then filtered by wallet + coin in
+// JS); narrow enough to stay a cheap indexed read.
+const FILL_LOOKUP_LIMIT = 60;
+
 async function readRecentFillForCoin(
 	context: WorkerContext,
 	agentTokenAddress: string,
@@ -711,8 +717,13 @@ async function readRecentFillForCoin(
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
 		.orderBy(desc(agentEvents.occurredAt))
-		.limit(10);
+		.limit(FILL_LOOKUP_LIMIT);
 	const wallet = walletAddress.toLowerCase();
+	// Rows arrive newest-first. The opening fill for a "position appeared from
+	// zero" diff is the most recent fill whose direction starts with "open";
+	// prefer that so a later resize/add fill on the same coin does not stamp the
+	// open with the wrong time. Fall back to the newest matching fill.
+	let newestMatch: { tid: number | null; time: number | null } | null = null;
 	for (const row of rows) {
 		const data = row.data as Record<string, unknown>;
 		if (typeof data.walletAddress === "string" && data.walletAddress.toLowerCase() !== wallet) continue;
@@ -720,8 +731,11 @@ async function readRecentFillForCoin(
 		const tid = typeof data.tid === "number" ? data.tid : null;
 		const time =
 			typeof data.time === "number" && Number.isFinite(data.time) ? data.time : (row.occurredAt?.getTime() ?? null);
-		return { tid, time };
+		if (newestMatch === null) newestMatch = { tid, time };
+		const dir = String(data.direction ?? "").toLowerCase();
+		if (dir.startsWith("open")) return { tid, time };
 	}
+	if (newestMatch) return newestMatch;
 	return { tid: null, time: null };
 }
 
@@ -736,7 +750,7 @@ async function readRecentClosedPnlForCoin(
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
 		.orderBy(desc(agentEvents.occurredAt))
-		.limit(10);
+		.limit(FILL_LOOKUP_LIMIT);
 	let total: number | null = null;
 	let latestTid: number | null = null;
 	let latestTime: number | null = null;
