@@ -22,6 +22,38 @@ function elizaStub(calls: { paused?: string[]; resumed?: string[] } = {}): Eliza
 	};
 }
 
+test("agent.claimed records only and waits for agent.launched to provision", async () => {
+	let provisionCalls = 0;
+	const emitted: unknown[] = [];
+
+	await dispatchEvent(
+		{
+			event: "agent.claimed",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { claimedByXHandle: "eliza" },
+			idempotencyKey: "evt_claimed_1",
+		},
+		{
+			elizaCloud: {
+				...elizaStub(),
+				async provisionAgent() {
+					provisionCalls += 1;
+					throw new Error("agent.claimed should not provision");
+				},
+			},
+			logger: {},
+			async emitEvent(input) {
+				emitted.push(input);
+				return {} as Awaited<ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>>;
+			},
+		},
+	);
+
+	assert.equal(provisionCalls, 0);
+	assert.deepEqual(emitted, []);
+});
+
 test("agent.credits.low downgrades model tier and emits event", async () => {
 	let tier: "premium" | "standard" | "free" = "premium";
 	const emitted: unknown[] = [];

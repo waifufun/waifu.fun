@@ -28,12 +28,13 @@ function authHeaders() {
 	return { authorization: "Bearer steward-test" };
 }
 
-function createAuthDb(options: { updates?: Array<Record<string, unknown>> } = {}) {
+function createAuthDb(options: { updates?: Array<Record<string, unknown>>; missPersonaIdLookup?: boolean } = {}) {
 	let selectCount = 0;
 	return {
 		select() {
 			selectCount += 1;
-			const rows = selectCount === 1 ? [PATRON_ROW] : [PERSONA_ROW];
+			const rows =
+				selectCount === 1 ? [PATRON_ROW] : options.missPersonaIdLookup && selectCount === 2 ? [] : [PERSONA_ROW];
 			return {
 				from() {
 					return {
@@ -238,6 +239,30 @@ test("GET /:id/runtime returns seeded runtime state", async () => {
 		containerId: "eliza-agent-01",
 		containerUrl: "https://eliza.example/agents/eliza-agent-01",
 		lastEventAt: "2026-04-24T12:00:00.000Z",
+	});
+});
+
+test("GET /:id/runtime accepts the stable agent slug ownership fallback", async () => {
+	const db = createAuthDb({ missPersonaIdLookup: true });
+	installAuth(db);
+	const app = createAgentRuntimeRoutes({
+		db,
+		getRuntimeState: async (_db, agentId) => {
+			assert.equal(agentId, "waifu-runtime-1");
+			return {
+				state: "live",
+				runtimeAgentId: "cloud-agent-1",
+				webUiUrl: "https://eliza.example/agents/cloud-agent-1",
+			} as AgentRuntimeState;
+		},
+	});
+
+	const res = await app.request("/waifu-runtime-1/runtime", { headers: authHeaders() });
+	assert.equal(res.status, 200);
+	assert.deepEqual(await res.json(), {
+		state: "live",
+		runtimeAgentId: "cloud-agent-1",
+		webUiUrl: "https://eliza.example/agents/cloud-agent-1",
 	});
 });
 

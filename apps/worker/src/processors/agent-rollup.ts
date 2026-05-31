@@ -7,8 +7,6 @@ import { type AgentRollupJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import type { WorkerContext } from "../lib/types.js";
 
-const PLACEHOLDER_DAILY_BURN_USD = 5;
-
 export function createAgentRollupProcessor(context: WorkerContext) {
 	return async (job: Job<AgentRollupJob>) => {
 		const payload = parseJobPayload("agent-rollup", job.data);
@@ -19,7 +17,7 @@ export function createAgentRollupProcessor(context: WorkerContext) {
 		for (const agent of agents) {
 			const treasuryUsd = parseUsd(agent.cachedBalance) ?? 0;
 			const inferenceSpendUsd = await readInferenceSpendUsd(context, agent.id, since);
-			const dailyBurnUsd = inferenceSpendUsd > 0 ? inferenceSpendUsd : PLACEHOLDER_DAILY_BURN_USD;
+			const dailyBurnUsd = inferenceSpendUsd;
 			const runwayDays = dailyBurnUsd === 0 ? Number.POSITIVE_INFINITY : treasuryUsd / dailyBurnUsd;
 
 			agentTreasuryUsd.set({ agentId: agent.id }, treasuryUsd);
@@ -46,15 +44,16 @@ async function readInferenceSpendUsd(context: WorkerContext, agentId: string, si
 			),
 		);
 
-	return rows.reduce((total, row) => total + inferenceUsdFromData(row.data), 0);
+	const total = rows.reduce((sum, row) => sum + inferenceUsdFromData(row.data), 0);
+	return Number.isFinite(total) ? total : 0;
 }
 
 function inferenceUsdFromData(data: Record<string, unknown>): number {
 	const usd = numericField(data, "usd") ?? numericField(data, "costUsd") ?? numericField(data, "amountUsd");
-	if (usd !== null) return usd;
+	if (usd !== null) return Math.max(0, usd);
 
 	const cents = numericField(data, "cents") ?? numericField(data, "costCents") ?? numericField(data, "amountCents");
-	return cents === null ? 0 : cents / 100;
+	return cents === null ? 0 : Math.max(0, cents / 100);
 }
 
 function numericField(data: Record<string, unknown>, key: string): number | null {
