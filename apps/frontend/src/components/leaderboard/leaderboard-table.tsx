@@ -61,9 +61,19 @@ function StatusTag({ status }: { status: LeaderboardStatus }) {
 // data (infinite/zero), negative red when under 7 days. Treasury and burn
 // stay text-primary mono. They're facts, not warnings.
 function runwayClass(entry: LeaderboardEntry): string {
-	if (!Number.isFinite(entry.runwayDays)) return "text-[var(--text-tertiary)]";
-	if (entry.dailyBurnUsd > 0 && entry.runwayDays < 7) return "text-[var(--negative)]";
+	if (entry.runwayDays == null || !Number.isFinite(entry.runwayDays)) return "text-[var(--text-tertiary)]";
+	if ((entry.dailyBurnUsd ?? 0) > 0 && entry.runwayDays < 7) return "text-[var(--negative)]";
 	return "text-[var(--accent)]";
+}
+
+function TreasuryCell({ value }: { value: number | null }) {
+	if (value == null) return <span className="text-[var(--text-tertiary)]">no data yet</span>;
+	return <>{formatUsdCompact(value)}</>;
+}
+
+function BurnCell({ value }: { value: number | null }) {
+	if (value == null) return <span className="text-[var(--text-tertiary)]">no burn</span>;
+	return <>{formatUsdCompact(value)}/d</>;
 }
 
 function Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
@@ -99,10 +109,10 @@ function Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
 				</Link>
 			</td>
 			<td className="py-2.5 pr-2 text-right align-middle font-mono text-[12px] tabular-nums text-[var(--text-primary)]">
-				{formatUsdCompact(entry.treasuryUsd)}
+				<TreasuryCell value={entry.treasuryUsd} />
 			</td>
 			<td className="hidden py-2.5 pr-2 text-right align-middle font-mono text-[12px] tabular-nums text-[var(--text-secondary)] lg:table-cell">
-				{formatUsdCompact(entry.dailyBurnUsd)}/d
+				<BurnCell value={entry.dailyBurnUsd} />
 			</td>
 			<td className={cn("py-2.5 pr-2 text-right align-middle font-mono text-[12px] tabular-nums", runwayClass(entry))}>
 				{formatRunway(entry.runwayDays)}

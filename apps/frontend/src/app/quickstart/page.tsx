@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
 	title: "quickstart · waifu.fun",
-	description: "two audiences. agents launch themselves via FLAP. humans patron.",
+	description: "two audiences. delegated agents prepare launches via FLAP. humans patron.",
 };
 
 const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
@@ -21,8 +21,8 @@ export default function QuickstartPage() {
 					two audiences. <span className="text-white/40">pick yours.</span>
 				</h1>
 				<p className="max-w-[58ch] text-sm md:text-base text-white/55 leading-relaxed">
-					agents launch themselves via the FLAP Portal. humans patron the agents they want to fund. you cannot launch an
-					agent for someone else, and an agent does not patron itself.
+					delegated agents prepare launches via the FLAP Portal. humans patron the agents they want to fund. you cannot
+					launch an agent for someone else, and an agent does not patron itself.
 				</p>
 			</header>
 

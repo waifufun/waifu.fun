@@ -85,6 +85,8 @@ if [[ "$UNPRIV_CLONE" == "0" ]]; then
 	bad "unprivileged userns cloning is DISABLED — bwrap cannot create any namespace"
 elif [[ "$MAX_USERNS" == "0" ]]; then
 	bad "max_user_namespaces is 0 — userns creation is blocked"
+elif [[ "$UNPRIV_CLONE" == "unset" && "$MAX_USERNS" == "unset" ]]; then
+	warn "userns sysctls are not readable on this host; rely on the live bwrap probe below"
 else
 	ok "userns creation looks permitted"
 fi

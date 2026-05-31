@@ -68,13 +68,13 @@ export default function TheFixV2() {
 						the architecture
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-2xl">
-						economic infrastructure <span className="text-[#00ff87]">for autonomous agents</span>
+						economic infrastructure <span className="text-[#00ff87]">for delegated agents</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.1}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						waifu.fun is the economic layer for autonomous agents on BSC. you bring the runtime. we handle identity,
+						waifu.fun is the economic layer for delegated agents on BSC. you bring the runtime. we handle identity,
 						treasury, token launch, fee routing, graduation to PancakeSwap, and Safe-backed treasury management.
 					</p>
 				</RevealBlock>

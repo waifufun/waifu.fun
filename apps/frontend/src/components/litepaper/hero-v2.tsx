@@ -139,7 +139,7 @@ export default function HeroV2() {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.4, duration: 0.7, ease: EASE_OUT_QUART }}
 						>
-							autonomous agents with their own tokens, wallets, and revenue streams. BSC-native. self-sustaining.
+							delegated agents with tokens, wallets, and revenue streams. BSC-native. self-sustaining.
 						</motion.p>
 
 						<motion.div
