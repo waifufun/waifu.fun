@@ -450,15 +450,15 @@ function runtimeOverlayAfterResume(
 	};
 	tokenStatus: string;
 } {
-	const rawStatus = status?.status ?? "running";
-	const agentStatus = isHostedRuntimeRunning(rawStatus) ? "running" : rawStatus;
+	const hostedUrl = status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl");
+	const rawStatus = status?.status ?? "provisioning";
+	const running = isHostedRuntimeRunning(rawStatus) && Boolean(hostedUrl);
+	const agentStatus = running ? "running" : isHostedRuntimeRunning(rawStatus) ? "provisioning" : rawStatus;
 	return {
 		agent: {
 			agentStatus,
-			lifecycleState: agentStatus === "running" ? "live" : "reviving",
-			...((status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl"))
-				? { webUiUrl: status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl") }
-				: {}),
+			lifecycleState: running ? "live" : "reviving",
+			...(hostedUrl ? { webUiUrl: hostedUrl } : {}),
 			...((status?.containerId ?? stringField(data, "containerId"))
 				? { bridgeUrl: status?.containerId ?? stringField(data, "containerId") }
 				: {}),

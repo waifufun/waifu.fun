@@ -58,6 +58,10 @@ function requireFullE2e() {
 	return flagEnabled("--full-e2e") || env("WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E", "0") === "1";
 }
 
+function ownerRuntimeAction() {
+	return env("WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION", requireFullE2e() ? "restart" : "status");
+}
+
 function loadSmokeEnvFiles() {
 	const explicit = process.env.WAIFU_ELIZA_SMOKE_ENV_FILE?.trim();
 	const files = [explicit, ".env.local", ".env", "apps/api/.env"].filter(Boolean);
@@ -179,6 +183,7 @@ function smokeInputErrors() {
 	const amountUsdCents = Number(env("WAIFU_ELIZA_SMOKE_TOP_UP_CENTS", "500"));
 	const waitSeconds = Number(env("WAIFU_ELIZA_SMOKE_WAIT_SECONDS", "180"));
 	const expectedRole = env("WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE");
+	const runtimeAction = ownerRuntimeAction();
 	const invalidAddresses = [
 		"WAIFU_ELIZA_SMOKE_TOKEN_ADDRESS",
 		"WAIFU_ELIZA_SMOKE_AGENT_WALLET",
@@ -243,6 +248,9 @@ function smokeInputErrors() {
 		...(expectedRole && !["admin", "user", "guest"].includes(expectedRole)
 			? ["WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE must be admin, user, or guest"]
 			: []),
+		...(["status", "resume", "restart"].includes(runtimeAction)
+			? []
+			: ["WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION must be status, resume, or restart"]),
 		...(mode === "worker" && enqueueWorker !== "1"
 			? ["WAIFU_ELIZA_SMOKE_MODE=worker requires WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER=1"]
 			: []),
@@ -275,6 +283,9 @@ function smokeInputErrors() {
 			: []),
 		...(fullE2eRequired && verifyLifecycleWebhook !== "1"
 			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1"]
+			: []),
+		...(fullE2eRequired && runtimeAction === "status"
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION=restart or resume"]
 			: []),
 		...(verifyLifecycleWebhook === "1" && !env("WEBHOOK_RECEIVER_SECRET")
 			? ["WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1 requires WEBHOOK_RECEIVER_SECRET"]
@@ -755,7 +766,7 @@ async function verifyOwnerRuntimeApi(input) {
 	const controlResult = await apiRequest(runtimePath, {
 		method: "PUT",
 		bearer,
-		body: { action: env("WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION", "status") },
+		body: { action: ownerRuntimeAction() },
 	});
 	assert(controlResult?.cloudAgentId === input.cloudAgentId, "owner runtime control returned unexpected cloudAgentId", controlResult);
 	assert(controlResult?.ok === true, "owner runtime control did not succeed", controlResult);

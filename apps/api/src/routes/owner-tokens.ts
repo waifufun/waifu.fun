@@ -181,12 +181,18 @@ function runtimeOverlayFromStatus(
 	suspendedReason: string | null;
 } {
 	const runtimeStatus = status?.status ?? row.agent?.agentStatus ?? row.token.agentStatus ?? "provisioning";
-	const running = isHostedRuntimeRunning(runtimeStatus);
+	const webUiUrl = status?.webUiUrl ?? status?.containerUrl ?? getContainerUrl(row);
+	const running = isHostedRuntimeRunning(runtimeStatus) && Boolean(webUiUrl);
+	const agentStatus = running
+		? "running"
+		: isHostedRuntimeRunning(runtimeStatus)
+			? "provisioning"
+			: String(runtimeStatus || "provisioning");
 	return {
 		cloudAgentId,
 		containerId: status?.containerId ?? getContainerId(row),
-		webUiUrl: status?.webUiUrl ?? status?.containerUrl ?? getContainerUrl(row),
-		agentStatus: running ? "running" : String(runtimeStatus || "provisioning"),
+		webUiUrl,
+		agentStatus,
 		lifecycleState: running ? "live" : "birth",
 		suspendedReason: running ? null : (row.agent?.suspendedReason ?? null),
 	};

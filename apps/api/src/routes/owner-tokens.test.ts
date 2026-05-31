@@ -421,6 +421,114 @@ test("POST runtime/restart restarts the owner token Cloud agent", async () => {
 	}
 });
 
+test("POST runtime/restart keeps owner token runtime provisioning when hosted URL is missing", async () => {
+	const updates: Array<Record<string, unknown>> = [];
+	const row = {
+		token: {
+			id: "token-row-1",
+			contractAddress: "0x0000000000000000000000000000000000000004",
+			chainId: 56,
+			creatorAddress: "0x0000000000000000000000000000000000000001",
+			agentStatus: "provisioning",
+			ownerClaimStatus: "claimed",
+			name: "Chat Waifu",
+			description: null,
+			imageUrl: null,
+		},
+		agent: {
+			id: "agent-row-1",
+			cloudAgentId: "cloud-agent-1",
+			agentStatus: "provisioning",
+			lifecycleState: "birth",
+			webUiUrl: null,
+			bridgeUrl: "container-1",
+			billingMode: "owner_credits",
+			infraReserveUsd: "5",
+			suspendedReason: null,
+		},
+		persona: {
+			agentId: "waifu-demo-01",
+			ownerAddress: "0x0000000000000000000000000000000000000001",
+			metadata: { provisioning: { cloudAgentId: "cloud-agent-1", containerId: "container-1" } },
+		},
+	} as unknown as TokenRuntimeRow;
+	const db = {
+		select() {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									return Promise.resolve([row]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as unknown as Database;
+
+	__setRequirePatronDbForTest(db);
+	__setOwnerTokenDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "creator@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setOwnerTokenElizaClientForTest({
+		async provisionAgent() {
+			return { containerId: "container-1" };
+		},
+		async pauseAgent() {},
+		async resumeAgent() {},
+		async restartHostedAgent() {},
+		async getAgentRuntimeStatus(agentId) {
+			return {
+				cloudAgentId: agentId,
+				containerId: "container-after-restart",
+				status: "running",
+			};
+		},
+		async deprovisionAgent() {},
+		async topUpCredits() {
+			return undefined;
+		},
+	});
+
+	try {
+		const res = await app.request("/tokens/bsc/56/0x0000000000000000000000000000000000000004/runtime/restart", {
+			method: "POST",
+			headers: { authorization: "Bearer steward" },
+		});
+		assert.equal(res.status, 200, await res.clone().text());
+		const json = (await res.json()) as { success: boolean; runtime?: { agentStatus?: string } };
+		assert.equal(json.success, true);
+		assert.equal(json.runtime?.agentStatus, "provisioning");
+		assert.equal(updates[0]?.agentStatus, "provisioning");
+		assert.equal(updates[0]?.lifecycleState, "birth");
+		assert.equal(updates[0]?.webUiUrl, null);
+	} finally {
+		__setRequirePatronDbForTest(undefined);
+		__setOwnerTokenDbForTest(undefined);
+		__setRequirePatronStewardParserForTest(undefined);
+		__setOwnerTokenElizaClientForTest(undefined);
+	}
+});
+
 test("GET chat-session issues a role-scoped Eliza Cloud chat URL for token holders", async () => {
 	const row = {
 		token: {

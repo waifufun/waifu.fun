@@ -454,6 +454,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			assert.match(result.stdout, /worker provisioning enqueued jobId=job-1/);
 			assert.match(result.stdout, /chat-session ok role=user/);
 			assert.match(result.stdout, /owner runtime test ok status=running/);
+			assert.match(result.stdout, /owner runtime control ok action=restart/);
 			assert.doesNotMatch(result.stdout, /top-up checkout ok/);
 			assert.match(result.stdout, /lifecycle depleted webhook ok status=suspended/);
 			assert.match(result.stdout, /lifecycle topped_up webhook ok status=running/);
@@ -477,6 +478,10 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			);
 			assert.equal(
 				apiContract.calls.some((call) => call.method === "POST" && call.path.endsWith("/runtime/test")),
+				true,
+			);
+			assert.equal(
+				apiContract.calls.some((call) => call.method === "PUT" && call.path.endsWith("/runtime") && call.body?.action === "restart"),
 				true,
 			);
 			assert.equal(

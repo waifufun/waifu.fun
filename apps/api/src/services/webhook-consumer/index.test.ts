@@ -506,3 +506,52 @@ test("credit top-up resumes cloud runtime and syncs overlay from runtime status"
 	assert.equal(updates[1]?.bridgeUrl, "container-after-top-up");
 	assert.equal(updates[1]?.suspendedReason, null);
 });
+
+test("credit top-up keeps runtime reviving when Eliza reports running without hosted URL", async () => {
+	const cloudCalls: { resumed: string[] } = { resumed: [] };
+	const updates: Array<Record<string, unknown>> = [];
+	const db = {
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as never;
+
+	await dispatchEvent(
+		{
+			event: "credits.topped_up",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { amountUsd: 5, cloudAgentId: "cloud-agent-1", overlayAgentId: "agent-overlay-1" },
+		},
+		{
+			db,
+			elizaCloud: {
+				...elizaStub(cloudCalls),
+				async getAgentRuntimeStatus(agentId) {
+					return {
+						cloudAgentId: agentId,
+						containerId: "container-after-top-up",
+						status: "running",
+					};
+				},
+			},
+			logger: {},
+			async emitEvent(input) {
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+		},
+	);
+
+	assert.deepEqual(cloudCalls.resumed, ["cloud-agent-1"]);
+	assert.equal(updates[1]?.agentStatus, "provisioning");
+	assert.equal(updates[1]?.lifecycleState, "reviving");
+	assert.equal(updates[1]?.webUiUrl, undefined);
+	assert.equal(updates[1]?.bridgeUrl, "container-after-top-up");
+});

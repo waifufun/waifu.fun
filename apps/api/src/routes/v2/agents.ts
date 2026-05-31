@@ -34,6 +34,7 @@ import {
 	createStewardClient,
 } from "../../services/agent-launch/index.js";
 import {
+	type ElizaAgentRuntimeStatus,
 	type ElizaCloudClient,
 	type ElizaCloudProvisionResult,
 	type ProvisionWaifuCloudAgentInput,
@@ -497,7 +498,8 @@ async function provisionHostedRuntimeAfterLaunch(
 
 export type ResurrectAgentDeps = {
 	db: ReturnType<typeof getDatabase>["db"];
-	elizaClient: Pick<ElizaCloudClient, "resumeAgent" | "topUpCredits">;
+	elizaClient: Pick<ElizaCloudClient, "resumeAgent" | "topUpCredits"> &
+		Partial<Pick<ElizaCloudClient, "getAgentRuntimeStatus">>;
 	emitEvent?: typeof emitAgentEvent;
 };
 
@@ -517,6 +519,11 @@ export async function resurrectAgent(
 	if (runtimeRefs.containerId) {
 		await deps.elizaClient.resumeAgent(runtimeRefs.containerId);
 	}
+	const runtimeStatus =
+		runtimeRefs.containerId && deps.elizaClient.getAgentRuntimeStatus
+			? await deps.elizaClient.getAgentRuntimeStatus(runtimeRefs.containerId).catch(() => null)
+			: null;
+	const overlay = resurrectedRuntimeOverlay(runtimeStatus);
 	const now = new Date();
 	await deps.db
 		.update(agentPersonas)
@@ -535,8 +542,10 @@ export async function resurrectAgent(
 		await deps.db
 			.update(agents)
 			.set({
-				agentStatus: "running",
-				lifecycleState: "live",
+				agentStatus: overlay.agentStatus,
+				lifecycleState: overlay.lifecycleState,
+				...(overlay.webUiUrl !== undefined ? { webUiUrl: overlay.webUiUrl } : {}),
+				...(overlay.containerId !== undefined ? { bridgeUrl: overlay.containerId } : {}),
 				suspendedReason: null,
 				updatedAt: now,
 			})
@@ -545,7 +554,7 @@ export async function resurrectAgent(
 	if (runtimeRefs.tokenId) {
 		await deps.db
 			.update(tokens)
-			.set({ agentStatus: "running", updatedAt: now })
+			.set({ agentStatus: overlay.agentStatus, updatedAt: now })
 			.where(eq(tokens.id, runtimeRefs.tokenId));
 	}
 
@@ -566,6 +575,22 @@ export async function resurrectAgent(
 		creditsAmount,
 		modelTier: "premium",
 		...(runtimeRefs.containerId ? { containerId: runtimeRefs.containerId } : {}),
+	};
+}
+
+function resurrectedRuntimeOverlay(status: ElizaAgentRuntimeStatus | null): {
+	agentStatus: string;
+	lifecycleState: string;
+	webUiUrl?: string | null;
+	containerId?: string | null;
+} {
+	const webUiUrl = status?.webUiUrl ?? status?.containerUrl ?? null;
+	const running = isHostedRuntimeRunning(status?.status) && Boolean(webUiUrl);
+	return {
+		agentStatus: running ? "running" : "provisioning",
+		lifecycleState: running ? "live" : "birth",
+		...(webUiUrl ? { webUiUrl } : {}),
+		...(status?.containerId ? { containerId: status.containerId } : {}),
 	};
 }
 

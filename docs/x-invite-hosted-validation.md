@@ -98,7 +98,8 @@ or pass `--full-e2e`.
 That preflight gate requires worker mode, real worker enqueue, token-page chat
 verification with `WAIFU_ELIZA_SMOKE_STEWARD_BEARER` and
 `WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE`, owner runtime verification with
-`WAIFU_ELIZA_SMOKE_OWNER_BEARER`, signed lifecycle webhook verification with
+`WAIFU_ELIZA_SMOKE_OWNER_BEARER` and a mutating owner control (`restart` by
+default, or `WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION=resume`), signed lifecycle webhook verification with
 `WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1` and `WEBHOOK_RECEIVER_SECRET`,
 and completed checkout verification via `WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION`.
 Use `WAIFU_ELIZA_SMOKE_TOP_UP=1` in an earlier run to create the checkout,

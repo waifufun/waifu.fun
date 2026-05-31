@@ -89,6 +89,115 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.resurrected");
 });
 
+test("resurrectAgent marks overlays live only after resumed runtime exposes hosted URL evidence", async () => {
+	const makeDb = () => {
+		const updates: Record<string, unknown>[] = [];
+		let selectCount = 0;
+		return {
+			updates,
+			db: {
+				select() {
+					selectCount += 1;
+					return {
+						from() {
+							return {
+								leftJoin() {
+									return this;
+								},
+								where() {
+									return {
+										limit() {
+											if (selectCount === 1) {
+												return Promise.resolve([
+													{
+														metadata: {
+															provisioning: {
+																cloudAgentId: "cloud-waifu-demo-01",
+																containerId: "container-before-resume",
+															},
+														},
+														tokenAddress: "0x0000000000000000000000000000000000000004",
+													},
+												]);
+											}
+											return Promise.resolve([
+												{
+													tokenId: "token-row-1",
+													overlayAgentId: "agent-row-1",
+													containerId: "container-before-resume",
+													cloudAgentId: "cloud-waifu-demo-01",
+												},
+											]);
+										},
+									};
+								},
+							};
+						},
+					};
+				},
+				update() {
+					return {
+						set(values: Record<string, unknown>) {
+							updates.push(values);
+							return {
+								where() {
+									return Promise.resolve();
+								},
+							};
+						},
+					};
+				},
+			} as never,
+		};
+	};
+
+	const pending = makeDb();
+	await resurrectAgent("waifu-demo-01", 2500, {
+		db: pending.db,
+		elizaClient: {
+			async topUpCredits() {
+				return undefined;
+			},
+			async resumeAgent() {},
+			async getAgentRuntimeStatus() {
+				return { status: "running", containerId: "container-after-resume" };
+			},
+		},
+		async emitEvent() {
+			return {} as never;
+		},
+	});
+	assert.equal(pending.updates[1]?.agentStatus, "provisioning");
+	assert.equal(pending.updates[1]?.lifecycleState, "birth");
+	assert.equal(pending.updates[1]?.bridgeUrl, "container-after-resume");
+	assert.equal(pending.updates[2]?.agentStatus, "provisioning");
+
+	const live = makeDb();
+	await resurrectAgent("waifu-demo-01", 2500, {
+		db: live.db,
+		elizaClient: {
+			async topUpCredits() {
+				return undefined;
+			},
+			async resumeAgent() {},
+			async getAgentRuntimeStatus() {
+				return {
+					status: "running",
+					containerId: "container-after-resume",
+					webUiUrl: "https://agent-after-resume.example",
+				};
+			},
+		},
+		async emitEvent() {
+			return {} as never;
+		},
+	});
+	assert.equal(live.updates[1]?.agentStatus, "running");
+	assert.equal(live.updates[1]?.lifecycleState, "live");
+	assert.equal(live.updates[1]?.webUiUrl, "https://agent-after-resume.example");
+	assert.equal(live.updates[2]?.agentStatus, "running");
+});
+
 import { __setRequirePatronDbForTest, __setRequirePatronStewardParserForTest } from "../../middleware/patron-auth.js";
 import app, { __setAgentsRouteDepsForTest, buildLaunchOrchestratorDeps } from "./agents.js";
 

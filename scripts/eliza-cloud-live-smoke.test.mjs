@@ -31,6 +31,7 @@ const SMOKE_ENV_KEYS = [
 	"WAIFU_ELIZA_SMOKE_OWNER_BEARER",
 	"WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION",
 	"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E",
+	"WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
 	"WAIFU_ELIZA_SMOKE_TOKEN_ADDRESS",
 	"WAIFU_ELIZA_SMOKE_TOP_UP",
 	"WAIFU_ELIZA_SMOKE_TOP_UP_CENTS",
@@ -280,6 +281,30 @@ describe("eliza-cloud-live-smoke preflight", () => {
 					"WAIFU_ELIZA_SMOKE_WAIT_SECONDS must be positive",
 					"WAIFU_ELIZA_SMOKE_TOP_UP_CENTS must be positive",
 					"WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE must be admin, user, or guest",
+				]);
+			},
+		);
+	});
+
+	it("requires full E2E owner runtime control to be mutating", () => {
+		withSmokeEnv(
+			{
+				...BASE_ENV,
+				WAIFU_CHAT_ACCESS_JWT_SECRET: "chat-secret",
+				WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER: "1",
+				WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE: "admin",
+				WAIFU_ELIZA_SMOKE_MODE: "worker",
+				WAIFU_ELIZA_SMOKE_OWNER_BEARER: "owner-token",
+				WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION: "status",
+				WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E: "1",
+				WAIFU_ELIZA_SMOKE_STEWARD_BEARER: "steward-token",
+				WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK: "1",
+				WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION: "cs_mock",
+				WEBHOOK_RECEIVER_SECRET: "webhook-secret",
+			},
+			() => {
+				assert.deepEqual(smokeInputErrors(), [
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION=restart or resume",
 				]);
 			},
 		);
