@@ -604,3 +604,54 @@ test("app credit balance and checkout verification call Eliza Cloud app-credit A
 		message: "Credits added successfully",
 	});
 });
+
+test("sendAgentMessage posts a chat turn and extracts the reply text", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+		assert.equal(String(url), "https://cloud.test/api/v1/agents/cloud-agent-1/message");
+		assert.equal(init?.method, "POST");
+		assert.equal((init?.headers as Record<string, string>)["X-Service-Key"], "svc_key");
+		assert.deepEqual(JSON.parse(String(init?.body)), {
+			text: "gm",
+			sessionId: "patron:p1:a1",
+			senderId: "patron:p1",
+			source: "waifu-patron-chat",
+		});
+		return Response.json({ success: true, data: { text: "gm patron", sessionId: "patron:p1:a1" } });
+	});
+
+	const client = createElizaCloudClient({
+		baseUrl: "https://cloud.test",
+		serviceKey: "svc_key",
+		logger: {},
+	});
+	const result = await client.sendAgentMessage?.({
+		agentId: "cloud-agent-1",
+		text: "gm",
+		sessionId: "patron:p1:a1",
+		senderId: "patron:p1",
+	});
+
+	assert.equal(fetchMock.mock.callCount(), 1);
+	assert.equal(result?.text, "gm patron");
+	assert.equal(result?.sessionId, "patron:p1:a1");
+	fetchMock.mock.restore();
+});
+
+test("sendAgentMessage reads the reply out of a messages[] payload", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async () =>
+		Response.json({
+			success: true,
+			data: {
+				sessionId: "s1",
+				messages: [
+					{ role: "user", content: { text: "gm" } },
+					{ role: "agent", content: { text: "wagmi" } },
+				],
+			},
+		}),
+	);
+	const client = createElizaCloudClient({ baseUrl: "https://cloud.test", serviceKey: "svc_key", logger: {} });
+	const result = await client.sendAgentMessage?.({ agentId: "a", text: "gm", sessionId: "s1" });
+	assert.equal(result?.text, "wagmi");
+	fetchMock.mock.restore();
+});
