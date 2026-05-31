@@ -17,7 +17,7 @@
 import { ChevronDown, ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
-import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
+import { BnbChainIcon, ElizaCloudIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
 import { resolveImageUrl } from "@/lib/image-url";
@@ -227,8 +227,18 @@ function deltaTone(delta: number): { cls: string; sign: string } {
 	return { cls: "text-[var(--text-tertiary)]", sign: "" };
 }
 
+// Eliza Cloud is the agent runtime + inference / credits layer. Its events
+// (credit top-ups, inference spend, image-gen billing) arrive as treasury rows
+// labelled with the eliza cloud / inference / image-gen provider, so match
+// those to the Eliza mark instead of the generic chain fallback.
+function isElizaSource(label: string): boolean {
+	const l = label.toLowerCase();
+	return l.includes("eliza") || l.includes("inference") || l.includes("image-gen");
+}
+
 function pickVenueIcon(venue: string): ReactNode {
 	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
+	if (isElizaSource(venue)) return <ElizaCloudIcon className="h-3.5 w-3.5" />;
 	return <BnbChainIcon className="h-3.5 w-3.5" />;
 }
 
@@ -563,12 +573,16 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 		case "app": {
 			const verb =
 				row.action === "shipped" ? "shipped new app" : row.action === "updated" ? "updated app" : "deprecated app";
-			const isWaifu = row.appName.toLowerCase().includes("waifu");
-			const isSteward = row.appName.toLowerCase().includes("steward");
+			const appNameLc = row.appName.toLowerCase();
+			const isWaifu = appNameLc.includes("waifu");
+			const isSteward = appNameLc.includes("steward");
+			const isEliza = appNameLc.includes("eliza");
 			const icon = isWaifu ? (
 				<WaifuIcon className="h-3.5 w-3.5" />
 			) : isSteward ? (
 				<StewardIcon className="h-3.5 w-3.5" />
+			) : isEliza ? (
+				<ElizaCloudIcon className="h-3.5 w-3.5" />
 			) : (
 				<GithubIcon className="h-3.5 w-3.5" />
 			);
