@@ -20,6 +20,17 @@ const DEFAULT_NATIVE_MAX_BLOCKS_PER_POLL = 2_000n;
 const DEFAULT_NATIVE_GET_BLOCK_MAX_SPAN = 250n;
 const DEFAULT_NATIVE_GET_BLOCK_CONCURRENCY = 12;
 const BSC_LAUNCH_FALLBACK_BLOCK = 100_400_000n; // Covers the 2026-05-20 launch window without scanning genesis.
+// Free public BSC RPC used for the ERC20 wallet-transfer path. ERC20 transfers
+// are read with topic-filtered eth_getLogs (the from/to wallets are indexed
+// topics), so the payload per range is tiny and does NOT need an archive
+// provider. Keeping this path off Alchemy is the bulk of the cost saving.
+const PUBLIC_BSC_RPC_URL = "https://bsc-dataseed.binance.org";
+// Native BNB backfill (Alchemy getAssetTransfers across the full launch window)
+// is the genuinely expensive call. Default to forward-only: index native
+// transfers from the live cursor forward and skip the deep backfill. Opt back
+// in with AGENT_WALLET_TRANSFER_NATIVE_BACKFILL=true if a one-off historical
+// pass is ever funded.
+const NATIVE_BACKFILL_ENABLED = process.env.AGENT_WALLET_TRANSFER_NATIVE_BACKFILL === "true";
 const CURSOR_CONTRACT_ADDRESSES = {
 	erc20Backfill: "0x0000000000000000000000000000000000000101",
 	nativeBackfill: "0x0000000000000000000000000000000000000102",
@@ -50,7 +61,7 @@ const CHAIN_CONFIG = {
 
 type SupportedChain = keyof typeof CHAIN_CONFIG;
 
-type RegisteredWallet = {
+export type RegisteredWallet = {
 	agentTokenAddress: string;
 	address: string;
 	chain: SupportedChain;
@@ -143,9 +154,25 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
 	});
 }
 
-function rpcUrlFor(chain: SupportedChain): string {
+// RPC for the native (BNB / ETH) path. Native transfers emit no logs, so this
+// path still needs the trace-capable archive provider (Alchemy
+// getAssetTransfers) when available, falling back to the configured / default
+// RPC for the bounded getBlock scan.
+export function nativeRpcUrlFor(chain: SupportedChain): string {
 	const cfg = CHAIN_CONFIG[chain];
 	return process.env[cfg.archiveRpcEnv] ?? process.env[cfg.rpcEnv] ?? cfg.chain.rpcUrls.default.http[0];
+}
+
+// RPC for the ERC20 path. Topic-filtered getLogs needs no archive node, so we
+// deliberately ignore the Alchemy archive env here and prefer a free public
+// endpoint. Order: explicit BSC_RPC_URL / ARBITRUM_RPC_URL override, then the
+// free public default (BSC), then viem's bundled default for the chain.
+export function erc20RpcUrlFor(chain: SupportedChain): string {
+	const cfg = CHAIN_CONFIG[chain];
+	const explicit = process.env[cfg.rpcEnv];
+	if (explicit) return explicit;
+	if (chain === "bsc") return PUBLIC_BSC_RPC_URL;
+	return cfg.chain.rpcUrls.default.http[0];
 }
 
 async function loadWallets(runtime: IndexerRuntime): Promise<RegisteredWallet[]> {
@@ -184,7 +211,7 @@ function initialBackfillBlock(
 	return chain === "bsc" ? BSC_LAUNCH_FALLBACK_BLOCK : 0n;
 }
 
-async function fetchErc20Transfers(input: {
+export async function fetchErc20Transfers(input: {
 	client: ReturnType<typeof createPublicClient>;
 	chain: SupportedChain;
 	wallets: RegisteredWallet[];
@@ -263,7 +290,7 @@ async function fetchNativeTransfers(input: {
 	const { transfers, source, getBlockScanned } = await withTimeout(
 		fetchNativeTransfersFor({
 			client: input.client,
-			rpcUrl: rpcUrlFor(input.chain),
+			rpcUrl: nativeRpcUrlFor(input.chain),
 			chainId: cfg.chainId,
 			addresses: uniq(input.wallets.map((wallet) => wallet.address)),
 			fromBlock: input.fromBlock,
@@ -405,10 +432,19 @@ async function pollChainRange(input: {
 }): Promise<PollMetrics | null> {
 	const cfg = CHAIN_CONFIG[input.chain];
 	const startedAt = Date.now();
+	// ERC20 path + block-number / timestamp reads use the free public RPC.
 	const client = createPublicClient({
 		chain: cfg.chain,
-		transport: http(rpcUrlFor(input.chain), { timeout: input.options.requestTimeoutMs }),
+		transport: http(erc20RpcUrlFor(input.chain), { timeout: input.options.requestTimeoutMs }),
 	});
+	// Native path keeps the trace-capable archive RPC (Alchemy) when configured;
+	// only instantiated when this poll actually reads native transfers.
+	const nativeClient = input.includeNative
+		? createPublicClient({
+				chain: cfg.chain,
+				transport: http(nativeRpcUrlFor(input.chain), { timeout: input.options.requestTimeoutMs }),
+			})
+		: client;
 	const latestBlock = await withTimeout(
 		client.getBlockNumber(),
 		input.options.requestTimeoutMs,
@@ -436,7 +472,7 @@ async function pollChainRange(input: {
 		: { candidates: [], logsFetched: 0 };
 	const native = input.includeNative
 		? await fetchNativeTransfers({
-				client,
+				client: nativeClient,
 				chain: input.chain,
 				wallets: input.wallets,
 				fromBlock,
@@ -502,20 +538,26 @@ async function pollChainOnce(
 	});
 	if (backfillErc20Metrics) metrics.push(backfillErc20Metrics);
 
-	const backfillNativeMetrics = await pollChainRange({
-		runtime,
-		chain,
-		wallets: chainWallets,
-		options,
-		cursorId: `${cfg.cursorPrefix}:native:backfill`,
-		mode: "backfill",
-		initialBlock: initialBackfill,
-		cursorContractAddress: CURSOR_CONTRACT_ADDRESSES.nativeBackfill,
-		maxBlocks: options.nativeMaxBlocksPerPoll,
-		includeErc20: false,
-		includeNative: true,
-	});
-	if (backfillNativeMetrics) metrics.push(backfillNativeMetrics);
+	// Native BNB backfill is the expensive Alchemy getAssetTransfers path across
+	// the full launch window. It is forward-only by default (the live native
+	// cursor below already fast-forwarded to head), so the deep backfill is
+	// skipped unless explicitly funded via AGENT_WALLET_TRANSFER_NATIVE_BACKFILL.
+	if (NATIVE_BACKFILL_ENABLED) {
+		const backfillNativeMetrics = await pollChainRange({
+			runtime,
+			chain,
+			wallets: chainWallets,
+			options,
+			cursorId: `${cfg.cursorPrefix}:native:backfill`,
+			mode: "backfill",
+			initialBlock: initialBackfill,
+			cursorContractAddress: CURSOR_CONTRACT_ADDRESSES.nativeBackfill,
+			maxBlocks: options.nativeMaxBlocksPerPoll,
+			includeErc20: false,
+			includeNative: true,
+		});
+		if (backfillNativeMetrics) metrics.push(backfillNativeMetrics);
+	}
 
 	const liveErc20Metrics = await pollChainRange({
 		runtime,
@@ -645,8 +687,10 @@ export async function startAgentWalletTransferStream(
 			nativeMaxBlocksPerPoll: resolved.nativeMaxBlocksPerPoll.toString(),
 			nativeGetBlockMaxSpan: resolved.nativeGetBlockMaxSpan.toString(),
 			nativeGetBlockConcurrency: resolved.nativeGetBlockConcurrency,
-			nativeSourceBsc: selectNativeSourceKind(rpcUrlFor("bsc")),
-			nativeSourceArb: selectNativeSourceKind(rpcUrlFor("arb")),
+			nativeSourceBsc: selectNativeSourceKind(nativeRpcUrlFor("bsc")),
+			nativeSourceArb: selectNativeSourceKind(nativeRpcUrlFor("arb")),
+			erc20RpcBsc: erc20RpcUrlFor("bsc"),
+			nativeBackfillEnabled: NATIVE_BACKFILL_ENABLED,
 			requestTimeoutMs: resolved.requestTimeoutMs,
 			tickWatchdogMs: resolved.tickWatchdogMs,
 		},
