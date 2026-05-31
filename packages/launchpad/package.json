@@ -9,6 +9,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./adapters/bags/signer": {
+			"types": "./dist/adapters/bags/signer.d.ts",
+			"import": "./dist/adapters/bags/signer.js"
 		}
 	},
 	"files": ["dist"],

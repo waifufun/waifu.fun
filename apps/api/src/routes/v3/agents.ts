@@ -5,6 +5,7 @@ import { getAddress, isAddress, parseEther } from "viem";
 import { type Database, agentPersonaQueries, agentSafeQueries, getDatabase } from "@waifufun/db";
 import {
 	type CreateTokenParams,
+	type ExternalLaunchPlan,
 	type LaunchpadAdapter,
 	type LaunchpadFeeConfig,
 	type LaunchpadId,
@@ -24,6 +25,12 @@ import {
 	deployAgentSafe,
 	updateAgentAutonomy,
 } from "../../services/agent-launch/index.js";
+import {
+	type ExternalLaunchResult,
+	executeExternalLaunch,
+	isBagsExecutorConfigured,
+	isBankrExecutorConfigured,
+} from "../../services/agent-launch/third-party-executor.js";
 
 const CHAINS = new Set(["bsc", "solana", "base", "ethereum"]);
 const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -34,6 +41,9 @@ type V3RouteOptions = {
 	db?: Database;
 	getLaunchpadAdapter?: (id: LaunchpadId) => LaunchpadAdapter | undefined;
 	deployAgentSafe?: typeof deployAgentSafe;
+	/** Injectable for tests — defaults to the env-gated third-party executor. */
+	executeExternalLaunch?: (plan: ExternalLaunchPlan) => Promise<ExternalLaunchResult>;
+	isExternalExecutorConfigured?: (kind: "bankr" | "bags") => boolean;
 };
 
 type RouteContext = Context<RequireAgentOwnershipBindings>;
@@ -317,6 +327,83 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 		await agentPersonaQueries.updateAgentPersona(db, persona.id, personaUpdate);
 
 		return c.json({ ok: true, launchPlan: bigintToJson(plan), safe: safe ? safeMetadata(safe) : null }, 200);
+	});
+
+	// Execute a previously-prepared third-party (bankr/bags) launch. This is the
+	// bankr/bags analog of the BSC orchestrator broadcast step: it takes the
+	// stored launchPlan.tx.third-party and runs the real launch via the executor
+	// seam, then persists the token into the same tables the BSC path writes.
+	app.post("/:id/launch/execute", requirePatron(), requireAgentOwnership(), async (c) => {
+		const db = requireDb(options);
+		if (!db) return c.json({ error: "database unavailable" }, 503);
+
+		const ownedAgent = c.get("patronAgent");
+		const persona =
+			(await agentPersonaQueries.getAgentPersonaById(db, ownedAgent.id)) ??
+			(await agentPersonaQueries.getAgentPersonaByAgentId(db, ownedAgent.agentId));
+		if (!persona) return c.json({ ok: false, error: "agent not found" }, 404);
+
+		if (persona.agentLaunchStatus !== "prepared") {
+			return c.json(
+				{ ok: false, error: "agent is not in a prepared state", agentLaunchStatus: persona.agentLaunchStatus },
+				409,
+			);
+		}
+
+		const launchpadConfig = asRecord(persona.launchpadConfig);
+		const storedPlan = asRecord(launchpadConfig?.launchPlan);
+		const storedTx = asRecord(storedPlan?.tx);
+		const extPlan = asRecord(storedTx?.external);
+		if (!extPlan || (extPlan.kind !== "bankr" && extPlan.kind !== "bags")) {
+			return c.json({ ok: false, error: "no executable third-party launch plan found; prepare the launch first" }, 400);
+		}
+		const kind = extPlan.kind as "bankr" | "bags";
+
+		if (extPlan.simulateOnly === true) {
+			return c.json(
+				{
+					ok: false,
+					error:
+						"prepared plan is simulateOnly (executor creds not configured at prepare time); re-prepare with creds set",
+					kind,
+				},
+				409,
+			);
+		}
+
+		const configured =
+			options?.isExternalExecutorConfigured?.(kind) ??
+			(kind === "bankr" ? isBankrExecutorConfigured() : isBagsExecutorConfigured());
+		if (!configured) {
+			return c.json({ ok: false, error: "third-party launch executor not configured for this chain", kind }, 503);
+		}
+
+		let result: ExternalLaunchResult;
+		try {
+			result = await (options?.executeExternalLaunch ?? executeExternalLaunch)(
+				extPlan as unknown as ExternalLaunchPlan,
+			);
+		} catch (error) {
+			// Leave the persona in `prepared` so the launch can be retried.
+			return c.json({ ok: false, error: "third-party launch failed", message: (error as Error).message, kind }, 502);
+		}
+
+		await agentPersonaQueries.markLaunched(db, persona.agentId, {
+			tokenAddress: result.tokenAddress,
+			launchTxHash: result.txHash ?? result.curveAddress ?? "",
+		});
+
+		return c.json(
+			{
+				ok: true,
+				kind,
+				chain: result.chain,
+				tokenAddress: result.tokenAddress,
+				curveAddress: result.curveAddress ?? null,
+				txHash: result.txHash ?? null,
+			},
+			200,
+		);
 	});
 
 	app.get("/:id/safe", async (c) => {
