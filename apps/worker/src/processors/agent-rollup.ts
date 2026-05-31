@@ -44,15 +44,16 @@ async function readInferenceSpendUsd(context: WorkerContext, agentId: string, si
 			),
 		);
 
-	return rows.reduce((total, row) => total + inferenceUsdFromData(row.data), 0);
+	const total = rows.reduce((sum, row) => sum + inferenceUsdFromData(row.data), 0);
+	return Number.isFinite(total) ? total : 0;
 }
 
 function inferenceUsdFromData(data: Record<string, unknown>): number {
 	const usd = numericField(data, "usd") ?? numericField(data, "costUsd") ?? numericField(data, "amountUsd");
-	if (usd !== null) return usd;
+	if (usd !== null) return Math.max(0, usd);
 
 	const cents = numericField(data, "cents") ?? numericField(data, "costCents") ?? numericField(data, "amountCents");
-	return cents === null ? 0 : cents / 100;
+	return cents === null ? 0 : Math.max(0, cents / 100);
 }
 
 function numericField(data: Record<string, unknown>, key: string): number | null {

@@ -79,3 +79,40 @@ test("agent-rollup derives runway from measured inference spend", async () => {
 	assert.equal(await metricValue("agent_daily_burn_usd", "agent-no-spend"), 25);
 	assert.equal(await metricValue("agent_runway_days", "agent-no-spend"), 4.8);
 });
+
+test("agent-rollup sums mixed measured spend fields", async () => {
+	metricsRegistry.resetMetrics();
+	const processor = createAgentRollupProcessor({
+		db: createDb([{ data: { usd: 1.25 } }, { data: { costUsd: "2.5" } }, { data: { amountCents: "325" } }]),
+		logger: { info() {}, error() {}, warn() {}, debug() {} },
+		startedAt: new Date("2026-05-30T00:00:00Z"),
+		chainId: 56,
+	} as never);
+
+	const payload: AgentRollupJob = { reason: "test", limit: 10 };
+	await processor({ id: "job-rollup-3", data: payload } as never);
+
+	assert.equal(await metricValue("agent_daily_burn_usd", "agent-no-spend"), 7);
+	assert.equal(await metricValue("agent_runway_days", "agent-no-spend"), 120 / 7);
+});
+
+test("agent-rollup ignores invalid and negative spend payloads", async () => {
+	metricsRegistry.resetMetrics();
+	const processor = createAgentRollupProcessor({
+		db: createDb([
+			{ data: { usd: Number.NaN } },
+			{ data: { costUsd: "-3" } },
+			{ data: { amountCents: -500 } },
+			{ data: { amountUsd: "not-a-number" } },
+		]),
+		logger: { info() {}, error() {}, warn() {}, debug() {} },
+		startedAt: new Date("2026-05-30T00:00:00Z"),
+		chainId: 56,
+	} as never);
+
+	const payload: AgentRollupJob = { reason: "test", limit: 10 };
+	await processor({ id: "job-rollup-4", data: payload } as never);
+
+	assert.equal(await metricValue("agent_daily_burn_usd", "agent-no-spend"), 0);
+	assert.equal(await metricValue("agent_runway_days", "agent-no-spend"), Number.POSITIVE_INFINITY);
+});
