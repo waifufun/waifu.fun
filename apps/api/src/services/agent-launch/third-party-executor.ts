@@ -3,7 +3,7 @@
  *
  * This is the bankr/bags analog of the BSC orchestrator's broadcast step. The
  * v3 launch route prepares a plan (`adapter.buildCreateTokenTx`) and stores the
- * `third-party` plan on the persona; this module takes that prepared plan and runs
+ * third-party plan on the persona; this module takes that prepared plan and runs
  * the REAL launch (HTTP deploy for bankr; multi-step Solana flow for bags),
  * returning a normalized result the route persists into the same tables the BSC
  * path uses (agent_personas.tokenAddress + launchTxHash via markLaunched).
@@ -76,8 +76,8 @@ function bagsConfigFromEnv(): BagsExecutorConfig {
 }
 
 /**
- * Execute a prepared third-party launch plan. The plan is the `tx.third-party` object
- * that `buildCreateTokenTx` returned and the route stored on the persona.
+ * Execute a prepared third-party launch plan. The plan is the third-party object that
+ * `buildCreateTokenTx` returned and the route stored on the persona.
  */
 export async function executeExternalLaunch(plan: ExternalLaunchPlan): Promise<ExternalLaunchResult> {
 	if (plan.kind === "bankr") {
