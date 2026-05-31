@@ -16,9 +16,9 @@ export type LeaderboardEntry = {
 	name: string;
 	ticker: string;
 	avatar?: string | null;
-	treasuryUsd: number;
-	dailyBurnUsd: number;
-	runwayDays: number;
+	treasuryUsd: number | null;
+	dailyBurnUsd: number | null;
+	runwayDays: number | null;
 	status: LeaderboardStatus;
 	daysAlive: number;
 };
@@ -41,17 +41,17 @@ type RawAgent = {
 	avatar?: string | null;
 	avatarUrl?: string | null;
 	image?: string | null;
-	treasuryUsd?: number;
-	treasury_usd?: number;
+	treasuryUsd?: number | null;
+	treasury_usd?: number | null;
 	// `/v2/agents` seeds treasury from the NAV snapshot under this field; the
 	// API also fills `treasuryUsd` directly for graduated agents (waifufun#744).
-	treasuryNavUsd?: number;
-	treasury_nav_usd?: number;
+	treasuryNavUsd?: number | null;
+	treasury_nav_usd?: number | null;
 	agentSafeAddress?: string | null;
-	dailyBurnUsd?: number;
-	daily_burn_usd?: number;
-	runwayDays?: number;
-	runway_days?: number;
+	dailyBurnUsd?: number | null;
+	daily_burn_usd?: number | null;
+	runwayDays?: number | null;
+	runway_days?: number | null;
 	status?: string;
 	daysAlive?: number;
 	days_alive?: number;
@@ -94,17 +94,26 @@ function computeDaysAlive(raw: RawAgent): number {
 	return Math.max(0, diff / (24 * 60 * 60 * 1000));
 }
 
-function computeRunway(treasuryUsd: number, dailyBurnUsd: number, given?: number): number {
+function finiteNumberOrNull(value: unknown): number | null {
+	if (value === null || value === undefined) return null;
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function computeRunway(treasuryUsd: number | null, dailyBurnUsd: number | null, given?: number | null): number | null {
 	if (typeof given === "number" && Number.isFinite(given)) return given;
-	if (!dailyBurnUsd || dailyBurnUsd <= 0) return Number.POSITIVE_INFINITY;
-	if (!treasuryUsd || treasuryUsd <= 0) return 0;
+	if (dailyBurnUsd === null || dailyBurnUsd <= 0) return Number.POSITIVE_INFINITY;
+	if (treasuryUsd === null || treasuryUsd <= 0) return 0;
 	return treasuryUsd / dailyBurnUsd;
 }
 
 export function normalizeEntry(raw: RawAgent): LeaderboardEntry {
 	const treasuryUsd =
-		Number(raw.treasuryUsd ?? raw.treasury_usd ?? raw.treasuryNavUsd ?? raw.treasury_nav_usd ?? 0) || 0;
-	const dailyBurnUsd = Number(raw.dailyBurnUsd ?? raw.daily_burn_usd ?? 0) || 0;
+		finiteNumberOrNull(raw.treasuryUsd) ??
+		finiteNumberOrNull(raw.treasury_usd) ??
+		finiteNumberOrNull(raw.treasuryNavUsd) ??
+		finiteNumberOrNull(raw.treasury_nav_usd);
+	const dailyBurnUsd = finiteNumberOrNull(raw.dailyBurnUsd) ?? finiteNumberOrNull(raw.daily_burn_usd);
 	const runwayDays = computeRunway(treasuryUsd, dailyBurnUsd, raw.runwayDays ?? raw.runway_days);
 	// Prefer the token address for the row link since `/agent/[address]` is
 	// the canonical agent-detail route. Fall back through legacy fields so
@@ -126,39 +135,21 @@ export function normalizeEntry(raw: RawAgent): LeaderboardEntry {
 function sortEntries(entries: LeaderboardEntry[], sort: LeaderboardSort): LeaderboardEntry[] {
 	const copy = [...entries];
 	copy.sort((a, b) => {
-		if (sort === "treasury") return b.treasuryUsd - a.treasuryUsd;
-		if (sort === "burn") return b.dailyBurnUsd - a.dailyBurnUsd;
+		const aTreasury = a.treasuryUsd ?? 0;
+		const bTreasury = b.treasuryUsd ?? 0;
+		const aBurn = a.dailyBurnUsd ?? 0;
+		const bBurn = b.dailyBurnUsd ?? 0;
+		if (sort === "treasury") return bTreasury - aTreasury;
+		if (sort === "burn") return bBurn - aBurn;
 		// runway: push infinity to the top (still alive forever), ties broken by treasury
-		const aInf = !Number.isFinite(a.runwayDays);
-		const bInf = !Number.isFinite(b.runwayDays);
+		const aInf = a.runwayDays !== null && !Number.isFinite(a.runwayDays);
+		const bInf = b.runwayDays !== null && !Number.isFinite(b.runwayDays);
 		if (aInf && !bInf) return -1;
 		if (!aInf && bInf) return 1;
-		if (aInf && bInf) return b.treasuryUsd - a.treasuryUsd;
-		return b.runwayDays - a.runwayDays;
+		if (aInf && bInf) return bTreasury - aTreasury;
+		return (b.runwayDays ?? 0) - (a.runwayDays ?? 0);
 	});
 	return copy;
-}
-
-/**
- * Per-agent holdings snapshot from the NAV aggregator. Only the rolled-up
- * `navUsd` is needed for the leaderboard treasury column; the rest of the
- * payload is ignored here.
- *
- * Endpoint: `GET /v2/agents/:tokenAddress/holdings` (introduced in #712).
- * Returns 404 for agents without an aggregated holdings record — the
- * leaderboard treats that as null and the table renders `–`.
- */
-type HoldingsSnapshotResponse = { ok: true; data: { navUsd: number } } | { navUsd: number };
-
-async function fetchAgentNavUsd(tokenAddress: string): Promise<number | null> {
-	try {
-		const raw = await apiFetch<HoldingsSnapshotResponse>(`/v2/agents/${encodeURIComponent(tokenAddress)}/holdings`);
-		const inner = raw && typeof raw === "object" && "ok" in raw && "data" in raw ? raw.data : raw;
-		const navUsd = typeof inner?.navUsd === "number" ? inner.navUsd : null;
-		return Number.isFinite(navUsd) ? navUsd : null;
-	} catch {
-		return null;
-	}
 }
 
 /**
@@ -170,12 +161,8 @@ async function fetchAgentNavUsd(tokenAddress: string): Promise<number | null> {
  * every home/leaderboard render. Skip the call entirely until the route ships
  * and just compute the ranking client-side from `/v2/agents`.
  *
- * For treasury we hit `/v2/agents/:address/holdings` per-agent in parallel.
- * That's the same NAV aggregator the agent-detail page renders against, so
- * the dollar figure on the leaderboard always matches the agent page
- * exactly. N+1 by row, but parallelized and react-query cached — for the
- * current ~handful of agents that's fine. If the list grows past ~50 the
- * right move is a batch endpoint server-side, tracked in waifufun#744.
+ * Treasury comes from the batched `/v2/agents` summary response. Do not add
+ * per-row holdings calls here, issue #744 moved that enrichment server-side.
  */
 export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 	return useQuery<LeaderboardEntry[]>({
@@ -184,16 +171,7 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 			try {
 				const data = await apiFetch<unknown>(`/v2/agents?limit=${limit}`);
 				const entries = pickArray(data).map(normalizeEntry);
-				const enriched = await Promise.all(
-					entries.map(async (entry) => {
-						if (entry.treasuryUsd > 0 || !entry.id) return entry;
-						const navUsd = await fetchAgentNavUsd(entry.id);
-						if (navUsd === null) return entry;
-						const runwayDays = computeRunway(navUsd, entry.dailyBurnUsd, undefined);
-						return { ...entry, treasuryUsd: navUsd, runwayDays };
-					}),
-				);
-				return sortEntries(enriched, sort);
+				return sortEntries(entries, sort);
 			} catch {
 				return [];
 			}
@@ -220,12 +198,12 @@ export function formatDaysAlive(days: number): string {
 	return `${rounded}d`;
 }
 
-export function formatRunway(days: number): string {
+export function formatRunway(days: number | null | undefined): string {
 	// Non-finite happens when dailyBurnUsd is 0 (no agent activity yet). The
 	// leaderboard surfaces "no burn" as honest copy in wave-t grammar rather
 	// than rendering an en-dash glyph. Once burn data lands the cell switches
 	// to real day counts automatically.
-	if (!Number.isFinite(days)) return "no burn";
+	if (days == null || !Number.isFinite(days)) return "no burn";
 	if (days <= 0) return "0d";
 	if (days < 1) {
 		const hours = Math.max(1, Math.round(days * 24));

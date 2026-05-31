@@ -8,9 +8,11 @@ export type PublicAgentSnapshot = {
 };
 
 export function canAgentStatusChat(status: string | null | undefined): boolean {
-	return String(status ?? "")
-		.trim()
-		.toLowerCase() === "running";
+	return (
+		String(status ?? "")
+			.trim()
+			.toLowerCase() === "running"
+	);
 }
 
 export function getPublicAgentSnapshot(token: IToken): PublicAgentSnapshot {

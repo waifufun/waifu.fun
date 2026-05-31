@@ -374,11 +374,11 @@ test("LaunchedToDEX handler enqueues Eliza Cloud provisioning for migrated agent
 	assert.deepEqual(
 		enqueued.find((job) => job.kind === "agent-provisioning"),
 		{
-				kind: "agent-provisioning",
-				payload: buildLaunchedToDexProvisioningJob("agent-test", event),
-				options: {
-					jobId: `indexer-${event.txHash}-${event.logIndex}-agent-provisioning-agent-test`,
-				},
+			kind: "agent-provisioning",
+			payload: buildLaunchedToDexProvisioningJob("agent-test", event),
+			options: {
+				jobId: `indexer-${event.txHash}-${event.logIndex}-agent-provisioning-agent-test`,
 			},
-		);
+		},
+	);
 });

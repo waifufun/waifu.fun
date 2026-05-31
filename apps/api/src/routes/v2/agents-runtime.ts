@@ -1,12 +1,12 @@
-import { Hono } from "hono";
 import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 
 import { agentPersonas, getDatabase } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
 import { generateRuntimeApiKey, hashRuntimeApiKey } from "../../middleware/agent-pull-auth.js";
 import { requireAgentOwnership, requirePatron } from "../../middleware/patron-auth.js";
-import { createElizaCloudClient, type ElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
+import { type ElizaCloudClient, createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
 import { getAgentRuntimeState } from "../../services/provisioning.js";
 
 export type AgentRuntimeState = {
@@ -111,7 +111,9 @@ export function createAgentRuntimeRoutes(
 				);
 			}
 
-			const status = client.getAgentRuntimeStatus ? await client.getAgentRuntimeStatus(cloudAgentId).catch(() => null) : null;
+			const status = client.getAgentRuntimeStatus
+				? await client.getAgentRuntimeStatus(cloudAgentId).catch(() => null)
+				: null;
 			return c.json({ ok: true, action: normalized, cloudAgentId, result: controlResult, status, runtime: state });
 		} catch (err) {
 			return c.json(
@@ -147,7 +149,10 @@ export function createAgentRuntimeRoutes(
 
 		const client = options.elizaClient ?? createDefaultElizaCloudClient();
 		if (!client.getAgentRuntimeStatus) {
-			return c.json({ ok: false, error: "STATUS_UNAVAILABLE", message: "Eliza Cloud status API is not configured" }, 503);
+			return c.json(
+				{ ok: false, error: "STATUS_UNAVAILABLE", message: "Eliza Cloud status API is not configured" },
+				503,
+			);
 		}
 		const status = await client.getAgentRuntimeStatus(cloudAgentId);
 		const webUiUrl = status.webUiUrl ?? status.containerUrl ?? state.webUiUrl ?? state.containerUrl ?? null;

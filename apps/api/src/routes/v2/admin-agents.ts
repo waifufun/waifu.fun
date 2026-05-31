@@ -1,12 +1,12 @@
-import { agentEventQueries, agentPersonas, getDatabase, type AgentEvent } from "@waifufun/db";
+import { type AgentEvent, agentEventQueries, agentPersonas, getDatabase } from "@waifufun/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context } from "hono";
 
 import { constantTimeEqual } from "../../lib/agent-keys.js";
 import type { AppBindings } from "../../lib/bindings.js";
-import type { EmitAgentEventInput } from "../../services/events/emit.js";
 import { createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
+import type { EmitAgentEventInput } from "../../services/events/emit.js";
 import { dispatchEvent } from "../../services/webhook-consumer/index.js";
 
 const app = new Hono<AppBindings>();
@@ -37,6 +37,11 @@ function requireDrizzle(): Db | null {
 	const url = process.env.DATABASE_URL;
 	if (!url || url.length === 0) return null;
 	return getDatabase(url).db;
+}
+
+function nonEmptyEnv(key: string): string | undefined {
+	const value = process.env[key]?.trim();
+	return value ? value : undefined;
 }
 
 function formatTimestamp(value: Date | null): string | null {
@@ -249,12 +254,21 @@ function getElizaCloudReadiness() {
 	const apiKey = resolveElizaCloudApiKey();
 	const imageUri = process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
 	const chatSecret = process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+	const webhookUrl =
+		nonEmptyEnv("ELIZA_CLOUD_WEBHOOK_URL") ??
+		nonEmptyEnv("WAIFU_ELIZA_CLOUD_WEBHOOK_URL") ??
+		(nonEmptyEnv("WAIFU_API_BASE_URL") || nonEmptyEnv("API_ORIGIN") || nonEmptyEnv("NEXT_PUBLIC_API_URL")
+			? "derived"
+			: undefined);
+	const webhookSecret = process.env.ELIZA_CLOUD_WEBHOOK_SECRET ?? process.env.WEBHOOK_RECEIVER_SECRET;
 	const databaseConfigured = testDbOverride !== undefined ? testDbOverride !== null : Boolean(process.env.DATABASE_URL);
 	const testPageEnabled = isElizaCloudTestEnabled();
 	const checks = {
 		serviceAuth: Boolean(serviceKey || apiKey),
 		containerImage: Boolean(imageUri),
 		chatAccessSecret: Boolean(chatSecret),
+		webhookUrl: Boolean(webhookUrl),
+		webhookSecret: Boolean(webhookSecret),
 		database: databaseConfigured,
 		testPageEnabled,
 	};
@@ -600,7 +614,8 @@ app.post("/eliza-cloud/test-control", async (c) => {
 				return c.json({ ok: false, error: "RUNTIME_REQUIRED", message: "cloudAgentId or containerId required" }, 400);
 			const { db, response } = await withDb(c);
 			if (!db) return response;
-			const resolvedAgentId = agentId ?? (cloudAgentId ? await resolveAgentIdForElizaCloudRuntime(db, cloudAgentId) : null);
+			const resolvedAgentId =
+				agentId ?? (cloudAgentId ? await resolveAgentIdForElizaCloudRuntime(db, cloudAgentId) : null);
 			if (!resolvedAgentId) {
 				return c.json(
 					{
@@ -639,7 +654,9 @@ app.post("/eliza-cloud/test-control", async (c) => {
 					getXClient: async () => null,
 				},
 			);
-			const status = client.getAgentRuntimeStatus ? await client.getAgentRuntimeStatus(runtimeId).catch(() => undefined) : undefined;
+			const status = client.getAgentRuntimeStatus
+				? await client.getAgentRuntimeStatus(runtimeId).catch(() => undefined)
+				: undefined;
 			return c.json({ ok: true, data: { action, agentId: resolvedAgentId, cloudAgentId: runtimeId, status } });
 		}
 		return c.json(
@@ -687,10 +704,16 @@ function adminPersonaStore(db: Db) {
 			return row ?? null;
 		},
 		async setModelTier(agentId: string, tier: "premium" | "standard" | "free") {
-			await db.update(agentPersonas).set({ modelTier: tier, updatedAt: new Date() }).where(eq(agentPersonas.agentId, agentId));
+			await db
+				.update(agentPersonas)
+				.set({ modelTier: tier, updatedAt: new Date() })
+				.where(eq(agentPersonas.agentId, agentId));
 		},
 		async markLastWordsPosted(agentId: string, now: Date) {
-			await db.update(agentPersonas).set({ lastWordsPostedAt: now, updatedAt: now }).where(eq(agentPersonas.agentId, agentId));
+			await db
+				.update(agentPersonas)
+				.set({ lastWordsPostedAt: now, updatedAt: now })
+				.where(eq(agentPersonas.agentId, agentId));
 		},
 		async markDormant(agentId: string, now: Date) {
 			await db

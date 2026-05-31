@@ -463,8 +463,12 @@ async function provisionHostedRuntimeAfterLaunch(
 				? { characterId: existingProvisioning.characterId }
 				: {}),
 			...(typeof existingProvisioning.jobId === "string" ? { jobId: existingProvisioning.jobId } : {}),
-			...(typeof existingProvisioning.containerId === "string" ? { containerId: existingProvisioning.containerId } : {}),
-			...(typeof existingProvisioning.containerUrl === "string" ? { containerUrl: existingProvisioning.containerUrl } : {}),
+			...(typeof existingProvisioning.containerId === "string"
+				? { containerId: existingProvisioning.containerId }
+				: {}),
+			...(typeof existingProvisioning.containerUrl === "string"
+				? { containerUrl: existingProvisioning.containerUrl }
+				: {}),
 			...(typeof existingProvisioning.webUiUrl === "string" ? { webUiUrl: existingProvisioning.webUiUrl } : {}),
 			...(Object.keys(account).length > 0 ? { account } : {}),
 		};

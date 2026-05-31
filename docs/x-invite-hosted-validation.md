@@ -31,7 +31,7 @@ Scope: end-to-end requirement covering X login, invite-gated create, launch subm
 | Gap | Proposed validation |
 |---|---|
 | Hetzner/container target proof | Waifu now calls the Eliza Cloud service provisioning API and sends `container.image`/runtime env. If Eliza Cloud adds or requires an explicit infra target field, add it to the `/api/v1/agents` contract tests. Current validation depends on Eliza Cloud owning placement behind its sandbox provisioning worker. |
-| Live Eliza Cloud provisioning | Run a staging invite launch, `/admin/ops/eliza-cloud`, or `npm run test:eliza-cloud:live` with `ELIZA_CLOUD_BASE_URL`, `ELIZA_CLOUD_SERVICE_KEY`, `ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI`, `WAIFU_CHAT_ACCESS_JWT_SECRET`, `WEBHOOK_RECEIVER_SECRET`, `DATABASE_URL`, `WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true`, and `ADMIN_API_KEY`, then verify Eliza Cloud returns `cloudAgentId`, wallet-account metadata including the agent primary wallet and initial free-credit fields, job polling, runtime status reaches running, runtime URL is reachable when returned, organization credit balance is readable, credit-low/depleted webhooks are accepted, and pause/resume/restart control succeeds. Focused Eliza Cloud route tests cover service provisioning, credit balance/checkout/verify, signed billing-cron low/depleted callbacks, and control-compatible status shape; live staging still proves real capacity. |
+| Live Eliza Cloud provisioning | Run a staging invite launch, `/admin/ops/eliza-cloud`, or `npm run test:eliza-cloud:live` with `ELIZA_CLOUD_BASE_URL`, `ELIZA_CLOUD_SERVICE_KEY`, `ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI`, `WAIFU_CHAT_ACCESS_JWT_SECRET`, `WEBHOOK_RECEIVER_SECRET`, `DATABASE_URL`, `WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true`, and `ADMIN_API_KEY`, then verify Eliza Cloud returns `cloudAgentId`, wallet-account metadata including the agent primary wallet and initial free-credit fields, job polling, runtime status reaches running with a public hosted web UI URL, that hosted URL is reachable, organization credit balance is readable, credit-low/depleted webhooks are accepted, and pause/resume/restart control succeeds. Focused Eliza Cloud route tests cover service provisioning, credit balance/checkout/verify, signed billing-cron low/depleted callbacks, and control-compatible status shape; live staging still proves real capacity. |
 | X account binding before hosted launch | Add a route-level test that provision/launch rejects or records missing X binding according to the final policy; keep OAuth provider route contract separate from account-linking state. |
 | Wake from scaled-to-zero | Keep unit coverage in waifu.fun for dispatch/resurrect state changes; run Eliza Cloud KEDA/Hetzner suites externally for actual pod wake (`packages/cloud-infra/cloud/tests/02-agent-lifecycle`, `03-multi-agent-capacity`, `09-gateway-e2e`). |
 
@@ -93,7 +93,8 @@ reference with `WAIFU_ELIZA_SMOKE_WALLET_KEY_REF`.
 
 Passing output includes readiness, provision, account evidence with a primary wallet matching `WAIFU_ELIZA_SMOKE_AGENT_WALLET`, the address derived from `WAIFU_ELIZA_SMOKE_AGENT_PRIVATE_KEY`, or the generated smoke wallet, `$5` initial free credit when Eliza reports a new account, repeated runtime status checks until running, runtime URL reachability when available, balance, pause, resume, restart, running-status checks after resume and restart, and a final JSON object with `cloudAgentId`, optional `containerId`, optional `containerUrl`, `status`, `polling`, and wallet/account provisioning metadata. Set `WAIFU_ELIZA_SMOKE_WALLET_KEY_REF` to verify the Steward/KMS key reference used as the agent account key. Set `WAIFU_ELIZA_SMOKE_WAIT_SECONDS` to change the default 180-second runtime readiness timeout. Set `WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1` with `WEBHOOK_RECEIVER_SECRET` to post signed Eliza Cloud `credits.depleted` and `credits.topped_up` webhooks, verify the hosted runtime becomes dormant/shut down, and verify it returns to running. Set `WAIFU_ELIZA_SMOKE_TOP_UP=1` only when the run should create a real organization credit checkout. After completing a checkout, rerun with `WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION=cs_...` to verify Eliza Cloud applied or recognized the payment, re-read the organization balance, and confirm the runtime is running again.
 
-For the strongest staging proof, set `WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1`.
+For the strongest staging proof, set `WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1`
+or pass `--full-e2e`.
 That preflight gate requires worker mode, real worker enqueue, token-page chat
 verification with `WAIFU_ELIZA_SMOKE_STEWARD_BEARER` and
 `WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE`, owner runtime verification with
@@ -133,7 +134,8 @@ The chat branch calls `/owner/tokens/:chain/:chainId/:contractAddress/chat-sessi
 
 For the final hosted-agent proof, keep the JSON summary printed after
 `[eliza-cloud-smoke] live smoke passed`. In full-E2E mode it should show the
-wallet-owned `account`, `cloudAgentId`, running runtime status/URL,
+wallet-owned `account`, `cloudAgentId`, `webUiUrl`,
+`hostedUrlReachable: true`, `hostedUrlStatus`, running runtime status,
 `chatSession.role` with `hasChatUrl: true`, `ownerRuntime.running: true`,
 `ownerRuntime.hasWebUiUrl: true`, `ownerRuntime.controlOk: true`,
 `lifecycleWebhooks.dormantStatus`, `lifecycleWebhooks.runningStatus`, and

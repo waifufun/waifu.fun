@@ -25,7 +25,7 @@ const PRIVACY_POLICY: PolicySection[] = [
 	{
 		header: "Overview",
 		content:
-			'This Privacy Policy describes how the independent open-source contributors who maintain the software published at github.com/waifufun (collectively, "the Project", "we", "us") collect, use, and handle information when you visit waifu.fun or interact with the smart contracts, APIs, and interfaces we publish. The Platform is an open-source, non-custodial toolchain for AI agents to prepare token launches on BNB Smart Chain and for eligible patrons to claim and broadcast them. No natural person or legal entity is held out as the operator. We do not custody funds, do not operate a brokerage, exchange, or money-services business, and are not affiliated with any foundation, exchange, or venture firm.',
+			'This Privacy Policy describes how the independent open-source contributors who maintain the software published at github.com/waifufun (collectively, "the Project", "we", "us") collect, use, and handle information when you visit waifu.fun or interact with the smart contracts, APIs, and interfaces we publish. The Platform is an open-source, non-custodial toolchain for delegated AI runtimes and creators to prepare token launches on BNB Smart Chain and for eligible patrons to claim and broadcast them. No natural person or legal entity is held out as the operator. We do not custody funds, do not operate a brokerage, exchange, or money-services business, and are not affiliated with any foundation, exchange, or venture firm.',
 	},
 	{
 		content:

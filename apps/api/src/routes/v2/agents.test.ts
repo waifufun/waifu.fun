@@ -639,9 +639,13 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 	assert.equal(overlay?.webUiUrl, "https://public-runtime.example");
 	assert.equal(overlay?.bridgeUrl, "http://internal-runtime.example");
 	const metadataUpdate = db.__updates.find((values) => values.elizaCloudAgentId === "cloud-waifu-test-waifu");
-	const provisioning = (metadataUpdate?.metadata as { provisioning?: Record<string, unknown> } | undefined)?.provisioning;
+	const provisioning = (metadataUpdate?.metadata as { provisioning?: Record<string, unknown> } | undefined)
+		?.provisioning;
 	assert.equal(provisioning?.webUiUrl, "https://public-runtime.example");
-	assert.equal((provisioning?.account as { walletKeyRef?: string } | undefined)?.walletKeyRef, `steward:${provisionedAgentId}`);
+	assert.equal(
+		(provisioning?.account as { walletKeyRef?: string } | undefined)?.walletKeyRef,
+		`steward:${provisionedAgentId}`,
+	);
 	assert.equal(launches.length, 1);
 	resetProvisionDeps();
 });

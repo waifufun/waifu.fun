@@ -12,6 +12,10 @@ type ChatFrameProps = {
 	cloudAgentId?: string | null | undefined;
 };
 
+export const HOSTED_CHAT_IFRAME_ALLOW = "clipboard-read; clipboard-write";
+export const HOSTED_CHAT_IFRAME_SANDBOX =
+	"allow-downloads allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts";
+
 export default function ChatFrame({ params, tokenName, status, cloudAgentId }: ChatFrameProps) {
 	const chat = useQuery({
 		queryKey: ["token-chat-session", params.chain, params.chainId, params.contractAddress],
@@ -48,7 +52,9 @@ export default function ChatFrame({ params, tokenName, status, cloudAgentId }: C
 					title={`${tokenName} Eliza Cloud chat`}
 					src={chat.data.chatUrl}
 					className="min-h-[680px] flex-1 bg-black"
-					allow="clipboard-read; clipboard-write"
+					allow={HOSTED_CHAT_IFRAME_ALLOW}
+					referrerPolicy="no-referrer"
+					sandbox={HOSTED_CHAT_IFRAME_SANDBOX}
 				/>
 			</div>
 		);

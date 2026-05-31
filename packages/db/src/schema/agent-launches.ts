@@ -155,11 +155,10 @@ export const launchDeposits = pgTable(
 		amount: text("amount").notNull(),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-		// Reorg guard (waifufun#601): the dedupe key includes block_hash so a
-		// reverted-then-replayed (tx_hash, log_index) at a different block can't
-		// silently collide with the original row. Pre-#601 rows backfill to the
-		// zero hash sentinel; since (tx_hash, log_index) was already unique,
-		// adding a constant column preserves their uniqueness.
+		// Reorg visibility (waifufun#601): the event key includes block_hash so
+		// a replayed (tx_hash, log_index) at a different block is visible. The
+		// launch-indexer still gates aggregate mutations by tx_hash + log_index
+		// so alternate-block rows cannot double-apply side effects (#819).
 		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -188,7 +187,7 @@ export const launchWithdrawals = pgTable(
 		penalty: text("penalty").notNull().default("0"),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-		// See launch_deposits.blockHash — reorg dedupe guard (waifufun#601).
+		// See launch_deposits.blockHash — reorg visibility plus #819 aggregate gate.
 		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -216,7 +215,7 @@ export const launchClaims = pgTable(
 		amount: text("amount").notNull(),
 		txHash: varchar("tx_hash", { length: 66 }).notNull(),
 		blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-		// See launch_deposits.blockHash — reorg dedupe guard (waifufun#601).
+		// See launch_deposits.blockHash — reorg visibility plus #819 aggregate gate.
 		blockHash: varchar("block_hash", { length: 66 }).notNull().default(ZERO_BLOCK_HASH),
 		logIndex: integer("log_index").notNull().default(0),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

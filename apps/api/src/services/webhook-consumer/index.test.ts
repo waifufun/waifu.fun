@@ -390,6 +390,70 @@ test("credit depletion marks the token runtime overlay dormant", async () => {
 	assert.equal(updates[0]?.suspendedReason, "credits_depleted");
 });
 
+test("credit depletion still marks dormant when Eliza Cloud already stopped the runtime", async () => {
+	const warnings: unknown[] = [];
+	const updates: Array<Record<string, unknown>> = [];
+	const emitted: unknown[] = [];
+	const store: WebhookConsumerPersonaStore = {
+		async get(agentId) {
+			return { agentId, modelTier: "free", lastWordsPostedAt: new Date("2026-04-24T11:00:00.000Z") };
+		},
+		async setModelTier() {},
+		async markLastWordsPosted() {},
+		async markDormant() {},
+	};
+	const db = {
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as never;
+
+	await dispatchEvent(
+		{
+			event: "agent.credits.depleted",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { cloudAgentId: "cloud-agent-1", overlayAgentId: "agent-overlay-1" },
+		},
+		{
+			db,
+			elizaCloud: {
+				...elizaStub(),
+				async pauseAgent() {
+					throw new Error("Agent is already stopped");
+				},
+			},
+			logger: {
+				warn(...args: unknown[]) {
+					warnings.push(args);
+				},
+			},
+			personaStore: store,
+			async emitEvent(input) {
+				emitted.push(input);
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+			async getXClient() {
+				return null;
+			},
+		},
+	);
+
+	assert.equal(updates.length, 1);
+	assert.equal(updates[0]?.agentStatus, "suspended");
+	assert.equal(updates[0]?.lifecycleState, "dormant");
+	assert.equal(updates[0]?.suspendedReason, "credits_depleted");
+	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.dormant");
+	assert.equal(warnings.length, 1);
+});
+
 test("credit top-up resumes cloud runtime and syncs overlay from runtime status", async () => {
 	const cloudCalls: { resumed: string[] } = { resumed: [] };
 	const updates: Array<Record<string, unknown>> = [];

@@ -421,6 +421,8 @@ export type AdminElizaCloudStatus = {
 			serviceAuth: boolean;
 			containerImage: boolean;
 			chatAccessSecret: boolean;
+			webhookUrl: boolean;
+			webhookSecret: boolean;
 			database: boolean;
 			testPageEnabled: boolean;
 		};

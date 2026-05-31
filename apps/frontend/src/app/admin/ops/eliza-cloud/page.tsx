@@ -4,9 +4,9 @@ import { useAdminTokenState } from "@/components/admin/ops-token-gate";
 import { Label, Panel, THEME_TOKENS } from "@/components/agent-home/wave-t/_primitives";
 import {
 	type AdminElizaCloudTestInput,
-	useElizaCloudRuntimeRef,
 	useElizaCloudOwnerRuntimeControl,
 	useElizaCloudOwnerRuntimeTest,
+	useElizaCloudRuntimeRef,
 	useElizaCloudStatus,
 	useElizaCloudTestControl,
 	useElizaCloudTestEnqueueProvisioning,
@@ -233,7 +233,11 @@ export default function ElizaCloudOpsPage() {
 						/>
 						<Field label="character name" value={form.name ?? ""} onChange={(v) => setField("name", v)} />
 						<Field label="admin wallet" value={form.adminWallet ?? ""} onChange={(v) => setField("adminWallet", v)} />
-						<Field label="wallet key ref" value={form.walletKeyRef ?? ""} onChange={(v) => setField("walletKeyRef", v)} />
+						<Field
+							label="wallet key ref"
+							value={form.walletKeyRef ?? ""}
+							onChange={(v) => setField("walletKeyRef", v)}
+						/>
 						<div className="sm:col-span-2">
 							<Field
 								label="container image uri"

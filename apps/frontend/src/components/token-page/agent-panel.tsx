@@ -248,7 +248,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 		return (
 			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex items-center gap-3">
 				<Bot className="size-4 text-[#00ff87] shrink-0" />
-				<span className="text-xs text-[#71717a]">no agent running. agents launch themselves via the api.</span>
+				<span className="text-xs text-[#71717a]">no agent running. delegated agents prepare launches via the api.</span>
 			</div>
 		);
 	}

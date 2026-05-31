@@ -41,6 +41,8 @@ export interface ProvisionOptions {
 export interface ProvisionResult {
 	containerId?: string;
 	runtimeAgentId: string;
+	containerUrl?: string;
+	webUiUrl?: string;
 	livenessCheckUrl?: string;
 	runtimeWebhookSecretHash?: string;
 	runtimeApiKey?: string;

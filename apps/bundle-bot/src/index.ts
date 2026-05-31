@@ -132,6 +132,14 @@ async function main(): Promise<void> {
 				logger,
 				listReady: listBundlePendingReady,
 				submit: submitLaunchBundle,
+				autoRefundBundleFailed: {
+					enabled: autoRefundEnabled,
+					graceSeconds: BUNDLE_GRACE_PERIOD_SECONDS,
+					nowSeconds: () => BigInt(Math.floor(Date.now() / 1000)),
+					readVault,
+					resolveBundleBotKey,
+					sendRefundBundleFailed: (vault, pk) => sendRefund(vault, "enableRefundBundleFailed", pk),
+				},
 			});
 			if (result.scanned > 0) {
 				logger.info(
@@ -139,6 +147,8 @@ async function main(): Promise<void> {
 						scanned: result.scanned,
 						submitted: result.submitted,
 						failed: result.failed,
+						refundEnabled: result.refundEnabled,
+						refundSkipped: result.refundSkipped,
 						skipped: result.skipped,
 						errors: result.errors,
 					},

@@ -2,9 +2,15 @@ import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 
 import type { AgentLaunchRow } from "@waifufun/db";
+import type { Address, Hex } from "viem";
 
+import { BUNDLE_GRACE_PERIOD_SECONDS, VAULT_STATE_CLOSED } from "./auto-refund.js";
 import type { BundleBotConfig } from "./config.js";
-import { pollOnce } from "./loop.js";
+import { type BundleFailedRefundDeps, pollOnce } from "./loop.js";
+
+const NOW = 2_000_000_000n;
+const BUNDLE_BOT = "0x00000000000000000000000000000000000000bb" as Address;
+const FAKE_PK = "0x1111111111111111111111111111111111111111111111111111111111111111" as Hex;
 
 function makeConfig(overrides: Partial<BundleBotConfig> = {}): BundleBotConfig {
 	return {
@@ -61,6 +67,18 @@ function makeLaunch(overrides: Partial<AgentLaunchRow> = {}): AgentLaunchRow {
 		updatedAt: new Date(),
 		...overrides,
 	} as AgentLaunchRow;
+}
+
+function makeBundleFailedRefundDeps(overrides: Partial<BundleFailedRefundDeps> = {}): BundleFailedRefundDeps {
+	return {
+		enabled: true,
+		graceSeconds: BUNDLE_GRACE_PERIOD_SECONDS,
+		nowSeconds: () => NOW,
+		readVault: async () => ({ state: VAULT_STATE_CLOSED, bundleBot: BUNDLE_BOT }),
+		resolveBundleBotKey: async () => FAKE_PK,
+		sendRefundBundleFailed: async () => "0xtx",
+		...overrides,
+	};
 }
 
 describe("pollOnce", () => {
@@ -187,6 +205,162 @@ describe("pollOnce", () => {
 			},
 		});
 		assert.equal(submitCount, 4);
+	});
+
+	it("auto-enables bundle-failed refund after a terminal bundle failure", async () => {
+		const logger = makeLogger();
+		const launch = makeLaunch({ closeTimestamp: NOW - BUNDLE_GRACE_PERIOD_SECONDS - 1n });
+		let resolvedAddress: Address | null = null;
+		let sentVault: Address | null = null;
+		let sentPk: Hex | null = null;
+		const result = await pollOnce({
+			db: {} as never,
+			config: makeConfig({ dryRun: false, maxAttempts: 3 }),
+			logger,
+			listReady: async () => [launch],
+			submit: async () => ({ status: "failed_terminal", attempt: 3, reason: "Puissant rejected tx" }),
+			autoRefundBundleFailed: makeBundleFailedRefundDeps({
+				resolveBundleBotKey: async (address) => {
+					resolvedAddress = address;
+					return FAKE_PK;
+				},
+				sendRefundBundleFailed: async (vault, pk) => {
+					sentVault = vault;
+					sentPk = pk;
+					return "0xrefund";
+				},
+			}),
+		});
+
+		assert.equal(result.failed, 1);
+		assert.equal(result.refundEnabled, 1);
+		assert.equal(resolvedAddress, BUNDLE_BOT);
+		assert.equal(sentVault, launch.vaultAddress);
+		assert.equal(sentPk, FAKE_PK);
+	});
+
+	it("does not auto-enable bundle-failed refund when the feature flag is disabled", async () => {
+		const logger = makeLogger();
+		const launch = makeLaunch({ closeTimestamp: NOW - BUNDLE_GRACE_PERIOD_SECONDS - 1n });
+		let readCalled = false;
+		let keyResolved = false;
+		let sent = false;
+		const result = await pollOnce({
+			db: {} as never,
+			config: makeConfig({ dryRun: false }),
+			logger,
+			listReady: async () => [launch],
+			submit: async () => ({ status: "failed_terminal", attempt: 3 }),
+			autoRefundBundleFailed: makeBundleFailedRefundDeps({
+				enabled: false,
+				readVault: async () => {
+					readCalled = true;
+					return { state: VAULT_STATE_CLOSED, bundleBot: BUNDLE_BOT };
+				},
+				resolveBundleBotKey: async () => {
+					keyResolved = true;
+					return FAKE_PK;
+				},
+				sendRefundBundleFailed: async () => {
+					sent = true;
+					return "0xrefund";
+				},
+			}),
+		});
+
+		assert.equal(result.refundEnabled, 0);
+		assert.equal(result.refundSkipped, 1);
+		assert.equal(readCalled, false);
+		assert.equal(keyResolved, false);
+		assert.equal(sent, false);
+	});
+
+	it("does not resolve the bundleBot key or send in dry-run mode", async () => {
+		const logger = makeLogger();
+		const launch = makeLaunch({ closeTimestamp: NOW - BUNDLE_GRACE_PERIOD_SECONDS - 1n });
+		let keyResolved = false;
+		let sent = false;
+		const result = await pollOnce({
+			db: {} as never,
+			config: makeConfig({ dryRun: true }),
+			logger,
+			listReady: async () => [launch],
+			submit: async () => ({ status: "failed_terminal", attempt: 3 }),
+			autoRefundBundleFailed: makeBundleFailedRefundDeps({
+				resolveBundleBotKey: async () => {
+					keyResolved = true;
+					return FAKE_PK;
+				},
+				sendRefundBundleFailed: async () => {
+					sent = true;
+					return "0xrefund";
+				},
+			}),
+		});
+
+		assert.equal(result.refundEnabled, 0);
+		assert.equal(result.refundSkipped, 1);
+		assert.equal(keyResolved, false);
+		assert.equal(sent, false);
+	});
+
+	it("waits for the bundle refund grace period before reading signer state", async () => {
+		const logger = makeLogger();
+		const launch = makeLaunch({ closeTimestamp: NOW - 10n });
+		let readCalled = false;
+		let keyResolved = false;
+		let sent = false;
+		const result = await pollOnce({
+			db: {} as never,
+			config: makeConfig({ dryRun: false }),
+			logger,
+			listReady: async () => [launch],
+			submit: async () => ({ status: "failed_terminal", attempt: 3 }),
+			autoRefundBundleFailed: makeBundleFailedRefundDeps({
+				readVault: async () => {
+					readCalled = true;
+					return { state: VAULT_STATE_CLOSED, bundleBot: BUNDLE_BOT };
+				},
+				resolveBundleBotKey: async () => {
+					keyResolved = true;
+					return FAKE_PK;
+				},
+				sendRefundBundleFailed: async () => {
+					sent = true;
+					return "0xrefund";
+				},
+			}),
+		});
+
+		assert.equal(result.refundEnabled, 0);
+		assert.equal(result.refundSkipped, 1);
+		assert.equal(readCalled, false);
+		assert.equal(keyResolved, false);
+		assert.equal(sent, false);
+	});
+
+	it("skips bundle-failed refund when the registered bundleBot key is not held", async () => {
+		const logger = makeLogger();
+		const launch = makeLaunch({ closeTimestamp: NOW - BUNDLE_GRACE_PERIOD_SECONDS - 1n });
+		let sent = false;
+		const result = await pollOnce({
+			db: {} as never,
+			config: makeConfig({ dryRun: false }),
+			logger,
+			listReady: async () => [launch],
+			submit: async () => ({ status: "failed_terminal", attempt: 3 }),
+			autoRefundBundleFailed: makeBundleFailedRefundDeps({
+				resolveBundleBotKey: async () => null,
+				sendRefundBundleFailed: async () => {
+					sent = true;
+					return "0xrefund";
+				},
+			}),
+		});
+
+		assert.equal(result.refundEnabled, 0);
+		assert.equal(result.refundSkipped, 1);
+		assert.equal(sent, false);
 	});
 });
 

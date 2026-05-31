@@ -1,5 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { isAddress, type Address } from "viem";
+import { type Address, isAddress } from "viem";
 
 import {
 	ElizaCloudRuntimeAdapter,
@@ -241,9 +241,9 @@ export function buildProvisionOptions(
 	};
 
 	const primaryWalletAddress =
-		stringField(eventData, "walletAddress") ??
-		stringField(eventData, "agentWalletAddress") ??
 		stringField(eventData, "primaryWalletAddress") ??
+		stringField(eventData, "agentWalletAddress") ??
+		stringField(eventData, "walletAddress") ??
 		storedAgentWalletAddress;
 	if (primaryWalletAddress) {
 		if (!isAddress(primaryWalletAddress)) {
@@ -251,13 +251,16 @@ export function buildProvisionOptions(
 		}
 		opts.account = {
 			primaryWalletAddress,
-			walletKeyRef: stringField(eventData, "walletKeyRef") ?? stringField(eventData, "agentWalletKeyRef") ?? `steward:${agentId}`,
+			walletKeyRef:
+				stringField(eventData, "walletKeyRef") ?? stringField(eventData, "agentWalletKeyRef") ?? `steward:${agentId}`,
 		};
 	}
 
 	const adminWallets = stringArrayField(eventData, "adminWallets");
 	const fallbackAdminWallet = persona.ownerAddress ?? safeAddress;
-	const resolvedAdminWallets = (adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [])
+	const resolvedAdminWallets = (
+		adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : []
+	)
 		.map((wallet) => wallet.trim())
 		.filter(Boolean);
 	opts.access = {
@@ -306,12 +309,15 @@ export async function getAgentRuntimeState(db: Database, agentId: string) {
 	const cloudAgentId = stringField(provisioning ?? {}, "cloudAgentId");
 	const runtimeAgentId = stringField(provisioning ?? {}, "runtimeAgentId") ?? cloudAgentId;
 	const containerUrl = stringField(provisioning ?? {}, "containerUrl");
+	const webUiUrl = stringField(provisioning ?? {}, "webUiUrl");
+	const provisioningStatus = stringField(provisioning ?? {}, "status");
 	const lastError = stringField(provisioning ?? {}, "lastError") ?? latestError(events);
 
 	let state: "pending" | "provisioning" | "live" | "failed" | "dormant" = "pending";
 	if (killedOrPaused) state = "dormant";
 	else if (failed || deadLetter || lastError) state = "failed";
-	else if (containerId || runtimeAgentId) state = "live";
+	else if (containerUrl || webUiUrl) state = "live";
+	else if (runtimeAgentId) state = "provisioning";
 	else if (latestProvisioningEvent?.eventType === "agent.claimed") state = "provisioning";
 	else if (persona.agentLaunchStatus === "claimed") state = "provisioning";
 
@@ -321,6 +327,7 @@ export async function getAgentRuntimeState(db: Database, agentId: string) {
 		...(cloudAgentId ? { cloudAgentId } : {}),
 		...(containerId ? { containerId } : {}),
 		...(containerUrl ? { containerUrl } : {}),
+		...(webUiUrl ? { webUiUrl } : {}),
 		...(latestProvisioningEvent ? { lastEventAt: latestProvisioningEvent.createdAt.toISOString() } : {}),
 		...(lastError ? { lastError } : {}),
 	};
@@ -443,6 +450,8 @@ async function storeProvisioningSuccess(
 			runtimeKind,
 			runtimeAgentId: result.runtimeAgentId,
 			containerId: result.containerId ?? null,
+			containerUrl: result.containerUrl ?? null,
+			webUiUrl: result.webUiUrl ?? null,
 			livenessCheckUrl: result.livenessCheckUrl ?? null,
 			status: "provisioned",
 			lastError: null,
@@ -482,7 +491,7 @@ async function syncProvisioningTokenOverlay(
 		runtimeProvider: "eliza-cloud",
 		agentStatus: "provisioning",
 		lifecycleState: "birth",
-		webUiUrl: result.livenessCheckUrl ?? null,
+		webUiUrl: result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl ?? null,
 		bridgeUrl: result.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
@@ -619,9 +628,13 @@ function existingProvisionResult(metadata: unknown, runtimeKind: RuntimeKind): P
 	const containerId = stringField(provisioning, "containerId");
 	if (!runtimeAgentId && !containerId) return null;
 	const livenessCheckUrl = stringField(provisioning, "livenessCheckUrl");
+	const containerUrl = stringField(provisioning, "containerUrl");
+	const webUiUrl = stringField(provisioning, "webUiUrl");
 	return {
 		runtimeAgentId: runtimeAgentId ?? containerId ?? "",
 		...(containerId ? { containerId } : {}),
+		...(containerUrl ? { containerUrl } : {}),
+		...(webUiUrl ? { webUiUrl } : {}),
 		...(livenessCheckUrl ? { livenessCheckUrl } : {}),
 	};
 }

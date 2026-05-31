@@ -10,8 +10,8 @@ import type { Database } from "@waifufun/db/client";
 
 import { type RequirePatronBindings, requirePatron } from "../middleware/patron-auth.js";
 import {
-	type ElizaCloudClient,
 	type ElizaAgentRuntimeStatus,
+	type ElizaCloudClient,
 	type ElizaCreditCheckoutResult,
 	createElizaCloudClient,
 	resolveElizaCloudApiKey,
@@ -136,7 +136,9 @@ function getCloudAgentId(row: TokenRuntimeRow): string | null {
 
 function getContainerUrl(row: TokenRuntimeRow): string | null {
 	const provisioning = getProvisioning(row.persona);
-	return stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl") ?? row.agent?.webUiUrl ?? null;
+	return (
+		stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl") ?? row.agent?.webUiUrl ?? null
+	);
 }
 
 function serializeRuntime(row: TokenRuntimeRow) {

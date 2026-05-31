@@ -17,6 +17,8 @@ export interface ElizaCreateAgentResult {
 	agentId?: string;
 	cloudAgentId?: string;
 	containerId?: string;
+	containerUrl?: string;
+	webUiUrl?: string | null;
 	agentName?: string;
 	jobId?: string;
 	status?: string;
@@ -108,10 +110,13 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 			status: result.status,
 		});
 
+		const runtimeUrl = result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl;
 		return {
-			containerId: result.containerId ?? result.cloudAgentId ?? result.agentId,
 			runtimeAgentId,
-			...(result.livenessCheckUrl ? { livenessCheckUrl: result.livenessCheckUrl } : {}),
+			...(result.containerId ? { containerId: result.containerId } : {}),
+			...(result.containerUrl ? { containerUrl: result.containerUrl } : {}),
+			...(result.webUiUrl ? { webUiUrl: result.webUiUrl } : {}),
+			...(runtimeUrl ? { livenessCheckUrl: runtimeUrl } : {}),
 		};
 	}
 

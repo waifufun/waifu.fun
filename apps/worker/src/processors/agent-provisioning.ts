@@ -47,7 +47,7 @@ export function createAgentProvisioningProcessor(context: WorkerContext): Worker
 			return result;
 		} catch (err) {
 			const error = err instanceof Error ? err.message : String(err);
-			if ((job.attemptsMade ?? 0) >= 2) {
+			if (isFinalAttempt(job)) {
 				await emitAgentEvent({
 					db: context.db,
 					agentId: payload.agentId,
@@ -58,6 +58,12 @@ export function createAgentProvisioningProcessor(context: WorkerContext): Worker
 			throw err;
 		}
 	};
+}
+
+function isFinalAttempt(job: Job): boolean {
+	const attemptsMade = job.attemptsMade ?? 0;
+	const configuredAttempts = typeof job.opts?.attempts === "number" && job.opts.attempts > 0 ? job.opts.attempts : 3;
+	return attemptsMade + 1 >= configuredAttempts;
 }
 
 async function provision(context: WorkerContext, payload: AgentProvisioningJob): Promise<ElizaProvisionResult> {
@@ -101,10 +107,6 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 			"ELIZA_CLOUD_SERVICE_KEY, ELIZAOS_CLOUD_API_KEY, or ELIZA_CLOUD_API_KEY is required for Eliza Cloud provisioning",
 		);
 
-	const imageUri = stringField(payload.data, "containerImageUri") ?? process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
-	if (!imageUri)
-		throw new Error("ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI is required for Eliza Cloud container provisioning");
-
 	const chain = stringField(payload.data, "chain") ?? persona.chain ?? "bsc";
 	const chainId = numberField(payload.data, "chainId") ?? Number.parseInt(process.env.CHAIN_ID ?? "56", 10);
 	const tokenName =
@@ -117,10 +119,42 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		stringField(payload.data, "symbol") ??
 		tokenParam(persona.prelaunchParams, "symbol") ??
 		persona.agentId.slice(0, 10).toUpperCase();
+
+	const partialCloudAgentId = partialExistingCloudAgentId(persona.metadata);
+	if (partialCloudAgentId) {
+		context.logger.info(
+			{ agentId: payload.agentId, cloudAgentId: partialCloudAgentId },
+			"agent has partial Eliza Cloud runtime metadata; polling existing runtime",
+		);
+		const refreshedCloudAgent = await waitForRuntimeStatus(baseUrl, authKey, partialCloudAgentId, {
+			cloudAgentId: partialCloudAgentId,
+			status: "pending",
+		});
+		const result = normalizeProvisionResult(
+			payload.agentId,
+			partialCloudAgentId,
+			refreshedCloudAgent,
+			refreshedCloudAgent,
+		);
+		await storeProvisioningMetadata(context, payload.agentId, result);
+		await syncTokenRuntimeOverlay(context, {
+			tokenAddress,
+			tokenName,
+			tokenTicker,
+			persona,
+			result,
+		});
+		assertHostedChatUrlReady(result);
+		return result;
+	}
+
+	const imageUri = stringField(payload.data, "containerImageUri") ?? process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
+	if (!imageUri)
+		throw new Error("ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI is required for Eliza Cloud container provisioning");
 	const primaryWalletAddress =
 		stringField(payload.data, "primaryWalletAddress") ??
-		stringField(payload.data, "walletAddress") ??
 		stringField(payload.data, "agentWalletAddress") ??
+		stringField(payload.data, "walletAddress") ??
 		wallet?.walletAddress ??
 		null;
 	if (!primaryWalletAddress) {
@@ -170,6 +204,7 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		WAIFU_ACCESS_ADMIN_WALLETS: access.adminWallets.join(","),
 		WAIFU_AGENT_EVM_ADDRESS: primaryWalletAddress,
 		WAIFU_AGENT_EVM_KEY_REF: walletKeyRef,
+		ELIZA_UI_ENABLE: "true",
 		...(process.env.WAIFU_CHAT_ACCESS_JWT_SECRET
 			? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 			: {}),
@@ -225,9 +260,7 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		});
 	} catch (err) {
 		const existingAgentId =
-			err instanceof ElizaCloudRequestError && err.status === 409
-				? stringField(err.body, "existingAgentId")
-				: null;
+			err instanceof ElizaCloudRequestError && err.status === 409 ? stringField(err.body, "existingAgentId") : null;
 		if (!existingAgentId) throw err;
 		context.logger.warn(
 			{ agentId: payload.agentId, cloudAgentId: existingAgentId },
@@ -242,32 +275,7 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		stringField(cloudAgent, "cloudAgentId") ?? stringField(cloudAgent, "agentId") ?? stringField(cloudAgent, "id");
 	if (!cloudAgentId) throw new Error("Eliza Cloud agent response did not include an id");
 	const refreshedCloudAgent = await waitForRuntimeStatus(baseUrl, authKey, cloudAgentId, cloudAgent);
-	const walletData = recordFromUnknown(refreshedCloudAgent.walletProvisioning) ?? recordFromUnknown(cloudAgent.walletProvisioning);
-	const accountData = recordFromUnknown(refreshedCloudAgent.account) ?? recordFromUnknown(cloudAgent.account);
-	const containerId = stringField(refreshedCloudAgent, "containerId") ?? stringField(cloudAgent, "containerId") ?? undefined;
-	const webUiUrl =
-		stringField(refreshedCloudAgent, "webUiUrl") ??
-		stringField(cloudAgent, "webUiUrl") ??
-		undefined;
-	const containerUrl =
-		webUiUrl ??
-		stringField(refreshedCloudAgent, "containerUrl") ??
-		stringField(refreshedCloudAgent, "url") ??
-		stringField(cloudAgent, "containerUrl") ??
-		undefined;
-	const status = stringField(refreshedCloudAgent, "status") ?? stringField(cloudAgent, "status") ?? "pending";
-	const result: ElizaProvisionResult = {
-		agentId: payload.agentId,
-		cloudAgentId,
-		...(containerId ? { containerId } : {}),
-		...(containerUrl ? { containerUrl } : {}),
-		...(webUiUrl ? { webUiUrl } : {}),
-		jobId: stringField(cloudAgent, "jobId") ?? stringField(refreshedCloudAgent, "jobId") ?? containerId ?? cloudAgentId,
-		status,
-		...(walletData ? { walletProvisioning: walletData } : {}),
-		...(accountData ? { account: accountData } : {}),
-		polling: cloudAgent.polling ?? null,
-	};
+	const result = normalizeProvisionResult(payload.agentId, cloudAgentId, refreshedCloudAgent, cloudAgent);
 
 	await storeProvisioningMetadata(context, payload.agentId, result);
 	await syncTokenRuntimeOverlay(context, {
@@ -277,6 +285,7 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		persona,
 		result,
 	});
+	assertHostedChatUrlReady(result);
 	return result;
 }
 
@@ -306,7 +315,13 @@ async function requestJson<T>(
 		// Keep the original response text in the request error below.
 	}
 	if (!response.ok) {
-			throw new ElizaCloudRequestError(options.method ?? "GET", path, response.status, text, recordFromUnknown(json) ?? {});
+		throw new ElizaCloudRequestError(
+			options.method ?? "GET",
+			path,
+			response.status,
+			text,
+			recordFromUnknown(json) ?? {},
+		);
 	}
 	const responseRecord = recordFromUnknown(json);
 	if (responseRecord?.success === false) throw new Error(String(responseRecord.error ?? "Unknown eliza-cloud error"));
@@ -423,8 +438,9 @@ async function syncTokenRuntimeOverlay(
 
 	const now = new Date();
 	const isRunning = isHostedRuntimeRunning(args.result.status);
-	const agentStatus = isRunning ? "running" : "provisioning";
-	const lifecycleState = isRunning ? "live" : "birth";
+	const hasHostedChatUrl = Boolean(args.result.webUiUrl ?? args.result.containerUrl);
+	const agentStatus = isRunning && hasHostedChatUrl ? "running" : "provisioning";
+	const lifecycleState = isRunning && hasHostedChatUrl ? "live" : "birth";
 	const agentValues = {
 		name: args.tokenName,
 		bio: args.persona.bio ?? null,
@@ -539,6 +555,18 @@ function isHostedRuntimeRunning(status: string): boolean {
 	return ["running", "ready", "online", "active", "started"].includes(status.toLowerCase());
 }
 
+function assertHostedChatUrlReady(result: ElizaProvisionResult): void {
+	if (result.webUiUrl || result.containerUrl) return;
+	throw new HostedChatUrlNotReadyError(result.cloudAgentId);
+}
+
+class HostedChatUrlNotReadyError extends Error {
+	constructor(cloudAgentId: string) {
+		super(`Eliza Cloud hosted chat URL is not ready for ${cloudAgentId}; retrying provisioning status poll`);
+		this.name = "HostedChatUrlNotReadyError";
+	}
+}
+
 function recordFromUnknown(value: unknown): Record<string, unknown> | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 	return value as Record<string, unknown>;
@@ -552,6 +580,9 @@ function existingProvisionResult(agentId: string, metadata: unknown): ElizaProvi
 	const containerId = stringField(provisioning, "containerId") ?? undefined;
 	const webUiUrl = stringField(provisioning, "webUiUrl") ?? undefined;
 	const containerUrl = webUiUrl ?? stringField(provisioning, "containerUrl") ?? undefined;
+	if (!containerUrl && !webUiUrl) {
+		return null;
+	}
 	const walletProvisioning = recordFromUnknown(provisioning.walletProvisioning);
 	const account = recordFromUnknown(provisioning.account);
 	return {
@@ -565,5 +596,48 @@ function existingProvisionResult(agentId: string, metadata: unknown): ElizaProvi
 		...(walletProvisioning ? { walletProvisioning } : {}),
 		...(account ? { account } : {}),
 		polling: provisioning.polling ?? null,
+	};
+}
+
+function partialExistingCloudAgentId(metadata: unknown): string | null {
+	const provisioning = recordFromUnknown(recordFromUnknown(metadata)?.provisioning);
+	if (!provisioning) return null;
+	const cloudAgentId = stringField(provisioning, "cloudAgentId") ?? stringField(provisioning, "runtimeAgentId");
+	if (!cloudAgentId) return null;
+	const webUiUrl = stringField(provisioning, "webUiUrl");
+	const containerUrl = webUiUrl ?? stringField(provisioning, "containerUrl");
+	return containerUrl || webUiUrl ? null : cloudAgentId;
+}
+
+function normalizeProvisionResult(
+	agentId: string,
+	cloudAgentId: string,
+	refreshedCloudAgent: Record<string, unknown>,
+	cloudAgent: Record<string, unknown>,
+): ElizaProvisionResult {
+	const walletData =
+		recordFromUnknown(refreshedCloudAgent.walletProvisioning) ?? recordFromUnknown(cloudAgent.walletProvisioning);
+	const accountData = recordFromUnknown(refreshedCloudAgent.account) ?? recordFromUnknown(cloudAgent.account);
+	const containerId =
+		stringField(refreshedCloudAgent, "containerId") ?? stringField(cloudAgent, "containerId") ?? undefined;
+	const webUiUrl = stringField(refreshedCloudAgent, "webUiUrl") ?? stringField(cloudAgent, "webUiUrl") ?? undefined;
+	const containerUrl =
+		webUiUrl ??
+		stringField(refreshedCloudAgent, "containerUrl") ??
+		stringField(refreshedCloudAgent, "url") ??
+		stringField(cloudAgent, "containerUrl") ??
+		undefined;
+	const status = stringField(refreshedCloudAgent, "status") ?? stringField(cloudAgent, "status") ?? "pending";
+	return {
+		agentId,
+		cloudAgentId,
+		...(containerId ? { containerId } : {}),
+		...(containerUrl ? { containerUrl } : {}),
+		...(webUiUrl ? { webUiUrl } : {}),
+		jobId: stringField(cloudAgent, "jobId") ?? stringField(refreshedCloudAgent, "jobId") ?? containerId ?? cloudAgentId,
+		status,
+		...(walletData ? { walletProvisioning: walletData } : {}),
+		...(accountData ? { account: accountData } : {}),
+		polling: cloudAgent.polling ?? null,
 	};
 }

@@ -18,9 +18,10 @@ function usage() {
   ADMIN_API_KEY=... \\
   WAIFU_ELIZA_SMOKE_TOKEN_ADDRESS=0x... \\
   WAIFU_ELIZA_SMOKE_AGENT_WALLET=0x... \\
-  node scripts/eliza-cloud-live-smoke.mjs
+  node scripts/eliza-cloud-live-smoke.mjs [--full-e2e]
 
 Optional:
+  --full-e2e # same as WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1
   WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 # fail fast unless worker, chat, owner control, and top-up verification inputs are present
   WAIFU_ELIZA_SMOKE_MODE=direct|worker
   WAIFU_ELIZA_SMOKE_ENV_FILE=.env.staging
@@ -47,6 +48,14 @@ Optional:
 
 function env(name, fallback = "") {
 	return process.env[name]?.trim() || fallback;
+}
+
+function flagEnabled(flag) {
+	return process.argv.includes(flag);
+}
+
+function requireFullE2e() {
+	return flagEnabled("--full-e2e") || env("WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E", "0") === "1";
 }
 
 function loadSmokeEnvFiles() {
@@ -164,7 +173,8 @@ function smokeInputErrors() {
 	const enqueueWorker = env("WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER", "0");
 	const enqueueDryRun = env("WAIFU_ELIZA_SMOKE_ENQUEUE_DRY_RUN", "0");
 	const topUp = env("WAIFU_ELIZA_SMOKE_TOP_UP", "0");
-	const requireFullE2e = env("WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E", "0");
+	const requireFullE2eValue = env("WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E", "0");
+	const fullE2eRequired = requireFullE2e();
 	const verifyLifecycleWebhook = env("WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK", "0");
 	const amountUsdCents = Number(env("WAIFU_ELIZA_SMOKE_TOP_UP_CENTS", "500"));
 	const waitSeconds = Number(env("WAIFU_ELIZA_SMOKE_WAIT_SECONDS", "180"));
@@ -218,7 +228,7 @@ function smokeInputErrors() {
 			? []
 			: ["WAIFU_ELIZA_SMOKE_ENQUEUE_DRY_RUN must be 0 or 1"]),
 		...(topUp === "0" || topUp === "1" ? [] : ["WAIFU_ELIZA_SMOKE_TOP_UP must be 0 or 1"]),
-		...(requireFullE2e === "0" || requireFullE2e === "1"
+		...(requireFullE2eValue === "0" || requireFullE2eValue === "1"
 			? []
 			: ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E must be 0 or 1"]),
 		...(verifyLifecycleWebhook === "0" || verifyLifecycleWebhook === "1"
@@ -244,24 +254,24 @@ function smokeInputErrors() {
 					"Direct mode refuses a real worker enqueue; use WAIFU_ELIZA_SMOKE_MODE=worker or set WAIFU_ELIZA_SMOKE_ENQUEUE_DRY_RUN=1",
 				]
 			: []),
-		...(requireFullE2e === "1" && mode !== "worker" ? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_MODE=worker"] : []),
-		...(requireFullE2e === "1" && enqueueWorker !== "1"
-			? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER=1"]
+		...(fullE2eRequired && mode !== "worker" ? ["full E2E mode requires WAIFU_ELIZA_SMOKE_MODE=worker"] : []),
+		...(fullE2eRequired && enqueueWorker !== "1"
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER=1"]
 			: []),
-		...(requireFullE2e === "1" && !env("WAIFU_ELIZA_SMOKE_STEWARD_BEARER")
-			? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER"]
+		...(fullE2eRequired && !env("WAIFU_ELIZA_SMOKE_STEWARD_BEARER")
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER"]
 			: []),
-		...(requireFullE2e === "1" && !env("WAIFU_ELIZA_SMOKE_OWNER_BEARER")
-			? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_OWNER_BEARER"]
+		...(fullE2eRequired && !env("WAIFU_ELIZA_SMOKE_OWNER_BEARER")
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_BEARER"]
 			: []),
-		...(requireFullE2e === "1" && !expectedRole
-			? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE"]
+		...(fullE2eRequired && !expectedRole
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE"]
 			: []),
-		...(requireFullE2e === "1" && !env("WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION")
-			? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION"]
+		...(fullE2eRequired && !env("WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION")
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION"]
 			: []),
-		...(requireFullE2e === "1" && verifyLifecycleWebhook !== "1"
-			? ["WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1"]
+		...(fullE2eRequired && verifyLifecycleWebhook !== "1"
+			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1"]
 			: []),
 		...(verifyLifecycleWebhook === "1" && !env("WEBHOOK_RECEIVER_SECRET")
 			? ["WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1 requires WEBHOOK_RECEIVER_SECRET"]
@@ -276,6 +286,7 @@ function smokeInputHelp(errors) {
 		"WAIFU_CHAT_ACCESS_JWT_SECRET",
 		"DATABASE_URL",
 		"WEBHOOK_RECEIVER_SECRET",
+		"ELIZA_CLOUD_WEBHOOK_URL or WAIFU_API_BASE_URL/API_ORIGIN/NEXT_PUBLIC_API_URL",
 		"WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true in production",
 	];
 	return [
@@ -591,11 +602,13 @@ async function waitForRuntime(ids) {
 		const statusText = runtimeStatusText(lastStatus) || "unknown";
 		const url = runtimeUrl(lastStatus);
 		console.log(`[eliza-cloud-smoke] status attempt=${attempt} status=${statusText} url=${url ?? "none"}`);
-		if (isRunningStatus(lastStatus)) return lastStatus;
+		if (isRunningStatus(lastStatus) && url) return lastStatus;
 		await sleep(Math.min(10_000, 1_000 * attempt));
 	}
 
-	throw new Error(`Runtime did not become running within ${waitSeconds}s: ${JSON.stringify(lastStatus, null, 2)}`);
+	throw new Error(
+		`Runtime did not become running with a hosted web UI URL within ${waitSeconds}s: ${JSON.stringify(lastStatus, null, 2)}`,
+	);
 }
 
 async function waitForRuntimeDormant(ids) {
@@ -656,10 +669,11 @@ async function waitForRuntimeRef(agentId) {
 }
 
 async function probeRuntimeUrl(url) {
-	if (!url) return;
+	assert(url, "Runtime URL missing");
 	const response = await fetch(url, { method: "GET" });
 	assert(response.status < 500, `Runtime URL returned ${response.status}`, { url });
 	console.log(`[eliza-cloud-smoke] runtime url reachable status=${response.status}`);
+	return { url, status: response.status, ok: response.status < 500 };
 }
 
 async function verifyTokenChatSession(input) {
@@ -945,7 +959,7 @@ async function main() {
 	};
 
 	let runtime = await waitForRuntime(ids);
-	await probeRuntimeUrl(runtimeUrl(runtime));
+	let hostedUrlProbe = await probeRuntimeUrl(runtimeUrl(runtime));
 	const chatSession = await verifyTokenChatSession({
 		chain: provisionBody.chain,
 		chainId: provisionBody.chainId,
@@ -988,6 +1002,7 @@ async function main() {
 		console.log(`[eliza-cloud-smoke] top-up checkout ok ${JSON.stringify(topUp.checkout)}`);
 	}
 	topUpVerification = await verifyCompletedTopUp(ids);
+	hostedUrlProbe = await probeRuntimeUrl(runtimeUrl(runtime));
 
 	console.log("[eliza-cloud-smoke] live smoke passed");
 	console.log(
@@ -997,6 +1012,9 @@ async function main() {
 				cloudAgentId: result.cloudAgentId,
 				containerId: runtime?.containerId ?? result.containerId ?? null,
 				containerUrl: runtimeUrl(runtime) ?? result.containerUrl ?? null,
+				webUiUrl: runtimeUrl(runtime) ?? result.webUiUrl ?? null,
+				hostedUrlReachable: hostedUrlProbe?.ok ?? false,
+				hostedUrlStatus: hostedUrlProbe?.status ?? null,
 				status: runtimeStatusText(runtime) || result.status,
 				polling: result.polling ?? null,
 				account: evidence.account ?? null,

@@ -68,6 +68,16 @@ function withSmokeEnv(values, fn) {
 	}
 }
 
+function withSmokeArgv(args, fn) {
+	const previous = process.argv;
+	process.argv = [previous[0], previous[1], ...args];
+	try {
+		return fn();
+	} finally {
+		process.argv = previous;
+	}
+}
+
 afterEach(() => {
 	__resetSmokeEnvStateForTest();
 });
@@ -281,9 +291,14 @@ describe("eliza-cloud-live-smoke preflight", () => {
 				WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK: "1",
 			},
 			() => {
-				assert.deepEqual(smokeInputErrors(), [
+				const errors = smokeInputErrors();
+				assert.deepEqual(errors, [
 					"WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1 requires WEBHOOK_RECEIVER_SECRET",
 				]);
+				assert.match(
+					smokeInputHelp(errors),
+					/ELIZA_CLOUD_WEBHOOK_URL or WAIFU_API_BASE_URL\/API_ORIGIN\/NEXT_PUBLIC_API_URL/,
+				);
 			},
 		);
 	});
@@ -296,16 +311,30 @@ describe("eliza-cloud-live-smoke preflight", () => {
 			},
 			() => {
 				assert.deepEqual(smokeInputErrors(), [
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_MODE=worker",
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER=1",
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_OWNER_BEARER",
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE",
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION",
-					"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1 requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_MODE=worker",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER=1",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_BEARER",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1",
 				]);
 			},
 		);
+
+		withSmokeEnv(BASE_ENV, () => {
+			withSmokeArgv(["--full-e2e"], () => {
+				assert.deepEqual(smokeInputErrors(), [
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_MODE=worker",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_ENQUEUE_WORKER=1",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_BEARER",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION",
+					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1",
+				]);
+			});
+		});
 
 		withSmokeEnv(
 			{

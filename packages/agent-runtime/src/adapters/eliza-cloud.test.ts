@@ -17,6 +17,7 @@ test("provision uses Eliza Cloud service contract when token metadata is availab
 					characterId: "character-1",
 					jobId: "job-1",
 					status: "pending",
+					webUiUrl: "https://cloud-agent-1.waifu.fun",
 				};
 			},
 			async pauseAgent() {},
@@ -53,7 +54,9 @@ test("provision uses Eliza Cloud service contract when token metadata is availab
 	});
 
 	assert.equal(result.runtimeAgentId, "cloud-agent-1");
-	assert.equal(result.containerId, "cloud-agent-1");
+	assert.equal(result.containerId, undefined);
+	assert.equal(result.webUiUrl, "https://cloud-agent-1.waifu.fun");
+	assert.equal(result.livenessCheckUrl, "https://cloud-agent-1.waifu.fun");
 	assert.equal(calls.length, 1);
 	assert.deepEqual(calls[0], {
 		agentId: "waifu-demo-01",

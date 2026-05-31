@@ -60,10 +60,57 @@ test("provisionClaimedAgent provisions eliza agent and emits provisioning events
 		events.map((event) => event.eventType),
 		["agent.provisioning_started", "agent.provisioned"],
 	);
-	assert.equal(events[1]?.data.containerId, "eliza-container-1");
+	assert.equal(events[1]?.data.runtimeAgentId, "eliza-container-1");
+	assert.equal(events[1]?.data.containerId, undefined);
 });
 
-function fakeProvisioningDb() {
+test("provisionClaimedAgent returns partial Eliza Cloud metadata without creating a duplicate", async () => {
+	const partialPersona = {
+		...persona,
+		metadata: {
+			provisioning: {
+				runtimeKind: "eliza-cloud",
+				runtimeAgentId: "cloud-partial-claim",
+				cloudAgentId: "cloud-partial-claim",
+				status: "pending",
+			},
+		},
+	};
+	const events: { eventType: string; data: Record<string, unknown> }[] = [];
+	let createCalls = 0;
+
+	const result = await provisionClaimedAgent(
+		"waifu-demo-01",
+		{ claimedByXHandle: "eliza" },
+		{
+			db: fakeProvisioningDb(partialPersona) as never,
+			elizaClient: {
+				async createAgent() {
+					createCalls += 1;
+					return {
+						agentId: "cloud-partial-claim-2",
+						agentName: "Demo Waifu",
+						jobId: "job-retry",
+						status: "queued",
+						nodeId: "node-1",
+						message: "created",
+					};
+				},
+			} as never,
+			emitEvent: async (event) => {
+				events.push({ eventType: event.eventType, data: event.data ?? {} });
+				return {} as never;
+			},
+		},
+	);
+
+	assert.equal(createCalls, 0);
+	assert.equal(result.runtimeAgentId, "cloud-partial-claim");
+	assert.equal(result.containerId, undefined);
+	assert.deepEqual(events, []);
+});
+
+function fakeProvisioningDb(personaRow: typeof persona = persona) {
 	return {
 		select(fields?: Record<string, unknown>) {
 			return {
@@ -82,7 +129,7 @@ function fakeProvisioningDb() {
 									if (fields && "safeAddress" in fields) {
 										return Promise.resolve([{ safeAddress: "0x1111111111111111111111111111111111111111" }]);
 									}
-									return Promise.resolve([persona]);
+									return Promise.resolve([personaRow]);
 								},
 							};
 						},
@@ -97,7 +144,7 @@ function fakeProvisioningDb() {
 						where() {
 							return {
 								returning() {
-									return Promise.resolve([persona]);
+									return Promise.resolve([personaRow]);
 								},
 							};
 						},

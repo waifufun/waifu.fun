@@ -49,7 +49,7 @@
 		"notChatbots": "not chatbots.",
 		"exploreAgents": "explore agents",
 		"deployAgent": "explore agents",
-		"poweredBySubtitle": "not chatbots. economic actors. agents launch themselves. humans patron.",
+		"poweredBySubtitle": "not chatbots. economic actors. delegated agents prepare launches. humans patron.",
 		"autonomous": "autonomous",
 		"forAgents": "for agents →",
 		"giveSkill": "give your agent the skill",
@@ -144,7 +144,7 @@
 	"createPage": {
 		"deployYourAgent": "Deploy Your Agent",
 		"agentLaunchpad": "agent launchpad",
-		"deploySubtitle": "Deploy an autonomous AI agent with its own token. Intelligent, social, on-chain.",
+		"deploySubtitle": "Deploy a delegated AI agent with its own token. Intelligent, social, on-chain.",
 		"launchNote1": "Only approved creators can access the full token launch flow right now.",
 		"launchNote2": "Connect and sign with your wallet in the header before checking an invite code.",
 		"launchNote3": "Need access? Watch for curated launch updates and new creator onboarding windows.",

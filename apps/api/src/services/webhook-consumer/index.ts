@@ -225,7 +225,12 @@ async function handleCreditsDepleted(
 	}
 
 	await store.markDormant(agentId, now);
-	await pauseAgentContainer(agentId, data, deps, "agent.credits.depleted");
+	await pauseAgentContainer(agentId, data, deps, "agent.credits.depleted").catch((err) => {
+		deps.logger.warn?.("[webhook-consumer] credits.depleted pause skipped; runtime may already be stopped", {
+			agentId,
+			error: err instanceof Error ? err.message : String(err),
+		});
+	});
 	await markRuntimeOverlayDormant(agentId, data, deps, now);
 	await emit({
 		agentId,
@@ -288,7 +293,10 @@ async function handleCreditsToppedUp(
 		if (overlay?.tokenId) {
 			await db
 				.update(tokens)
-				.set({ agentStatus: runtimeOverlayAfterResume(data, resume?.runtimeStatus ?? null).tokenStatus, updatedAt: now })
+				.set({
+					agentStatus: runtimeOverlayAfterResume(data, resume?.runtimeStatus ?? null).tokenStatus,
+					updatedAt: now,
+				})
 				.where(eq(tokens.id, overlay.tokenId));
 		}
 	}
@@ -448,10 +456,10 @@ function runtimeOverlayAfterResume(
 		agent: {
 			agentStatus,
 			lifecycleState: agentStatus === "running" ? "live" : "reviving",
-			...(status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl")
+			...((status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl"))
 				? { webUiUrl: status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl") }
 				: {}),
-			...(status?.containerId ?? stringField(data, "containerId")
+			...((status?.containerId ?? stringField(data, "containerId"))
 				? { bridgeUrl: status?.containerId ?? stringField(data, "containerId") }
 				: {}),
 			suspendedReason: null,

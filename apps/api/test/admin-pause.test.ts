@@ -129,6 +129,23 @@ async function json(res: Response) {
 
 describe("v2 admin agent pause controls", () => {
 	beforeEach(() => {
+		delete process.env.ELIZA_CLOUD_BASE_URL;
+		delete process.env.ELIZA_CLOUD_SERVICE_KEY;
+		delete process.env.ELIZA_CLOUD_API_KEY;
+		delete process.env.ELIZAOS_CLOUD_API_KEY;
+		delete process.env.ELIZAOS_API_KEY;
+		delete process.env.ELIZACLOUD_API_KEY;
+		delete process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
+		delete process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+		delete process.env.WAIFU_API_BASE_URL;
+		delete process.env.API_ORIGIN;
+		delete process.env.NEXT_PUBLIC_API_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.WAIFU_ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_SECRET;
+		delete process.env.WEBHOOK_RECEIVER_SECRET;
+		delete process.env.WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE;
+		delete process.env.DATABASE_URL;
 		process.env.ADMIN_API_KEY = ADMIN_KEY;
 	});
 
@@ -143,6 +160,13 @@ describe("v2 admin agent pause controls", () => {
 		delete process.env.ELIZACLOUD_API_KEY;
 		delete process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
 		delete process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+		delete process.env.WAIFU_API_BASE_URL;
+		delete process.env.API_ORIGIN;
+		delete process.env.NEXT_PUBLIC_API_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.WAIFU_ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_SECRET;
+		delete process.env.WEBHOOK_RECEIVER_SECRET;
 		delete process.env.WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE;
 		delete process.env.DATABASE_URL;
 	});
@@ -243,11 +267,20 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal(missing.status, 200);
 		let body = await json(missing);
 		assert.equal(body.data?.ready as boolean | undefined, false);
-		assert.deepEqual(body.data?.missing, ["serviceAuth", "containerImage", "chatAccessSecret", "database"]);
+		assert.deepEqual(body.data?.missing, [
+			"serviceAuth",
+			"containerImage",
+			"chatAccessSecret",
+			"webhookUrl",
+			"webhookSecret",
+			"database",
+		]);
 
 		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
 		process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI = "ecr.test/waifu-agent:latest";
 		process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = "chat_secret";
+		process.env.WAIFU_API_BASE_URL = "https://api.waifu.test";
+		process.env.WEBHOOK_RECEIVER_SECRET = "webhook_secret";
 		process.env.DATABASE_URL = "postgres://unit.test/waifu";
 		const ready = await request("/eliza-cloud/status", { admin: true });
 		assert.equal(ready.status, 200);
@@ -257,6 +290,7 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal((body.data?.checks as Record<string, boolean>).serviceAuth, true);
 		assert.equal(JSON.stringify(body).includes("svc_admin_test"), false);
 		assert.equal(JSON.stringify(body).includes("chat_secret"), false);
+		assert.equal(JSON.stringify(body).includes("webhook_secret"), false);
 	});
 
 	it("test-provision endpoint deploys an Eliza Cloud container with wallet and access controls", async () => {

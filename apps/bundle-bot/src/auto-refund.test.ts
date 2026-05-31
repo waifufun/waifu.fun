@@ -112,10 +112,19 @@ describe("runAutoRefund", () => {
 
 	it("does not send when the feature flag is off", async () => {
 		let sent = false;
+		let bundleBotKeyResolved = false;
+		let anyPoolKeyResolved = false;
 		const out = await runAutoRefund(
 			makeDeps({
 				enabled: false,
-				resolveBundleBotKey: async () => FAKE_PK,
+				resolveBundleBotKey: async () => {
+					bundleBotKeyResolved = true;
+					return FAKE_PK;
+				},
+				resolveAnyPoolKey: async () => {
+					anyPoolKeyResolved = true;
+					return FAKE_PK;
+				},
 				sendRefund: async () => {
 					sent = true;
 					return "0xabc";
@@ -123,15 +132,26 @@ describe("runAutoRefund", () => {
 			}),
 		);
 		assert.equal(sent, false);
+		assert.equal(bundleBotKeyResolved, false);
+		assert.equal(anyPoolKeyResolved, false);
 		assert.equal(out.skippedFlagOff, 1);
 	});
 
 	it("does not send in dry-run mode", async () => {
 		let sent = false;
+		let bundleBotKeyResolved = false;
+		let anyPoolKeyResolved = false;
 		const out = await runAutoRefund(
 			makeDeps({
 				config: makeConfig({ dryRun: true }),
-				resolveBundleBotKey: async () => FAKE_PK,
+				resolveBundleBotKey: async () => {
+					bundleBotKeyResolved = true;
+					return FAKE_PK;
+				},
+				resolveAnyPoolKey: async () => {
+					anyPoolKeyResolved = true;
+					return FAKE_PK;
+				},
 				sendRefund: async () => {
 					sent = true;
 					return "0xabc";
@@ -139,6 +159,8 @@ describe("runAutoRefund", () => {
 			}),
 		);
 		assert.equal(sent, false);
+		assert.equal(bundleBotKeyResolved, false);
+		assert.equal(anyPoolKeyResolved, false);
 		assert.equal(out.skippedDryRun, 1);
 	});
 

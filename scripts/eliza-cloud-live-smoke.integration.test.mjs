@@ -290,6 +290,9 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			assert.equal(result.code, 0, result.stderr || result.stdout);
 			assert.match(result.stdout, /live smoke passed/);
 			assert.match(result.stdout, /"cloudAgentId": "cloud-direct-agent"/);
+			assert.match(result.stdout, /"webUiUrl": "http:\/\/127\.0\.0\.1:/);
+			assert.match(result.stdout, /"hostedUrlReachable": true/);
+			assert.match(result.stdout, /"hostedUrlStatus": 200/);
 			assert.deepEqual(
 				apiContract.calls
 					.filter((call) => call.path === "/v2/admin/agents/eliza-cloud/test-control")
@@ -299,6 +302,22 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 		} finally {
 			await api.close();
 			await runtime.close();
+		}
+	});
+
+	it("fails live proof when a running runtime has no hosted web UI URL", async () => {
+		const apiContract = createSmokeApi(null, { mode: "direct" });
+		const api = await startServer(apiContract.handler);
+		try {
+			const result = await runSmoke(api.url, {
+				WAIFU_ELIZA_SMOKE_WAIT_SECONDS: "0.1",
+				WAIFU_ELIZA_SMOKE_WALLET_KEY_REF: WALLET_KEY_REF,
+			});
+			assert.equal(result.code, 1, result.stderr || result.stdout);
+			assert.match(result.stderr, /hosted web UI URL/);
+			assert.doesNotMatch(result.stdout, /live smoke passed/);
+		} finally {
+			await api.close();
 		}
 	});
 
@@ -435,6 +454,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			assert.match(result.stdout, /top-up verification ok session=cs_mock/);
 			assert.match(result.stdout, /"chatSession": \{/);
 			assert.match(result.stdout, /"ownerRuntime": \{/);
+			assert.match(result.stdout, /"hostedUrlReachable": true/);
 			assert.match(result.stdout, /live smoke passed/);
 			assert.equal(
 				apiContract.calls.some((call) => call.path === "/v2/admin/agents/eliza-cloud/test-provision"),

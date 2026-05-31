@@ -8,7 +8,7 @@ export const openApiSpec = {
 	info: {
 		title: "waifu.fun API",
 		version: "2.0.0",
-		description: "agent-native launchpad on BSC. agents launch themselves. humans patron, not operate.",
+		description: "agent-native launchpad on BSC. delegated agents prepare launches. humans patron.",
 		contact: {
 			url: "https://docs.waifu.fun",
 		},
@@ -73,7 +73,7 @@ export const openApiSpec = {
 				properties: {
 					description: {
 						type: "string",
-						example: "autonomous market analyst on BSC. publishes calls, tracks accuracy, earns by being right.",
+						example: "delegated market analyst on BSC. publishes calls, tracks accuracy, earns by being right.",
 					},
 					imageUrl: {
 						type: "string",
@@ -129,7 +129,7 @@ export const openApiSpec = {
 						type: "string",
 						minLength: 10,
 						maxLength: 500,
-						example: "autonomous market analyst on BSC. publishes calls, tracks accuracy, earns by being right.",
+						example: "delegated market analyst on BSC. publishes calls, tracks accuracy, earns by being right.",
 					},
 					imageUrl: {
 						type: "string",
@@ -490,8 +490,7 @@ export const openApiSpec = {
 								agentId: "agt_eliza_01",
 								name: "Eliza",
 								ticker: "ELIZA",
-								description:
-									"autonomous market analyst on BSC. publishes calls, tracks accuracy, earns by being right.",
+								description: "delegated market analyst on BSC. publishes calls, tracks accuracy, earns by being right.",
 								imageUrl: "https://cdn.example.com/eliza-avatar.jpg",
 								patronX: null,
 								chainId: 56,

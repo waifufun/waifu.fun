@@ -102,11 +102,16 @@ test("topUpOwnedTokenRuntime requires a provisioned Eliza Cloud agent id", async
 
 	await assert.rejects(
 		() =>
-			topUpOwnedTokenRuntime(db, row, { amountUsdCents: 500 }, {
-				async topUpCredits() {
-					throw new Error("top-up should not be called without a cloud agent");
+			topUpOwnedTokenRuntime(
+				db,
+				row,
+				{ amountUsdCents: 500 },
+				{
+					async topUpCredits() {
+						throw new Error("top-up should not be called without a cloud agent");
+					},
 				},
-			}),
+			),
 		/RUNTIME_NOT_FOUND/,
 	);
 });
@@ -206,9 +211,7 @@ test("POST runtime/activate provisions with the agent EVM wallet and stores the 
 							return {
 								limit() {
 									if (fields && "walletAddress" in fields) {
-										return Promise.resolve([
-											{ walletAddress: "0x0000000000000000000000000000000000000002" },
-										]);
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000002" }]);
 									}
 									return Promise.resolve([row]);
 								},

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	ADMIN_TOKEN_KEY,
+	type AdminElizaCloudStatus,
 	type AdminElizaCloudTestControlInput,
 	type AdminElizaCloudTestResult,
 	clearAdminToken,
@@ -177,5 +178,28 @@ describe("eliza cloud admin api helpers", () => {
 
 		expect(depleted.action).toBe("webhook-depleted");
 		expect(toppedUp.action).toBe("webhook-topped-up");
+	});
+
+	it("types Eliza Cloud readiness lifecycle webhook checks", () => {
+		const status = {
+			ok: true,
+			data: {
+				ready: false,
+				baseUrl: "https://elizacloud.ai",
+				checks: {
+					serviceAuth: true,
+					containerImage: true,
+					chatAccessSecret: true,
+					webhookUrl: false,
+					webhookSecret: true,
+					database: true,
+					testPageEnabled: true,
+				},
+				missing: ["webhookUrl"],
+				productionGate: null,
+			},
+		} satisfies AdminElizaCloudStatus;
+
+		expect(status.data?.checks.webhookUrl).toBe(false);
 	});
 });

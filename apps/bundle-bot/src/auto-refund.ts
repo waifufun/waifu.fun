@@ -149,6 +149,22 @@ export async function runAutoRefund(deps: AutoRefundDeps): Promise<AutoRefundRes
 			continue;
 		}
 
+		if (!deps.enabled) {
+			out.skippedFlagOff += 1;
+			logMetric(deps.logger, "bundle_bot_auto_refund_simulated_total", { launchId: launch.id });
+			deps.logger.info(
+				{ launchId: launch.id, vault, closeTimestamp: launch.closeTimestamp.toString() },
+				"auto-refund: eligible but ENABLE_BUNDLE_BOT_AUTO_REFUND is off; not sending",
+			);
+			continue;
+		}
+
+		if (deps.config.dryRun) {
+			out.skippedDryRun += 1;
+			deps.logger.info({ launchId: launch.id, vault }, "auto-refund: dry-run; would enable refund");
+			continue;
+		}
+
 		// Decide which call to make: prefer the gated, accurate one when the pool
 		// holds the registered bundleBot key; otherwise permissionless fallback.
 		let fn: RefundFunction;
@@ -177,22 +193,6 @@ export async function runAutoRefund(deps: AutoRefundDeps): Promise<AutoRefundRes
 				{ launchId: launch.id, vault, bundleBot: onchain.bundleBot },
 				"auto-refund: no signer available (pool empty and bundleBot key not held); skipping",
 			);
-			continue;
-		}
-
-		if (!deps.enabled) {
-			out.skippedFlagOff += 1;
-			logMetric(deps.logger, "bundle_bot_auto_refund_simulated_total", { launchId: launch.id, fn });
-			deps.logger.info(
-				{ launchId: launch.id, vault, fn, closeTimestamp: launch.closeTimestamp.toString() },
-				"auto-refund: eligible but ENABLE_BUNDLE_BOT_AUTO_REFUND is off; not sending",
-			);
-			continue;
-		}
-
-		if (deps.config.dryRun) {
-			out.skippedDryRun += 1;
-			deps.logger.info({ launchId: launch.id, vault, fn }, "auto-refund: dry-run; would enable refund");
 			continue;
 		}
 

@@ -5,7 +5,8 @@ description: "what you can do once the bundle has executed"
 
 once `BundleExecuted` fires, your launch is in `LAUNCHED` state. one
 follow-up function (`finalizeLaunch`) wires the post-graduation V2 pair
-into the treasury contract. after that, everything runs autonomously.
+into the treasury contract. after that, preset contracts and delegated
+operator services handle the remaining lifecycle.
 
 ## what the contracts do post-launch
 
@@ -51,7 +52,9 @@ into the treasury contract. after that, everything runs autonomously.
 - replay the bundle
 - modify metadata
 
-this is the price of trustlessness. once you launch, the launch runs itself.
+this is the tradeoff of preset contracts and delegated autonomy. once you
+launch, humans keep only the controls described above, and the on-chain flow
+follows the launch config.
 
 ## claiming BNB from TreasuryLP5
 

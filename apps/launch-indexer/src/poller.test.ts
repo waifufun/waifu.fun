@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { schema } from "@waifufun/db";
-import { getTableName, is, Table } from "drizzle-orm";
+import { Table, getTableName, is } from "drizzle-orm";
 import { InMemoryCursorStore } from "./lib/cursor-store.js";
 import type {
 	BundleExecutedEvent,

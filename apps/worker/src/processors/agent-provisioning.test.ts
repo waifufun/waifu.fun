@@ -182,6 +182,8 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 					tokenName: "Worker Waifu",
 					tokenTicker: "WORK",
 					launchType: "native",
+					walletAddress: "0x0000000000000000000000000000000000000002",
+					agentWalletAddress: "0x0000000000000000000000000000000000000009",
 					walletKeyRef: "steward:custom-worker-key",
 					poolAddress: "0x0000000000000000000000000000000000000008",
 					dexName: "pancakeswap",
@@ -251,6 +253,7 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 	const env = container.env as Record<string, string>;
 	assert.equal(env.WAIFU_AGENT_EVM_ADDRESS, "0x0000000000000000000000000000000000000009");
 	assert.equal(env.WAIFU_AGENT_EVM_KEY_REF, "steward:custom-worker-key");
+	assert.equal(env.ELIZA_UI_ENABLE, "true");
 	assert.equal(env.WAIFU_CHAT_ACCESS_JWT_SECRET, "chat_secret_worker");
 	assert.equal(env.WAIFU_INITIAL_CREDIT_USD, "5");
 	assert.equal(env.WAIFU_ACCESS_GUEST_MIN_TOKENS, "1000");
@@ -273,6 +276,271 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 			(insert) =>
 				insert.values.eventType === "agent.provisioned" &&
 				(insert.values.data as { webUiUrl?: string }).webUiUrl === "https://worker-agent.example",
+		),
+	);
+});
+
+test("agent-provisioning worker retries until a hosted chat URL exists", async () => {
+	const updates: UpdateRecord[] = [];
+	const inserts: InsertRecord[] = [];
+	const persona = {
+		id: "persona-row-1",
+		agentId: "waifu-no-url-01",
+		name: "No URL Waifu",
+		bio: "running container without public url",
+		avatarUrl: "https://example.com/a.png",
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "No URL Waifu", symbol: "NOURL" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const tokenRow = { id: "token-row-1", agentId: "agent-overlay-1" };
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) {
+										return Promise.resolve([{ token: tokenRow, agent: { id: "agent-overlay-1" } }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update(table: unknown) {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push({ table, values });
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+		insert(table: unknown) {
+			return {
+				values(values: Record<string, unknown>) {
+					inserts.push({ table, values });
+					return {
+						returning() {
+							return Promise.resolve([{ id: "event-row-no-url", eventType: values.eventType }]);
+						},
+					};
+				},
+			};
+		},
+	} as never;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		if (String(url).endsWith("/api/v1/agents")) {
+			return Response.json({
+				success: true,
+				data: {
+					cloudAgentId: "cloud-no-url-1",
+					status: "pending",
+					jobId: "job-no-url",
+				},
+			});
+		}
+		return Response.json({
+			success: true,
+			data: {
+				cloudAgentId: "cloud-no-url-1",
+				containerId: "container-no-url-1",
+				status: "running",
+			},
+		});
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS: "1",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db,
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			const payload: AgentProvisioningJob = {
+				agentId: "waifu-no-url-01",
+				source: "token.migrated",
+				data: {
+					tokenContractAddress: "0x0000000000000000000000000000000000000004",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					chain: "bsc",
+					chainId: 56,
+					tokenName: "No URL Waifu",
+					tokenTicker: "NOURL",
+					launchType: "native",
+				},
+			};
+			await assert.rejects(
+				() =>
+					processor({
+						id: "job-no-url",
+						data: payload,
+						attemptsMade: 2,
+						opts: { attempts: 12 },
+					} as never),
+				/hosted chat URL is not ready/,
+			);
+		},
+	);
+
+	assert.ok(
+		updates.some(
+			(update) =>
+				update.values.agentStatus === "provisioning" &&
+				update.values.lifecycleState === "birth" &&
+				update.values.webUiUrl === null,
+		),
+	);
+	assert.equal(
+		inserts.some((insert) => insert.values.eventType === "agent.provisioned"),
+		false,
+	);
+	assert.equal(
+		inserts.some((insert) => insert.values.eventType === "agent.provisioning_dead_letter"),
+		false,
+	);
+});
+
+test("agent-provisioning worker dead-letters hosted chat URL readiness on the final attempt", async () => {
+	const inserts: InsertRecord[] = [];
+	const persona = {
+		id: "persona-row-1",
+		agentId: "waifu-final-no-url-01",
+		name: "Final No URL Waifu",
+		bio: "final attempt without public url",
+		avatarUrl: "https://example.com/a.png",
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Final No URL Waifu", symbol: "FURL" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) {
+										return Promise.resolve([{ token: { id: "token-row-1", agentId: null }, agent: null }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return { set: () => ({ where: () => Promise.resolve() }) };
+		},
+		insert(table: unknown) {
+			return {
+				values(values: Record<string, unknown>) {
+					inserts.push({ table, values });
+					return {
+						returning() {
+							return Promise.resolve([{ id: "event-row-final-no-url", eventType: values.eventType }]);
+						},
+					};
+				},
+			};
+		},
+	} as never;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		if (String(url).endsWith("/api/v1/agents")) {
+			return Response.json({
+				success: true,
+				data: { cloudAgentId: "cloud-final-no-url-1", status: "pending", jobId: "job-final-no-url" },
+			});
+		}
+		return Response.json({
+			success: true,
+			data: { cloudAgentId: "cloud-final-no-url-1", containerId: "container-final-no-url-1", status: "running" },
+		});
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS: "1",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db,
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			const payload: AgentProvisioningJob = {
+				agentId: "waifu-final-no-url-01",
+				source: "token.migrated",
+				data: {
+					tokenContractAddress: "0x0000000000000000000000000000000000000004",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					chain: "bsc",
+					chainId: 56,
+					tokenName: "Final No URL Waifu",
+					tokenTicker: "FURL",
+					launchType: "native",
+				},
+			};
+			await assert.rejects(
+				() =>
+					processor({
+						id: "job-final-no-url",
+						data: payload,
+						attemptsMade: 11,
+						opts: { attempts: 12 },
+					} as never),
+				/hosted chat URL is not ready/,
+			);
+		},
+	);
+
+	assert.ok(
+		inserts.some(
+			(insert) =>
+				insert.values.eventType === "agent.provisioning_dead_letter" &&
+				(insert.values.data as { attempts?: number; error?: string }).attempts === 12 &&
+				(insert.values.data as { error?: string }).error?.includes("hosted chat URL is not ready"),
 		),
 	);
 });
@@ -392,6 +660,141 @@ test("agent-provisioning worker skips duplicate Eliza Cloud launches when metada
 				(insert.values.data as { runtimeAgentId?: string }).runtimeAgentId === "cloud-existing-1",
 		),
 	);
+});
+
+test("agent-provisioning worker polls partial Eliza Cloud metadata instead of skipping hosted sync", async () => {
+	const updates: UpdateRecord[] = [];
+	const inserts: InsertRecord[] = [];
+	const persona = {
+		id: "persona-row-1",
+		agentId: "waifu-demo-partial",
+		name: "Partial Worker Waifu",
+		bio: "partial runtime test",
+		avatarUrl: "https://example.com/a.png",
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Partial Worker Waifu", symbol: "PART" },
+		metadata: {
+			provisioning: {
+				runtimeKind: "eliza-cloud",
+				cloudAgentId: "cloud-partial-1",
+				runtimeAgentId: "cloud-partial-1",
+				status: "pending",
+			},
+		},
+		runtimeKind: "eliza-cloud",
+	};
+	const tokenRow = { id: "token-row-1", agentId: "agent-overlay-1" };
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) {
+										return Promise.resolve([{ token: tokenRow, agent: { id: "agent-overlay-1" } }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update(table: unknown) {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push({ table, values });
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+		insert(table: unknown) {
+			return {
+				values(values: Record<string, unknown>) {
+					inserts.push({ table, values });
+					return {
+						returning() {
+							return Promise.resolve([{ id: "event-row-partial", eventType: values.eventType }]);
+						},
+					};
+				},
+			};
+		},
+	} as never;
+	const requests: string[] = [];
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		requests.push(String(url));
+		if (String(url).endsWith("/api/v1/agents")) {
+			throw new Error("partial metadata should not create a duplicate Eliza Cloud agent");
+		}
+		return Response.json({
+			success: true,
+			data: {
+				cloudAgentId: "cloud-partial-1",
+				containerId: "container-partial-1",
+				containerUrl: "https://partial-runtime.example",
+				webUiUrl: "https://partial-agent.example",
+				status: "running",
+			},
+		});
+	});
+
+	await withEnv({ ELIZA_CLOUD_SERVICE_KEY: "svc" }, async () => {
+		const processor = createAgentProvisioningProcessor({
+			db,
+			logger: console as never,
+			startedAt: new Date("2026-05-27T00:00:00Z"),
+			chainId: 56,
+		});
+		const payload: AgentProvisioningJob = {
+			agentId: "waifu-demo-partial",
+			source: "token.migrated",
+			data: {
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				tokenAddress: "0x0000000000000000000000000000000000000004",
+				chain: "bsc",
+				chainId: 56,
+				tokenName: "Partial Worker Waifu",
+				tokenTicker: "PART",
+				launchType: "native",
+			},
+		};
+		const result = (await processor({ id: "job-partial", data: payload, attemptsMade: 0 } as never)) as {
+			cloudAgentId?: string;
+			containerId?: string;
+			webUiUrl?: string;
+			status?: string;
+		};
+
+		assert.equal(result.cloudAgentId, "cloud-partial-1");
+		assert.equal(result.containerId, "container-partial-1");
+		assert.equal(result.webUiUrl, "https://partial-agent.example");
+		assert.equal(result.status, "running");
+	});
+
+	assert.deepEqual(requests, ["https://elizacloud.ai/api/v1/agents/cloud-partial-1/status"]);
+	assert.ok(
+		updates.some(
+			(update) =>
+				update.values.elizaCloudAgentId === "cloud-partial-1" &&
+				(update.values.metadata as { provisioning?: { webUiUrl?: string } }).provisioning?.webUiUrl ===
+					"https://partial-agent.example",
+		),
+	);
+	assert.ok(updates.some((update) => update.values.webUiUrl === "https://partial-agent.example"));
+	assert.ok(inserts.some((insert) => insert.values.eventType === "agent.provisioned"));
 });
 
 test("agent-provisioning worker adopts Eliza Cloud existingAgentId conflicts", async () => {

@@ -8,7 +8,7 @@
  */
 
 import * as jose from "jose";
-import { isAddress, type Address } from "viem";
+import { type Address, isAddress } from "viem";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -458,6 +458,7 @@ export class ElizaClient {
 			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
 			...(input.modelDefaults ?? {}),
 			...(input.container?.environmentVars ?? {}),
+			ELIZA_UI_ENABLE: "true",
 		};
 
 		const agent = await this.request<Record<string, unknown>>("POST", "/api/v1/agents", {

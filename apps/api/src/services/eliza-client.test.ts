@@ -143,6 +143,8 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 					WAIFU_ACCESS_ADMIN_WALLETS: "0x0000000000000000000000000000000000000001",
 					WAIFU_AGENT_EVM_ADDRESS: "0x0000000000000000000000000000000000000009",
 					WAIFU_AGENT_EVM_KEY_REF: "steward:waifu-demo-01",
+					ELIZA_UI_ENABLE: "true",
+					CUSTOM_ENV: "kept",
 					ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b",
 				},
 			},
@@ -189,7 +191,10 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 		access: {
 			adminWallets: ["0x0000000000000000000000000000000000000001"],
 		},
-		container: { imageUri: "ecr.test/waifu-agent:latest" },
+		container: {
+			imageUri: "ecr.test/waifu-agent:latest",
+			environmentVars: { ELIZA_UI_ENABLE: "false", CUSTOM_ENV: "kept" },
+		},
 		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
 	});
 
@@ -435,7 +440,8 @@ test("provisionWaifuAgent rejects invalid admin wallets before creating cloud re
 				container: { imageUri: "ecr.test/waifu-agent:latest" },
 			});
 		},
-		(err: unknown) => err instanceof ElizaCloudNotConfiguredError && /admin wallet.*valid EVM address/.test(err.message),
+		(err: unknown) =>
+			err instanceof ElizaCloudNotConfiguredError && /admin wallet.*valid EVM address/.test(err.message),
 	);
 	assert.equal(fetchMock.mock.callCount(), 0);
 });

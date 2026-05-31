@@ -303,7 +303,7 @@ export async function generateMetadata({
 	const title = `${agent.name} ($${agent.ticker}) · waifu.fun`;
 	const description =
 		agent.description ??
-		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. trade on pancakeswap, launched via FLAP.";
+		"delegated agent on waifu.fun. identity, brain, wallet, treasury. trade on pancakeswap, launched via FLAP.";
 	// Per-agent OG image disabled: the nested /agent/[address]/opengraph-image
 	// route inherits the wagmi/viem module graph from the app layout and 500s
 	// with 'indexedDB is not defined'. Falls back to the root /opengraph-image

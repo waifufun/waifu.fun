@@ -192,8 +192,8 @@ export function createBlinkRoutes(overrides: BlinkRoutesOverrides = {}): Hono<Ap
 		const selfUrl = blinkSelfUrl(c);
 
 		const description = previewOutputAmount
-			? `${name} is an autonomous agent on BSC. Buys fund her treasury via flap.sh tax routing. ~${formatTokenAmount(previewOutputAmount)} ${ticker} per ${PREVIEW_BNB_AMOUNT} BNB.`
-			: `${name} is an autonomous agent on BSC. Buys fund her treasury via flap.sh tax routing.`;
+			? `${name} is a delegated agent on BSC. Buys fund her treasury via flap.sh tax routing. ~${formatTokenAmount(previewOutputAmount)} ${ticker} per ${PREVIEW_BNB_AMOUNT} BNB.`
+			: `${name} is a delegated agent on BSC. Buys fund her treasury via flap.sh tax routing.`;
 
 		const blink = {
 			type: "action" as const,
