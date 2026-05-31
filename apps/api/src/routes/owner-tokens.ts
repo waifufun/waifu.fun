@@ -631,12 +631,14 @@ app.post("/tokens/:chain/:chainId/:contractAddress/runtime/activate", async (c) 
 	});
 	if (!cloud) throw new Error("Eliza Cloud client did not return a provisioning result");
 
+	const hasHostedRuntimeUrl = Boolean(cloud.webUiUrl ?? cloud.containerUrl);
+	const isRunningWithHostedRuntime = isHostedRuntimeRunning(cloud.status) && hasHostedRuntimeUrl;
 	await ensureAgentOverlay(resolved.db, resolved.row, {
 		cloudAgentId: cloud.cloudAgentId,
 		webUiUrl: cloud.webUiUrl ?? cloud.containerUrl ?? null,
 		containerId: cloud.containerId ?? null,
-		agentStatus: isHostedRuntimeRunning(cloud.status) ? "running" : "provisioning",
-		lifecycleState: isHostedRuntimeRunning(cloud.status) ? "live" : "birth",
+		agentStatus: isRunningWithHostedRuntime ? "running" : "provisioning",
+		lifecycleState: isRunningWithHostedRuntime ? "live" : "birth",
 		billingMode: body.billingMode ?? "owner_credits",
 		infraReserveUsd: 5,
 		suspendedReason: null,

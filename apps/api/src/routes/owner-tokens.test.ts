@@ -294,6 +294,121 @@ test("POST runtime/activate provisions with the agent EVM wallet and stores the 
 	}
 });
 
+test("POST runtime/activate keeps owner token runtime provisioning when hosted URL is missing", async () => {
+	const updates: Array<Record<string, unknown>> = [];
+	const row = {
+		token: {
+			id: "token-row-1",
+			contractAddress: "0x0000000000000000000000000000000000000004",
+			chainId: 56,
+			creatorAddress: "0x0000000000000000000000000000000000000001",
+			agentStatus: "none",
+			ownerClaimStatus: "claimed",
+			name: "Activation Waifu",
+			ticker: "ACT",
+			description: "Hosted activation test",
+			imageUrl: null,
+			isImported: false,
+		},
+		agent: {
+			id: "agent-row-1",
+			cloudAgentId: null,
+			agentStatus: "none",
+			lifecycleState: "birth",
+			webUiUrl: null,
+			bridgeUrl: null,
+			billingMode: "owner_credits",
+			infraReserveUsd: "0",
+			suspendedReason: null,
+		},
+		persona: {
+			agentId: "waifu-activate-01",
+			ownerAddress: "0x0000000000000000000000000000000000000001",
+			metadata: {},
+		},
+	} as unknown as TokenRuntimeRow;
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (fields && "walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000002" }]);
+									}
+									return Promise.resolve([row]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as unknown as Database;
+
+	__setRequirePatronDbForTest(db);
+	__setOwnerTokenDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "creator@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setOwnerTokenElizaClientForTest({
+		async provisionAgent() {
+			return { containerId: "unused-container" };
+		},
+		async provisionWaifuAgent(input) {
+			return {
+				agentId: input.agentId,
+				cloudAgentId: "cloud-agent-activate",
+				containerId: "container-activate",
+				status: "running",
+			};
+		},
+		async pauseAgent() {},
+		async resumeAgent() {},
+		async deprovisionAgent() {},
+		async topUpCredits() {
+			return undefined;
+		},
+	});
+
+	try {
+		const res = await app.request("/tokens/bsc/56/0x0000000000000000000000000000000000000004/runtime/activate", {
+			method: "POST",
+			headers: { authorization: "Bearer steward", "content-type": "application/json" },
+			body: JSON.stringify({}),
+		});
+		assert.equal(res.status, 200, await res.clone().text());
+		const json = (await res.json()) as { success: boolean };
+		assert.equal(json.success, true);
+		assert.equal(updates[2]?.cloudAgentId, "cloud-agent-activate");
+		assert.equal(updates[2]?.webUiUrl, null);
+		assert.equal(updates[2]?.bridgeUrl, "container-activate");
+		assert.equal(updates[2]?.agentStatus, "provisioning");
+		assert.equal(updates[2]?.lifecycleState, "birth");
+	} finally {
+		__setRequirePatronDbForTest(undefined);
+		__setOwnerTokenDbForTest(undefined);
+		__setRequirePatronStewardParserForTest(undefined);
+		__setOwnerTokenElizaClientForTest(undefined);
+	}
+});
+
 test("POST runtime/restart restarts the owner token Cloud agent", async () => {
 	const updates: Array<Record<string, unknown>> = [];
 	const paused: string[] = [];

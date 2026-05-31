@@ -114,6 +114,13 @@ export interface AgentTrade {
 	traderRole?: "agent-safe" | "agent-hot";
 	usdValue?: number;
 	/**
+	 * Native BNB moved by this spot swap, as a human BNB float (not wei).
+	 * For a buy this is the BNB spent (the WBNB-in leg); for a sell it is
+	 * the BNB received (the WBNB-out leg). Undefined for venues that do not
+	 * settle in BNB (e.g. hyperliquid perp fills).
+	 */
+	bnbValue?: number;
+	/**
 	 * Trade venue. Spot swaps come from pancakeswap (the default when
 	 * omitted); perp fills carry "hyperliquid" so the activity feed can
 	 * pick the right venue icon and skip the bscscan tx-link path.
