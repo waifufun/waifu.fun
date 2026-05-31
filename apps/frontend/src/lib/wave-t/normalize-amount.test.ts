@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeTokenAmount } from "./normalize-amount";
+import { normalizeBnbAmount, normalizeTokenAmount } from "./normalize-amount";
 
 describe("normalizeTokenAmount", () => {
 	it("divides raw 18-decimal wei strings by 1e18", () => {
@@ -33,5 +33,29 @@ describe("normalizeTokenAmount", () => {
 		expect(normalizeTokenAmount(null)).toBe(0);
 		expect(normalizeTokenAmount("")).toBe(0);
 		expect(normalizeTokenAmount("not a number")).toBe(0);
+	});
+});
+
+describe("normalizeBnbAmount", () => {
+	it("divides native BNB wei by 1e18 unconditionally", () => {
+		// 0.1 BNB (the ground-truth buy)
+		expect(normalizeBnbAmount("100000000000000000")).toBeCloseTo(0.1, 9);
+		// 1 BNB
+		expect(normalizeBnbAmount("1000000000000000000")).toBeCloseTo(1, 9);
+	});
+
+	it("keeps small sub-1e15-wei buys correct (where the token heuristic would fail)", () => {
+		// 0.0001 BNB == 1e14 wei: below the 1e15 token threshold, so
+		// normalizeTokenAmount would wrongly leave it raw. The BNB normalizer
+		// must still divide by 1e18.
+		expect(normalizeBnbAmount("100000000000000")).toBeCloseTo(0.0001, 9);
+		expect(normalizeTokenAmount("100000000000000")).toBe(100000000000000);
+	});
+
+	it("returns 0 for missing or junk inputs", () => {
+		expect(normalizeBnbAmount(undefined)).toBe(0);
+		expect(normalizeBnbAmount(null)).toBe(0);
+		expect(normalizeBnbAmount("")).toBe(0);
+		expect(normalizeBnbAmount("not a number")).toBe(0);
 	});
 });

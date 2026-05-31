@@ -27,6 +27,11 @@ export function mergeActivityWithTrades(opts: {
 		// not an on-chain tx hash, so a bscscan link + PancakeSwap venue would
 		// both be wrong. Only spot (pancakeswap) trades get a bscscan tx link.
 		const isHl = t.venue === "hyperliquid";
+		// BNB moved by the swap (spent on a buy, received on a sell). The row
+		// renders this as "... at <priceBnb> bnb via <venue>". HL perp fills do
+		// not settle in BNB, so they fall back to 0 (the row hides the bnb leg
+		// for that venue anyway).
+		const bnbNum = typeof t.bnbValue === "number" && Number.isFinite(t.bnbValue) ? t.bnbValue : 0;
 		const row: ActivityRowInput = {
 			id: `trade-${t.txId || idx}-${t.timestamp}`,
 			type: "trade",
@@ -34,7 +39,7 @@ export function mergeActivityWithTrades(opts: {
 			side: t.type === "sell" ? "sell" : "buy",
 			asset,
 			amount: Number.isFinite(amountNum) ? amountNum : 0,
-			priceBnb: 0,
+			priceBnb: bnbNum,
 			venue: isHl ? "Hyperliquid" : "PancakeSwap",
 			...(t.txId && !isHl ? { url: `https://bscscan.com/tx/${t.txId}` } : {}),
 		};

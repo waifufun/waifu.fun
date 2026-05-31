@@ -8,7 +8,7 @@
  */
 
 import * as jose from "jose";
-import type { Address } from "viem";
+import { type Address, isAddress } from "viem";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -123,6 +123,7 @@ export interface ElizaCloudProvisionResult {
 	cloudAgentId: string;
 	containerId?: string;
 	containerUrl?: string;
+	webUiUrl?: string | null;
 	characterId?: string;
 	jobId?: string;
 	status: string;
@@ -149,6 +150,7 @@ export interface ElizaAgentWalletProvisionResult {
 
 export interface ElizaCloudAccountProvisionResult {
 	primaryWalletAddress?: string | null;
+	walletKeyRef?: string | null;
 	organizationId?: string;
 	userId?: string;
 	isNewAccount?: boolean;
@@ -415,6 +417,9 @@ export class ElizaClient {
 		if (!primaryWalletAddress) {
 			throw new ElizaCloudNotConfiguredError("agent EVM wallet is required to provision a hosted Eliza Cloud agent");
 		}
+		if (!isAddress(primaryWalletAddress)) {
+			throw new ElizaCloudNotConfiguredError("agent EVM wallet must be a valid EVM address");
+		}
 		const walletKeyRef = input.account?.walletKeyRef?.trim() || `steward:${input.agentId}`;
 		const imageUri = input.container?.imageUri ?? process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
 		if (!imageUri) {
@@ -423,11 +428,19 @@ export class ElizaClient {
 		const billing = input.billing ?? { mode: "owner_credits", initialReserveUsd: 5 };
 		const webhookUrl = input.webhookUrl ?? defaultElizaCloudWebhookUrl();
 		const webhookSecret = input.webhookSecret ?? (webhookUrl ? defaultElizaCloudWebhookSecret() : undefined);
+		// Per-inference burn metering: the container needs the inference receiver
+		// URL plus the shared secret so it can sign `inference.spent` webhooks.
+		const inferenceWebhookUrl = defaultElizaCloudInferenceWebhookUrl();
+		const inferenceWebhookSecret = webhookSecret ?? defaultElizaCloudWebhookSecret();
 		const access = {
 			guestMinTokens: input.access?.guestMinTokens ?? 1_000,
 			userMinTokens: input.access?.userMinTokens ?? 100_000,
-			adminWallets: input.access?.adminWallets ?? [],
+			adminWallets: (input.access?.adminWallets ?? []).map((wallet) => wallet.trim()).filter(Boolean),
 		};
+		const invalidAdminWallet = access.adminWallets.find((wallet) => !isAddress(wallet));
+		if (invalidAdminWallet) {
+			throw new ElizaCloudNotConfiguredError("admin wallet must be a valid EVM address");
+		}
 		const environmentVars = {
 			WAIFU_AGENT_ID: input.agentId,
 			TOKEN_CONTRACT_ADDRESS: input.tokenContractAddress,
@@ -447,8 +460,11 @@ export class ElizaClient {
 				? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 				: {}),
 			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
+			...(inferenceWebhookUrl ? { WAIFU_INFERENCE_WEBHOOK_URL: inferenceWebhookUrl } : {}),
+			...(inferenceWebhookSecret ? { WAIFU_WEBHOOK_SECRET: inferenceWebhookSecret } : {}),
 			...(input.modelDefaults ?? {}),
 			...(input.container?.environmentVars ?? {}),
+			ELIZA_UI_ENABLE: "true",
 		};
 
 		const agent = await this.request<Record<string, unknown>>("POST", "/api/v1/agents", {
@@ -472,6 +488,7 @@ export class ElizaClient {
 				billing,
 				account: {
 					primaryWalletAddress,
+					walletKeyRef,
 					chainType: "evm",
 				},
 				access: {
@@ -500,12 +517,15 @@ export class ElizaClient {
 		const polling = normalizePolling(agent.polling);
 		const characterId = stringField(agent, "characterId") ?? cloudAgentId;
 		const jobId = stringField(agent, "jobId") ?? stringField(agent, "id") ?? cloudAgentId;
+		const webUiUrl = stringField(agent, "webUiUrl");
+		const hostedUrl = webUiUrl ?? stringField(agent, "containerUrl");
 		const normalized: ElizaCloudProvisionResult = {
 			agentId: input.agentId,
 			cloudAgentId,
 			status: stringField(agent, "status") ?? "pending",
 			...(stringField(agent, "containerId") ? { containerId: stringField(agent, "containerId") as string } : {}),
-			...(stringField(agent, "containerUrl") ? { containerUrl: stringField(agent, "containerUrl") as string } : {}),
+			...(hostedUrl ? { containerUrl: hostedUrl } : {}),
+			...(webUiUrl ? { webUiUrl } : {}),
 			...(characterId ? { characterId } : {}),
 			...(jobId ? { jobId } : {}),
 			...(walletProvisioning ? { walletProvisioning: walletProvisioning as ElizaAgentWalletProvisionResult } : {}),
@@ -584,6 +604,10 @@ export class ElizaClient {
 		return this.request<ElizaJobResult>("POST", `/api/v1/agents/${encodeURIComponent(agentId)}/resume`);
 	}
 
+	async restartHostedAgent(agentId: string): Promise<ElizaJobResult> {
+		return this.request<ElizaJobResult>("POST", `/api/v1/agents/${encodeURIComponent(agentId)}/restart`);
+	}
+
 	async deprovisionAgent(agentId: string): Promise<ElizaJobResult> {
 		return this.request<ElizaJobResult>("DELETE", `/api/v1/containers/${encodeURIComponent(agentId)}`);
 	}
@@ -658,6 +682,7 @@ export interface ElizaCloudClient {
 	}): Promise<ElizaAgentWalletProvisionResult>;
 	pauseAgent(agentId: string): Promise<unknown>;
 	resumeAgent(agentId: string): Promise<unknown>;
+	restartHostedAgent?(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
 	topUpCredits(agentId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult | undefined>;
 	topUpAppCredits?(appId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult>;
@@ -769,6 +794,23 @@ function defaultElizaCloudWebhookUrl(): string | undefined {
 	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
 	if (!apiBase) return undefined;
 	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/credits`;
+}
+
+/**
+ * The per-inference metering webhook the hosted container POSTs `inference.spent`
+ * events to. Distinct from the credits webhook above: this is the "agent pays
+ * its own way" burn signal that feeds the burn rollup. Defaults to the same API
+ * base with the `/inference` receiver path; override with
+ * ELIZA_CLOUD_INFERENCE_WEBHOOK_URL when the receiver lives elsewhere.
+ */
+function defaultElizaCloudInferenceWebhookUrl(): string | undefined {
+	const configured = nonEmpty(
+		process.env.ELIZA_CLOUD_INFERENCE_WEBHOOK_URL ?? process.env.WAIFU_ELIZA_CLOUD_INFERENCE_WEBHOOK_URL,
+	);
+	if (configured) return configured.replace(/\/+$/, "");
+	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
+	if (!apiBase) return undefined;
+	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/inference`;
 }
 
 function defaultElizaCloudWebhookSecret(): string | undefined {

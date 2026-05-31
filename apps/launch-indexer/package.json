@@ -4,10 +4,10 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"predev": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build",
-		"prestart": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build",
-		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build",
-		"pretypecheck": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build",
+		"predev": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build",
+		"prestart": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build",
+		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build",
+		"pretypecheck": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build",
 		"start": "bun src/index.ts",
 		"dev": "tsx watch src/index.ts",
 		"build": "tsc -p tsconfig.json",
@@ -19,6 +19,7 @@
 	"dependencies": {
 		"@waifufun/db": "workspace:*",
 		"@waifufun/logger": "workspace:*",
+		"@waifufun/queue": "workspace:*",
 		"drizzle-orm": "^0.36.4",
 		"viem": "^2.21.54"
 	},

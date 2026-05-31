@@ -22,6 +22,38 @@ function elizaStub(calls: { paused?: string[]; resumed?: string[] } = {}): Eliza
 	};
 }
 
+test("agent.claimed records only and waits for agent.launched to provision", async () => {
+	let provisionCalls = 0;
+	const emitted: unknown[] = [];
+
+	await dispatchEvent(
+		{
+			event: "agent.claimed",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { claimedByXHandle: "eliza" },
+			idempotencyKey: "evt_claimed_1",
+		},
+		{
+			elizaCloud: {
+				...elizaStub(),
+				async provisionAgent() {
+					provisionCalls += 1;
+					throw new Error("agent.claimed should not provision");
+				},
+			},
+			logger: {},
+			async emitEvent(input) {
+				emitted.push(input);
+				return {} as Awaited<ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>>;
+			},
+		},
+	);
+
+	assert.equal(provisionCalls, 0);
+	assert.deepEqual(emitted, []);
+});
+
 test("agent.credits.low downgrades model tier and emits event", async () => {
 	let tier: "premium" | "standard" | "free" = "premium";
 	const emitted: unknown[] = [];
@@ -232,4 +264,294 @@ test("credit depletion can suspend a service-provisioned cloud agent id", async 
 	assert.ok(dormantAt);
 	assert.deepEqual(cloudCalls.paused, ["cloud-agent-1"]);
 	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.dormant");
+});
+
+test("credit depletion can suspend from an Eliza Cloud callback agent id", async () => {
+	const cloudCalls: { paused: string[] } = { paused: [] };
+	const store: WebhookConsumerPersonaStore = {
+		async get(agentId) {
+			return { agentId, modelTier: "free", lastWordsPostedAt: new Date("2026-04-24T11:00:00.000Z") };
+		},
+		async setModelTier() {},
+		async markLastWordsPosted() {},
+		async markDormant() {},
+	};
+
+	await dispatchEvent(
+		{
+			event: "agent.credits.depleted",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { elizaCloudAgentId: "cloud-agent-1" },
+		},
+		{
+			elizaCloud: elizaStub(cloudCalls),
+			logger: {},
+			personaStore: store,
+			async emitEvent(input) {
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+			async getXClient() {
+				return null;
+			},
+		},
+	);
+
+	assert.deepEqual(cloudCalls.paused, ["cloud-agent-1"]);
+});
+
+test("credit depletion prefers cloud agent id over container id for service lifecycle controls", async () => {
+	const cloudCalls: { paused: string[] } = { paused: [] };
+	const store: WebhookConsumerPersonaStore = {
+		async get(agentId) {
+			return { agentId, modelTier: "free", lastWordsPostedAt: new Date("2026-04-24T11:00:00.000Z") };
+		},
+		async setModelTier() {},
+		async markLastWordsPosted() {},
+		async markDormant() {},
+	};
+
+	await dispatchEvent(
+		{
+			event: "agent.credits.depleted",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { cloudAgentId: "cloud-agent-1", containerId: "container-1" },
+		},
+		{
+			elizaCloud: elizaStub(cloudCalls),
+			logger: {},
+			personaStore: store,
+			async emitEvent(input) {
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+			async getXClient() {
+				return null;
+			},
+		},
+	);
+
+	assert.deepEqual(cloudCalls.paused, ["cloud-agent-1"]);
+});
+
+test("credit depletion marks the token runtime overlay dormant", async () => {
+	const cloudCalls: { paused: string[] } = { paused: [] };
+	const updates: Array<Record<string, unknown>> = [];
+	const store: WebhookConsumerPersonaStore = {
+		async get(agentId) {
+			return { agentId, modelTier: "free", lastWordsPostedAt: new Date("2026-04-24T11:00:00.000Z") };
+		},
+		async setModelTier() {},
+		async markLastWordsPosted() {},
+		async markDormant() {},
+	};
+	const db = {
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as never;
+
+	await dispatchEvent(
+		{
+			event: "agent.credits.depleted",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { cloudAgentId: "cloud-agent-1", overlayAgentId: "agent-overlay-1" },
+		},
+		{
+			db,
+			elizaCloud: elizaStub(cloudCalls),
+			logger: {},
+			personaStore: store,
+			async emitEvent(input) {
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+			async getXClient() {
+				return null;
+			},
+		},
+	);
+
+	assert.deepEqual(cloudCalls.paused, ["cloud-agent-1"]);
+	assert.equal(updates.length, 1);
+	assert.equal(updates[0]?.agentStatus, "suspended");
+	assert.equal(updates[0]?.lifecycleState, "dormant");
+	assert.equal(updates[0]?.suspendedReason, "credits_depleted");
+});
+
+test("credit depletion still marks dormant when Eliza Cloud already stopped the runtime", async () => {
+	const warnings: unknown[] = [];
+	const updates: Array<Record<string, unknown>> = [];
+	const emitted: unknown[] = [];
+	const store: WebhookConsumerPersonaStore = {
+		async get(agentId) {
+			return { agentId, modelTier: "free", lastWordsPostedAt: new Date("2026-04-24T11:00:00.000Z") };
+		},
+		async setModelTier() {},
+		async markLastWordsPosted() {},
+		async markDormant() {},
+	};
+	const db = {
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as never;
+
+	await dispatchEvent(
+		{
+			event: "agent.credits.depleted",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { cloudAgentId: "cloud-agent-1", overlayAgentId: "agent-overlay-1" },
+		},
+		{
+			db,
+			elizaCloud: {
+				...elizaStub(),
+				async pauseAgent() {
+					throw new Error("Agent is already stopped");
+				},
+			},
+			logger: {
+				warn(...args: unknown[]) {
+					warnings.push(args);
+				},
+			},
+			personaStore: store,
+			async emitEvent(input) {
+				emitted.push(input);
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+			async getXClient() {
+				return null;
+			},
+		},
+	);
+
+	assert.equal(updates.length, 1);
+	assert.equal(updates[0]?.agentStatus, "suspended");
+	assert.equal(updates[0]?.lifecycleState, "dormant");
+	assert.equal(updates[0]?.suspendedReason, "credits_depleted");
+	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.dormant");
+	assert.equal(warnings.length, 1);
+});
+
+test("credit top-up resumes cloud runtime and syncs overlay from runtime status", async () => {
+	const cloudCalls: { resumed: string[] } = { resumed: [] };
+	const updates: Array<Record<string, unknown>> = [];
+	const db = {
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as never;
+
+	await dispatchEvent(
+		{
+			event: "credits.topped_up",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { amountUsd: 5, cloudAgentId: "cloud-agent-1", overlayAgentId: "agent-overlay-1" },
+		},
+		{
+			db,
+			elizaCloud: {
+				...elizaStub(cloudCalls),
+				async getAgentRuntimeStatus(agentId) {
+					return {
+						cloudAgentId: agentId,
+						containerId: "container-after-top-up",
+						status: "running",
+						webUiUrl: "https://agent-after-top-up.example",
+					};
+				},
+			},
+			logger: {},
+			async emitEvent(input) {
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+		},
+	);
+
+	assert.deepEqual(cloudCalls.resumed, ["cloud-agent-1"]);
+	assert.equal(updates.length, 2);
+	assert.equal(updates[0]?.modelTier, "premium");
+	assert.equal(updates[1]?.agentStatus, "running");
+	assert.equal(updates[1]?.lifecycleState, "live");
+	assert.equal(updates[1]?.webUiUrl, "https://agent-after-top-up.example");
+	assert.equal(updates[1]?.bridgeUrl, "container-after-top-up");
+	assert.equal(updates[1]?.suspendedReason, null);
+});
+
+test("credit top-up keeps runtime reviving when Eliza reports running without hosted URL", async () => {
+	const cloudCalls: { resumed: string[] } = { resumed: [] };
+	const updates: Array<Record<string, unknown>> = [];
+	const db = {
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					updates.push(values);
+					return { where: () => Promise.resolve() };
+				},
+			};
+		},
+	} as never;
+
+	await dispatchEvent(
+		{
+			event: "credits.topped_up",
+			timestamp: "2026-04-24T12:00:00.000Z",
+			agentId: "waifu-demo-01",
+			data: { amountUsd: 5, cloudAgentId: "cloud-agent-1", overlayAgentId: "agent-overlay-1" },
+		},
+		{
+			db,
+			elizaCloud: {
+				...elizaStub(cloudCalls),
+				async getAgentRuntimeStatus(agentId) {
+					return {
+						cloudAgentId: agentId,
+						containerId: "container-after-top-up",
+						status: "running",
+					};
+				},
+			},
+			logger: {},
+			async emitEvent(input) {
+				return { eventType: input.eventType } as Awaited<
+					ReturnType<NonNullable<Parameters<typeof dispatchEvent>[1]["emitEvent"]>>
+				>;
+			},
+		},
+	);
+
+	assert.deepEqual(cloudCalls.resumed, ["cloud-agent-1"]);
+	assert.equal(updates[1]?.agentStatus, "provisioning");
+	assert.equal(updates[1]?.lifecycleState, "reviving");
+	assert.equal(updates[1]?.webUiUrl, undefined);
+	assert.equal(updates[1]?.bridgeUrl, "container-after-top-up");
 });

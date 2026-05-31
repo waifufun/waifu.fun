@@ -125,16 +125,23 @@ export async function handleLiquidityAddedEvent(
 	let agentId: string | null = null;
 	const enqueuedJobs: string[] = [];
 	if (process.env.INDEXER_DISABLE_QUEUE_JOBS !== "1") {
-		const { addAgentProvisioningJob, addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
+		const queue =
+			runtime.enqueueAgentProvisioning && runtime.enqueueCacheWarm && runtime.enqueueNotification
+				? {
+						addAgentProvisioningJob: runtime.enqueueAgentProvisioning,
+						addCacheWarmJob: runtime.enqueueCacheWarm,
+						addNotificationJob: runtime.enqueueNotification,
+					}
+				: await import("@waifufun/queue");
 		agentId = await lookupAgentIdByToken(runtime, event.data.base);
 
-		await addCacheWarmJob(
+		await queue.addCacheWarmJob(
 			{ target: "token", tokenAddress: event.data.base, reason: "fourmeme-liquidity-added" },
 			{ jobId: `indexer-${eventId}-cache-warm-${event.data.base}` },
 		);
 		enqueuedJobs.push("cache-warm");
 
-		await addNotificationJob(
+		await queue.addNotificationJob(
 			{
 				type: "generic",
 				audience: "public",
@@ -153,7 +160,7 @@ export async function handleLiquidityAddedEvent(
 		enqueuedJobs.push("notification");
 
 		if (agentId) {
-			await addAgentProvisioningJob(buildLiquidityAddedProvisioningJob(agentId, event), {
+			await queue.addAgentProvisioningJob(buildLiquidityAddedProvisioningJob(agentId, event), {
 				jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
 			});
 			enqueuedJobs.push("agent-provisioning");

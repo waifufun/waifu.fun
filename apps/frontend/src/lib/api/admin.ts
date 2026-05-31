@@ -300,6 +300,7 @@ export type AdminElizaCloudWalletProvisioning = {
 
 export type AdminElizaCloudAccount = {
 	primaryWalletAddress?: string | null;
+	walletKeyRef?: string | null;
 	organizationId?: string;
 	userId?: string;
 	isNewAccount?: boolean;
@@ -313,6 +314,7 @@ export type AdminElizaCloudTestResult = {
 		cloudAgentId: string;
 		containerId?: string;
 		containerUrl?: string;
+		webUiUrl?: string | null;
 		status?: string | null;
 		jobId?: string;
 		polling?: { endpoint: string; intervalMs: number; expectedDurationMs: number };
@@ -370,6 +372,7 @@ export type AdminElizaCloudRuntimeRefResult = {
 		cloudAgentId: string;
 		containerId?: string | null;
 		containerUrl?: string | null;
+		webUiUrl?: string | null;
 		status?: string | null;
 		account?: AdminElizaCloudAccount;
 		walletProvisioning?: AdminElizaCloudWalletProvisioning;
@@ -418,6 +421,8 @@ export type AdminElizaCloudStatus = {
 			serviceAuth: boolean;
 			containerImage: boolean;
 			chatAccessSecret: boolean;
+			webhookUrl: boolean;
+			webhookSecret: boolean;
 			database: boolean;
 			testPageEnabled: boolean;
 		};
@@ -439,7 +444,17 @@ export function useElizaCloudStatus(token: string | null) {
 }
 
 export type AdminElizaCloudTestControlInput = {
-	action: "pause" | "resume" | "restart" | "status" | "top-up" | "balance" | "verify-top-up";
+	action:
+		| "pause"
+		| "resume"
+		| "restart"
+		| "status"
+		| "top-up"
+		| "balance"
+		| "verify-top-up"
+		| "webhook-depleted"
+		| "webhook-topped-up";
+	agentId?: string;
 	containerId?: string;
 	cloudAgentId?: string;
 	amountUsdCents?: number;
@@ -450,12 +465,13 @@ export type AdminElizaCloudTestControlResult = {
 	ok: boolean;
 	data?: {
 		action: string;
+		agentId?: string;
 		containerId?: string;
 		cloudAgentId?: string;
 		amountUsdCents?: number;
 		checkout?: { url?: string | null; checkoutUrl?: string | null; sessionId?: string | null };
 		balance?: { balance: number; totalPurchased?: number; totalSpent?: number; isLow?: boolean };
-		verification?: { amount?: number; message?: string };
+		verification?: { amount?: number; balance?: number; alreadyApplied?: boolean; message?: string };
 		status?: {
 			agentId?: string;
 			cloudAgentId?: string;
@@ -476,6 +492,103 @@ export function useElizaCloudTestControl(token: string | null) {
 	return useMutation({
 		mutationFn: (body: AdminElizaCloudTestControlInput) =>
 			adminPostJson<AdminElizaCloudTestControlResult>("/v2/admin/agents/eliza-cloud/test-control", token, body),
+	});
+}
+
+export type AdminElizaCloudTokenChatSessionInput = {
+	bearer: string;
+	chain: string;
+	chainId: number;
+	tokenContractAddress: string;
+};
+
+export type AdminElizaCloudTokenChatSessionResult = {
+	success: boolean;
+	chatUrl?: string;
+	expiresInSeconds?: number;
+	role?: "admin" | "user" | "guest";
+	error?: string;
+	message?: string;
+};
+
+export function requestElizaCloudTokenChatSession({
+	bearer,
+	chain,
+	chainId,
+	tokenContractAddress,
+}: AdminElizaCloudTokenChatSessionInput) {
+	return apiFetch<AdminElizaCloudTokenChatSessionResult>(
+		`/owner/tokens/${encodeURIComponent(chain)}/${chainId}/${tokenContractAddress}/chat-session`,
+		{ headers: { Authorization: `Bearer ${bearer}` } },
+	);
+}
+
+export function useElizaCloudTokenChatSession() {
+	return useMutation({
+		mutationFn: requestElizaCloudTokenChatSession,
+	});
+}
+
+export type AdminElizaCloudOwnerRuntimeInput = {
+	bearer: string;
+	agentId: string;
+};
+
+export type AdminElizaCloudOwnerRuntimeControlInput = AdminElizaCloudOwnerRuntimeInput & {
+	action: "suspend" | "resume" | "restart" | "status";
+};
+
+export type AdminElizaCloudOwnerRuntimeResult = {
+	ok: boolean;
+	cloudAgentId?: string;
+	action?: string;
+	running?: boolean;
+	hasWebUiUrl?: boolean;
+	webUiUrl?: string | null;
+	status?: {
+		agentId?: string;
+		cloudAgentId?: string;
+		containerId?: string;
+		containerUrl?: string;
+		status?: string;
+		webUiUrl?: string | null;
+		updatedAt?: string;
+		updated_at?: string;
+	};
+	result?: unknown;
+	runtime?: Record<string, unknown>;
+	error?: string;
+	message?: string;
+};
+
+export function requestElizaCloudOwnerRuntimeTest({ bearer, agentId }: AdminElizaCloudOwnerRuntimeInput) {
+	return apiFetch<AdminElizaCloudOwnerRuntimeResult>(`/v2/agents/${encodeURIComponent(agentId)}/runtime/test`, {
+		headers: { Authorization: `Bearer ${bearer}` },
+		method: "POST",
+	});
+}
+
+export function requestElizaCloudOwnerRuntimeControl({
+	action,
+	bearer,
+	agentId,
+}: AdminElizaCloudOwnerRuntimeControlInput) {
+	return apiFetch<AdminElizaCloudOwnerRuntimeResult>(`/v2/agents/${encodeURIComponent(agentId)}/runtime`, {
+		body: JSON.stringify({ action }),
+		headers: { Authorization: `Bearer ${bearer}` },
+		method: "PUT",
+	});
+}
+
+export function useElizaCloudOwnerRuntimeTest() {
+	return useMutation({
+		mutationFn: requestElizaCloudOwnerRuntimeTest,
+	});
+}
+
+export function useElizaCloudOwnerRuntimeControl() {
+	return useMutation({
+		mutationFn: requestElizaCloudOwnerRuntimeControl,
 	});
 }
 

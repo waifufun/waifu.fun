@@ -230,6 +230,86 @@ test("POST /eliza-cloud/credits maps low and top-up credit statuses distinctly",
 		dispatched.map((event) => (event as { event?: string }).event),
 		["agent.credits.low", "credits.topped_up"],
 	);
+	assert.deepEqual(
+		dispatched.map((event) => (event as { agentId?: string }).agentId),
+		["waifu-demo-01", "waifu-demo-01"],
+	);
+	assert.equal((dispatched[1] as { data?: Record<string, unknown> }).data?.elizaCloudAgentId, "cloud-agent-1");
+});
+
+test("POST /eliza-cloud/inference maps a hosted-agent spend to an inference.spent event", async () => {
+	const emitted: Array<{ eventType?: string; agentId?: string; data?: Record<string, unknown> }> = [];
+	const db = fakeDirectDb("waifu-demo-01");
+	// Mirrors the exact body the eliza container's waifu metering bridge POSTs
+	// after a cloud inference (see plugin-elizacloud/src/utils/waifu-metering.ts).
+	const payload = {
+		agentId: "waifu-demo-01",
+		modelType: "TEXT_LARGE",
+		modelName: "anthropic/claude-opus-4.7",
+		promptTokens: 1200,
+		completionTokens: 340,
+		totalTokens: 1540,
+		usd: 0.0188,
+		costSource: "gateway",
+		timestamp: new Date().toISOString(),
+		idempotencyKey: "inference:waifu-demo-01:abc-123",
+		source: "elizacloud",
+	};
+	const app = createWebhookRoutes({
+		secret: "secret",
+		db,
+		elizaCloud: elizaStub(),
+		async emitEvent(input) {
+			emitted.push(input as (typeof emitted)[number]);
+			return {} as never;
+		},
+		async dispatch() {},
+	});
+
+	const response = await postDirect(app, "/eliza-cloud/inference", payload);
+
+	assert.equal(response.status, 202);
+	assert.equal(emitted.length, 1);
+	assert.equal(emitted[0].eventType, "inference.spent");
+	assert.equal(emitted[0].agentId, "waifu-demo-01");
+	// The usd the burn rollup reads must survive ingestion unchanged.
+	assert.equal(emitted[0].data?.usd, 0.0188);
+	assert.equal(emitted[0].data?.totalTokens, 1540);
+});
+
+test("POST /eliza-cloud/inference is idempotent by idempotency key", async () => {
+	const emitted: unknown[] = [];
+	const db = fakeDirectDb("waifu-demo-01");
+	const app = createWebhookRoutes({
+		secret: "secret",
+		db,
+		elizaCloud: elizaStub(),
+		async emitEvent(input) {
+			emitted.push(input);
+			return {} as never;
+		},
+		async dispatch() {},
+	});
+	const payload = {
+		agentId: "waifu-demo-01",
+		modelType: "TEXT_LARGE",
+		promptTokens: 10,
+		completionTokens: 5,
+		totalTokens: 15,
+		usd: 0.0001,
+		costSource: "estimate",
+		timestamp: new Date().toISOString(),
+		idempotencyKey: "inference:waifu-demo-01:replay-1",
+		source: "elizacloud",
+	};
+
+	const first = await postDirect(app, "/eliza-cloud/inference", payload);
+	const second = await postDirect(app, "/eliza-cloud/inference", payload);
+
+	assert.equal(first.status, 202);
+	assert.equal(second.status, 200);
+	assert.deepEqual(await second.json(), { status: "ok", duplicate: true });
+	assert.equal(emitted.length, 1);
 });
 
 function post(app: ReturnType<typeof createWebhookRoutes>, payload: unknown) {

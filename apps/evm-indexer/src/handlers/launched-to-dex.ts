@@ -93,9 +93,16 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 		);
 	});
 
-	const { addAgentProvisioningJob, addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
+	const queue =
+		runtime.enqueueAgentProvisioning && runtime.enqueueCacheWarm && runtime.enqueueNotification
+			? {
+					addAgentProvisioningJob: runtime.enqueueAgentProvisioning,
+					addCacheWarmJob: runtime.enqueueCacheWarm,
+					addNotificationJob: runtime.enqueueNotification,
+				}
+			: await import("@waifufun/queue");
 
-	await addCacheWarmJob(
+	await queue.addCacheWarmJob(
 		{
 			target: "token",
 			tokenAddress: event.data.tokenAddress,
@@ -104,7 +111,7 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 		{ jobId: `indexer-${eventId}-cache-warm-${event.data.tokenAddress}` },
 	);
 
-	await addNotificationJob(
+	await queue.addNotificationJob(
 		{
 			type: "token_migrated",
 			audience: "public",
@@ -121,7 +128,7 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 
 	const agentId = await lookupAgentIdByToken(runtime, event.data.tokenAddress);
 	if (agentId) {
-		await addAgentProvisioningJob(buildLaunchedToDexProvisioningJob(agentId, event), {
+		await queue.addAgentProvisioningJob(buildLaunchedToDexProvisioningJob(agentId, event), {
 			jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
 		});
 	}

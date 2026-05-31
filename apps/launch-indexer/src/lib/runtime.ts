@@ -1,5 +1,6 @@
 import { type Database, getDatabase } from "@waifufun/db";
 import type { Logger } from "@waifufun/logger";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 import type { Address, Chain } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 
@@ -25,6 +26,7 @@ export interface LaunchIndexerRuntime {
 	cursors: CursorStore;
 	source: LaunchEventSource;
 	config: LaunchIndexerConfig;
+	enqueueAgentProvisioning?: (payload: AgentProvisioningJob, options?: { jobId?: string }) => Promise<unknown>;
 }
 
 export function getBscChain(chainId: number): Chain {

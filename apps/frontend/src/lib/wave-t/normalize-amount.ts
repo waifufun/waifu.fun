@@ -27,3 +27,21 @@ export function normalizeTokenAmount(raw: unknown): number {
 	}
 	return parsed;
 }
+
+/**
+ * Normalize a native-BNB wei amount into a human BNB float.
+ *
+ * Unlike {@link normalizeTokenAmount}, the quote (BNB / WBNB) leg of a
+ * trade is ALWAYS an 18-decimal wei string straight from the on-chain
+ * `Swap` log (e.g. `"100000000000000000"` == 0.1 BNB). There is no
+ * already-normalized variant to disambiguate, so we divide by 1e18
+ * unconditionally. Using the {@link normalizeTokenAmount} heuristic here
+ * would silently zero-ish small buys: a 0.0001 BNB swap is 1e14 wei,
+ * below the 1e15 token threshold, and would be left as a raw 1e14.
+ */
+export function normalizeBnbAmount(raw: unknown): number {
+	if (raw === undefined || raw === null || raw === "") return 0;
+	const parsed = Number(String(raw));
+	if (!Number.isFinite(parsed)) return 0;
+	return parsed / 1e18;
+}

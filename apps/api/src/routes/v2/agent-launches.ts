@@ -235,22 +235,7 @@ export function serializeAgentLaunch(
 	const metaName = typeof meta.name === "string" ? meta.name : null;
 	const metaSymbol = typeof meta.symbol === "string" ? meta.symbol : null;
 	const metaDescription = typeof meta.description === "string" ? meta.description : null;
-	const tierLabel = (() => {
-		switch (row.tier) {
-			case 0:
-				return "TIER_80";
-			case 1:
-				return "TIER_90";
-			case 2:
-				return "TIER_95";
-			case 3:
-				return "TIER_98";
-			case 4:
-				return "TIER_TEST";
-			default:
-				return null;
-		}
-	})();
+	const tierLabel = tierLabelFromStoredValue(row.tier);
 	const imageUrl = metaImage
 		? metaImage.startsWith("http") || metaImage.startsWith("ipfs://")
 			? metaImage
@@ -321,6 +306,27 @@ export function serializeAgentLaunch(
 		metaCid: row.flapMetaCid,
 		bundleTipBnb_alias: row.bundleTipBnb,
 	};
+}
+
+function tierLabelFromStoredValue(tier: number): string | null {
+	switch (tier) {
+		case 0:
+		case 80:
+			return "TIER_80";
+		case 1:
+		case 90:
+			return "TIER_90";
+		case 2:
+		case 95:
+			return "TIER_95";
+		case 3:
+		case 98:
+			return "TIER_98";
+		case 4:
+			return "TIER_TEST";
+		default:
+			return null;
+	}
 }
 
 export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) {

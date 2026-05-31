@@ -9,7 +9,7 @@
  */
 import type { AgentTrade } from "@/components/agent-home/types";
 
-import { normalizeTokenAmount } from "./normalize-amount";
+import { normalizeBnbAmount, normalizeTokenAmount } from "./normalize-amount";
 
 function serverAgentApiBase(): string {
 	const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -63,12 +63,19 @@ function isHlTrade(raw: Record<string, unknown>): raw is HlActivityTradeResponse
 
 function mapBscTrade(raw: BscActivityTradeResponse): AgentTrade {
 	const timestamp = Date.parse(raw.blockTimestamp);
-	const rawAmount = raw.side === "buy" ? raw.amountOut : raw.amountIn;
+	// The token leg is amountOut on a buy and amountIn on a sell; the BNB
+	// (quote / WBNB) leg is the opposite field. The indexer derives which
+	// side is WBNB from the pair's token0/token1 ordering before it writes
+	// the row, so amountIn/amountOut here are already venue-correct and we
+	// only need to pick the right field per side (do NOT assume token0).
+	const rawTokenAmount = raw.side === "buy" ? raw.amountOut : raw.amountIn;
+	const rawBnbAmount = raw.side === "buy" ? raw.amountIn : raw.amountOut;
 	const trade: AgentTrade = {
 		txId: raw.txHash,
 		type: raw.side,
 		address: raw.trader,
-		amount: normalizeTokenAmount(rawAmount),
+		amount: normalizeTokenAmount(rawTokenAmount),
+		bnbValue: normalizeBnbAmount(rawBnbAmount),
 		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
 		tokenAddress: raw.tokenAddress,
 		traderRole: raw.traderRole,

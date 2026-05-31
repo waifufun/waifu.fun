@@ -65,6 +65,62 @@ describe("fetchAgentOwnTrades", () => {
 		expect(rows.map((row) => (row.type === "trade" ? row.asset : ""))).toEqual(["WAIFU", "ETH", "WAIFU"]);
 	});
 
+	it("carries the BNB leg (wei) through to the trade row priceBnb for a real pancakeswap buy", async () => {
+		// Ground-truth tx 0x692330...c803b35: 0.1 BNB in -> ~26,301 WAIFU out
+		// on the graduated V2 pair (token0=WAIFU, token1=WBNB). The indexer
+		// already wrote amountIn as the WBNB leg, so the feed must show ~0.1
+		// bnb, not 0.000000.
+		mockFetch(200, [
+			{
+				txHash: "0x692330baa898637760085f546dec1013b0fca3c38c3abd4ce732fdfd9c803b35",
+				trader: "0xc9846a839c4e1d9050dc890a25661ab13224e9ec",
+				traderRole: "agent-hot",
+				tokenAddress: "0x15fc6086064afe50ccf4c70000c55cecb6e17777",
+				tokenSymbol: "WAIFU",
+				side: "buy",
+				amountIn: "100000000000000000",
+				amountOut: "26301257092316698233859",
+				blockTimestamp: "2026-05-31T09:23:05.000Z",
+			},
+		]);
+
+		const trades = await fetchAgentOwnTrades(ADDRESS);
+		expect(trades).toHaveLength(1);
+		const [t] = trades;
+		expect(t?.type).toBe("buy");
+		expect(t?.bnbValue).toBeCloseTo(0.1, 9);
+		expect(Number(t?.amount)).toBeCloseTo(26301.25709, 2);
+
+		const rows = mergeActivityWithTrades({ activity: [], trades, ticker: "WAIFU" });
+		expect(rows).toHaveLength(1);
+		const [row] = rows;
+		if (row?.type !== "trade") throw new Error("expected a trade row");
+		expect(row.priceBnb).toBeCloseTo(0.1, 9);
+		expect(row.venue).toBe("PancakeSwap");
+	});
+
+	it("uses the WBNB-out leg for a sell so priceBnb shows BNB received", async () => {
+		mockFetch(200, [
+			{
+				txHash: "0xsell",
+				trader: "0xc9846a839c4e1d9050dc890a25661ab13224e9ec",
+				traderRole: "agent-hot",
+				tokenAddress: "0x15fc6086064afe50ccf4c70000c55cecb6e17777",
+				tokenSymbol: "WAIFU",
+				side: "sell",
+				amountIn: "26301257092316698233859",
+				amountOut: "95000000000000000",
+				blockTimestamp: "2026-05-31T09:30:00.000Z",
+			},
+		]);
+
+		const trades = await fetchAgentOwnTrades(ADDRESS);
+		const [t] = trades;
+		expect(t?.type).toBe("sell");
+		expect(t?.bnbValue).toBeCloseTo(0.095, 9);
+		expect(Number(t?.amount)).toBeCloseTo(26301.25709, 2);
+	});
+
 	it("returns an honest empty list for an empty endpoint response", async () => {
 		mockFetch(200, []);
 

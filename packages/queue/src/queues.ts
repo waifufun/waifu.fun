@@ -140,7 +140,11 @@ export function addXTokenRefreshJob(payload: XTokenRefreshJob, options?: JobsOpt
 }
 
 export function addAgentProvisioningJob(payload: AgentProvisioningJob, options?: JobsOptions) {
-	return enqueueJob("agent-provisioning", payload, options);
+	return enqueueJob("agent-provisioning", payload, {
+		attempts: 12,
+		backoff: { type: "exponential", delay: 30_000 },
+		...options,
+	});
 }
 
 export function addAgentRollupJob(payload: AgentRollupJob, options?: JobsOptions) {

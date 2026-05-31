@@ -10,6 +10,7 @@ import type { Database } from "@waifufun/db/client";
 
 import { type RequirePatronBindings, requirePatron } from "../middleware/patron-auth.js";
 import {
+	type ElizaAgentRuntimeStatus,
 	type ElizaCloudClient,
 	type ElizaCreditCheckoutResult,
 	createElizaCloudClient,
@@ -135,7 +136,9 @@ function getCloudAgentId(row: TokenRuntimeRow): string | null {
 
 function getContainerUrl(row: TokenRuntimeRow): string | null {
 	const provisioning = getProvisioning(row.persona);
-	return stringField(provisioning, "containerUrl") ?? row.agent?.webUiUrl ?? null;
+	return (
+		stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl") ?? row.agent?.webUiUrl ?? null
+	);
 }
 
 function serializeRuntime(row: TokenRuntimeRow) {
@@ -159,6 +162,51 @@ function serializeRuntime(row: TokenRuntimeRow) {
 		suspendedReason: row.agent?.suspendedReason ?? null,
 		hasAgent: Boolean(cloudAgentId || containerUrl || status !== "none"),
 	};
+}
+
+function isHostedRuntimeRunning(status: string | null | undefined): boolean {
+	return ["running", "ready", "online", "active", "started"].includes(String(status ?? "").toLowerCase());
+}
+
+function runtimeOverlayFromStatus(
+	row: TokenRuntimeRow,
+	cloudAgentId: string,
+	status: ElizaAgentRuntimeStatus | null | undefined,
+): {
+	cloudAgentId: string;
+	containerId: string | null;
+	webUiUrl: string | null;
+	agentStatus: string;
+	lifecycleState: string;
+	suspendedReason: string | null;
+} {
+	const runtimeStatus = status?.status ?? row.agent?.agentStatus ?? row.token.agentStatus ?? "provisioning";
+	const webUiUrl = status?.webUiUrl ?? status?.containerUrl ?? getContainerUrl(row);
+	const running = isHostedRuntimeRunning(runtimeStatus) && Boolean(webUiUrl);
+	const agentStatus = running
+		? "running"
+		: isHostedRuntimeRunning(runtimeStatus)
+			? "provisioning"
+			: String(runtimeStatus || "provisioning");
+	return {
+		cloudAgentId,
+		containerId: status?.containerId ?? getContainerId(row),
+		webUiUrl,
+		agentStatus,
+		lifecycleState: running ? "live" : "birth",
+		suspendedReason: running ? null : (row.agent?.suspendedReason ?? null),
+	};
+}
+
+async function runtimeOverlayAfterControl(
+	client: ElizaCloudClient,
+	row: TokenRuntimeRow,
+	cloudAgentId: string,
+	fallbackStatus: ElizaAgentRuntimeStatus,
+): Promise<ReturnType<typeof runtimeOverlayFromStatus>> {
+	if (!client.getAgentRuntimeStatus) return runtimeOverlayFromStatus(row, cloudAgentId, fallbackStatus);
+	const status = await client.getAgentRuntimeStatus(cloudAgentId);
+	return runtimeOverlayFromStatus(row, cloudAgentId, status);
 }
 
 async function loadTokenRuntime(
@@ -439,9 +487,30 @@ app.get("/tokens/:chain/:chainId/:contractAddress/chat-session", async (c) => {
 		return c.json({ success: false, error: "WALLET_REQUIRED", message: "connect an EVM wallet to chat" }, 401);
 	}
 
+	const cloudAgentId = getCloudAgentId(resolved.row);
 	const chatUrl = getContainerUrl(resolved.row);
-	if (!chatUrl) {
-		return c.json({ success: false, error: "CHAT_UNAVAILABLE", message: "agent chat is not provisioned yet" }, 409);
+	if (!cloudAgentId || !chatUrl) {
+		return c.json(
+			{
+				success: false,
+				error: "CHAT_UNAVAILABLE",
+				message: "agent chat is not provisioned yet",
+				cloudAgentId: cloudAgentId ?? null,
+				hasChatUrl: Boolean(chatUrl),
+			},
+			409,
+		);
+	}
+	if (!isHostedRuntimeRunning(resolved.row.agent?.agentStatus ?? resolved.row.token.agentStatus)) {
+		return c.json(
+			{
+				success: false,
+				error: "CHAT_UNAVAILABLE",
+				message: "agent chat is not running",
+				agentStatus: resolved.row.agent?.agentStatus ?? resolved.row.token.agentStatus ?? "none",
+			},
+			409,
+		);
 	}
 
 	const access = await resolveTokenChatAccess(resolved.row, walletAddress, chatAccessDepsForTest);
@@ -562,12 +631,14 @@ app.post("/tokens/:chain/:chainId/:contractAddress/runtime/activate", async (c) 
 	});
 	if (!cloud) throw new Error("Eliza Cloud client did not return a provisioning result");
 
+	const hasHostedRuntimeUrl = Boolean(cloud.webUiUrl ?? cloud.containerUrl);
+	const isRunningWithHostedRuntime = isHostedRuntimeRunning(cloud.status) && hasHostedRuntimeUrl;
 	await ensureAgentOverlay(resolved.db, resolved.row, {
 		cloudAgentId: cloud.cloudAgentId,
-		webUiUrl: cloud.containerUrl ?? null,
+		webUiUrl: cloud.webUiUrl ?? cloud.containerUrl ?? null,
 		containerId: cloud.containerId ?? null,
-		agentStatus: cloud.status === "running" ? "running" : "provisioning",
-		lifecycleState: "birth",
+		agentStatus: isRunningWithHostedRuntime ? "running" : "provisioning",
+		lifecycleState: isRunningWithHostedRuntime ? "live" : "birth",
 		billingMode: body.billingMode ?? "owner_credits",
 		infraReserveUsd: 5,
 		suspendedReason: null,
@@ -580,10 +651,12 @@ app.post("/tokens/:chain/:chainId/:contractAddress/runtime/activate", async (c) 
 app.post("/tokens/:chain/:chainId/:contractAddress/runtime/suspend", async (c) => {
 	const resolved = await requireOwnedToken(c);
 	if (!resolved.db || !resolved.row) return resolved.response;
-	const containerId = getContainerId(resolved.row);
-	if (!containerId) return c.json({ success: false, error: "RUNTIME_NOT_FOUND" }, 409);
-	await getElizaClient().pauseAgent(containerId);
+	const cloudAgentId = getCloudAgentId(resolved.row);
+	if (!cloudAgentId) return c.json({ success: false, error: "RUNTIME_NOT_FOUND" }, 409);
+	await getElizaClient().pauseAgent(cloudAgentId);
 	await ensureAgentOverlay(resolved.db, resolved.row, {
+		cloudAgentId,
+		containerId: getContainerId(resolved.row),
 		agentStatus: "suspended",
 		lifecycleState: "dormant",
 		suspendedReason: "owner_requested",
@@ -595,14 +668,12 @@ app.post("/tokens/:chain/:chainId/:contractAddress/runtime/suspend", async (c) =
 app.post("/tokens/:chain/:chainId/:contractAddress/runtime/resume", async (c) => {
 	const resolved = await requireOwnedToken(c);
 	if (!resolved.db || !resolved.row) return resolved.response;
-	const containerId = getContainerId(resolved.row);
-	if (!containerId) return c.json({ success: false, error: "RUNTIME_NOT_FOUND" }, 409);
-	await getElizaClient().resumeAgent(containerId);
-	await ensureAgentOverlay(resolved.db, resolved.row, {
-		agentStatus: "running",
-		lifecycleState: "live",
-		suspendedReason: null,
-	});
+	const cloudAgentId = getCloudAgentId(resolved.row);
+	if (!cloudAgentId) return c.json({ success: false, error: "RUNTIME_NOT_FOUND" }, 409);
+	const client = getElizaClient();
+	await client.resumeAgent(cloudAgentId);
+	const overlay = await runtimeOverlayAfterControl(client, resolved.row, cloudAgentId, { status: "running" });
+	await ensureAgentOverlay(resolved.db, resolved.row, overlay);
 	const fresh = await loadTokenRuntime(resolved.db, resolved.row.token.chainId, resolved.row.token.contractAddress);
 	return c.json({ success: true, runtime: fresh ? serializeRuntime(fresh) : serializeRuntime(resolved.row) });
 });
@@ -610,16 +681,17 @@ app.post("/tokens/:chain/:chainId/:contractAddress/runtime/resume", async (c) =>
 app.post("/tokens/:chain/:chainId/:contractAddress/runtime/restart", async (c) => {
 	const resolved = await requireOwnedToken(c);
 	if (!resolved.db || !resolved.row) return resolved.response;
-	const containerId = getContainerId(resolved.row);
-	if (!containerId) return c.json({ success: false, error: "RUNTIME_NOT_FOUND" }, 409);
+	const cloudAgentId = getCloudAgentId(resolved.row);
+	if (!cloudAgentId) return c.json({ success: false, error: "RUNTIME_NOT_FOUND" }, 409);
 	const client = getElizaClient();
-	await client.pauseAgent(containerId);
-	await client.resumeAgent(containerId);
-	await ensureAgentOverlay(resolved.db, resolved.row, {
-		agentStatus: "running",
-		lifecycleState: "live",
-		suspendedReason: null,
-	});
+	if (client.restartHostedAgent) {
+		await client.restartHostedAgent(cloudAgentId);
+	} else {
+		await client.pauseAgent(cloudAgentId);
+		await client.resumeAgent(cloudAgentId);
+	}
+	const overlay = await runtimeOverlayAfterControl(client, resolved.row, cloudAgentId, { status: "running" });
+	await ensureAgentOverlay(resolved.db, resolved.row, overlay);
 	const fresh = await loadTokenRuntime(resolved.db, resolved.row.token.chainId, resolved.row.token.contractAddress);
 	return c.json({ success: true, runtime: fresh ? serializeRuntime(fresh) : serializeRuntime(resolved.row) });
 });
@@ -631,10 +703,21 @@ app.post("/tokens/:chain/:chainId/:contractAddress/billing/top-up", async (c) =>
 	const body = creditTopUpSchema.parse(await c.req.json().catch(() => ({})));
 	const result = await topUpOwnedTokenRuntime(resolved.db, resolved.row, body, getElizaClient()).catch((err) => {
 		if (err instanceof Error && err.message === "INVALID_CREDITS_AMOUNT") return null;
+		if (err instanceof Error && err.message === "RUNTIME_NOT_FOUND") return "RUNTIME_NOT_FOUND" as const;
 		throw err;
 	});
 	if (!result) {
 		return c.json({ success: false, error: "INVALID_CREDITS_AMOUNT" }, 400);
+	}
+	if (result === "RUNTIME_NOT_FOUND") {
+		return c.json(
+			{
+				success: false,
+				error: "RUNTIME_NOT_FOUND",
+				message: "Eliza Cloud top-up requires a provisioned cloud agent.",
+			},
+			409,
+		);
 	}
 
 	const fresh = await loadTokenRuntime(resolved.db, resolved.row.token.chainId, resolved.row.token.contractAddress);
@@ -663,7 +746,10 @@ export async function topUpOwnedTokenRuntime(
 	if (!Number.isFinite(creditsAmount) || creditsAmount <= 0) {
 		throw new Error("INVALID_CREDITS_AMOUNT");
 	}
-	const cloudAgentId = getCloudAgentId(row) ?? row.persona?.agentId ?? `token-${row.token.id}`;
+	const cloudAgentId = getCloudAgentId(row);
+	if (!cloudAgentId) {
+		throw new Error("RUNTIME_NOT_FOUND");
+	}
 	const containerId = getContainerId(row);
 	const creditsUsd = creditsAmount / 100;
 	const checkout = (await client.topUpCredits(cloudAgentId, creditsUsd)) ?? {};

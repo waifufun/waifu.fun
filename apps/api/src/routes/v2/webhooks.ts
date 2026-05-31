@@ -279,7 +279,7 @@ async function receiveDirectAgentEvent(
 					data: { ...mapped.data, source },
 					idempotencyKey,
 				},
-				{ elizaCloud, logger },
+				{ db, elizaCloud, logger },
 			);
 		}
 		return c.json({ status: "accepted" }, 202);

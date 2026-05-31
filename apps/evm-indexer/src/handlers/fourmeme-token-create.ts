@@ -173,10 +173,9 @@ export async function handleTokenCreateEvent(
 		// already carry an eliza_cloud_agent_id), so the later graduation enqueue
 		// is a no-op once this one has provisioned.
 		if (agentId && confirmedLaunchId) {
-			await addAgentProvisioningJob(
-				buildTokenCreateProvisioningJob(agentId, event),
-				{ jobId: `indexer-${eventId}-agent-provisioning-${agentId}` },
-			);
+			await addAgentProvisioningJob(buildTokenCreateProvisioningJob(agentId, event), {
+				jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
+			});
 		}
 
 		await addNotificationJob(

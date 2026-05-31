@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { schema } from "@waifufun/db";
+import { Table, getTableName, is } from "drizzle-orm";
 import { InMemoryCursorStore } from "./lib/cursor-store.js";
 import type {
 	BundleExecutedEvent,
@@ -71,8 +72,8 @@ class FakeTable {
 }
 
 function tableNameOf(table: unknown): TableId {
-	// @ts-expect-error drizzle internal symbol; we just need stable identity
-	return table?._?.name ?? table?.name ?? "unknown";
+	if (is(table, Table)) return getTableName(table);
+	return "unknown";
 }
 
 class FakeDb {
