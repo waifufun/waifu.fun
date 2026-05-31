@@ -333,8 +333,24 @@ export function PriceChart({
 		candleRef.current.applyOptions({
 			priceFormat: { type: "price", precision, minMove },
 		});
-		candleRef.current.setData(candles.map(toLwc));
-		volumeRef.current.setData(candles.map(toVol));
+		// lightweight-charts asserts strictly-ascending unique times. Upstream
+		// candle batches occasionally carry two rows in the same second (e.g.
+		// a backfill row landing on a live row); collapse those to the last
+		// write so the assertion never trips and the whole page never white-
+		// screens on a duplicate timestamp.
+		const seenSec = new Set<number>();
+		const dedupedAsc: Candle[] = [];
+		for (const c of [...candles].sort((a, b) => a.t - b.t)) {
+			const sec = Math.floor(c.t / 1000);
+			if (seenSec.has(sec)) {
+				dedupedAsc[dedupedAsc.length - 1] = c;
+				continue;
+			}
+			seenSec.add(sec);
+			dedupedAsc.push(c);
+		}
+		candleRef.current.setData(dedupedAsc.map(toLwc));
+		volumeRef.current.setData(dedupedAsc.map(toVol));
 		chartRef.current.timeScale().fitContent();
 	}, [candles, headerPrice]);
 

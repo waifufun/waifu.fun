@@ -17,6 +17,7 @@ import {
 const SMOKE_ENV_KEYS = [
 	"ADMIN_API_KEY",
 	"NEXT_PUBLIC_API_URL",
+	"WAIFU_CHAT_ACCESS_JWT_SECRET",
 	"WAIFU_API_BASE_URL",
 	"WAIFU_ELIZA_SMOKE_ADMIN_WALLET",
 	"WAIFU_ELIZA_SMOKE_AGENT_WALLET",
@@ -316,6 +317,7 @@ describe("eliza-cloud-live-smoke preflight", () => {
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_BEARER",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE",
+					"full E2E mode requires WAIFU_CHAT_ACCESS_JWT_SECRET",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1",
 				]);
@@ -330,6 +332,7 @@ describe("eliza-cloud-live-smoke preflight", () => {
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_OWNER_BEARER",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE",
+					"full E2E mode requires WAIFU_CHAT_ACCESS_JWT_SECRET",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION",
 					"full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1",
 				]);
@@ -347,6 +350,7 @@ describe("eliza-cloud-live-smoke preflight", () => {
 				WAIFU_ELIZA_SMOKE_STEWARD_BEARER: "steward-token",
 				WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK: "1",
 				WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION: "cs_mock",
+				WAIFU_CHAT_ACCESS_JWT_SECRET: "chat-secret",
 				WEBHOOK_RECEIVER_SECRET: "webhook-secret",
 			},
 			() => {

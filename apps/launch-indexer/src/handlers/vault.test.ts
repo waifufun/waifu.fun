@@ -1,13 +1,5 @@
-/**
- * Handler-level regression tests for launch event replays that keep the same
- * tx_hash/log_index but land under a different block_hash.
- */
-
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
-import { schema } from "@waifufun/db";
-import { Table, getTableName, is } from "drizzle-orm";
 
 import type { ClaimedEvent, DepositedEvent, RefundedEvent, WithdrawnEvent } from "../lib/events.js";
 import type { LaunchIndexerRuntime } from "../lib/runtime.js";
@@ -15,67 +7,55 @@ import { handleClaimed, handleDeposited, handleRefunded, handleWithdrawn } from 
 
 type Row = Record<string, unknown>;
 
-interface UpdateRecord {
-	table: string;
-	patch: Row;
+interface InsertState {
+	table: FakeTable;
+	value: Row;
 }
 
 class FakeTable {
-	rows: Row[] = [];
-	private nextId = 1;
+	public rows: Row[] = [];
+	public updateCount = 0;
 
-	constructor(public readonly name: string) {}
+	insert(value: Row): Row[] {
+		const existing = this.rows.find((row) => row.txHash === value.txHash && row.logIndex === value.logIndex);
+		if (existing) {
+			return [];
+		}
 
-	insert(value: Row): Row {
-		const row = { ...value, id: value.id ?? `id-${this.name}-${this.nextId++}` };
+		const row = { ...value, id: `row-${this.rows.length + 1}` };
 		this.rows.push(row);
-		return row;
+		return [row];
 	}
-}
-
-function tableNameOf(table: unknown): string {
-	if (is(table, Table)) return getTableName(table);
-	return "unknown";
 }
 
 class FakeDb {
-	tables = new Map<string, FakeTable>();
-	updates: UpdateRecord[] = [];
+	public tables = new Map<string, FakeTable>();
 
-	getTable(table: unknown): FakeTable {
+	private getTable(table: unknown): FakeTable {
 		const name = tableNameOf(table);
-		let t = this.tables.get(name);
-		if (!t) {
-			t = new FakeTable(name);
-			this.tables.set(name, t);
+		let fakeTable = this.tables.get(name);
+		if (!fakeTable) {
+			fakeTable = new FakeTable();
+			this.tables.set(name, fakeTable);
 		}
-		return t;
+		return fakeTable;
 	}
 
 	insert(table: unknown) {
-		const t = this.getTable(table);
+		const fakeTable = this.getTable(table);
 		return {
 			values(value: Row) {
-				const runInsert = () => {
-					const existing = t.rows.find(
-						(row) =>
-							row.txHash === value.txHash && row.logIndex === value.logIndex && row.blockHash === value.blockHash,
-					);
-					if (existing) return [];
-					return [t.insert(value)];
-				};
+				const state: InsertState = { table: fakeTable, value };
 				return {
 					onConflictDoNothing() {
-						const builder = {
-							returning() {
-								return Promise.resolve(runInsert());
-							},
-							// biome-ignore lint/suspicious/noThenProperty: thenable mocks drizzle's awaitable builders
-							then(resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) {
-								return Promise.resolve(runInsert()).then(resolve, reject);
-							},
-						};
-						return builder;
+						return this;
+					},
+					returning() {
+						return Promise.resolve(runInsert(state));
+					},
+					// biome-ignore lint/suspicious/noThenProperty: thenable mocks drizzle's awaitable builders
+					then(resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) {
+						return Promise.resolve(runInsert(state)).then(resolve, reject);
 					},
 				};
 			},
@@ -83,13 +63,26 @@ class FakeDb {
 	}
 
 	update(table: unknown) {
-		const tableName = tableNameOf(table);
-		const updates = this.updates;
+		const fakeTable = this.getTable(table);
 		return {
 			set(value: Row) {
 				return {
 					where(_predicate: unknown) {
-						updates.push({ table: tableName, patch: value });
+						fakeTable.updateCount += 1;
+						const latest = fakeTable.rows.at(-1);
+						if (latest) {
+							for (const [key, nextValue] of Object.entries(value)) {
+								if (
+									typeof nextValue === "string" ||
+									typeof nextValue === "number" ||
+									typeof nextValue === "boolean" ||
+									typeof nextValue === "bigint" ||
+									nextValue === null
+								) {
+									latest[key] = nextValue;
+								}
+							}
+						}
 						return Promise.resolve([]);
 					},
 				};
@@ -97,16 +90,15 @@ class FakeDb {
 		};
 	}
 
-	select(cols?: Record<string, unknown>) {
+	select(_cols?: Record<string, unknown>) {
 		const tables = this.tables;
-		const isCountSelect = cols != null && Object.keys(cols).length === 1 && Object.keys(cols)[0] === "count";
 		return {
 			from(table: unknown) {
-				const t = tables.get(tableNameOf(table));
-				const rows = () => (isCountSelect ? [{ count: t?.rows.length ?? 0 }] : (t?.rows ?? []));
+				const fakeTable = tables.get(tableNameOf(table));
+				const rows = fakeTable?.rows ?? [];
 				return {
 					where(_predicate: unknown) {
-						return Promise.resolve(rows());
+						return Promise.resolve([{ count: rows.length }]);
 					},
 				};
 			},
@@ -114,127 +106,155 @@ class FakeDb {
 	}
 }
 
+function runInsert(state: InsertState): Row[] {
+	return state.table.insert(state.value);
+}
+
+function tableNameOf(table: unknown): string {
+	return (
+		(table as { [key: symbol]: string })?.[Symbol.for("drizzle:Name")] ??
+		(table as { _?: { name?: string }; name?: string })?._?.name ??
+		(table as { name?: string })?.name ??
+		"unknown"
+	);
+}
+
 function makeRuntime(): { runtime: LaunchIndexerRuntime; db: FakeDb } {
 	const db = new FakeDb();
-	const noop = () => {};
 	const logger = {
-		debug: noop,
-		info: noop,
-		warn: noop,
-		error: noop,
+		debug() {},
+		info() {},
+		warn() {},
+		error() {},
 		child() {
 			return logger;
 		},
 	};
-	const runtime = {
-		db: db as unknown as LaunchIndexerRuntime["db"],
-		logger: logger as unknown as LaunchIndexerRuntime["logger"],
-		cursors: undefined as unknown as LaunchIndexerRuntime["cursors"],
-		source: undefined as unknown as LaunchIndexerRuntime["source"],
-		config: {} as LaunchIndexerRuntime["config"],
-	};
-	return { runtime, db };
-}
 
-const LAUNCH_ID = "launch-1";
-const VAULT = "0x2222222222222222222222222222222222222222";
-const USER = "0x55555555555555555555555555555555555555aa";
-const TX = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as `0x${string}`;
-const BLOCK_A = "0x00000000000000000000000000000000000000000000000000000000000000a1" as `0x${string}`;
-const BLOCK_B = "0x00000000000000000000000000000000000000000000000000000000000000b2" as `0x${string}`;
-
-function baseEvent(blockHash: `0x${string}`) {
 	return {
-		chainId: 56,
-		contractAddress: VAULT as `0x${string}`,
-		blockNumber: blockHash === BLOCK_A ? 100n : 101n,
-		blockHash,
-		txHash: TX,
-		logIndex: 7,
-		blockTimestamp: new Date("2026-05-31T00:00:00Z"),
+		db,
+		runtime: {
+			db: db as unknown as LaunchIndexerRuntime["db"],
+			logger: logger as unknown as LaunchIndexerRuntime["logger"],
+			cursors: undefined as unknown as LaunchIndexerRuntime["cursors"],
+			source: undefined as unknown as LaunchIndexerRuntime["source"],
+			config: {} as LaunchIndexerRuntime["config"],
+		},
 	};
 }
 
-function deposited(blockHash: `0x${string}`): DepositedEvent {
+const launchId = "launch-1";
+const user = "0x55555555555555555555555555555555555555aa" as const;
+const txHash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const;
+const blockHashA = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as const;
+const blockHashB = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" as const;
+
+function withBlockHash<T extends { blockHash: `0x${string}` }>(event: T, blockHash: `0x${string}`): T {
+	return { ...event, blockHash };
+}
+
+function depositedEvent(): DepositedEvent {
 	return {
-		...baseEvent(blockHash),
 		eventName: "Deposited",
-		data: { user: USER as `0x${string}`, amount: "1000", newTotal: "1000" },
+		chainId: 56,
+		contractAddress: "0x2222222222222222222222222222222222222222",
+		blockNumber: 100n,
+		blockHash: blockHashA,
+		txHash,
+		logIndex: 7,
+		blockTimestamp: new Date("2026-05-29T00:00:00Z"),
+		data: { user, amount: "1000", newTotal: "1000" },
 	};
 }
 
-function withdrawn(blockHash: `0x${string}`): WithdrawnEvent {
+function withdrawnEvent(): WithdrawnEvent {
 	return {
-		...baseEvent(blockHash),
 		eventName: "Withdrawn",
-		data: { user: USER as `0x${string}`, amount: "400", penalty: "40", refund: "360" },
+		chainId: 56,
+		contractAddress: "0x2222222222222222222222222222222222222222",
+		blockNumber: 101n,
+		blockHash: blockHashA,
+		txHash,
+		logIndex: 8,
+		blockTimestamp: new Date("2026-05-29T00:00:00Z"),
+		data: { user, amount: "400", penalty: "40", refund: "360" },
 	};
 }
 
-function refunded(blockHash: `0x${string}`): RefundedEvent {
+function refundedEvent(): RefundedEvent {
 	return {
-		...baseEvent(blockHash),
 		eventName: "Refunded",
-		data: { user: USER as `0x${string}`, principal: "600", bonus: "60", refundAmount: "660" },
+		chainId: 56,
+		contractAddress: "0x2222222222222222222222222222222222222222",
+		blockNumber: 102n,
+		blockHash: blockHashA,
+		txHash,
+		logIndex: 9,
+		blockTimestamp: new Date("2026-05-29T00:00:00Z"),
+		data: { user, principal: "400", bonus: "20", refundAmount: "420" },
 	};
 }
 
-function claimed(blockHash: `0x${string}`): ClaimedEvent {
+function claimedEvent(): ClaimedEvent {
 	return {
-		...baseEvent(blockHash),
 		eventName: "Claimed",
-		data: { user: USER as `0x${string}`, amount: "123", totalClaimed: "123" },
+		chainId: 56,
+		contractAddress: "0x2222222222222222222222222222222222222222",
+		blockNumber: 103n,
+		blockHash: blockHashA,
+		txHash,
+		logIndex: 10,
+		blockTimestamp: new Date("2026-05-29T00:00:00Z"),
+		data: { user, amount: "100", totalClaimed: "100" },
 	};
 }
 
-test("handleDeposited: same tx/log with a different block_hash remains visible but mutates aggregates once", async () => {
+test("handleDeposited: reorg block hash variant does not apply aggregate updates twice", async () => {
 	const { runtime, db } = makeRuntime();
+	const first = depositedEvent();
 
-	await handleDeposited(runtime, deposited(BLOCK_A), { launchId: LAUNCH_ID });
-	await handleDeposited(runtime, deposited(BLOCK_B), { launchId: LAUNCH_ID });
+	await handleDeposited(runtime, first, { launchId });
+	const updateCountAfterFirst = db.tables.get("agent_launches")?.updateCount;
+	await handleDeposited(runtime, withBlockHash(first, blockHashB), { launchId });
 
-	const rows = db.getTable(schema.launchDeposits).rows;
-	assert.equal(rows.length, 2, "alternate block hash replay should keep a visible event row");
-	assert.deepEqual(
-		rows.map((row) => row.blockHash),
-		[BLOCK_A, BLOCK_B],
-	);
-	assert.equal(db.updates.length, 2, "only the canonical first observation updates total + depositor count");
+	assert.equal(db.tables.get("launch_deposits")?.rows.length, 1);
+	assert.equal(db.tables.get("launch_deposits")?.rows[0]?.blockHash, blockHashA);
+	assert.equal(db.tables.get("agent_launches")?.updateCount, updateCountAfterFirst);
 });
 
-test("handleWithdrawn: same tx/log with a different block_hash does not double-debit aggregate totals", async () => {
+test("handleWithdrawn: reorg block hash variant does not apply aggregate updates twice", async () => {
 	const { runtime, db } = makeRuntime();
+	const first = withdrawnEvent();
 
-	await handleWithdrawn(runtime, withdrawn(BLOCK_A), { launchId: LAUNCH_ID });
-	await handleWithdrawn(runtime, withdrawn(BLOCK_B), { launchId: LAUNCH_ID });
+	await handleWithdrawn(runtime, first, { launchId });
+	const updateCountAfterFirst = db.tables.get("agent_launches")?.updateCount;
+	await handleWithdrawn(runtime, withBlockHash(first, blockHashB), { launchId });
 
-	const rows = db.getTable(schema.launchWithdrawals).rows;
-	assert.equal(rows.length, 2);
-	assert.equal(db.updates.length, 1, "only the canonical first observation updates totalDeposited/bonusPool");
+	assert.equal(db.tables.get("launch_withdrawals")?.rows.length, 1);
+	assert.equal(db.tables.get("launch_withdrawals")?.rows[0]?.blockHash, blockHashA);
+	assert.equal(db.tables.get("agent_launches")?.updateCount, updateCountAfterFirst);
 });
 
-test("handleRefunded: same tx/log with a different block_hash does not double-debit refund aggregates", async () => {
+test("handleRefunded: reorg block hash variant does not apply aggregate updates twice", async () => {
 	const { runtime, db } = makeRuntime();
+	const first = refundedEvent();
 
-	await handleRefunded(runtime, refunded(BLOCK_A), { launchId: LAUNCH_ID });
-	await handleRefunded(runtime, refunded(BLOCK_B), { launchId: LAUNCH_ID });
+	await handleRefunded(runtime, first, { launchId });
+	const updateCountAfterFirst = db.tables.get("agent_launches")?.updateCount;
+	await handleRefunded(runtime, withBlockHash(first, blockHashB), { launchId });
 
-	const rows = db.getTable(schema.launchWithdrawals).rows;
-	assert.equal(rows.length, 2);
-	assert.equal(db.updates.length, 1, "only the canonical first observation updates totalDeposited/bonusPool");
+	assert.equal(db.tables.get("launch_withdrawals")?.rows.length, 1);
+	assert.equal(db.tables.get("launch_withdrawals")?.rows[0]?.blockHash, blockHashA);
+	assert.equal(db.tables.get("agent_launches")?.updateCount, updateCountAfterFirst);
 });
 
-test("handleClaimed: same tx/log with a different block_hash preserves event visibility", async () => {
+test("handleClaimed: reorg block hash variant keeps one canonical claim row", async () => {
 	const { runtime, db } = makeRuntime();
+	const first = claimedEvent();
 
-	await handleClaimed(runtime, claimed(BLOCK_A), { launchId: LAUNCH_ID });
-	await handleClaimed(runtime, claimed(BLOCK_B), { launchId: LAUNCH_ID });
+	await handleClaimed(runtime, first, { launchId });
+	await handleClaimed(runtime, withBlockHash(first, blockHashB), { launchId });
 
-	const rows = db.getTable(schema.launchClaims).rows;
-	assert.equal(rows.length, 2);
-	assert.deepEqual(
-		rows.map((row) => row.blockHash),
-		[BLOCK_A, BLOCK_B],
-	);
-	assert.equal(db.updates.length, 0);
+	assert.equal(db.tables.get("launch_claims")?.rows.length, 1);
+	assert.equal(db.tables.get("launch_claims")?.rows[0]?.blockHash, blockHashA);
 });

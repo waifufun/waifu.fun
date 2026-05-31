@@ -387,7 +387,8 @@ async function syncTokenRuntimeOverlay(
 	if (!row) return;
 
 	const now = new Date();
-	const isRunning = isHostedRuntimeRunning(args.cloud.status);
+	const hostedUrl = args.cloud.webUiUrl ?? args.cloud.containerUrl ?? null;
+	const isRunning = isHostedRuntimeRunning(args.cloud.status) && Boolean(hostedUrl);
 	const agentStatus = isRunning ? "running" : "provisioning";
 	const lifecycleState = isRunning ? "live" : "birth";
 	const agentValues = {
@@ -398,7 +399,7 @@ async function syncTokenRuntimeOverlay(
 		runtimeProvider: "eliza-cloud",
 		agentStatus,
 		lifecycleState,
-		webUiUrl: args.cloud.webUiUrl ?? args.cloud.containerUrl ?? null,
+		webUiUrl: hostedUrl,
 		bridgeUrl: args.cloud.containerUrl ?? args.cloud.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",

@@ -11,6 +11,10 @@ export type TokenMetrics = {
 	txs24h: number;
 	change24h: number;
 	totalSupply: bigint;
+	/** Raw balance held at the burn (dead) address. 0n when nothing burned. */
+	burnedSupply: bigint;
+	/** ERC-20 decimals, needed to humanize totalSupply / burnedSupply. */
+	decimals: number;
 };
 
 const BSC_RPC =
@@ -30,7 +34,18 @@ const FALLBACK: TokenMetrics = {
 	txs24h: 0,
 	change24h: 0,
 	totalSupply: 0n,
+	burnedSupply: 0n,
+	decimals: 18,
 };
+
+// Standard EVM burn sink. Tokens routed here are provably out of supply.
+const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+
+/** ABI-encode balanceOf(address) calldata. */
+function encodeBalanceOf(holder: string): string {
+	const addr = holder.replace(/^0x/, "").toLowerCase().padStart(64, "0");
+	return `0x70a08231${addr}`;
+}
 
 type DexPair = {
 	baseToken?: { address?: string; name?: string; symbol?: string };
@@ -124,15 +139,17 @@ async function fetchDexMetrics(contract: string): Promise<Partial<TokenMetrics>>
 
 export async function fetchTokenMetrics(contract: string): Promise<TokenMetrics> {
 	const safeContract = contract.trim();
-	const [nameHex, symbolHex, decimalsHex, supplyHex, dex] = await Promise.all([
+	const [nameHex, symbolHex, decimalsHex, supplyHex, burnedHex, dex] = await Promise.all([
 		rpcCall(safeContract, "0x06fdde03"),
 		rpcCall(safeContract, "0x95d89b41"),
 		rpcCall(safeContract, "0x313ce567"),
 		rpcCall(safeContract, "0x18160ddd"),
+		rpcCall(safeContract, encodeBalanceOf(BURN_ADDRESS)),
 		fetchDexMetrics(safeContract),
 	]);
 	const decimals = Number(decodeUint(decimalsHex) || 18n);
 	const totalSupply = decodeUint(supplyHex);
+	const burnedSupply = decodeUint(burnedHex);
 	const normalizedSupply = decimals > 0 ? Number(totalSupply) / 10 ** decimals : Number(totalSupply);
 	const priceUsd = dex.priceUsd ?? 0;
 	return {
@@ -144,5 +161,7 @@ export async function fetchTokenMetrics(contract: string): Promise<TokenMetrics>
 		priceUsd,
 		marketCap: dex.marketCap ?? (priceUsd > 0 && Number.isFinite(normalizedSupply) ? normalizedSupply * priceUsd : 0),
 		totalSupply,
+		burnedSupply,
+		decimals,
 	};
 }

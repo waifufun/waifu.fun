@@ -15,7 +15,7 @@
  *   LiveHoldingsAllocation (1fr)  | ActivePositions (1.4fr)
  *   PnlChart                       | AppsShipped (merged: platform products + revenue apps)
  *   BurnRatePanel                  (renders only when agent.burn is populated)
- *   ThesisPanel
+ *   TokenomicsPanel                (supply, burn, treasury, tax-stream split)
  *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3)
  *   TopUpPanel
  *   footer (days since launch, generic)
@@ -41,20 +41,26 @@ import type { Position } from "@/lib/wave-t/positions";
 import { computeRunway } from "@/lib/wave-t/runway";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
-import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
+import type { NavHistoryPoint, PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
 import type { AgentData, AgentTrade } from "./types";
 import { THEME_TOKENS } from "./wave-t/_primitives";
-import { ActivePositions } from "./wave-t/active-positions";
 import type { ActivityRowInput } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
 import { BurnRatePanel } from "./wave-t/burn-rate-panel";
 import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
-import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } from "./wave-t/live-wrappers";
+import {
+	LiveActivePositions,
+	LiveActivityFeed,
+	LiveHero,
+	LiveHoldingsAllocation,
+	LivePriceChart,
+} from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
-import { ThesisPanel } from "./wave-t/thesis-panel";
+import { TokenomicsPanel } from "./wave-t/tokenomics-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
 
 export interface AgentHomeV2Props {
@@ -64,10 +70,16 @@ export interface AgentHomeV2Props {
 	token: TokenMetrics;
 	candles: CandleSeries;
 	holdings: HoldingsSnapshot;
-	holdingsSource?: "aggregated" | "burner";
+	holdingsSource?: "aggregated" | "empty";
 	runwayDays?: number | null;
 	twitterStats?: TwitterStats | null;
 	positions: Position[];
+	/**
+	 * SSG-prefetched open perp positions, derived from the /holdings
+	 * snapshot's `perpsPositions[]`. The live wrapper refreshes these on
+	 * the holdings cadence. Empty for spot-only / unfunded agents.
+	 */
+	hyperliquidPositions?: HyperliquidPosition[];
 	activity: ActivityRowInput[];
 	apps: App[];
 	daysOperating?: number;
@@ -84,6 +96,12 @@ export interface AgentHomeV2Props {
 	 * a 0% display while still rendering the signed dollar total.
 	 */
 	pnlBaselineNav?: number | null;
+	/**
+	 * Real nav-snapshot series (same /nav-history source as the pnl
+	 * chart). The hero sparkline renders only when this has two or more
+	 * points; otherwise the slot stays empty. No synthesized trend.
+	 */
+	navSeries?: NavHistoryPoint[] | null;
 	/**
 	 * Optional ERC-8004 on-chain identity record for the agent. When
 	 * present, the hero shows a verified badge and the page renders an
@@ -105,10 +123,11 @@ export default function AgentHomeV2({
 	token,
 	candles,
 	holdings,
-	holdingsSource = "burner",
+	holdingsSource = "empty",
 	runwayDays = null,
 	twitterStats = null,
 	positions,
+	hyperliquidPositions = [],
 	activity,
 	apps,
 	daysOperating: daysOperatingOverride,
@@ -116,6 +135,7 @@ export default function AgentHomeV2({
 	identity = null,
 	pnlSeries,
 	pnlBaselineNav = null,
+	navSeries = null,
 }: AgentHomeV2Props) {
 	// Hero identity: prefer the short bio when set, fall back to the full
 	// description. The persona endpoint owns both; we never override here.
@@ -190,6 +210,7 @@ export default function AgentHomeV2({
 						initialHoldingsHasAggregated={initialHoldingsHasAggregated}
 						initialTwitterStats={twitterStats}
 						staticTreasuryOverride={staticTreasuryOverride}
+						navSeries={navSeries}
 					/>
 				</div>
 
@@ -206,7 +227,11 @@ export default function AgentHomeV2({
 						initial={holdings}
 						initialHasAggregated={initialHoldingsHasAggregated}
 					/>
-					<ActivePositions positions={positions} hyperliquidAgentId={agent.tokenAddress} />
+					<LiveActivePositions
+						address={agent.tokenAddress}
+						positions={positions}
+						initialHyperliquidPositions={hyperliquidPositions}
+					/>
 				</div>
 
 				{/* Row 4: pnl chart + apps shipped (unified). The apps panel
@@ -235,12 +260,20 @@ export default function AgentHomeV2({
 					</div>
 				)}
 
-				{/* Row 5: thesis. */}
-				<div className="mt-6 md:mt-8" id="thesis">
-					<ThesisPanel
-						hasLiveRevenue={false}
-						ticker={agent.ticker}
-						holderCount={token.holders || agent.holderCount || null}
+				{/* Row 5: tokenomics. supply, burn, treasury, tax-stream split.
+				    All figures real on-chain reads or honest empty states. */}
+				<div className="mt-6 md:mt-8" id="tokenomics">
+					<TokenomicsPanel
+						token={{
+							symbol: token.symbol || agent.ticker,
+							priceUsd: token.priceUsd,
+							marketCap: token.marketCap || agent.marketCapUsd || 0,
+							holders: token.holders || agent.holderCount || 0,
+							totalSupply: token.totalSupply,
+							burnedSupply: token.burnedSupply,
+							decimals: token.decimals,
+						}}
+						treasuryUsd={burnTreasuryUsd ?? agent.treasuryNavUsd ?? null}
 					/>
 				</div>
 

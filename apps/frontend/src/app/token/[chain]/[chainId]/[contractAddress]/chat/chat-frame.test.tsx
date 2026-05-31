@@ -4,7 +4,7 @@ import {
 	HOSTED_CHAT_IFRAME_ALLOW,
 	HOSTED_CHAT_IFRAME_REFERRER_POLICY,
 	HOSTED_CHAT_IFRAME_SANDBOX,
-} from "./chat-frame";
+} from "./chat-frame-policy";
 
 describe("hosted token chat iframe policy", () => {
 	it("allows the embedded Eliza app without leaking signed chat URLs as referrers", () => {

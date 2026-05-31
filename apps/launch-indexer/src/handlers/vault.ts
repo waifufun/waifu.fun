@@ -13,10 +13,9 @@
  *   - Refunded         → launch_withdrawals + totalDeposited + bonusPool
  *   - Claimed          → launch_claims
  *
- * Event visibility is keyed on (tx_hash, log_index, block_hash), so a replay
- * under a different block hash is recorded distinctly (waifufun#601). Aggregate
- * launch-row mutations are gated by the first observed (tx_hash, log_index), so
- * alternate-block visibility rows cannot double-apply side effects (waifufun#819).
+ * Aggregate-affecting inserts are idempotent on (tx_hash, log_index) so that
+ * re-running the indexer over the same block range or replaying a reorged log
+ * at a different block hash does not double-apply launch totals.
  */
 
 import { schema } from "@waifufun/db";
@@ -37,20 +36,6 @@ import type { LaunchIndexerRuntime } from "../lib/runtime.js";
 
 export interface VaultHandlerContext {
 	launchId: string;
-}
-
-async function isFirstTxLogObservation(
-	runtime: LaunchIndexerRuntime,
-	table: typeof schema.launchDeposits | typeof schema.launchWithdrawals | typeof schema.launchClaims,
-	txHash: `0x${string}`,
-	logIndex: number,
-): Promise<boolean> {
-	const [seen] = await runtime.db
-		.select({ count: sql<number>`count(*)::int` })
-		.from(table)
-		.where(sql`${table.txHash} = ${txHash} AND ${table.logIndex} = ${logIndex}`);
-
-	return (seen?.count ?? 0) === 1;
 }
 
 export async function handleRouterSet(
@@ -82,10 +67,10 @@ export async function handleDeposited(
 		.onConflictDoNothing()
 		.returning({ id: schema.launchDeposits.id });
 
+	// Only mutate the launch row when this was a fresh insert. Otherwise a
+	// replay would clobber state with a stale `newTotal` and double-bump the
+	// depositor counter.
 	if (inserted.length === 0) {
-		return;
-	}
-	if (!(await isFirstTxLogObservation(runtime, schema.launchDeposits, event.txHash, event.logIndex))) {
 		return;
 	}
 
@@ -147,10 +132,9 @@ export async function handleWithdrawn(
 		.onConflictDoNothing()
 		.returning({ id: schema.launchWithdrawals.id });
 
+	// Idempotency guard: don't double-debit totalDeposited / double-credit
+	// bonusPool on a replayed event.
 	if (inserted.length === 0) {
-		return;
-	}
-	if (!(await isFirstTxLogObservation(runtime, schema.launchWithdrawals, event.txHash, event.logIndex))) {
 		return;
 	}
 
@@ -300,9 +284,6 @@ export async function handleRefunded(
 		.returning({ id: schema.launchWithdrawals.id });
 
 	if (inserted.length === 0) {
-		return;
-	}
-	if (!(await isFirstTxLogObservation(runtime, schema.launchWithdrawals, event.txHash, event.logIndex))) {
 		return;
 	}
 

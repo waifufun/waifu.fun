@@ -28,6 +28,7 @@ export interface BundleFailedRefundDeps {
 	readVault: (vault: Address) => Promise<{ state: number; bundleBot: Address }>;
 	resolveBundleBotKey: (address: Address) => Promise<Hex | null>;
 	sendRefundBundleFailed: (vault: Address, pk: Hex) => Promise<string>;
+	markRefunded: (db: Database, launch: AgentLaunchRow, txHash: string) => Promise<void>;
 }
 
 export interface PollDeps {
@@ -250,6 +251,7 @@ async function maybeEnableBundleFailedRefund(
 
 	try {
 		const txHash = await refund.sendRefundBundleFailed(vault, pk);
+		await refund.markRefunded(deps.db, launch, txHash);
 		deps.logger.info(
 			{ launchId: launch.id, vault, bundleBot: onchain.bundleBot, txHash },
 			"bundle failed terminal auto-refund: enableRefundBundleFailed submitted",

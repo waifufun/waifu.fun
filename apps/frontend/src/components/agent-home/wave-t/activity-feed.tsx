@@ -17,7 +17,7 @@
 import { ChevronDown, ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
-import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
+import { BnbChainIcon, ElizaCloudIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
 import { resolveImageUrl } from "@/lib/image-url";
@@ -176,12 +176,12 @@ export type ActivityRowInput =
 type Tab = "all" | ActivityCategory;
 
 const TABS: { key: Tab; label: string }[] = [
-	{ key: "all", label: "All" },
-	{ key: "trading", label: "Trading" },
-	{ key: "apps", label: "Apps" },
-	{ key: "treasury", label: "Treasury" },
-	{ key: "market", label: "Market" },
-	{ key: "system", label: "System" },
+	{ key: "all", label: "all" },
+	{ key: "trading", label: "trading" },
+	{ key: "apps", label: "apps" },
+	{ key: "treasury", label: "treasury" },
+	{ key: "market", label: "market" },
+	{ key: "system", label: "system" },
 ];
 
 function categoryOf(row: ActivityRowInput): ActivityCategory {
@@ -227,8 +227,18 @@ function deltaTone(delta: number): { cls: string; sign: string } {
 	return { cls: "text-[var(--text-tertiary)]", sign: "" };
 }
 
+// Eliza Cloud is the agent runtime + inference / credits layer. Its events
+// (credit top-ups, inference spend, image-gen billing) arrive as treasury rows
+// labelled with the eliza cloud / inference / image-gen provider, so match
+// those to the Eliza mark instead of the generic chain fallback.
+function isElizaSource(label: string): boolean {
+	const l = label.toLowerCase();
+	return l.includes("eliza") || l.includes("inference") || l.includes("image-gen");
+}
+
 function pickVenueIcon(venue: string): ReactNode {
 	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
+	if (isElizaSource(venue)) return <ElizaCloudIcon className="h-3.5 w-3.5" />;
 	return <BnbChainIcon className="h-3.5 w-3.5" />;
 }
 
@@ -448,16 +458,24 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 				};
 			}
 			if (row.kind === "open") {
-				const lev = row.leverage ? ` ${row.leverage}x` : "";
+				// title carries the action ("opened zec long"); the sub is the
+				// distinct numeric detail only, no repeat of the action verb.
+				// notional · leverage · entry, middot-separated, mono numbers.
+				const notional = row.notionalUsd ?? row.marginUsd ?? 0;
+				const sub = [
+					notional > 0 ? formatCompactUsd(notional) : null,
+					row.leverage ? `${row.leverage}x` : null,
+					row.entryPriceUsd ? `entry ${formatCompactUsd(row.entryPriceUsd)}` : null,
+				]
+					.filter(Boolean)
+					.join(" · ");
 				return {
 					icon: pickVenueIcon(row.venue),
 					title: `opened ${asset} ${row.side}`,
-					sub:
-						row.renderedText ??
-						`${formatCompactUsd(row.marginUsd ?? row.notionalUsd ?? 0)}${lev} at ${formatCompactUsd(row.entryPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+					sub: sub || `on ${row.venue.toLowerCase()}`,
 					right: (
 						<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
-							{formatCompactUsd(row.notionalUsd ?? 0)}
+							{formatCompactUsd(notional)}
 						</span>
 					),
 					url: row.url,
@@ -470,10 +488,20 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 					row.pnlPct === null || row.pnlPct === undefined
 						? null
 						: `${row.pnlPct > 0 ? "+" : ""}${row.pnlPct.toFixed(2)}%`;
+				// pnl + pct live in the right column; the sub stays distinct from the
+				// "closed zec long" title: leverage · entry · venue, mono numbers.
+				const sub =
+					[
+						row.leverage ? `${row.leverage}x` : null,
+						row.entryPriceUsd ? `entry ${formatCompactUsd(row.entryPriceUsd)}` : null,
+						row.venue.toLowerCase(),
+					]
+						.filter(Boolean)
+						.join(" · ") || `on ${row.venue.toLowerCase()}`;
 				return {
 					icon: pickVenueIcon(row.venue),
 					title: `closed ${asset} ${row.side}`,
-					sub: row.renderedText ?? `closed on ${row.venue.toLowerCase()}`,
+					sub,
 					right: (
 						<span className={cn("tabular-nums", tone.cls)}>
 							{tone.sign}
@@ -485,17 +513,27 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 				};
 			}
 			// fill
+			const notional = row.notionalUsd ?? (row.fillPriceUsd ?? 0) * (row.size ?? 0);
+			const fillPnl = row.pnlUsd ?? 0;
+			const fillTone = deltaTone(fillPnl);
+			const verb = row.side === "short" ? "sold" : "bought";
 			return {
 				icon: pickVenueIcon(row.venue),
-				title: `filled ${row.side} ${asset}`,
+				title: `${verb} ${asset} ${row.side}`,
 				sub:
 					row.renderedText ??
-					`${formatCompactNum(row.size ?? 0)} ${asset} at ${formatCompactUsd(row.fillPriceUsd ?? 0)}`,
-				right: (
-					<span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
-						{formatCompactUsd((row.fillPriceUsd ?? 0) * (row.size ?? 0))}
-					</span>
-				),
+					`${formatCompactNum(row.size ?? 0)} ${asset} at ${formatCompactUsd(row.fillPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+				right:
+					fillPnl !== 0 ? (
+						<span className={cn("tabular-nums", fillTone.cls)}>
+							{fillTone.sign}
+							{formatCompactUsd(fillPnl)}
+						</span>
+					) : (
+						<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
+							{formatCompactUsd(notional)}
+						</span>
+					),
 				url: row.url,
 			};
 		}
@@ -535,12 +573,16 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 		case "app": {
 			const verb =
 				row.action === "shipped" ? "shipped new app" : row.action === "updated" ? "updated app" : "deprecated app";
-			const isWaifu = row.appName.toLowerCase().includes("waifu");
-			const isSteward = row.appName.toLowerCase().includes("steward");
+			const appNameLc = row.appName.toLowerCase();
+			const isWaifu = appNameLc.includes("waifu");
+			const isSteward = appNameLc.includes("steward");
+			const isEliza = appNameLc.includes("eliza");
 			const icon = isWaifu ? (
 				<WaifuIcon className="h-3.5 w-3.5" />
 			) : isSteward ? (
 				<StewardIcon className="h-3.5 w-3.5" />
+			) : isEliza ? (
+				<ElizaCloudIcon className="h-3.5 w-3.5" />
 			) : (
 				<GithubIcon className="h-3.5 w-3.5" />
 			);
@@ -803,7 +845,7 @@ export function ActivityFeed({
 					) : undefined
 				}
 			>
-				Activity Feed
+				activity feed
 			</Label>
 
 			{/* tabs */}

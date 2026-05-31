@@ -110,19 +110,19 @@ describe("runAutoRefund", () => {
 		assert.equal(out.sentBundleFailed, 0);
 	});
 
-	it("does not send when the feature flag is off", async () => {
+	it("does not resolve a signer or send when the feature flag is off", async () => {
+		let keyResolved = false;
+		let anyKeyResolved = false;
 		let sent = false;
-		let bundleBotKeyResolved = false;
-		let anyPoolKeyResolved = false;
 		const out = await runAutoRefund(
 			makeDeps({
 				enabled: false,
 				resolveBundleBotKey: async () => {
-					bundleBotKeyResolved = true;
+					keyResolved = true;
 					return FAKE_PK;
 				},
 				resolveAnyPoolKey: async () => {
-					anyPoolKeyResolved = true;
+					anyKeyResolved = true;
 					return FAKE_PK;
 				},
 				sendRefund: async () => {
@@ -132,24 +132,24 @@ describe("runAutoRefund", () => {
 			}),
 		);
 		assert.equal(sent, false);
-		assert.equal(bundleBotKeyResolved, false);
-		assert.equal(anyPoolKeyResolved, false);
+		assert.equal(keyResolved, false);
+		assert.equal(anyKeyResolved, false);
 		assert.equal(out.skippedFlagOff, 1);
 	});
 
-	it("does not send in dry-run mode", async () => {
+	it("does not resolve a signer or send in dry-run mode", async () => {
+		let keyResolved = false;
+		let anyKeyResolved = false;
 		let sent = false;
-		let bundleBotKeyResolved = false;
-		let anyPoolKeyResolved = false;
 		const out = await runAutoRefund(
 			makeDeps({
 				config: makeConfig({ dryRun: true }),
 				resolveBundleBotKey: async () => {
-					bundleBotKeyResolved = true;
+					keyResolved = true;
 					return FAKE_PK;
 				},
 				resolveAnyPoolKey: async () => {
-					anyPoolKeyResolved = true;
+					anyKeyResolved = true;
 					return FAKE_PK;
 				},
 				sendRefund: async () => {
@@ -159,8 +159,8 @@ describe("runAutoRefund", () => {
 			}),
 		);
 		assert.equal(sent, false);
-		assert.equal(bundleBotKeyResolved, false);
-		assert.equal(anyPoolKeyResolved, false);
+		assert.equal(keyResolved, false);
+		assert.equal(anyKeyResolved, false);
 		assert.equal(out.skippedDryRun, 1);
 	});
 

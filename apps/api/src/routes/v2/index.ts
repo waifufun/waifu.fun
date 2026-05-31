@@ -16,6 +16,7 @@ import agentXRoutes from "./agents-x.js";
 import agentRoutes from "./agents.js";
 import agentBurnRateRoutes from "./agents/burn-rate.js";
 import agentHyperliquidRoutes from "./agents/hyperliquid.js";
+import appRoutes from "./apps.js";
 import authSiweRoutes from "./auth-siwe.js";
 import blinkRoutes from "./blinks.js";
 import bundleRoutes from "./bundles.js";
@@ -38,6 +39,7 @@ v2.route("/auth/siwe", authSiweRoutes);
 v2.route("/adapters", adapterTemplateRoutes);
 v2.route("/admin/agents", adminAgentRoutes);
 v2.route("/bundles", bundleRoutes);
+v2.route("/", appRoutes);
 
 // W42 LaunchFactory routes mount FIRST under /v2/launches so POST /v2/launches
 // and the UUID-shaped GET /v2/launches/:id (+ depositors/preview) resolve to

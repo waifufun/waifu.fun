@@ -1,10 +1,15 @@
 /**
- * Server-safe fetcher for `/v2/agents/:address/apps`.
+ * Fetcher for `/v2/agents/:address/apps`, safe on both server and client.
  *
  * The apps registry is the honest source of truth for mini-apps an agent has
  * registered, plus the revenue counters Steward billing rails can populate.
  * Empty responses are valid: the UI should render the no-apps empty state,
  * not invent fixtures.
+ *
+ * Base resolution mirrors `agents-api.ts` exactly: on the client we hit the
+ * relative `/api` BFF path so the directory stays live (the frontend is a
+ * static export, so a server-component fetch would freeze to a build-time
+ * snapshot). On the server we resolve an absolute origin.
  */
 
 export type AppStatus = "live" | "paused" | "scheduled";
@@ -37,15 +42,24 @@ export type AgentAppsResponse = {
 	};
 };
 
-function serverApiBase(): string {
-	const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+/**
+ * Resolve the apps API base. Identical strategy to `getApiBase` in
+ * `agents-api.ts`: an absolute `NEXT_PUBLIC_API_URL` wins everywhere; otherwise
+ * the client uses the relative `/api` BFF path and the server prefixes the
+ * configured host. Keeping these in lockstep means the apps directory fetches
+ * over the same live path the agents directory already uses.
+ */
+function appsApiBase(): string {
+	const configured = process.env.NEXT_PUBLIC_API_URL;
 	if (configured?.startsWith("http://") || configured?.startsWith("https://")) {
-		return configured.replace(/\/+$/, "");
+		return configured.replace(/\/$/, "");
 	}
-	if (process.env.NODE_ENV !== "production") {
-		return "http://localhost:3100";
+	const pathBase = configured?.replace(/\/$/, "") || "/api";
+	if (typeof window !== "undefined") {
+		return pathBase;
 	}
-	return "https://api.waifu.fun";
+	const origin = (process.env.NEXT_PUBLIC_HOST || "https://www.waifu.fun").replace(/\/$/, "");
+	return `${origin}${pathBase.startsWith("/") ? pathBase : `/${pathBase}`}`;
 }
 
 function toNumber(value: unknown): number {
@@ -83,7 +97,7 @@ function normalizeApp(raw: unknown): App | null {
 }
 
 export async function fetchAppsForAgent(address: string): Promise<App[]> {
-	const base = serverApiBase();
+	const base = appsApiBase();
 	try {
 		const res = await fetch(`${base}/v2/agents/${encodeURIComponent(address)}/apps`, {
 			next: { revalidate: 60 },

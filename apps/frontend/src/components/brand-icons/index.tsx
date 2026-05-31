@@ -12,8 +12,8 @@ import type * as React from "react";
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 
-const baseProps = (extra: IconProps): React.SVGAttributes<SVGSVGElement> => ({
-	viewBox: "0 0 16 16",
+const baseProps = (extra: IconProps, viewBox = "0 0 16 16"): React.SVGAttributes<SVGSVGElement> => ({
+	viewBox,
 	fill: "currentColor",
 	xmlns: "http://www.w3.org/2000/svg",
 	"aria-hidden": "true",
@@ -59,10 +59,13 @@ export function PolymarketIcon(props: IconProps) {
 }
 
 export function BnbChainIcon(props: IconProps) {
+	// Official BNB four-petal diamond mark, traced from BNB Chain's press-kit
+	// geometry (the same mark shipped at public/chain-icons/bnb.svg) and
+	// retraced onto a 0 0 64 64 grid so it tints via currentColor.
 	return (
-		<svg {...baseProps(props)}>
+		<svg {...baseProps(props, "0 0 64 64")}>
 			<title>BNB Chain</title>
-			<path d="M8 1L4.4 4.6 5.7 5.9 8 3.6l2.3 2.3 1.3-1.3L8 1zM3 6l-1.3 1.3L3 8.6 4.3 7.3 3 6zm10 0l-1.3 1.3 1.3 1.3L14.3 7.3 13 6zM8 6.4L6.7 7.7 8 9 9.3 7.7 8 6.4zM5.7 9.4L4.4 10.7 8 14.3l3.6-3.6-1.3-1.3L8 11.7l-2.3-2.3z" />
+			<path d="M24.62 26.77 32 19.39l7.39 7.39 4.29-4.29L32 10.81 20.33 22.48l4.29 4.29ZM16.81 32l4.29-4.29L25.39 32l-4.29 4.29L16.81 32Zm7.81 5.23L32 44.61l7.39-7.39 4.29 4.29L32 53.19 20.32 41.52l4.3-4.29ZM38.61 32l4.29-4.29L47.19 32l-4.29 4.29L38.61 32Zm-2.62 0L32 27.99l-2.96 2.96-.34.34-.7.7v.01L32 36l4-4.01Z" />
 		</svg>
 	);
 }
@@ -125,29 +128,62 @@ export function HetznerIcon(props: IconProps) {
 	);
 }
 
+// Image-backed brand marks: waifu (anime head) + Steward (gold compass rose)
+// render the real PNG marks rather than approximated SVG glyphs. They keep the
+// caller's sizing className (h-3.5 etc) and stay colour-accurate (the real
+// brand colours), unlike the currentColor mono icons.
+const markProps = (extra: IconProps): React.ImgHTMLAttributes<HTMLImageElement> => {
+	const { fill: _fill, stroke: _stroke, ...rest } = extra as Record<string, unknown>;
+	const merged = rest as React.ImgHTMLAttributes<HTMLImageElement>;
+	const className = ["inline-block object-contain", merged.className].filter(Boolean).join(" ");
+	return {
+		loading: "lazy",
+		decoding: "async",
+		"aria-hidden": "true",
+		...merged,
+		className,
+	};
+};
+
 export function WaifuIcon(props: IconProps) {
 	return (
-		<svg {...baseProps(props)}>
-			<title>waifu.fun</title>
-			<path d="M2 4l3 6 1.5-2.5L8 10l1.5-2.5L11 10l3-6h-2L10 8 8.5 5.5 8 6.5l-.5-1L6 8 4 4H2z" />
-		</svg>
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/brand/mark/waifu.png" alt="waifu.fun" />
 	);
 }
 
 export function StewardIcon(props: IconProps) {
 	return (
-		<svg {...baseProps(props)}>
-			<title>Steward</title>
-			<path d="M8 1L2 4v4c0 3.5 2.6 6.5 6 7 3.4-.5 6-3.5 6-7V4L8 1zm0 1.6l4.5 2.2v3.2c0 2.6-1.9 4.9-4.5 5.4-2.6-.5-4.5-2.8-4.5-5.4V4.8L8 2.6zM6.5 7.5L7.7 8.7l2.8-2.8L11.5 7l-3.8 3.7L5.5 8.5l1-1z" />
-		</svg>
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/brand/mark/steward.png" alt="Steward" />
+	);
+}
+
+export function ElizaCloudIcon(props: IconProps) {
+	// Eliza Cloud mark: the square brand glyph (eliza's orange on transparent),
+	// the agent runtime + inference / credits layer. Image-backed like the
+	// waifu + Steward marks so it stays colour-accurate at feed size rather
+	// than approximated as a currentColor glyph. Reads crisp at 14px on dark.
+	return (
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/eliza-cloud/eliza.png" alt="Eliza Cloud" />
 	);
 }
 
 export function FlapIcon(props: IconProps) {
+	// FLAP (flap.sh) mark: the butterfly. Real left + right wing paths lifted
+	// from flap.sh's own butterfly-loader.svg (0 0 500 500 space), flattened
+	// to a single-color silhouette so it tints via currentColor. No purple
+	// gradient, no glow, per brand discipline; the butterfly is the brand.
 	return (
-		<svg {...baseProps(props)}>
+		<svg {...baseProps(props, "0 0 500 500")}>
 			<title>FLAP</title>
-			<path d="M8 1l-3 6h2v6h2V7h2L8 1z" />
+			<path d="M 121 117 L 104 123 L 95 132 L 91 140 L 91 166 L 102 190 L 112 204 L 127 219 L 148 233 L 173 244 L 205 252 L 211 256 L 211 261 L 208 264 L 181 272 L 162 281 L 150 289 L 131 307 L 122 320 L 114 337 L 113 346 L 114 365 L 117 370 L 127 379 L 137 382 L 145 382 L 167 376 L 182 368 L 194 359 L 215 335 L 227 313 L 235 288 L 234 241 L 232 217 L 228 206 L 214 177 L 198 156 L 183 142 L 163 128 L 145 120 L 132 117 Z" />
+			<path d="M 378 117 L 367 117 L 354 120 L 336 128 L 317 141 L 300 157 L 283 180 L 272 202 L 263 234 L 261 267 L 266 296 L 275 320 L 284 335 L 295 349 L 317 368 L 334 377 L 354 382 L 366 381 L 375 377 L 382 370 L 387 357 L 385 348 L 381 334 L 378 321 L 368 307 L 349 289 L 318 272 L 291 264 L 288 261 L 288 256 L 291 253 L 326 244 L 351 233 L 373 218 L 387 204 L 395 193 L 407 169 L 409 161 L 409 145 L 404 132 L 395 123 Z" />
+			<circle cx="210" cy="285" r="7" />
+			<circle cx="292" cy="286" r="6.5" />
+			<circle cx="235" cy="305" r="5" />
+			<circle cx="266" cy="306" r="5" />
 		</svg>
 	);
 }

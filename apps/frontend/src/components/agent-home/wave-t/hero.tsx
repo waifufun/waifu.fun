@@ -49,6 +49,7 @@ export type HeroIdentity = {
 	ticker: string;
 	description?: string | undefined;
 	image?: string | undefined;
+	/** Only `true` shows the verified check. Defaults to unverified. */
 	verified?: boolean;
 	/** Optional twitter handle, rendered as @handle next to the name. */
 	twitterHandle?: string | undefined;
@@ -65,7 +66,7 @@ export type HeroIdentity = {
 
 export type HeroTreasuryOverride = {
 	valueUsd: number;
-	source: "aggregated" | "agentSafe" | "burner";
+	source: "aggregated" | "agentSafe" | "none";
 };
 
 export type HeroProps = {
@@ -103,7 +104,7 @@ export function Hero({
 	livePulse = false,
 }: HeroProps) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
-	const treasurySource = treasuryValueOverride?.source ?? "burner";
+	const treasurySource = treasuryValueOverride?.source ?? "none";
 	const followers = twitterStats?.followers ?? null;
 	const showFollowers = followers !== null;
 	return (
@@ -172,7 +173,8 @@ function IdentityBand({
 	const displayName = identity.name || "unknown";
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
 	const description = identity.description;
-	const verified = identity.verified ?? true;
+	// Honest default: unverified unless the identity record says otherwise.
+	const verified = identity.verified === true;
 	const handle = identity.twitterHandle ? `@${identity.twitterHandle.replace(/^@/, "")}` : null;
 
 	return (
@@ -248,11 +250,11 @@ function TreasuryBlock({
 	livePulse,
 }: {
 	navUsd: number;
-	source: "aggregated" | "agentSafe" | "burner";
+	source: "aggregated" | "agentSafe" | "none";
 	livePulse: boolean;
 }) {
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
-	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "sol burner";
+	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "no data";
 	return (
 		<div className="flex flex-col gap-1.5">
 			<Label

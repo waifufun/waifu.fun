@@ -144,6 +144,38 @@ export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
 				category: "trading",
 			},
 		),
+	hl_funding: (p) => {
+		const amount = num(p, "amountUsd", "usdc") ?? 0;
+		return withDefaults(
+			"hl_funding",
+			`${amount >= 0 ? "received" : "paid"} ${usd(Math.abs(amount))} ${asset(p)} funding`,
+			{
+				iconKey: "hyperliquid",
+				accentColor: amount >= 0 ? "positive" : "negative",
+				category: "trading",
+			},
+		);
+	},
+	// Legacy hyperliquid event types (predate the trade.* taxonomy). Kept so
+	// historical rows render instead of falling through to a generic line.
+	hl_fill: (p) =>
+		withDefaults(
+			"hl_fill",
+			`filled ${str(p, "side", "dir") ?? "trade"} ${size(num(p, "size", "sz"))} ${asset(p)} at ${usd(num(p, "price", "px"))}`,
+			{
+				iconKey: "hyperliquid",
+				category: "trading",
+			},
+		),
+	hl_position_changed: (p) =>
+		withDefaults(
+			"hl_position_changed",
+			`position changed ${asset(p)} ${str(p, "side") ?? ""} ${size(num(p, "size", "sz"))}`.replace(/\s+/g, " ").trim(),
+			{
+				iconKey: "hyperliquid",
+				category: "trading",
+			},
+		),
 	"transfer.in": (p) =>
 		withDefaults(
 			"transfer.in",
@@ -294,12 +326,15 @@ export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
 };
 
 export function renderEvent(type: AgentEventType, payload: Record<string, unknown> = {}): RenderedEvent {
-	if (!isAgentEventType(type)) throw new Error(`unknown agent event type: ${type}`);
-	const renderer = RENDERERS[type];
+	// Fail SOFT on an unrecognized type. A single unknown event must never
+	// throw and 500 the whole feed (regression: a legacy hl_fill row that
+	// predated the type registry took down the entire activity endpoint at
+	// higher limits). Render a best-effort row instead.
+	const renderer = isAgentEventType(type) ? RENDERERS[type as AgentEventType] : undefined;
 	if (renderer) return renderer(payload);
-	const fallback = str(payload, "renderedText", "message", "title") ?? type.replace(/[._]/g, " ");
-	return withDefaults(type, fallback, {
-		category: type.startsWith("system.") || type.startsWith("agent.") ? "system" : "apps",
+	const fallback = str(payload, "renderedText", "message", "title") ?? String(type).replace(/[._]/g, " ");
+	return withDefaults(type as AgentEventType, fallback, {
+		category: String(type).startsWith("system.") || String(type).startsWith("agent.") ? "system" : "apps",
 	});
 }
 

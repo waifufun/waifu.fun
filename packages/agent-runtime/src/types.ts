@@ -44,6 +44,7 @@ export interface ProvisionResult {
 	containerUrl?: string;
 	webUiUrl?: string;
 	livenessCheckUrl?: string;
+	status?: string;
 	runtimeWebhookSecretHash?: string;
 	runtimeApiKey?: string;
 	runtimeApiKeyHash?: string;

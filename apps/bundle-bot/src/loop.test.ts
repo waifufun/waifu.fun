@@ -77,6 +77,7 @@ function makeBundleFailedRefundDeps(overrides: Partial<BundleFailedRefundDeps> =
 		readVault: async () => ({ state: VAULT_STATE_CLOSED, bundleBot: BUNDLE_BOT }),
 		resolveBundleBotKey: async () => FAKE_PK,
 		sendRefundBundleFailed: async () => "0xtx",
+		markRefunded: async () => {},
 		...overrides,
 	};
 }
@@ -213,6 +214,7 @@ describe("pollOnce", () => {
 		let resolvedAddress: Address | null = null;
 		let sentVault: Address | null = null;
 		let sentPk: Hex | null = null;
+		let markedRefundTx: string | null = null;
 		const result = await pollOnce({
 			db: {} as never,
 			config: makeConfig({ dryRun: false, maxAttempts: 3 }),
@@ -229,6 +231,10 @@ describe("pollOnce", () => {
 					sentPk = pk;
 					return "0xrefund";
 				},
+				markRefunded: async (_db, markedLaunch, txHash) => {
+					assert.equal(markedLaunch.id, launch.id);
+					markedRefundTx = txHash;
+				},
 			}),
 		});
 
@@ -237,6 +243,7 @@ describe("pollOnce", () => {
 		assert.equal(resolvedAddress, BUNDLE_BOT);
 		assert.equal(sentVault, launch.vaultAddress);
 		assert.equal(sentPk, FAKE_PK);
+		assert.equal(markedRefundTx, "0xrefund");
 	});
 
 	it("does not auto-enable bundle-failed refund when the feature flag is disabled", async () => {

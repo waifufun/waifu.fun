@@ -650,6 +650,65 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 	resetProvisionDeps();
 });
 
+test("POST /v2/agents/provision keeps hosted agents provisioning until Eliza returns a hosted URL", async () => {
+	const db = createProvisionDb();
+	__setRequirePatronDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "patron@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setAgentsRouteDepsForTest({
+		db,
+		createAgentKey: async (_db, agentId) => ({ raw: "agk_hosted_pending_url_key", row: { agentId } as never }),
+		elizaCloudClient: {
+			async provisionWaifuAgent(input) {
+				return {
+					agentId: input.agentId,
+					cloudAgentId: "cloud-waifu-pending-url",
+					status: "running",
+					account: {
+						primaryWalletAddress: input.account?.primaryWalletAddress ?? null,
+						walletKeyRef: input.account?.walletKeyRef ?? null,
+						initialFreeCreditsUsd: 5,
+					},
+				};
+			},
+		},
+		createOrchestrator: () =>
+			({
+				launch: async (input: import("../../services/agent-launch/index.js").AgentLaunchInput) => ({
+					agentId: input.agentId ?? "waifu-test-waifu",
+					walletAddress: "0x0000000000000000000000000000000000000002",
+					treasuryAddress: "0x0000000000000000000000000000000000000003",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					txHash: `0x${"1".repeat(64)}`,
+					fourMeme: { nonce: "n", imageUrl: "https://example.com/i.png", createArgHash: "h" },
+				}),
+			}) as never,
+	});
+
+	const payload = provisionPayload();
+	payload.runtime = { kind: "hosted" } as never;
+	const res = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify(payload),
+	});
+
+	assert.equal(res.status, 200, await res.clone().text());
+	const overlay =
+		db.__updates.find((values) => values.cloudAgentId === "cloud-waifu-pending-url") ??
+		db.__inserts.find((values) => values.cloudAgentId === "cloud-waifu-pending-url");
+	assert.equal(overlay?.agentStatus, "provisioning");
+	assert.equal(overlay?.lifecycleState, "birth");
+	assert.equal(overlay?.webUiUrl, null);
+	const tokenUpdate = db.__updates.find((values) => values.agentId === "agent-row-1");
+	assert.equal(tokenUpdate?.agentStatus, "provisioning");
+	resetProvisionDeps();
+});
+
 test("POST /v2/agents/provision accepts wizard persona limits", async () => {
 	const db = createProvisionDb();
 	const launches: unknown[] = [];

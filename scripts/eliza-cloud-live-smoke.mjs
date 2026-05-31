@@ -267,6 +267,9 @@ function smokeInputErrors() {
 		...(fullE2eRequired && !expectedRole
 			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE"]
 			: []),
+		...(fullE2eRequired && !env("WAIFU_CHAT_ACCESS_JWT_SECRET")
+			? ["full E2E mode requires WAIFU_CHAT_ACCESS_JWT_SECRET"]
+			: []),
 		...(fullE2eRequired && !env("WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION")
 			? ["full E2E mode requires WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION"]
 			: []),
@@ -713,6 +716,13 @@ async function verifyTokenChatSession(input) {
 	assert(access.payload.thresholdMode === "strict_gt", "waifu_access_token must use strict_gt thresholds", access.payload);
 	if (access.signatureVerified === false) {
 		throw new Error("waifu_access_token signature did not match WAIFU_CHAT_ACCESS_JWT_SECRET");
+	}
+	if (requireFullE2e()) {
+		assert(
+			access.signatureVerified === true,
+			"full E2E mode requires waifu_access_token signature verification",
+			access.payload,
+		);
 	}
 
 	const expectedRole = env("WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE");

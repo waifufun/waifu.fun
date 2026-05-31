@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { createHmac } from "node:crypto";
 import { createServer } from "node:http";
 import { once } from "node:events";
 import { describe, it } from "node:test";
@@ -7,6 +8,7 @@ import { describe, it } from "node:test";
 const TOKEN_ADDRESS = "0x0000000000000000000000000000000000000004";
 const AGENT_WALLET = "0x0000000000000000000000000000000000000009";
 const WALLET_KEY_REF = "steward:smoke-agent-key";
+const CHAT_SECRET = "chat-secret";
 
 function readBody(req) {
 	return new Promise((resolve, reject) => {
@@ -35,10 +37,13 @@ function writeJson(res, status, body) {
 	res.end(JSON.stringify(body));
 }
 
-function unsignedSmokeJwt(payload) {
+function smokeJwt(payload, secret = null) {
 	const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
 	const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-	return `${header}.${body}.mock-signature`;
+	const signature = secret
+		? createHmac("sha256", secret).update(`${header}.${body}`).digest("base64url")
+		: "mock-signature";
+	return `${header}.${body}.${signature}`;
 }
 
 async function startServer(handler) {
@@ -85,7 +90,7 @@ async function runSmoke(apiUrl, extraEnv = {}) {
 	return { code, stdout, stderr };
 }
 
-function createSmokeApi(runtimeUrl, { mode }) {
+function createSmokeApi(runtimeUrl, { mode, chatSecret = null }) {
 	const calls = [];
 	const cloudAgentId = mode === "worker" ? "cloud-worker-agent" : "cloud-direct-agent";
 	const containerId = mode === "worker" ? "container-worker" : "container-direct";
@@ -209,7 +214,7 @@ function createSmokeApi(runtimeUrl, { mode }) {
 			) {
 				assert.equal(req.headers.authorization, "Bearer steward-token");
 				writeJson(res, 200, {
-					chatUrl: `${runtimeUrl}/chat?waifu_access_token=${unsignedSmokeJwt({
+					chatUrl: `${runtimeUrl}/chat?waifu_access_token=${smokeJwt({
 						iss: "waifu.fun",
 						aud: "eliza-cloud-chat",
 						exp: Math.floor(Date.now() / 1000) + 900,
@@ -219,7 +224,7 @@ function createSmokeApi(runtimeUrl, { mode }) {
 						chainId: 56,
 						cloudAgentId,
 						thresholdMode: "strict_gt",
-					})}`,
+					}, chatSecret)}`,
 					expiresInSeconds: 300,
 					role: "user",
 					success: true,
@@ -326,7 +331,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			res.writeHead(200, { "content-type": "text/html" });
 			res.end("<!doctype html><title>Eliza Cloud Worker Agent</title>");
 		});
-		const apiContract = createSmokeApi(runtime.url, { mode: "worker" });
+		const apiContract = createSmokeApi(runtime.url, { mode: "worker", chatSecret: CHAT_SECRET });
 		const api = await startServer(apiContract.handler);
 		try {
 			const result = await runSmoke(api.url, {
@@ -429,7 +434,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			res.writeHead(200, { "content-type": "text/html" });
 			res.end("<!doctype html><title>Eliza Cloud Full E2E Agent</title>");
 		});
-		const apiContract = createSmokeApi(runtime.url, { mode: "worker" });
+		const apiContract = createSmokeApi(runtime.url, { mode: "worker", chatSecret: CHAT_SECRET });
 		const api = await startServer(apiContract.handler);
 		try {
 			const result = await runSmoke(api.url, {
@@ -442,6 +447,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 				WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK: "1",
 				WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION: "cs_mock",
 				WAIFU_ELIZA_SMOKE_WALLET_KEY_REF: WALLET_KEY_REF,
+				WAIFU_CHAT_ACCESS_JWT_SECRET: CHAT_SECRET,
 				WEBHOOK_RECEIVER_SECRET: "webhook-secret",
 			});
 			assert.equal(result.code, 0, result.stderr || result.stdout);
@@ -453,6 +459,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			assert.match(result.stdout, /lifecycle topped_up webhook ok status=running/);
 			assert.match(result.stdout, /top-up verification ok session=cs_mock/);
 			assert.match(result.stdout, /"chatSession": \{/);
+			assert.match(result.stdout, /"tokenSignatureVerified": true/);
 			assert.match(result.stdout, /"ownerRuntime": \{/);
 			assert.match(result.stdout, /"hostedUrlReachable": true/);
 			assert.match(result.stdout, /live smoke passed/);

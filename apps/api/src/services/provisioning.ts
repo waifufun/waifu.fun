@@ -453,7 +453,7 @@ async function storeProvisioningSuccess(
 			containerUrl: result.containerUrl ?? null,
 			webUiUrl: result.webUiUrl ?? null,
 			livenessCheckUrl: result.livenessCheckUrl ?? null,
-			status: "provisioned",
+			status: result.status ?? "provisioned",
 			lastError: null,
 			updatedAt: new Date().toISOString(),
 		},
@@ -483,15 +483,19 @@ async function syncProvisioningTokenOverlay(
 	if (!row) return;
 
 	const now = new Date();
+	const hostedUrl = result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl ?? null;
+	const isRunning = Boolean(hostedUrl) && isHostedRuntimeRunning(result.status);
+	const agentStatus = isRunning ? "running" : "provisioning";
+	const lifecycleState = isRunning ? "live" : "birth";
 	const agentValues = {
 		name: options.tokenName ?? options.agentName,
 		bio: options.persona.bio ?? null,
 		avatarUrl: options.persona.image ?? null,
 		cloudAgentId: result.runtimeAgentId,
 		runtimeProvider: "eliza-cloud",
-		agentStatus: "provisioning",
-		lifecycleState: "birth",
-		webUiUrl: result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl ?? null,
+		agentStatus,
+		lifecycleState,
+		webUiUrl: hostedUrl,
 		bridgeUrl: result.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
@@ -503,7 +507,7 @@ async function syncProvisioningTokenOverlay(
 		await db.update(agents).set(agentValues).where(eq(agents.id, row.agent.id));
 		await db
 			.update(tokens)
-			.set({ agentId: row.agent.id, agentStatus: "provisioning", ownerClaimStatus: "claimed", updatedAt: now })
+			.set({ agentId: row.agent.id, agentStatus, ownerClaimStatus: "claimed", updatedAt: now })
 			.where(eq(tokens.id, row.token.id));
 		return;
 	}
@@ -520,7 +524,7 @@ async function syncProvisioningTokenOverlay(
 		.update(tokens)
 		.set({
 			agentId: created?.id ?? row.token.agentId ?? null,
-			agentStatus: "provisioning",
+			agentStatus,
 			ownerClaimStatus: "claimed",
 			updatedAt: now,
 		})

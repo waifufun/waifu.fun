@@ -117,6 +117,7 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 			...(result.containerUrl ? { containerUrl: result.containerUrl } : {}),
 			...(result.webUiUrl ? { webUiUrl: result.webUiUrl } : {}),
 			...(runtimeUrl ? { livenessCheckUrl: runtimeUrl } : {}),
+			...(result.status ? { status: result.status } : {}),
 		};
 	}
 

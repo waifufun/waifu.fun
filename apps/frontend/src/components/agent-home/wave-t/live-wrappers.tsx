@@ -27,8 +27,12 @@ import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 import type { CandleSeries } from "@/lib/wave-t/candles";
 import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
+import type { NavHistoryPoint } from "@/lib/wave-t/pnl";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
+import type { Position } from "@/lib/wave-t/positions";
+import { ActivePositions } from "./active-positions";
 import { ActivityFeed, type ActivityFeedAuthor, type ActivityRowInput } from "./activity-feed";
 import type { HeroIdentity, HeroProps, HeroTreasuryOverride } from "./hero";
 import { HeroV2 } from "./hero-v2";
@@ -36,6 +40,7 @@ import { HoldingsAllocation } from "./holdings-allocation";
 import {
 	useLiveAgentTrades,
 	useLiveHoldings,
+	useLivePerpPositions,
 	useLiveTokenMetrics,
 	useLiveTweets,
 	useLiveTwitterStats,
@@ -57,6 +62,13 @@ export type LiveHeroProps = Omit<HeroProps, "navUsd" | "twitterStats" | "treasur
 	 * override to avoid contradicting other panels.
 	 */
 	staticTreasuryOverride?: HeroTreasuryOverride | undefined;
+	/**
+	 * Real nav-snapshot series from /v2/agents/:address/nav-history,
+	 * prefetched at build (same source the pnl chart reads). The hero
+	 * sparkline renders only when this has two or more points; otherwise
+	 * the slot stays empty. We never synthesize a trend.
+	 */
+	navSeries?: NavHistoryPoint[] | null;
 };
 
 /**
@@ -71,6 +83,7 @@ export function LiveHero({
 	initialHoldingsHasAggregated,
 	initialTwitterStats,
 	staticTreasuryOverride,
+	navSeries,
 	...rest
 }: LiveHeroProps) {
 	const holdings = useLiveHoldings(address, initialHoldings, initialHoldingsHasAggregated);
@@ -91,7 +104,35 @@ export function LiveHero({
 			navUsd={holdings.snapshot.navUsd}
 			twitterStats={twitter}
 			{...(treasuryOverride ? { treasuryValueOverride: treasuryOverride } : {})}
+			navSeries={navSeries ?? null}
 			livePulse
+		/>
+	);
+}
+
+// ── Active positions ───────────────────────────────────────────
+
+/**
+ * Live-polling wrapper around <ActivePositions>. Seeds from the SSG
+ * perp-position list, then refreshes off the live /holdings snapshot's
+ * `perpsPositions[]` (the /hyperliquid/positions endpoint does not exist).
+ * The live pulse only renders when at least one perp position is open.
+ */
+export function LiveActivePositions({
+	address,
+	positions,
+	initialHyperliquidPositions,
+}: {
+	address: string;
+	positions: Position[];
+	initialHyperliquidPositions: HyperliquidPosition[];
+}) {
+	const hyperliquidPositions = useLivePerpPositions(address, initialHyperliquidPositions);
+	return (
+		<ActivePositions
+			positions={positions}
+			hyperliquidPositions={hyperliquidPositions}
+			live={hyperliquidPositions.length > 0}
 		/>
 	);
 }
@@ -159,6 +200,23 @@ function explorerTxUrl(chainId: string | null, txHash: string | null): string | 
 
 function renderedText(event: AgentEvent): string | undefined {
 	return typeof event.data?.renderedText === "string" ? event.data.renderedText.toLowerCase() : undefined;
+}
+
+/**
+ * The real source time of an event. trade.open/close rows stamp the matching
+ * fill time onto payload.timestamp (and data.timestamp via the renderer);
+ * occurredAt also carries it from the row. createdAt is ingestion time and is
+ * only a last resort, otherwise every backfilled trade reads as "just now".
+ */
+function eventTimestamp(event: AgentEvent): string {
+	const payload = event.payload ?? {};
+	const data = (event.data ?? {}) as Record<string, unknown>;
+	const candidate =
+		asString(payload.timestamp) ||
+		asString(payload.occurredAt) ||
+		asString(data.timestamp) ||
+		asString(event.occurredAt ?? "");
+	return candidate || event.createdAt;
 }
 
 function githubRepoLabel(event: AgentEvent): string {
@@ -312,6 +370,105 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				url: asString(payload.url),
 			};
 		}
+		case "hl_fill": {
+			// Live hyperliquid fill. The producer streams every venue fill as
+			// a discrete hl_fill (buy/sell, size, price, notional). We render
+			// it as a perp `fill` row. closedPnlUsd > 0 means this fill
+			// reduced a position, so we surface the realized pnl on the right.
+			const rawSide = asString(payload.side, "buy").toLowerCase();
+			const side: "long" | "short" = rawSide === "sell" || rawSide === "short" || rawSide === "a" ? "short" : "long";
+			const asset = asString(payload.asset, asString(payload.coin, asString(payload.symbol, "asset"))).toUpperCase();
+			const size = asNumber(payload.size, asNumber(payload.amount, 0));
+			const price = asNumber(payload.price, asNumber(payload.fillPriceUsd, 0));
+			const notionalUsd = asNumber(payload.notionalUsd, price * size);
+			const closedPnl = asNumber(payload.closedPnlUsd, asNumber(payload.closedPnl, 0));
+			const venue = asString(payload.venue, "hyperliquid");
+			const text = renderedText(event);
+			const fillId = asString(payload.fillId, asString(payload.orderId, event.id));
+			const row: ActivityRowInput = {
+				id: `hl-fill-${fillId}`,
+				type: "perpTrade",
+				kind: "fill",
+				timestamp: asString(payload.timestamp, event.createdAt),
+				venue,
+				asset,
+				side,
+				size,
+				notionalUsd,
+				fillPriceUsd: price,
+				...(closedPnl !== 0 ? { pnlUsd: closedPnl } : {}),
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+			return row;
+		}
+		case "hl_funding": {
+			// Funding payments are hourly micro-accruals on open perp positions.
+			// They are real (kept in the DB for accounting/NAV) but far too noisy
+			// for the activity feed: a single open position emits dozens per day
+			// and would bury actual trades + treasury actions. Skip from the feed.
+			return null;
+		}
+		case "hl_position_changed": {
+			// A position open / resize snapshot. Carries leverage, entry, and
+			// live unrealized pnl. Rendered as a perp `open` row so the feed
+			// reads "opened ZEC long" with notional + leverage in the sub.
+			const rawSide = asString(payload.side, "long").toLowerCase();
+			const side: "long" | "short" = rawSide === "short" || rawSide === "sell" || rawSide === "a" ? "short" : "long";
+			const asset = asString(payload.asset, asString(payload.coin, asString(payload.symbol, "asset"))).toUpperCase();
+			const leverage = asNumber(payload.leverage, 0) || null;
+			const entryPrice = asNumber(payload.entryPrice, asNumber(payload.entryPriceUsd, 0));
+			const notionalUsd = asNumber(payload.notionalUsd, 0);
+			const unrealizedPnl = asNumber(payload.unrealizedPnlUsd, asNumber(payload.pnlUsd, 0));
+			const venue = asString(payload.venue, "hyperliquid");
+			const text = renderedText(event);
+			const row: ActivityRowInput = {
+				id: `agent-event-${event.id}`,
+				type: "perpTrade",
+				kind: "open",
+				timestamp: asString(payload.timestamp, event.createdAt),
+				venue,
+				asset,
+				side,
+				notionalUsd,
+				entryPriceUsd: entryPrice,
+				leverage,
+				...(unrealizedPnl !== 0 ? { pnlUsd: unrealizedPnl } : {}),
+				...(text ? { renderedText: text } : {}),
+				...(url ? { url } : {}),
+			};
+			return row;
+		}
+		case "tax.received": {
+			// Platform fee revenue swept to the agent. Rendered as a revenue
+			// row (treasury category) with a positive usd delta.
+			const usd = asNumber(payload.usd, asNumber(payload.amountUsd, 0));
+			return {
+				id: `agent-event-${event.id}`,
+				type: "revenue",
+				timestamp: event.createdAt,
+				source: "tax",
+				usd,
+			};
+		}
+		case "treasury.swept": {
+			// Treasury sweep: fees consolidated into the agent treasury. Shows
+			// as a treasury convert row with the swept usd value.
+			const amountUsd = asNumber(payload.amountUsd, asNumber(payload.usd, 0));
+			const asset = asString(payload.asset, asString(payload.symbol, "")).toUpperCase();
+			const amount = renderedText(event) ?? `${asString(payload.amount, "")} ${asset}`.trim();
+			return {
+				id: `agent-event-${event.id}`,
+				type: "treasury",
+				timestamp: event.createdAt,
+				action: "deposit",
+				from: asString(payload.fromLabel, "tax stream"),
+				to: asString(payload.toLabel, "treasury"),
+				amount: amount || "treasury swept",
+				deltaUsd: Math.abs(amountUsd),
+				...(url ? { url } : {}),
+			};
+		}
 		case "trade.open":
 		case "trade.close":
 		case "trade.fill":
@@ -334,12 +491,17 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 					: typeof pnlPctRaw === "string" && pnlPctRaw.length > 0
 						? Number(pnlPctRaw)
 						: null;
-			const text = renderedText(event);
+			// Deliberately do NOT pass renderedText for perp trades. The feed
+			// builds a structured title ("opened zec long") + sub ("$2.5k · 10x ·
+			// entry $539.35") from these fields. renderedText ("opened zec long
+			// $2,502.59 10x at $539.35") duplicates the title, so it would stack
+			// the action twice. renderedText stays a fallback for event types the
+			// feed has no structured renderer for.
 			const row: ActivityRowInput = {
 				id: `agent-event-${event.id}`,
 				type: "perpTrade",
 				kind,
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				venue: asString(payload.venue, "hyperliquid"),
 				asset,
 				side,
@@ -351,7 +513,6 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				leverage: asNumber(payload.leverage, 0) || null,
 				pnlUsd: asNumber(payload.pnlUsd, asNumber(payload.closedPnl, 0)),
 				pnlPct: pnlPct !== null && Number.isFinite(pnlPct) ? pnlPct : null,
-				...(text ? { renderedText: text } : {}),
 				...(url ? { url } : {}),
 			};
 			return row;
@@ -567,12 +728,35 @@ export function LiveActivityFeed({
 	}, [initialActivity]);
 	const tweets = useLiveTweets(twitterPollingEnabled ? address : "", initialTweets);
 
-	// Merge: replace tweet rows in initialActivity with the live set;
-	// keep everything else (PRs, txs, etc) as the SSG seed because we
-	// don't have a runtime endpoint for those yet. Live trades feed in
-	// via mergeActivityWithTrades like before.
+	// The canonical github source is /v2/agents/:address/events (polled
+	// above, keyed to THIS address). Once any live github event hydrates we
+	// drop the build-time ship-log seed (pr / githubGroup rows) so the live,
+	// per-agent feed is authoritative and we never show stale or duplicate
+	// PR rows. Before the first live github event lands we keep the seed so
+	// the panel is not empty on first paint, but that seed is already scoped
+	// to this agent's own github identity at build time.
+	const hasLiveGithub = useMemo(() => {
+		const githubEventTypes = new Set([
+			"pr.merged",
+			"pr.opened",
+			"commit.pushed",
+			"gh_pr_merged",
+			"gh_pr_opened",
+			"gh_commit_pushed",
+		]);
+		return agentEvents.events.some((e) => githubEventTypes.has(e.eventType));
+	}, [agentEvents.events]);
+
+	// Merge: replace tweet rows in initialActivity with the live set; keep
+	// non-github seed rows (txs, etc). Github seed rows (pr / githubGroup)
+	// are dropped once the live github feed has hydrated. Live trades feed
+	// in via mergeActivityWithTrades like before.
 	const rows: ActivityRowInput[] = useMemo(() => {
-		const nonTweet = initialActivity.filter((r) => r.type !== "tweet");
+		const nonTweet = initialActivity.filter((r) => {
+			if (r.type === "tweet") return false;
+			if (hasLiveGithub && (r.type === "pr" || r.type === "githubGroup")) return false;
+			return true;
+		});
 		const tweetRows: ActivityRowInput[] = tweets.map((t) => ({
 			id: `tweet-${t.id}`,
 			type: "tweet" as const,
@@ -626,7 +810,7 @@ export function LiveActivityFeed({
 		const merged = [...nonTweet, ...tweetRows, ...eventRows];
 		merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 		return mergeActivityWithTrades({ activity: merged, trades, ticker });
-	}, [initialActivity, tweets, agentEvents.events, trades, ticker]);
+	}, [initialActivity, hasLiveGithub, tweets, agentEvents.events, trades, ticker]);
 
 	return <ActivityFeed rows={rows} max={max} {...(author ? { author } : {})} live />;
 }

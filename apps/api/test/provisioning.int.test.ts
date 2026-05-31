@@ -9,6 +9,15 @@ const persona = {
 	name: "Demo Waifu",
 	claimedByXHandle: "eliza",
 	twitterHandle: null,
+	bio: null,
+	avatarUrl: null,
+	systemPrompt: null,
+	ownerAddress: null,
+	runtimeKind: "eliza-cloud",
+	runtimeWebhookUrl: null,
+	tokenAddress: null,
+	chain: "bsc",
+	prelaunchParams: null,
 	taxConfig: { feeRate: 3 },
 	metadata: {},
 };
@@ -110,12 +119,81 @@ test("provisionClaimedAgent returns partial Eliza Cloud metadata without creatin
 	assert.deepEqual(events, []);
 });
 
+test("provisionClaimedAgent marks token overlay live only when a hosted URL and running status exist", async () => {
+	const liveDb = fakeProvisioningDb({
+		...persona,
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+	});
+	await provisionClaimedAgent(
+		"waifu-demo-01",
+		{ agentWalletAddress: "0x0000000000000000000000000000000000000009" },
+		{
+			db: liveDb as never,
+			elizaClient: {
+				async createAgent() {
+					throw new Error("service provisioning should be used when token metadata exists");
+				},
+				async provisionWaifuAgent() {
+					return {
+						cloudAgentId: "cloud-live-claim",
+						status: "running",
+						webUiUrl: "https://hosted-live.example",
+					};
+				},
+			} as never,
+			emitEvent: async () => ({}) as never,
+		},
+	);
+
+	const liveOverlay = liveDb.__agentWrites.find((values) => values.cloudAgentId === "cloud-live-claim");
+	assert.equal(liveOverlay?.agentStatus, "running");
+	assert.equal(liveOverlay?.lifecycleState, "live");
+	assert.equal(liveOverlay?.webUiUrl, "https://hosted-live.example");
+	assert.equal(liveDb.__tokenWrites.at(-1)?.agentStatus, "running");
+
+	const pendingDb = fakeProvisioningDb({
+		...persona,
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+	});
+	await provisionClaimedAgent(
+		"waifu-demo-01",
+		{ agentWalletAddress: "0x0000000000000000000000000000000000000009" },
+		{
+			db: pendingDb as never,
+			elizaClient: {
+				async createAgent() {
+					throw new Error("service provisioning should be used when token metadata exists");
+				},
+				async provisionWaifuAgent() {
+					return {
+						cloudAgentId: "cloud-pending-url-claim",
+						status: "running",
+					};
+				},
+			} as never,
+			emitEvent: async () => ({}) as never,
+		},
+	);
+
+	const pendingOverlay = pendingDb.__agentWrites.find((values) => values.cloudAgentId === "cloud-pending-url-claim");
+	assert.equal(pendingOverlay?.agentStatus, "provisioning");
+	assert.equal(pendingOverlay?.lifecycleState, "birth");
+	assert.equal(pendingOverlay?.webUiUrl, null);
+	assert.equal(pendingDb.__tokenWrites.at(-1)?.agentStatus, "provisioning");
+});
+
 function fakeProvisioningDb(personaRow: typeof persona = persona) {
+	const agentWrites: Record<string, unknown>[] = [];
+	const tokenWrites: Record<string, unknown>[] = [];
+	const personaWrites: Record<string, unknown>[] = [];
 	return {
 		select(fields?: Record<string, unknown>) {
 			return {
 				from() {
 					return {
+						leftJoin() {
+							return this;
+						},
 						where() {
 							return {
 								orderBy() {
@@ -129,28 +207,52 @@ function fakeProvisioningDb(personaRow: typeof persona = persona) {
 									if (fields && "safeAddress" in fields) {
 										return Promise.resolve([{ safeAddress: "0x1111111111111111111111111111111111111111" }]);
 									}
+									if (fields && "walletAddress" in fields) {
+										return Promise.resolve([]);
+									}
+									if (fields && "token" in fields) {
+										return Promise.resolve([{ token: { id: "token-row-1", agentId: null }, agent: null }]);
+									}
 									return Promise.resolve([personaRow]);
 								},
 							};
 						},
 					};
 				},
-			};
-		},
-		update() {
-			return {
-				set() {
-					return {
-						where() {
-							return {
-								returning() {
-									return Promise.resolve([personaRow]);
+				};
+			},
+			insert() {
+				return {
+					values(values: Record<string, unknown>) {
+						agentWrites.push(values);
+						return {
+							returning() {
+								return Promise.resolve([{ id: "agent-row-1" }]);
+							},
+						};
+					},
+				};
+			},
+			update() {
+				return {
+					set(values: Record<string, unknown>) {
+						return {
+							where() {
+								if ("cloudAgentId" in values) agentWrites.push(values);
+								else if ("agentStatus" in values || "agentId" in values) tokenWrites.push(values);
+								else personaWrites.push(values);
+								return {
+									returning() {
+										return Promise.resolve([personaRow]);
 								},
 							};
 						},
 					};
-				},
-			};
-		},
-	};
-}
+					},
+				};
+			},
+			__agentWrites: agentWrites,
+			__tokenWrites: tokenWrites,
+			__personaWrites: personaWrites,
+		};
+	}

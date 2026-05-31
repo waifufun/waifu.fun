@@ -32,7 +32,10 @@
 import { useEffect, useState } from "react";
 
 import type { AgentTrade } from "@/components/agent-home/types";
+import { apiFetch } from "@/lib/api/_fetcher";
+import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
 import { type AgentHoldingsSnapshot, fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
+import { mapAgentOwnTrade, unwrapActivityTrades } from "@/lib/wave-t/agent-trades";
 import { type TwitterStats, fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
@@ -119,6 +122,33 @@ export function useLiveHoldings(
 	return state;
 }
 
+/**
+ * Poll the agent's open perp positions from the dedicated
+ * `/v2/agents/:address/hyperliquid/positions` endpoint, which serves the
+ * live Hyperliquid snapshot (positions already in the `HyperliquidPosition`
+ * shape the ActivePositions panel renders). The `/holdings` snapshot does
+ * NOT carry `perpsPositions`, so reading from it returned empty. Seeds from
+ * the SSG-prefetched list so the first paint has data, then refreshes on
+ * the given cadence (30s by default).
+ */
+export function useLivePerpPositions(
+	address: string,
+	initialPositions: HyperliquidPosition[],
+	intervalMs = 30_000,
+): HyperliquidPosition[] {
+	const [positions, setPositions] = useState<HyperliquidPosition[]>(initialPositions);
+	usePoller(
+		async () => {
+			const path = `/v2/agents/${encodeURIComponent(address)}/hyperliquid/positions`;
+			const data = await apiFetch<{ positions?: HyperliquidPosition[] }>(path);
+			if (Array.isArray(data?.positions)) setPositions(data.positions);
+		},
+		intervalMs,
+		[address],
+	);
+	return positions;
+}
+
 // ── twitter stats ──────────────────────────────────────────────
 
 export function useLiveTwitterStats(
@@ -170,11 +200,12 @@ export function useLiveAgentTrades(address: string, initial: AgentTrade[], inter
 			});
 			if (!res.ok) return;
 			const data = (await res.json()) as unknown;
-			if (!Array.isArray(data)) return;
-			const next: AgentTrade[] = data
-				.slice(0, 20)
-				.map((raw) => mapTrade(raw as Record<string, unknown>))
-				.filter((t): t is AgentTrade => t !== null);
+			// Share the server-side normalization: this unwraps both the bare
+			// BSC array and the `{ trades: [...] }` hyperliquid envelope, and
+			// maps HL fills (which carry `id`/`asset`/`size`, not `txId`) with
+			// the venue tag. Reimplementing it here is how HL trades stopped
+			// refreshing on the 15s cadence after hydration.
+			const next = unwrapActivityTrades(data).map((raw) => mapAgentOwnTrade(raw));
 			if (next.length > 0) setTrades(next);
 		},
 		intervalMs,
@@ -191,37 +222,7 @@ function clientApiBase(): string {
 	return "https://api.waifu.fun";
 }
 
-function mapTrade(raw: Record<string, unknown>): AgentTrade | null {
-	const txId = typeof raw.txHash === "string" ? raw.txHash : typeof raw.txId === "string" ? raw.txId : "";
-	if (!txId) return null;
-	const sideRaw = raw.side ?? raw.type;
-	const type: "buy" | "sell" = sideRaw === "sell" ? "sell" : "buy";
-	const ts =
-		typeof raw.blockTimestamp === "string"
-			? Date.parse(raw.blockTimestamp)
-			: typeof raw.timestamp === "number"
-				? raw.timestamp
-				: Date.now();
-	const amount = pickAmount(raw, type);
-	const trade: AgentTrade = {
-		txId,
-		type,
-		address: typeof raw.trader === "string" ? raw.trader : typeof raw.address === "string" ? raw.address : "",
-		amount,
-		timestamp: Number.isFinite(ts) ? ts : Date.now(),
-	};
-	if (typeof raw.tokenAddress === "string") trade.tokenAddress = raw.tokenAddress;
-	if (typeof raw.tokenSymbol === "string") trade.tokenSymbol = raw.tokenSymbol;
-	if (typeof raw.traderRole === "string" && (raw.traderRole === "agent-safe" || raw.traderRole === "agent-hot")) {
-		trade.traderRole = raw.traderRole;
-	}
-	if (typeof raw.usdValue === "number") trade.usdValue = raw.usdValue;
-	return trade;
-}
-
-function pickAmount(raw: Record<string, unknown>, type: "buy" | "sell"): string | number {
-	const candidate =
-		type === "sell" ? (raw.amountIn ?? raw.fromAmount ?? raw.amount) : (raw.amountOut ?? raw.toAmount ?? raw.amount);
-	if (typeof candidate === "string" || typeof candidate === "number") return candidate;
-	return 0;
-}
+// Trade normalization (BSC swap + HL fill envelope) is shared with the
+// server fetch via `mapAgentOwnTrade` / `unwrapActivityTrades` in
+// `@/lib/wave-t/agent-trades`. Keeping a second copy here is what let the
+// client poll silently drop HL fills, so it intentionally lives in one place.

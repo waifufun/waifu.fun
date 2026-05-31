@@ -4,6 +4,11 @@ import { getTokenChatSession } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { ITokenLookUp } from "@waifufun/types";
 import { LoaderCircle, LockKeyhole, RefreshCw } from "lucide-react";
+import {
+	HOSTED_CHAT_IFRAME_ALLOW,
+	HOSTED_CHAT_IFRAME_REFERRER_POLICY,
+	HOSTED_CHAT_IFRAME_SANDBOX,
+} from "./chat-frame-policy";
 
 type ChatFrameProps = {
 	params: ITokenLookUp;
@@ -11,11 +16,6 @@ type ChatFrameProps = {
 	status: string;
 	cloudAgentId?: string | null | undefined;
 };
-
-export const HOSTED_CHAT_IFRAME_ALLOW = "clipboard-read; clipboard-write";
-export const HOSTED_CHAT_IFRAME_REFERRER_POLICY = "no-referrer";
-export const HOSTED_CHAT_IFRAME_SANDBOX =
-	"allow-downloads allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts";
 
 export default function ChatFrame({ params, tokenName, status, cloudAgentId }: ChatFrameProps) {
 	const chat = useQuery({

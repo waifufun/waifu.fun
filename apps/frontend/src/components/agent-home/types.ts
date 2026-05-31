@@ -113,6 +113,12 @@ export interface AgentTrade {
 	tokenSymbol?: string;
 	traderRole?: "agent-safe" | "agent-hot";
 	usdValue?: number;
+	/**
+	 * Trade venue. Spot swaps come from pancakeswap (the default when
+	 * omitted); perp fills carry "hyperliquid" so the activity feed can
+	 * pick the right venue icon and skip the bscscan tx-link path.
+	 */
+	venue?: "pancakeswap" | "hyperliquid";
 }
 
 /**

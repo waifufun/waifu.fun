@@ -35,7 +35,7 @@ export default async function ActivityStrip() {
 						label={pluralize(stats.totalAgents, "agent launched", "agents launched")}
 					/>
 					<Divider />
-					<Stat value={stats.totalVolume > 0 ? formatUsd(stats.totalVolume) : "–"} label="total volume" />
+					<Stat value={stats.totalVolume > 0 ? formatUsd(stats.totalVolume) : "·"} label="total volume" />
 					<Divider />
 					<Stat value={stats.graduatedCount.toLocaleString()} label="on pancakeswap" />
 				</div>
