@@ -219,40 +219,40 @@ function fakeProvisioningDb(personaRow: typeof persona = persona) {
 						},
 					};
 				},
-				};
-			},
-			insert() {
-				return {
-					values(values: Record<string, unknown>) {
-						agentWrites.push(values);
-						return {
-							returning() {
-								return Promise.resolve([{ id: "agent-row-1" }]);
-							},
-						};
-					},
-				};
-			},
-			update() {
-				return {
-					set(values: Record<string, unknown>) {
-						return {
-							where() {
-								if ("cloudAgentId" in values) agentWrites.push(values);
-								else if ("agentStatus" in values || "agentId" in values) tokenWrites.push(values);
-								else personaWrites.push(values);
-								return {
-									returning() {
-										return Promise.resolve([personaRow]);
+			};
+		},
+		insert() {
+			return {
+				values(values: Record<string, unknown>) {
+					agentWrites.push(values);
+					return {
+						returning() {
+							return Promise.resolve([{ id: "agent-row-1" }]);
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					return {
+						where() {
+							if ("cloudAgentId" in values) agentWrites.push(values);
+							else if ("agentStatus" in values || "agentId" in values) tokenWrites.push(values);
+							else personaWrites.push(values);
+							return {
+								returning() {
+									return Promise.resolve([personaRow]);
 								},
 							};
 						},
 					};
-					},
-				};
-			},
-			__agentWrites: agentWrites,
-			__tokenWrites: tokenWrites,
-			__personaWrites: personaWrites,
-		};
-	}
+				},
+			};
+		},
+		__agentWrites: agentWrites,
+		__tokenWrites: tokenWrites,
+		__personaWrites: personaWrites,
+	};
+}
