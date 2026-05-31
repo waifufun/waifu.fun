@@ -1,4 +1,4 @@
-import { type Address, type PublicClient } from "viem";
+import type { PublicClient } from "viem";
 
 /**
  * Native (BNB / ETH) transfer indexing source.
@@ -48,7 +48,9 @@ export type NativeTransfer = {
 export type NativeSourceKind = "alchemy" | "getBlock";
 
 export interface NativeTransferFetchInput {
-	client: PublicClient;
+	// Only getBlock is used; accept any client exposing it (callers pass a
+	// parametrized PublicClient whose generics don't match the bare type).
+	client: Pick<PublicClient, "getBlock">;
 	rpcUrl: string;
 	chainId: number;
 	addresses: string[];
@@ -81,7 +83,7 @@ function isAlchemyUrl(rpcUrl: string): boolean {
  */
 function alchemyNativeCategories(chainId: number): string[] {
 	if (chainId === 56) return ["internal"];
-	return ["third-party", "internal"];
+	return ["external", "internal"];
 }
 
 export function selectNativeSourceKind(rpcUrl: string): NativeSourceKind {
@@ -201,7 +203,7 @@ async function fetchViaAlchemy(input: NativeTransferFetchInput): Promise<NativeT
 						txHash,
 						blockNumber,
 						transferIndex: ordinal++,
-						kind: row.category === "internal" ? "internal" : "third-party",
+						kind: row.category === "internal" ? "internal" : "external",
 					});
 				}
 				pageKey = page.pageKey;
@@ -246,7 +248,7 @@ async function fetchViaGetBlock(input: NativeTransferFetchInput): Promise<Native
 					txHash: tx.hash,
 					blockNumber: block.number ?? blockNumber(block),
 					transferIndex: txIndex,
-					kind: "third-party",
+					kind: "external",
 				});
 			}
 		}
@@ -288,12 +290,12 @@ export async function fetchNativeTransfersFor(
 	// supplement with a bounded parallel getBlock scan. Skip when the range is
 	// wider than the configured span to keep the RPC budget bounded.
 	let getBlockScanned = false;
-	let third-partyTransfers: NativeTransfer[] = [];
+	let topLevelTransfers: NativeTransfer[] = [];
 	if (input.chainId === 56) {
 		const span = input.toBlock - input.fromBlock + 1n;
 		const maxSpan = input.maxGetBlockSpan ?? span;
 		if (span <= maxSpan) {
-			third-partyTransfers = await fetchViaGetBlock(input);
+			topLevelTransfers = await fetchViaGetBlock(input);
 			getBlockScanned = true;
 		}
 	}
@@ -303,7 +305,7 @@ export async function fetchNativeTransfersFor(
 	const seen = new Set<string>();
 	const merged: NativeTransfer[] = [];
 	let ordinal = 0;
-	for (const t of [...alchemyTransfers, ...third-partyTransfers]) {
+	for (const t of [...alchemyTransfers, ...topLevelTransfers]) {
 		const key = `${t.txHash}:${t.from}:${t.to}:${t.value.toString()}`;
 		if (seen.has(key)) continue;
 		seen.add(key);
