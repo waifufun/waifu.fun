@@ -428,6 +428,10 @@ export class ElizaClient {
 		const billing = input.billing ?? { mode: "owner_credits", initialReserveUsd: 5 };
 		const webhookUrl = input.webhookUrl ?? defaultElizaCloudWebhookUrl();
 		const webhookSecret = input.webhookSecret ?? (webhookUrl ? defaultElizaCloudWebhookSecret() : undefined);
+		// Per-inference burn metering: the container needs the inference receiver
+		// URL plus the shared secret so it can sign `inference.spent` webhooks.
+		const inferenceWebhookUrl = defaultElizaCloudInferenceWebhookUrl();
+		const inferenceWebhookSecret = webhookSecret ?? defaultElizaCloudWebhookSecret();
 		const access = {
 			guestMinTokens: input.access?.guestMinTokens ?? 1_000,
 			userMinTokens: input.access?.userMinTokens ?? 100_000,
@@ -456,6 +460,8 @@ export class ElizaClient {
 				? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 				: {}),
 			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
+			...(inferenceWebhookUrl ? { WAIFU_INFERENCE_WEBHOOK_URL: inferenceWebhookUrl } : {}),
+			...(inferenceWebhookSecret ? { WAIFU_WEBHOOK_SECRET: inferenceWebhookSecret } : {}),
 			...(input.modelDefaults ?? {}),
 			...(input.container?.environmentVars ?? {}),
 			ELIZA_UI_ENABLE: "true",
@@ -788,6 +794,23 @@ function defaultElizaCloudWebhookUrl(): string | undefined {
 	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
 	if (!apiBase) return undefined;
 	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/credits`;
+}
+
+/**
+ * The per-inference metering webhook the hosted container POSTs `inference.spent`
+ * events to. Distinct from the credits webhook above: this is the "agent pays
+ * its own way" burn signal that feeds the burn rollup. Defaults to the same API
+ * base with the `/inference` receiver path; override with
+ * ELIZA_CLOUD_INFERENCE_WEBHOOK_URL when the receiver lives elsewhere.
+ */
+function defaultElizaCloudInferenceWebhookUrl(): string | undefined {
+	const configured = nonEmpty(
+		process.env.ELIZA_CLOUD_INFERENCE_WEBHOOK_URL ?? process.env.WAIFU_ELIZA_CLOUD_INFERENCE_WEBHOOK_URL,
+	);
+	if (configured) return configured.replace(/\/+$/, "");
+	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
+	if (!apiBase) return undefined;
+	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/inference`;
 }
 
 function defaultElizaCloudWebhookSecret(): string | undefined {
