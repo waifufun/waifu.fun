@@ -17,6 +17,12 @@ export type AgentEvent = {
 	type: string;
 	status: string;
 	createdAt: string;
+	/**
+	 * On-chain / source time of the event (e.g. the matching fill time for a
+	 * trade.open). Prefer this over createdAt (ingestion time) when rendering
+	 * relative timestamps in the feed.
+	 */
+	occurredAt?: string | null;
 	grouped?: true;
 	count?: number;
 	items?: AgentEvent[];

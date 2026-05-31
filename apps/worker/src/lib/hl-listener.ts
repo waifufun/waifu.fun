@@ -605,8 +605,13 @@ async function processPositions(
 		const after = next.get(coin);
 		// Opened from zero
 		if (!before && after) {
-			const lifecycleId =
-				(await readRecentFillTidForCoin(context, wallet.agentTokenAddress, wallet.address, coin)) ?? Date.now();
+			const recentFill = await readRecentFillForCoin(context, wallet.agentTokenAddress, wallet.address, coin);
+			const lifecycleId = recentFill.tid ?? Date.now();
+			// The position-snapshot diff carries no time of its own. Prefer the
+			// matching fill's on-chain time so the feed shows when the trade
+			// actually opened, not when the worker ingested the diff.
+			const fillTime = recentFill.time;
+			const occurredAt = fillTime !== null ? new Date(fillTime) : undefined;
 			const notional = Math.abs(after.szi) * (after.entryPx ?? 0);
 			const margin = after.leverage ? notional / after.leverage : notional;
 			const payload = {
@@ -619,6 +624,8 @@ async function processPositions(
 				notionalUsd: notional,
 				marginUsd: margin,
 				venue: "hyperliquid",
+				time: fillTime,
+				timestamp: fillTime !== null ? new Date(fillTime).toISOString() : null,
 			};
 			const inserted = await insertTradeEvent(context, {
 				agentId: wallet.agentId,
@@ -629,6 +636,7 @@ async function processPositions(
 				data: renderEventData("trade.open", payload),
 				txHash: null,
 				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:open:${lifecycleId}`,
+				occurredAt,
 			});
 			if (inserted) emitted += 1;
 			continue;
@@ -640,6 +648,10 @@ async function processPositions(
 			const closeHint = await readRecentClosedPnlForCoin(context, wallet.agentTokenAddress, wallet.address, coin);
 			const pnl = closeHint.pnl;
 			const lifecycleId = closeHint.latestTid ?? Date.now();
+			// Use the closing fill's on-chain time so the feed shows when the
+			// position actually closed, not the ingestion time.
+			const fillTime = closeHint.latestTime;
+			const occurredAt = fillTime !== null ? new Date(fillTime) : undefined;
 			const notionalAtEntry = Math.abs(before.szi) * (before.entryPx ?? 0);
 			const pnlPct =
 				pnl !== null && notionalAtEntry > 0 && before.leverage
@@ -656,6 +668,8 @@ async function processPositions(
 				pnlUsd: pnl ?? 0,
 				pnlPct,
 				venue: "hyperliquid",
+				time: fillTime,
+				timestamp: fillTime !== null ? new Date(fillTime).toISOString() : null,
 			};
 			const inserted = await insertTradeEvent(context, {
 				agentId: wallet.agentId,
@@ -666,6 +680,7 @@ async function processPositions(
 				data: renderEventData("trade.close", payload),
 				txHash: null,
 				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:close:${lifecycleId}`,
+				occurredAt,
 			});
 			if (inserted) emitted += 1;
 			continue;
@@ -685,26 +700,43 @@ async function processPositions(
 	return { next, emitted };
 }
 
-async function readRecentFillTidForCoin(
+// Number of recent fill rows to scan when resolving the lifecycle fill for a
+// position-diff open/close. Wide enough that a busy multi-coin agent's
+// relevant fill stays in the window (it is then filtered by wallet + coin in
+// JS); narrow enough to stay a cheap indexed read.
+const FILL_LOOKUP_LIMIT = 60;
+
+async function readRecentFillForCoin(
 	context: WorkerContext,
 	agentTokenAddress: string,
 	walletAddress: string,
 	coin: string,
-): Promise<number | null> {
+): Promise<{ tid: number | null; time: number | null }> {
 	const rows = await context.db
-		.select({ data: agentEvents.data })
+		.select({ data: agentEvents.data, occurredAt: agentEvents.occurredAt })
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
 		.orderBy(desc(agentEvents.occurredAt))
-		.limit(10);
+		.limit(FILL_LOOKUP_LIMIT);
 	const wallet = walletAddress.toLowerCase();
+	// Rows arrive newest-first. The opening fill for a "position appeared from
+	// zero" diff is the most recent fill whose direction starts with "open";
+	// prefer that so a later resize/add fill on the same coin does not stamp the
+	// open with the wrong time. Fall back to the newest matching fill.
+	let newestMatch: { tid: number | null; time: number | null } | null = null;
 	for (const row of rows) {
 		const data = row.data as Record<string, unknown>;
 		if (typeof data.walletAddress === "string" && data.walletAddress.toLowerCase() !== wallet) continue;
 		if ((data.coin ?? "") !== coin) continue;
-		return typeof data.tid === "number" ? data.tid : null;
+		const tid = typeof data.tid === "number" ? data.tid : null;
+		const time =
+			typeof data.time === "number" && Number.isFinite(data.time) ? data.time : (row.occurredAt?.getTime() ?? null);
+		if (newestMatch === null) newestMatch = { tid, time };
+		const dir = String(data.direction ?? "").toLowerCase();
+		if (dir.startsWith("open")) return { tid, time };
 	}
-	return null;
+	if (newestMatch) return newestMatch;
+	return { tid: null, time: null };
 }
 
 async function readRecentClosedPnlForCoin(
@@ -712,21 +744,26 @@ async function readRecentClosedPnlForCoin(
 	agentTokenAddress: string,
 	walletAddress: string,
 	coin: string,
-): Promise<{ pnl: number | null; latestTid: number | null }> {
+): Promise<{ pnl: number | null; latestTid: number | null; latestTime: number | null }> {
 	const rows = await context.db
-		.select({ data: agentEvents.data })
+		.select({ data: agentEvents.data, occurredAt: agentEvents.occurredAt })
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
 		.orderBy(desc(agentEvents.occurredAt))
-		.limit(10);
+		.limit(FILL_LOOKUP_LIMIT);
 	let total: number | null = null;
 	let latestTid: number | null = null;
+	let latestTime: number | null = null;
 	const wallet = walletAddress.toLowerCase();
 	for (const row of rows) {
 		const data = row.data as Record<string, unknown>;
 		if (typeof data.walletAddress === "string" && data.walletAddress.toLowerCase() !== wallet) continue;
 		if ((data.coin ?? "") !== coin) continue;
 		if (latestTid === null && typeof data.tid === "number") latestTid = data.tid;
+		if (latestTime === null) {
+			latestTime =
+				typeof data.time === "number" && Number.isFinite(data.time) ? data.time : (row.occurredAt?.getTime() ?? null);
+		}
 		const pnl = Number(data.closedPnl);
 		if (!Number.isFinite(pnl) || pnl === 0) continue;
 		total = (total ?? 0) + pnl;
@@ -735,7 +772,7 @@ async function readRecentClosedPnlForCoin(
 		const dir = String(data.direction ?? "").toLowerCase();
 		if (dir.startsWith("open")) break;
 	}
-	return { pnl: total, latestTid };
+	return { pnl: total, latestTid, latestTime };
 }
 
 export function startHyperliquidListener(
