@@ -8,6 +8,22 @@ import { createAgentProvisioningProcessor } from "./agent-provisioning.js";
 type UpdateRecord = { table: unknown; values: Record<string, unknown> };
 type InsertRecord = { table: unknown; values: Record<string, unknown> };
 
+/**
+ * A resolved update result that is awaitable (for callers that do not chain
+ * .returning()) and also exposes .returning() for the atomic provisioning claim
+ * / release UPDATEs. Returning a real Promise with .returning attached keeps the
+ * mock awaitable without an object `then` property.
+ */
+function updateResult(rows: Array<Record<string, unknown>>): Promise<void> & {
+	returning: () => Promise<Array<Record<string, unknown>>>;
+} {
+	const promise = Promise.resolve() as Promise<void> & {
+		returning: () => Promise<Array<Record<string, unknown>>>;
+	};
+	promise.returning = () => Promise.resolve(rows);
+	return promise;
+}
+
 function withEnv<T>(values: Record<string, string>, fn: () => Promise<T>): Promise<T> {
 	const previous = new Map<string, string | undefined>();
 	for (const [key, value] of Object.entries(values)) {
@@ -76,7 +92,14 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 			return {
 				set(values: Record<string, unknown>) {
 					updates.push({ table, values });
-					return { where: () => Promise.resolve() };
+					const chain = {
+						where() {
+							// The atomic provisioning claim calls .returning(); a single-
+							// worker happy path always wins the claim, so return one row.
+							return updateResult([{ agentId: persona.agentId }]);
+						},
+					};
+					return chain;
 				},
 			};
 		},
@@ -327,7 +350,14 @@ test("agent-provisioning worker retries until a hosted chat URL exists", async (
 			return {
 				set(values: Record<string, unknown>) {
 					updates.push({ table, values });
-					return { where: () => Promise.resolve() };
+					return {
+						where() {
+							// claimProvisioning awaits .returning(); other updates await the
+							// statement directly. Support both: a thenable that also exposes
+							// .returning() winning the single-worker claim.
+							return updateResult([{ agentId: persona.agentId }]);
+						},
+					};
 				},
 			};
 		},
@@ -466,7 +496,15 @@ test("agent-provisioning worker dead-letters hosted chat URL readiness on the fi
 			};
 		},
 		update() {
-			return { set: () => ({ where: () => Promise.resolve() }) };
+			return {
+				set() {
+					return {
+						where() {
+							return updateResult([{ agentId: "agent-final-no-url" }]);
+						},
+					};
+				},
+			};
 		},
 		insert(table: unknown) {
 			return {
@@ -844,7 +882,14 @@ test("agent-provisioning worker adopts Eliza Cloud existingAgentId conflicts", a
 			return {
 				set(values: Record<string, unknown>) {
 					updates.push({ table, values });
-					return { where: () => Promise.resolve() };
+					return {
+						where() {
+							// claimProvisioning awaits .returning(); other updates await the
+							// statement directly. Support both: a thenable that also exposes
+							// .returning() winning the single-worker claim.
+							return updateResult([{ agentId: persona.agentId }]);
+						},
+					};
 				},
 			};
 		},
@@ -983,7 +1028,22 @@ test("agent-provisioning worker does not adopt duplicate token conflicts without
 			};
 		},
 		update() {
-			throw new Error("duplicate character conflict must not write runtime metadata");
+			// The atomic claim (and its best-effort release on the failing POST) write a
+			// transient provisioning claim, not runtime metadata. Allow those: the 409
+			// without an existingAgentId still aborts before storeProvisioningMetadata,
+			// so no runtime metadata is ever written and no provisioned event emitted.
+			return {
+				set(values: Record<string, unknown>) {
+					if ("runtimeKind" in values || "elizaCloudAgentId" in values) {
+						throw new Error("duplicate character conflict must not write runtime metadata");
+					}
+					return {
+						where() {
+							return updateResult([{ agentId: persona.agentId }]);
+						},
+					};
+				},
+			};
 		},
 		insert() {
 			throw new Error("duplicate character conflict must not emit provisioned events");
@@ -1190,4 +1250,307 @@ test("agent-provisioning worker rejects invalid admin wallets before calling Eli
 	);
 
 	assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("worker provisioning injects WAIFU_INFERENCE_WEBHOOK_URL and WAIFU_WEBHOOK_SECRET into container env", async () => {
+	const persona = {
+		id: "persona-row-2",
+		agentId: "waifu-meter-01",
+		name: "Meter Waifu",
+		bio: null,
+		avatarUrl: null,
+		systemPrompt: null,
+		claimedByXHandle: null,
+		twitterHandle: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Meter Waifu", symbol: "METR" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const tokenRow = { id: "token-row-2", agentId: null };
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) {
+										return Promise.resolve([{ token: tokenRow, agent: null }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return {
+				set() {
+					return {
+						where() {
+							return updateResult([{ agentId: persona.agentId }]);
+						},
+					};
+				},
+			};
+		},
+		insert() {
+			return {
+				values(values: Record<string, unknown>) {
+					return {
+						returning() {
+							if ("eventType" in values) {
+								return Promise.resolve([{ id: "event-row-2", ...values, createdAt: new Date() }]);
+							}
+							return Promise.resolve([{ id: "agent-overlay-2" }]);
+						},
+					};
+				},
+			};
+		},
+	} as never;
+
+	let capturedEnv: Record<string, string> = {};
+	mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+		// Develop polls /status after the POST, so branch on the URL and only parse
+		// a JSON body for the creating POST. The status poll must surface a webUiUrl
+		// so assertHostedChatUrlReady is satisfied.
+		if (String(url).endsWith("/api/v1/agents/223e4567-e89b-12d3-a456-426614174000/status")) {
+			return Response.json({
+				success: true,
+				data: {
+					cloudAgentId: "223e4567-e89b-12d3-a456-426614174000",
+					webUiUrl: "https://meter-agent.example",
+					status: "running",
+				},
+			});
+		}
+		const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+		const container = body.container as Record<string, unknown> | undefined;
+		if (container) capturedEnv = container.env as Record<string, string>;
+		return Response.json({
+			success: true,
+			data: {
+				cloudAgentId: "223e4567-e89b-12d3-a456-426614174000",
+				webUiUrl: "https://meter-agent.example",
+				status: "running",
+				jobId: "job-meter",
+			},
+		});
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_meter",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_API_BASE_URL: "https://api.waifu.fun",
+			WEBHOOK_RECEIVER_SECRET: "shared_webhook_secret",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db,
+				logger: console as never,
+				startedAt: new Date(),
+				chainId: 56,
+			});
+			const payload: AgentProvisioningJob = {
+				agentId: "waifu-meter-01",
+				source: "agent.launched",
+				data: {
+					tokenContractAddress: "0x0000000000000000000000000000000000000004",
+					chain: "bsc",
+					chainId: 56,
+					tokenName: "Meter Waifu",
+					tokenTicker: "METR",
+				},
+			};
+			await processor({ id: "job-meter-1", data: payload, attemptsMade: 0 } as never);
+		},
+	);
+
+	mock.restoreAll();
+
+	// Blocker 3: launch-time (worker) containers must carry the metering knobs
+	// so plugin-elizacloud emits inference.spent events.
+	assert.equal(capturedEnv.WAIFU_INFERENCE_WEBHOOK_URL, "https://api.waifu.fun/v2/webhooks/eliza-cloud/inference");
+	assert.equal(capturedEnv.WAIFU_WEBHOOK_SECRET, "shared_webhook_secret");
+	// And the inference URL must never be the credits URL.
+	assert.notEqual(capturedEnv.WAIFU_INFERENCE_WEBHOOK_URL, capturedEnv.WAIFU_WEBHOOK_URL);
+	assert.ok(!capturedEnv.WAIFU_INFERENCE_WEBHOOK_URL.endsWith("/credits"));
+});
+
+test("two concurrent provisions for the same persona result in exactly one /api/v1/agents POST", async () => {
+	const persona = {
+		id: "persona-row-3",
+		agentId: "waifu-race-01",
+		name: "Race Waifu",
+		bio: null,
+		avatarUrl: null,
+		systemPrompt: null,
+		claimedByXHandle: null,
+		twitterHandle: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Race Waifu", symbol: "RACE" },
+		metadata: {} as Record<string, unknown>,
+		runtimeKind: "webhook",
+	};
+	const tokenRow = { id: "token-row-3", agentId: null };
+
+	// Simulate the atomic claim: the FIRST conditional UPDATE that matches wins
+	// (returns a row); any later claim attempt sees the claim already held and
+	// matches zero rows. This models Postgres row-locking on the conditional
+	// UPDATE so we can prove only one job proceeds to POST.
+	let claimHeld = false;
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) {
+										return Promise.resolve([{ token: tokenRow, agent: null }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return {
+				set(values: Record<string, unknown>) {
+					return {
+						where() {
+							// Only the claim UPDATE (which sets metadata to an in_progress
+							// claim) participates in the race. The first caller wins; any
+							// later claim attempt sees the claim already held and matches
+							// zero rows (loses).
+							const isClaim = typeof values.metadata === "object" || values.metadata !== undefined;
+							if (isClaim && !claimHeld) {
+								claimHeld = true;
+								return updateResult([{ agentId: persona.agentId }]);
+							}
+							if (isClaim && claimHeld) {
+								return updateResult([]);
+							}
+							return updateResult([{ agentId: persona.agentId }]);
+						},
+					};
+				},
+			};
+		},
+		insert() {
+			return {
+				values(values: Record<string, unknown>) {
+					return {
+						returning() {
+							if ("eventType" in values) {
+								return Promise.resolve([{ id: "event-row-3", ...values, createdAt: new Date() }]);
+							}
+							return Promise.resolve([{ id: "agent-overlay-3" }]);
+						},
+					};
+				},
+			};
+		},
+	} as never;
+
+	let postCount = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		// The winner polls /status after the POST (develop flow); surface a webUiUrl
+		// so assertHostedChatUrlReady passes. Only count the POST to /api/v1/agents.
+		if (String(url).endsWith("/api/v1/agents/323e4567-e89b-12d3-a456-426614174000/status")) {
+			return Response.json({
+				success: true,
+				data: {
+					cloudAgentId: "323e4567-e89b-12d3-a456-426614174000",
+					webUiUrl: "https://race-agent.example",
+					status: "running",
+				},
+			});
+		}
+		if (String(url).endsWith("/api/v1/agents")) {
+			postCount += 1;
+			return Response.json({
+				success: true,
+				data: {
+					cloudAgentId: "323e4567-e89b-12d3-a456-426614174000",
+					webUiUrl: "https://race-agent.example",
+					status: "running",
+					jobId: "job-race",
+				},
+			});
+		}
+		throw new Error(`unexpected fetch ${url}`);
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_race",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db,
+				logger: console as never,
+				startedAt: new Date(),
+				chainId: 56,
+			});
+			const payload: AgentProvisioningJob = {
+				agentId: "waifu-race-01",
+				source: "agent.launched",
+				data: {
+					tokenContractAddress: "0x0000000000000000000000000000000000000004",
+					chain: "bsc",
+					chainId: 56,
+					tokenName: "Race Waifu",
+					tokenTicker: "RACE",
+				},
+			};
+			// Run both jobs concurrently. The loser throws "already in progress".
+			const results = await Promise.allSettled([
+				processor({ id: "job-race-create", data: payload, attemptsMade: 0 } as never),
+				processor({ id: "job-race-graduate", data: payload, attemptsMade: 0 } as never),
+			]);
+			const fulfilled = results.filter((r) => r.status === "fulfilled");
+			const rejected = results.filter((r) => r.status === "rejected");
+			assert.equal(fulfilled.length, 1, "exactly one provision should succeed");
+			assert.equal(rejected.length, 1, "the loser should be rejected, not POST a duplicate");
+		},
+	);
+
+	mock.restoreAll();
+
+	// Blocker 4: only one container POST regardless of the two concurrent jobs.
+	assert.equal(postCount, 1);
 });
