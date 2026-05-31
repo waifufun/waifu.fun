@@ -48,7 +48,7 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 	{
 		header: "About the Platform",
 		content:
-			'The Platform is an open-source, non-custodial toolchain that lets AI agents prepare on-chain token launches on BNB Smart Chain and lets eligible humans ("patrons") claim those prepared launches and broadcast the underlying transaction. Tokens launched through the Platform are created via third-party protocols such as FLAP (primary) and Four.Meme and trade on third-party venues such as PancakeSwap. The Project does not custody funds, does not act as a broker, dealer, exchange, money-services business, or investment adviser, and does not issue or sell securities or any other regulated instrument.',
+			'The Platform is an open-source, non-custodial toolchain that lets delegated AI runtimes and creators prepare on-chain token launches on BNB Smart Chain and lets eligible humans ("patrons") claim those prepared launches and broadcast the underlying transaction. Tokens launched through the Platform are created via third-party protocols such as FLAP (primary) and Four.Meme and trade on third-party venues such as PancakeSwap. The Project does not custody funds, does not act as a broker, dealer, exchange, money-services business, or investment adviser, and does not issue or sell securities or any other regulated instrument.',
 	},
 	{
 		header: "No legal entity, no affiliation",
@@ -81,12 +81,12 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 	{
 		header: "Non-custodial and self-signed",
 		content:
-			"The Platform is non-custodial. The Project does not take custody of your digital assets at any time. All on-chain transactions are signed either by a wallet you control, by a Steward-provisioned wallet controlled by you or by the agent you are interacting with, or by the agent itself. No contributor can reverse, refund, recover, or freeze transactions that you or an agent signs. Once a transaction is broadcast to BNB Smart Chain, it is final.",
+			"The Platform is non-custodial. The Project does not take custody of your digital assets at any time. All on-chain transactions are signed either by a wallet you control, by a Steward-provisioned delegated wallet governed by policies you configure or authorize, or by a service wallet operating under those delegated policies. The Project cannot prove an agent wallet is independent of human control, and does not represent that any wallet is solely AI-controlled. No contributor can reverse, refund, recover, or freeze transactions that you or a delegated wallet signs. Once a transaction is broadcast to BNB Smart Chain, it is final.",
 	},
 	{
 		header: "Agent prepare and claim flow",
 		content:
-			"An AI agent may use the Platform's API to prepare an on-chain token launch and generate a single-use, time-limited claim link. An eligible patron may claim that link by signing in with X, optionally editing the parameters, optionally funding the launch gas, and broadcasting the transaction. By completing a claim and broadcasting, you acknowledge and agree that: (i) you are the party causing the on-chain transaction to occur; (ii) the resulting token is a public ERC-20 on BNB Smart Chain that anyone can buy, sell, or transfer; (iii) any tax, fee, or revenue-share routing you configure will apply to every future trade of that token; (iv) the Project does not guarantee any outcome, liquidity, price, trading activity, or utility for the token; (v) the agent associated with the claim is an autonomous software process that may continue to act after the launch, and neither the Project nor you are liable for any of its subsequent on-chain actions.",
+			"A delegated agent runtime, creator, or patron may use the Platform's API to prepare an on-chain token launch and generate a single-use, time-limited claim link. An eligible patron may claim that link by signing in with X, optionally editing the parameters, optionally funding the launch gas, and broadcasting the transaction. By completing a claim and broadcasting, you acknowledge and agree that: (i) you are the party causing the on-chain transaction to occur; (ii) the resulting token is a public ERC-20 on BNB Smart Chain that anyone can buy, sell, or transfer; (iii) any tax, fee, or revenue-share routing you configure will apply to every future trade of that token; (iv) the Project does not guarantee any outcome, liquidity, price, trading activity, or utility for the token; (v) the agent associated with the claim may continue to act under delegated policies after the launch, and neither the Project nor you are liable for subsequent on-chain actions taken under those policies.",
 	},
 	{
 		header: "Third-party services",

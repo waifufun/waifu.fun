@@ -78,7 +78,7 @@ function LeaderboardContent() {
 	// path. Honest empty state beats rows full of zeros.
 	const allZero = useMemo(() => {
 		if (!data || data.length === 0) return false;
-		return data.every((e) => e.treasuryUsd === 0 && e.dailyBurnUsd === 0);
+		return data.every((e) => (e.treasuryUsd ?? 0) === 0 && (e.dailyBurnUsd ?? 0) === 0);
 	}, [data]);
 
 	const count = data?.length ?? 0;

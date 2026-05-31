@@ -33,7 +33,7 @@ const agentTypes = [
 	{
 		icon: TrendingUp,
 		title: "trading agents",
-		body: "autonomous portfolio management on-chain. read markets, execute strategies, manage risk. route performance through the agent treasury.",
+		body: "delegated portfolio management on-chain. read markets, execute strategies, manage risk. route performance through the agent treasury.",
 		image: "/waifus/defi-trader.png",
 		accent: "#00ff87",
 	},

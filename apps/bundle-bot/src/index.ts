@@ -15,6 +15,7 @@
  *     cooldown after each successful tx).
  */
 
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import type { Address, Hex } from "viem";
@@ -132,6 +133,24 @@ async function main(): Promise<void> {
 				logger,
 				listReady: listBundlePendingReady,
 				submit: submitLaunchBundle,
+				autoRefundBundleFailed: {
+					enabled: autoRefundEnabled,
+					graceSeconds: BUNDLE_GRACE_PERIOD_SECONDS,
+					nowSeconds: () => BigInt(Math.floor(Date.now() / 1000)),
+					readVault,
+					resolveBundleBotKey,
+					sendRefundBundleFailed: (vault, pk) => sendRefund(vault, "enableRefundBundleFailed", pk),
+					markRefunded: async (db, launch, txHash) => {
+						await db
+							.update(schema.agentLaunches)
+							.set({
+								bundleStatus: "refunded",
+								bundleFailureReason: `bundle-failed refund enabled: ${txHash}`,
+								updatedAt: new Date(),
+							})
+							.where(eq(schema.agentLaunches.id, launch.id));
+					},
+				},
 			});
 			if (result.scanned > 0) {
 				logger.info(
@@ -139,6 +158,8 @@ async function main(): Promise<void> {
 						scanned: result.scanned,
 						submitted: result.submitted,
 						failed: result.failed,
+						refundEnabled: result.refundEnabled,
+						refundSkipped: result.refundSkipped,
 						skipped: result.skipped,
 						errors: result.errors,
 					},

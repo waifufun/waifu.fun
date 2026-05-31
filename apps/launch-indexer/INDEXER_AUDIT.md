@@ -80,11 +80,13 @@ the stuck detector currently only logs. firing `enableRefundUnderSubscribed()` o
 
 ### P2 — reorg / restart-from-snapshot safety is shallow
 
-current strategy: every handler is keyed on `(tx_hash, log_index)` for inserts, and the launch row is unique on `tokenAddress`. that's enough to survive a clean replay, but a real reorg where the same `(tx_hash, log_index)` reappears at a different block number would slip through because we don't store `block_hash`.
+pre-#601 strategy: every handler was keyed on `(tx_hash, log_index)` for inserts, and the launch row was unique on `tokenAddress`. that was enough to survive a clean replay, but a real reorg where the same `(tx_hash, log_index)` reappeared at a different block would slip through because we did not store `block_hash`.
 
 **status: SHIPPED (waifufun#601).** previously deferred as an accepted risk (wave J) on the reorg-depth safety bound described below; shipped proactively rather than waiting for the phantom-row trigger. _historical rationale:_ BSC reorg depth has empirically been bounded by 1-2 blocks since the 2022 hard fork; we wait `confirmations >= 3` (set via `LAUNCH_INDEXER_CONFIRMATIONS`, default 3) before processing, which put the probability of a reverted `(txHash, logIndex)` re-appearing at a different block number well below the cost of the migration. that bound still holds — the migration just closes the gap unconditionally, which also unblocks lowering `LAUNCH_INDEXER_CONFIRMATIONS` or porting the indexer to a deeper-reorg chain (L2 sequencer) without revisiting dedup safety.
 
-**followup (P2): DONE in `0038_condemned_mercury.sql`.** `block_hash varchar(66) NOT NULL DEFAULT '0x00…00'` added to `launch_deposits`, `launch_withdrawals`, `launch_claims`; each `*_tx_log_unique` key swapped to `(tx_hash, log_index, block_hash)`. (`launch_refunds_log` named in the original followup does not exist — refunds are recorded as `launch_withdrawals` rows.) handlers now populate `block_hash` from `event.blockHash` (threaded through `decode.ts` → `events.ts` → `source.ts`). pre-migration rows backfill to the zero-hash sentinel; since `(tx_hash, log_index)` was already unique, the constant sentinel preserves their uniqueness, so a historical `block_number → block_hash` RPC backfill is optional cosmetic cleanup, not a correctness requirement.
+**followup (P2): DONE in `0038_condemned_mercury.sql`, then tightened in `0040_vault_reorg_idempotency.sql`.** `block_hash varchar(66) NOT NULL DEFAULT '0x00…00'` was added to `launch_deposits`, `launch_withdrawals`, and `launch_claims` for diagnostics. `0038` briefly widened each `*_tx_log_unique` key to `(tx_hash, log_index, block_hash)`, but waifufun#819 showed that aggregate handlers could double-apply replayed vault events under alternate block hashes. `0040` now restores canonical vault event identity to `(tx_hash, log_index)` after duplicate preflight checks, while keeping `block_hash` as the observed-block diagnostic column. (`launch_refunds_log` named in the original followup does not exist; refunds are recorded as `launch_withdrawals` rows.) handlers populate `block_hash` from `event.blockHash` (threaded through `decode.ts` -> `events.ts` -> `source.ts`), but vault aggregate mutation cannot double-apply reorg variants because those variants cannot insert a second canonical vault row.
+
+**waifufun#819 status: FIXED.** the current vault tables reject same-tx/log alternate-block duplicates at insert time, and regression tests cover deposit, withdrawal, refund, and claim replay with a different `block_hash`. TreasuryLP events remain keyed on `(tx_hash, log_index, block_hash)` because they are append-only observability rows and do not mutate vault aggregates.
 
 ### gap #20 resolution — predicted-address mismatch warn log + metric
 
@@ -107,7 +109,7 @@ the indexer covered LaunchFactory, LaunchVault, BundleRouter, the Flap portal, a
 - P1 auto-refund cron: FIXED in wave J (`tier-cron/refund-cron.ts`, feature-flagged).
 - P2 wallet-pool stuck-lock detection: FIXED in wave J (`tier-cron/wallet-pool-health.ts`).
 - P2 portal handler tests: FIXED in wave J (`launch-indexer/handlers/flap.test.ts`).
-- P2 `block_hash` unique key: SHIPPED (waifufun#601) — migration `0038_condemned_mercury.sql` + handler/event wiring.
+- P2 `block_hash` diagnostic column: SHIPPED (waifufun#601) — migration `0038_condemned_mercury.sql` + handler/event wiring; vault aggregate replay fixed in `0040_vault_reorg_idempotency.sql` (waifufun#819).
 - gap #20 (silent no-op on predicted-addr mismatch): FIXED in wave J (warn log + counter).
 - gap F16 (TreasuryLP4 events unindexed): SHIPPED (waifufun#599) — `treasuryLpEventsAbi` + decode/events wiring + poller Phase 3 + `treasury_lp_events` table (migration `0039_broken_puck.sql`).
 

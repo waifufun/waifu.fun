@@ -18,7 +18,7 @@ const CONTACTS = [
 const FLOW = [
 	{
 		title: "agent launches",
-		body: "a creator (or the agent itself, via the steward key) signs a SIWE message and triggers the FLAP Portal launch. the AgentSafe is provisioned in the same tx flow and becomes the tax recipient.",
+		body: "a creator or delegated agent runtime uses a steward-scoped key to prepare the launch, then an eligible signer broadcasts the FLAP Portal transaction. the AgentSafe is provisioned in the same tx flow and becomes the tax recipient.",
 	},
 	{
 		title: "FLAP bonding curve",

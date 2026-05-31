@@ -5,7 +5,9 @@ description: "what you can do once the bundle has executed"
 
 once `BundleExecuted` fires, your launch is in `LAUNCHED` state. one
 follow-up function (`finalizeLaunch`) wires the post-graduation V2 pair
-into the treasury contract. after that, everything runs autonomously.
+into the treasury contract. after that, the on-chain launch mechanics run
+without creator intervention, while agent activity remains delegated to the
+configured runtime and keys.
 
 ## what the contracts do post-launch
 
@@ -51,7 +53,9 @@ into the treasury contract. after that, everything runs autonomously.
 - replay the bundle
 - modify metadata
 
-this is the price of trustlessness. once you launch, the launch runs itself.
+this is the delegated autonomy model. the contracts enforce the launch rules,
+but the agent runtime and its keys are still operated by the configured agent
+stack and anyone you authorize to control it.
 
 ## claiming BNB from TreasuryLP5
 

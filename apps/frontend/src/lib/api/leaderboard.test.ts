@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatRunway } from "./leaderboard";
+import { formatRunway, normalizeEntry } from "./leaderboard";
 
 describe("formatRunway", () => {
 	it("returns 'no burn' for non-finite runway (no burn data yet)", () => {
@@ -29,5 +29,36 @@ describe("formatRunway", () => {
 	it("renders 0d for zero or negative runway", () => {
 		expect(formatRunway(0)).toBe("0d");
 		expect(formatRunway(-1)).toBe("0d");
+	});
+});
+
+describe("normalizeEntry", () => {
+	it("uses batched NAV fields from /v2/agents without inventing zeros", () => {
+		const entry = normalizeEntry({
+			agentId: "waifu-suki",
+			tokenAddress: "0x00000000000000000000000000000000000000aa",
+			name: "suki",
+			symbol: "SUKI",
+			treasuryNavUsd: 1234.5,
+			treasuryUsd: null,
+			dailyBurnUsd: null,
+		});
+
+		expect(entry.id).toBe("0x00000000000000000000000000000000000000aa");
+		expect(entry.treasuryUsd).toBe(1234.5);
+		expect(entry.dailyBurnUsd).toBeNull();
+		expect(formatRunway(entry.runwayDays)).toBe("no burn");
+	});
+
+	it("keeps missing treasury nullable so the table can render an honest empty state", () => {
+		const entry = normalizeEntry({
+			agentId: "waifu-empty",
+			name: "empty",
+			symbol: "EMPTY",
+			dailyBurnUsd: 10,
+		});
+
+		expect(entry.treasuryUsd).toBeNull();
+		expect(entry.runwayDays).toBe(0);
 	});
 });
