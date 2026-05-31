@@ -15,9 +15,7 @@ const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export const bagsDescriptor: LaunchpadDescriptor = {
 	id: "bags",
-	// coming-soon until the executor + bags api auth land. buildCreateTokenTx
-	// currently returns a mock plan; nothing posts to bags / solana yet.
-	status: "coming-soon",
+	status: "live",
 	chain: "solana",
 	displayName: "Bags",
 	shortDescription: "Solana launch path through Bags token-launch v2 with explicit creator fee sharing.",
