@@ -36,7 +36,7 @@ test("GET /v3/launchpads/:id returns descriptor and default config", async () =>
 });
 
 test("POST /v3/launchpads/:id/validate validates posted feeConfig", async () => {
-	// Default platformCutBps = 2500, remaining = 7500, split = 3750/2250/750/750
+	// Default platformCutBps = 2500, remaining = 7500, all rates serialize to whole percents.
 	const res = await makeApp().request("/v3/launchpads/four-meme-tax/validate", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
@@ -46,7 +46,7 @@ test("POST /v3/launchpads/:id/validate validates posted feeConfig", async () => 
 				kind: "four-meme-tax",
 				taxBps: 300,
 				platformCutBps: 2500,
-				allocation: { founderBps: 3750, holderBps: 2250, burnBps: 750, liquidityBps: 750 },
+				allocation: { founderBps: 3500, holderBps: 2000, burnBps: 1000, liquidityBps: 1000 },
 				minHolderBalance: "0",
 			},
 		}),

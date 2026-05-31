@@ -1,9 +1,49 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { afterEach } from "node:test";
 
+import { __setRequirePatronDbForTest, __setRequirePatronStewardParserForTest } from "../src/middleware/patron-auth.js";
 import { createAgentRuntimeRoutes } from "../src/routes/v2/agents-runtime.js";
 
+const authHeaders = { authorization: "Bearer steward-token" };
+
+afterEach(() => {
+	__setRequirePatronDbForTest(undefined);
+	__setRequirePatronStewardParserForTest(undefined);
+});
+
+function setAuthDb(agentExists: boolean) {
+	const patronRow = { id: "patron-1", stewardUserId: "steward-1", primaryEmail: null };
+	const agentRow = {
+		id: "persona-1",
+		agentId: "waifu-demo-01",
+		ownerStewardUserId: "steward-1",
+		ownerAddress: null,
+	};
+	const selectRows = [[patronRow], agentExists ? [agentRow] : [], []];
+
+	__setRequirePatronStewardParserForTest(async () => ({ userId: "steward-1", tenantId: "waifu" }));
+	__setRequirePatronDbForTest({
+		select() {
+			const rows = selectRows.shift() ?? [];
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								limit() {
+									return Promise.resolve(rows);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+	} as never);
+}
+
 test("GET /v2/agents/:id/runtime returns seeded runtime state", async () => {
+	setAuthDb(true);
 	const app = createAgentRuntimeRoutes({
 		db: {} as never,
 		async getRuntimeState(_db, agentId) {
@@ -17,7 +57,7 @@ test("GET /v2/agents/:id/runtime returns seeded runtime state", async () => {
 		},
 	});
 
-	const response = await app.request("/waifu-demo-01/runtime");
+	const response = await app.request("/waifu-demo-01/runtime", { headers: authHeaders });
 
 	assert.equal(response.status, 200);
 	assert.deepEqual(await response.json(), {
@@ -29,6 +69,7 @@ test("GET /v2/agents/:id/runtime returns seeded runtime state", async () => {
 });
 
 test("GET /v2/agents/:id/runtime returns 404 for unknown agents", async () => {
+	setAuthDb(false);
 	const app = createAgentRuntimeRoutes({
 		db: {} as never,
 		async getRuntimeState() {
@@ -36,7 +77,7 @@ test("GET /v2/agents/:id/runtime returns 404 for unknown agents", async () => {
 		},
 	});
 
-	const response = await app.request("/missing/runtime");
+	const response = await app.request("/missing/runtime", { headers: authHeaders });
 
 	assert.equal(response.status, 404);
 });
