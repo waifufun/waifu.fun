@@ -162,11 +162,14 @@ export type AgentChatErrorState = "provisioning" | "dormant" | "killed" | "uncon
 
 export function chatErrorState(err: unknown): AgentChatErrorState {
 	if (!isApiError(err)) return "error";
-	const code = (err as ApiError).code;
-	if (code === "AGENT_NOT_RUNNING") return "provisioning";
-	if (code === "AGENT_DORMANT") return "dormant";
-	if (code === "AGENT_KILLED") return "killed";
-	if (code === "CHAT_NOT_CONFIGURED") return "unconfigured";
+	// apiFetch maps `code` from a `code` field and `message` from `error || message`.
+	// The chat route sends both, but read either so the classification holds even
+	// if only one is present.
+	const signal = (err as ApiError).code ?? err.message;
+	if (signal === "AGENT_NOT_RUNNING") return "provisioning";
+	if (signal === "AGENT_DORMANT") return "dormant";
+	if (signal === "AGENT_KILLED") return "killed";
+	if (signal === "CHAT_NOT_CONFIGURED") return "unconfigured";
 	if (err.status === 403) return "forbidden";
 	return "error";
 }

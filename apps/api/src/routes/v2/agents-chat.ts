@@ -177,10 +177,16 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 
 	const refs = await resolveRuntimeRefs(db, agentSlug);
 	if (!refs) {
-		return c.json({ ok: false, error: "AGENT_NOT_FOUND", message: `agent ${agentSlug} not found` }, 404);
+		return c.json(
+			{ ok: false, error: "AGENT_NOT_FOUND", code: "AGENT_NOT_FOUND", message: `agent ${agentSlug} not found` },
+			404,
+		);
 	}
 	if (refs.killed) {
-		return c.json({ ok: false, error: "AGENT_KILLED", message: "this agent is permanently killed" }, 409);
+		return c.json(
+			{ ok: false, error: "AGENT_KILLED", code: "AGENT_KILLED", message: "this agent is permanently killed" },
+			409,
+		);
 	}
 	if (!refs.cloudAgentId || !refs.webUiUrl) {
 		// Token not bonded / provisioning: no runtime to talk to yet.
@@ -188,6 +194,7 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 			{
 				ok: false,
 				error: "AGENT_NOT_RUNNING",
+				code: "AGENT_NOT_RUNNING",
 				message: "your agent goes live when the token bonds",
 				state: "provisioning",
 			},
@@ -199,6 +206,7 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 			{
 				ok: false,
 				error: "AGENT_DORMANT",
+				code: "AGENT_DORMANT",
 				message: "agent is dormant. top up credits to wake it.",
 				state: refs.dormant ? "dormant" : "provisioning",
 				agentStatus: refs.agentStatus ?? null,
@@ -209,7 +217,15 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 
 	const client = getElizaClient();
 	if (!client?.sendAgentMessage) {
-		return c.json({ ok: false, error: "CHAT_NOT_CONFIGURED", message: "agent chat transport is not configured" }, 503);
+		return c.json(
+			{
+				ok: false,
+				error: "CHAT_NOT_CONFIGURED",
+				code: "CHAT_NOT_CONFIGURED",
+				message: "agent chat transport is not configured",
+			},
+			503,
+		);
 	}
 
 	let reply: ElizaAgentMessageResult;
@@ -221,7 +237,15 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 			senderId: `patron:${patron.id}`,
 		});
 	} catch (err) {
-		return c.json({ ok: false, error: "CHAT_FAILED", message: err instanceof Error ? err.message : String(err) }, 502);
+		return c.json(
+			{
+				ok: false,
+				error: "CHAT_FAILED",
+				code: "CHAT_FAILED",
+				message: err instanceof Error ? err.message : String(err),
+			},
+			502,
+		);
 	}
 
 	return c.json({

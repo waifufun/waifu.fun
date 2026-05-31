@@ -225,8 +225,9 @@ describe("POST /v2/agents/:id/chat", () => {
 		});
 		const res = await post(makeApp(), { text: "hi" });
 		assert.equal(res.status, 409);
-		const json = (await res.json()) as { error: string; state: string };
+		const json = (await res.json()) as { error: string; code: string; state: string };
 		assert.equal(json.error, "AGENT_NOT_RUNNING");
+		assert.equal(json.code, "AGENT_NOT_RUNNING");
 		assert.equal(json.state, "provisioning");
 	});
 

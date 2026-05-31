@@ -5,6 +5,14 @@ import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Props = {
+	/**
+	 * Route identifier the patron navigated to (persona id or agent slug). This
+	 * is the value requireAgentOwnership() resolves on the API side, mirroring
+	 * XConnectionPanel / PolicyEditor. The agent detail payload keys off
+	 * `agentId`, not a top-level `id`, so we take the route param explicitly
+	 * rather than reading `agent.id`.
+	 */
+	agentId: string;
 	agent: AgentDetail | undefined;
 	isLoading: boolean;
 };
@@ -111,9 +119,9 @@ function NonLiveState({ gate, agent }: { gate: Exclude<ChatGate, "live">; agent:
 	);
 }
 
-export default function AgentChat({ agent, isLoading }: Props) {
+export default function AgentChat({ agentId, agent, isLoading }: Props) {
 	const gate = deriveGate(agent);
-	const chat = useAgentChat(agent?.id);
+	const chat = useAgentChat(agentId);
 	const [turns, setTurns] = useState<ChatTurn[]>([]);
 	const [draft, setDraft] = useState("");
 	const [sessionId, setSessionId] = useState<string | undefined>(undefined);
@@ -137,7 +145,7 @@ export default function AgentChat({ agent, isLoading }: Props) {
 
 	const send = useCallback(async () => {
 		const text = draft.trim();
-		if (!text || chat.isPending || !agent?.id) return;
+		if (!text || chat.isPending || !agentId) return;
 		setSoftError(null);
 		const turnId = crypto.randomUUID();
 		const sentAt = Date.now();
@@ -167,7 +175,7 @@ export default function AgentChat({ agent, isLoading }: Props) {
 			setSoftError({ state, message });
 			setTurns((prev) => prev.map((t) => (t.id === turnId ? { ...t, failed: true } : t)));
 		}
-	}, [draft, chat, sessionId, agent?.id]);
+	}, [draft, chat, sessionId, agentId]);
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
