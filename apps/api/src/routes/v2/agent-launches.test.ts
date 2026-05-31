@@ -416,8 +416,15 @@ test("POST / accepts an agent api key + valid SIWE (Wave J)", async () => {
 
 import type { UploadFlapMetadataInput, UploadFlapMetadataResult } from "@waifufun/flap";
 
+// Build a File whose leading bytes are a valid PNG signature so the route's
+// magic-byte sniffing accepts it. `bytes` is the total length (padded after
+// the 8-byte signature).
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 function pngFile(name = "logo.png", bytes = 16, type = "image/png"): File {
-	return new File([new Uint8Array(bytes)], name, { type });
+	const total = Math.max(bytes, PNG_SIGNATURE.length);
+	const buf = new Uint8Array(total);
+	buf.set(PNG_SIGNATURE, 0);
+	return new File([buf], name, { type });
 }
 
 function uploadForm(

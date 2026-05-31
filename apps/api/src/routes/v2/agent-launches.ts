@@ -81,11 +81,39 @@ const uploadMetadataFieldsSchema = z.object({
 	description: uploadMetadataDescriptionSchema.optional(),
 });
 
-// Accepted image MIME types + extensions for the token logo, and a sane upper
-// bound on the upload size so a single bad request can't pin memory.
+// Sane upper bound on the upload size so a single bad request can't pin
+// memory. Enforced twice: once up front via Content-Length (before we buffer
+// the body) and once on the decoded image bytes.
 const UPLOAD_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
-const UPLOAD_IMAGE_ALLOWED_TYPES = new Set(["image/png", "image/jpeg"]);
-const UPLOAD_IMAGE_ALLOWED_EXTENSIONS = new Set([".png", ".jpg", ".jpeg"]);
+// Allow a little multipart framing overhead on top of the raw image cap when
+// rejecting early by Content-Length.
+const UPLOAD_BODY_MAX_BYTES = UPLOAD_IMAGE_MAX_BYTES + 64 * 1024;
+
+/**
+ * Sniff the leading bytes of an uploaded file to confirm it is actually a PNG
+ * or JPEG, rather than trusting the client-supplied MIME type or filename.
+ *   PNG:  89 50 4E 47 0D 0A 1A 0A
+ *   JPEG: FF D8 FF
+ */
+function isPngOrJpeg(bytes: Uint8Array): boolean {
+	if (
+		bytes.length >= 8 &&
+		bytes[0] === 0x89 &&
+		bytes[1] === 0x50 &&
+		bytes[2] === 0x4e &&
+		bytes[3] === 0x47 &&
+		bytes[4] === 0x0d &&
+		bytes[5] === 0x0a &&
+		bytes[6] === 0x1a &&
+		bytes[7] === 0x0a
+	) {
+		return true;
+	}
+	if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+		return true;
+	}
+	return false;
+}
 
 const agentSafeOwnersSchema = z
 	.array(addressSchema)
@@ -421,6 +449,15 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			},
 		}) as never,
 		async (c) => {
+			// Reject oversized bodies up front (before buffering) when the client
+			// advertises a Content-Length, so a giant multipart payload can't pin
+			// memory during formData() parsing. The decoded-image cap below is the
+			// authoritative check for clients that omit/understate Content-Length.
+			const contentLength = Number(c.req.header("content-length") ?? "");
+			if (Number.isFinite(contentLength) && contentLength > UPLOAD_BODY_MAX_BYTES) {
+				throw badRequest("IMAGE_TOO_LARGE", `image must be at most ${UPLOAD_IMAGE_MAX_BYTES / (1024 * 1024)}MB`);
+			}
+
 			let form: FormData;
 			try {
 				form = await c.req.formData();
@@ -454,22 +491,25 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				throw badRequest("IMAGE_TOO_LARGE", `image must be at most ${UPLOAD_IMAGE_MAX_BYTES / (1024 * 1024)}MB`);
 			}
 
-			const contentType = (image.type || "").toLowerCase();
-			const filename = typeof image.name === "string" ? image.name : "image.png";
-			const extension = filename.includes(".") ? `.${filename.split(".").pop()?.toLowerCase()}` : "";
-			const typeOk = contentType ? UPLOAD_IMAGE_ALLOWED_TYPES.has(contentType) : false;
-			const extOk = UPLOAD_IMAGE_ALLOWED_EXTENSIONS.has(extension);
-			// Accept if either the declared MIME type or the filename extension is a
-			// supported image. Reject when both are unknown/unsupported.
-			if (!typeOk && !extOk) {
+			// Validate by magic bytes rather than trusting the client-supplied MIME
+			// type or filename: read the buffer once and confirm a real PNG/JPEG
+			// signature. We forward the decoded bytes (not the original File) to the
+			// uploader so we don't re-read a consumed stream.
+			const imageBytes = new Uint8Array(await image.arrayBuffer());
+			if (imageBytes.byteLength > UPLOAD_IMAGE_MAX_BYTES) {
+				throw badRequest("IMAGE_TOO_LARGE", `image must be at most ${UPLOAD_IMAGE_MAX_BYTES / (1024 * 1024)}MB`);
+			}
+			if (!isPngOrJpeg(imageBytes)) {
 				throw badRequest("INVALID_IMAGE_TYPE", "image must be a PNG or JPG");
 			}
+			const sniffedType = imageBytes[0] === 0xff ? "image/jpeg" : "image/png";
+			const imageBlob = new Blob([imageBytes], { type: sniffedType });
 
 			const upload = resolveUploadMetadata();
 			let result: UploadFlapMetadataResult;
 			try {
 				result = await upload({
-					image,
+					image: imageBlob,
 					metadata: {
 						// The on-chain creator is set by the launch-create call; the IPFS
 						// metadata record's `creator` field is informational only, so we
@@ -486,10 +526,11 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				});
 			} catch (error) {
 				// Map any uploader failure to a clean badRequest. We never surface a
-				// raw 500 for a known upload failure, and we don't leak FLAP internals
-				// beyond a short message.
-				const message = error instanceof Error ? error.message : "flap metadata upload failed";
-				throw badRequest("FLAP_UPLOAD_FAILED", message);
+				// raw 500 for a known upload failure, and we keep the public message
+				// generic so FLAP internals (upstream status text, GraphQL errors)
+				// don't leak. The original error is logged for operators.
+				c.get("logger")?.error({ error }, "flap metadata upload failed");
+				throw badRequest("FLAP_UPLOAD_FAILED", "metadata upload failed, please retry");
 			}
 
 			if (!result?.cid) {
