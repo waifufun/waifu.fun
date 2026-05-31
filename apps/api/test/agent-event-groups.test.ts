@@ -45,10 +45,13 @@ describe("groupGithubAgentEvents", () => {
 		assert.equal(grouped.length, 1);
 		assert.equal(grouped[0]?.grouped, true);
 		assert.equal(grouped[0]?.count, 5);
-		assert.deepEqual(
-			grouped[0]?.items?.map((item) => item.id),
-			["commit-0", "commit-1", "commit-2", "commit-3", "commit-4"],
-		);
+		assert.deepEqual(grouped[0]?.items?.map((item) => item.id), [
+			"commit-0",
+			"commit-1",
+			"commit-2",
+			"commit-3",
+			"commit-4",
+		]);
 	});
 
 	test("2 commits 31min apart stay as 2 separate events", () => {
@@ -58,10 +61,7 @@ describe("groupGithubAgentEvents", () => {
 		]);
 
 		assert.equal(grouped.length, 2);
-		assert.equal(
-			grouped.some((item) => item.grouped),
-			false,
-		);
+		assert.equal(grouped.some((item) => item.grouped), false);
 	});
 
 	test("3 commits + 1 PR open + 2 commits within 30min become 1 commit group of 5 + 1 PR open", () => {

@@ -531,6 +531,10 @@ async function syncProvisioningTokenOverlay(
 		.where(eq(tokens.id, row.token.id));
 }
 
+function isHostedRuntimeRunning(status: string | null | undefined): boolean {
+	return ["running", "ready", "online", "active", "started"].includes(String(status ?? "").toLowerCase());
+}
+
 async function storeProvisioningFailure(db: Database, agentId: string, err: unknown): Promise<void> {
 	await mergePersonaProvisioningMetadata(db, agentId, {
 		status: "failed",
