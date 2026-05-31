@@ -5,6 +5,7 @@ import { arbitrum, bsc } from "viem/chains";
 
 import { renderEventData } from "@waifufun/db";
 import type { IndexerRuntime } from "../lib/runtime.js";
+import { type NativeSourceKind, fetchNativeTransfersFor, selectNativeSourceKind } from "./native-transfer-source.js";
 
 const transferEvent = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 const NATIVE_SENTINEL = "0x0000000000000000000000000000000000000000" as const;
@@ -13,7 +14,11 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 12_000;
 const DEFAULT_TICK_WATCHDOG_MS = 60_000;
 const ADDRESS_CHUNK_SIZE = 75;
 const TOKEN_CHUNK_SIZE = 25;
-const DEFAULT_NATIVE_MAX_BLOCKS_PER_POLL = 50n;
+const DEFAULT_NATIVE_MAX_BLOCKS_PER_POLL = 2_000n;
+// Cap the parallel getBlock supplement (BSC third-party sends) per poll so the RPC
+// budget stays bounded even when the native poll window is large.
+const DEFAULT_NATIVE_GET_BLOCK_MAX_SPAN = 250n;
+const DEFAULT_NATIVE_GET_BLOCK_CONCURRENCY = 12;
 const BSC_LAUNCH_FALLBACK_BLOCK = 100_400_000n; // Covers the 2026-05-20 launch window without scanning genesis.
 const CURSOR_CONTRACT_ADDRESSES = {
 	erc20Backfill: "0x0000000000000000000000000000000000000101",
@@ -77,6 +82,8 @@ type PollMetrics = {
 	tokenCount: number;
 	logsFetched: number;
 	nativeTransfersFetched: number;
+	nativeSource?: NativeSourceKind;
+	nativeGetBlockScanned?: boolean;
 	eventsEmitted: number;
 	durationMs: number;
 };
@@ -86,6 +93,8 @@ export interface AgentWalletTransferStreamOptions {
 	maxBlocksPerPoll?: bigint;
 	backfillMaxBlocksPerPoll?: bigint;
 	nativeMaxBlocksPerPoll?: bigint;
+	nativeGetBlockMaxSpan?: bigint;
+	nativeGetBlockConcurrency?: number;
 	startBlock?: bigint;
 	runOnce?: boolean;
 	requestTimeoutMs?: number;
@@ -244,39 +253,52 @@ async function fetchNativeTransfers(input: {
 	fromBlock: bigint;
 	toBlock: bigint;
 	requestTimeoutMs: number;
-}): Promise<TransferCandidate[]> {
+	getBlockMaxSpan: bigint;
+	getBlockConcurrency: number;
+}): Promise<{ candidates: TransferCandidate[]; source: NativeSourceKind; getBlockScanned: boolean }> {
+	const cfg = CHAIN_CONFIG[input.chain];
 	const byAddress = new Map<string, RegisteredWallet[]>();
 	for (const wallet of input.wallets) byAddress.set(wallet.address, [...(byAddress.get(wallet.address) ?? []), wallet]);
 
+	const { transfers, source, getBlockScanned } = await withTimeout(
+		fetchNativeTransfersFor({
+			client: input.client,
+			rpcUrl: rpcUrlFor(input.chain),
+			chainId: cfg.chainId,
+			addresses: uniq(input.wallets.map((wallet) => wallet.address)),
+			fromBlock: input.fromBlock,
+			toBlock: input.toBlock,
+			requestTimeoutMs: input.requestTimeoutMs,
+			getBlockConcurrency: input.getBlockConcurrency,
+			maxGetBlockSpan: input.getBlockMaxSpan,
+		}),
+		// The source can issue many RPC calls (paginated getAssetTransfers +
+		// parallel getBlock); give it a generous multiple of the per-call timeout.
+		input.requestTimeoutMs * 20,
+		`agent-wallet ${input.chain} native fetch`,
+	);
+
 	const candidates: TransferCandidate[] = [];
-	for (let blockNumber = input.fromBlock; blockNumber <= input.toBlock; blockNumber += 1n) {
-		const block = await withTimeout(
-			input.client.getBlock({ blockNumber, includeTransactions: true }),
-			input.requestTimeoutMs,
-			`agent-wallet ${input.chain} native getBlock`,
-		);
-		for (const [txIndex, tx] of block.transactions.entries()) {
-			if (tx.value === 0n || !tx.to) continue;
-			const from = normalize(tx.from);
-			const to = normalize(tx.to);
-			const touched = [...(byAddress.get(from) ?? []), ...(byAddress.get(to) ?? [])];
-			for (const wallet of touched) {
-				candidates.push({
-					from,
-					to,
-					wallet,
-					tokenAddress: NATIVE_SENTINEL,
-					amountRaw: tx.value,
-					txHash: tx.hash,
-					blockNumber,
-					logIndex: -1 - txIndex,
-					assetKind: "native",
-					assetSymbol: CHAIN_CONFIG[input.chain].nativeSymbol,
-				});
-			}
+	for (const transfer of transfers) {
+		const touched = [...(byAddress.get(transfer.from) ?? []), ...(byAddress.get(transfer.to) ?? [])];
+		for (const wallet of touched) {
+			candidates.push({
+				from: transfer.from,
+				to: transfer.to,
+				wallet,
+				tokenAddress: NATIVE_SENTINEL,
+				amountRaw: transfer.value,
+				txHash: transfer.txHash,
+				blockNumber: transfer.blockNumber,
+				// Native transfers use negative logIndex so they never collide with
+				// ERC20 log indices for the same tx.
+				logIndex: -1 - transfer.transferIndex,
+				assetKind: "native",
+				assetSymbol: cfg.nativeSymbol,
+			});
 		}
 	}
-	return candidates;
+	return { candidates, source, getBlockScanned };
 }
 
 async function blockTimestamp(
@@ -420,13 +442,15 @@ async function pollChainRange(input: {
 				fromBlock,
 				toBlock,
 				requestTimeoutMs: input.options.requestTimeoutMs,
+				getBlockMaxSpan: input.options.nativeGetBlockMaxSpan,
+				getBlockConcurrency: input.options.nativeGetBlockConcurrency,
 			})
-		: [];
+		: { candidates: [], source: undefined, getBlockScanned: false };
 	const eventsEmitted = await emitTransfers({
 		runtime: input.runtime,
 		client,
 		chain: input.chain,
-		candidates: [...erc20.candidates, ...native],
+		candidates: [...erc20.candidates, ...native.candidates],
 		requestTimeoutMs: input.options.requestTimeoutMs,
 	});
 
@@ -440,7 +464,9 @@ async function pollChainRange(input: {
 		walletCount: input.wallets.length,
 		tokenCount: uniq(input.wallets.map((wallet) => wallet.agentTokenAddress)).length,
 		logsFetched: erc20.logsFetched,
-		nativeTransfersFetched: native.length,
+		nativeTransfersFetched: native.candidates.length,
+		nativeSource: native.source,
+		nativeGetBlockScanned: native.getBlockScanned,
 		eventsEmitted,
 		durationMs: Date.now() - startedAt,
 	};
@@ -539,6 +565,17 @@ export async function startAgentWalletTransferStream(
 		nativeMaxBlocksPerPoll:
 			options.nativeMaxBlocksPerPoll ??
 			BigInt(process.env.AGENT_WALLET_TRANSFER_NATIVE_MAX_BLOCKS ?? DEFAULT_NATIVE_MAX_BLOCKS_PER_POLL.toString()),
+		nativeGetBlockMaxSpan:
+			options.nativeGetBlockMaxSpan ??
+			BigInt(
+				process.env.AGENT_WALLET_TRANSFER_NATIVE_GET_BLOCK_MAX_SPAN ?? DEFAULT_NATIVE_GET_BLOCK_MAX_SPAN.toString(),
+			),
+		nativeGetBlockConcurrency:
+			options.nativeGetBlockConcurrency ??
+			Number(
+				process.env.AGENT_WALLET_TRANSFER_NATIVE_GET_BLOCK_CONCURRENCY ??
+					DEFAULT_NATIVE_GET_BLOCK_CONCURRENCY.toString(),
+			),
 		startBlock: options.startBlock ?? runtime.config.startBlock,
 		runOnce: options.runOnce ?? process.env.INDEXER_RUN_ONCE === "1",
 		requestTimeoutMs:
@@ -606,6 +643,10 @@ export async function startAgentWalletTransferStream(
 			maxBlocksPerPoll: resolved.maxBlocksPerPoll.toString(),
 			backfillMaxBlocksPerPoll: resolved.backfillMaxBlocksPerPoll.toString(),
 			nativeMaxBlocksPerPoll: resolved.nativeMaxBlocksPerPoll.toString(),
+			nativeGetBlockMaxSpan: resolved.nativeGetBlockMaxSpan.toString(),
+			nativeGetBlockConcurrency: resolved.nativeGetBlockConcurrency,
+			nativeSourceBsc: selectNativeSourceKind(rpcUrlFor("bsc")),
+			nativeSourceArb: selectNativeSourceKind(rpcUrlFor("arb")),
 			requestTimeoutMs: resolved.requestTimeoutMs,
 			tickWatchdogMs: resolved.tickWatchdogMs,
 		},
