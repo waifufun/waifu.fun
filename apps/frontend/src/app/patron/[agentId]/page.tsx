@@ -3,6 +3,7 @@
 import { provisionCloudStorageKey } from "@/app/create/wizard/wizard-provision-success";
 import PromptBlock from "@/components/give-skill/prompt-block";
 import ActivityFeed from "@/components/patron/activity-feed";
+import AgentChat from "@/components/patron/agent-chat";
 import AgentHero from "@/components/patron/agent-hero";
 import EmergencyControls from "@/components/patron/emergency-controls";
 import LaunchPanel from "@/components/patron/launch-panel";
@@ -175,6 +176,7 @@ export default function PatronAgentDetailPage({
 			) : (
 				<div className="space-y-6">
 					<AgentHero agent={agent} isLoading={isLoading} />
+					<AgentChat agent={agent} isLoading={isLoading} />
 					<RuntimeConnectionPanel agent={agent} isLoading={isLoading} />
 					<XConnectionPanel agentId={agentId} />
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
