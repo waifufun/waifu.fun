@@ -23,8 +23,10 @@
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
+		"@solana/web3.js": "^1.98.0",
 		"@waifufun/flap": "workspace:*",
 		"@waifufun/fourmeme": "workspace:*",
+		"bs58": "^6.0.0",
 		"viem": "^2.23.5"
 	},
 	"devDependencies": {

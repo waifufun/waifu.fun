@@ -7,12 +7,26 @@ import type {
 	LaunchpadDescriptor,
 	LaunchpadFeeConfig,
 } from "../../types.js";
+import { fetchBankrLaunchState } from "./reads.js";
 
 const BASE_CHAIN_ID = 8453;
 const MOCK_COORDINATOR = "0x0000000000000000000000000000000000008453";
 const MOCK_BANKR_FEE_WALLET = "0x0000000000000000000000000000000000BaA001";
 const MOCK_BANKR_ALT_WALLET = "0x0000000000000000000000000000000000BaA002";
 const MOCK_DOPPLER_PROTOCOL_WALLET = "0x0000000000000000000000000000000000D0B105";
+
+/**
+ * Whether a freshly-built plan should be executable (simulateOnly=false) or a
+ * dry-run scaffold (simulateOnly=true). Defaults to executable when a Bankr API
+ * key is configured, so the route can hand the plan straight to the executor;
+ * falls back to a dry-run scaffold when no creds are present so nothing tries
+ * to hit the live API by accident in dev/test.
+ */
+function defaultSimulateOnly(): boolean {
+	if (process.env.BANKR_SIMULATE_ONLY === "true") return true;
+	if (process.env.BANKR_SIMULATE_ONLY === "false") return false;
+	return !process.env.BANKR_API_KEY;
+}
 
 export const bankrDescriptor: LaunchpadDescriptor = {
 	id: "bankr",
@@ -56,6 +70,7 @@ export const bankrAdapter: LaunchpadAdapter = {
 		if (!isAddress(params.founderAddress)) throw new Error("founderAddress must be an EVM address");
 		const tokenAddress = mockBaseAddress(`bankr:${params.name}:${params.ticker}:${params.founderAddress}`);
 		const bankrBps = 3610 - params.feeConfig.platformCutBps;
+		const simulateOnly = defaultSimulateOnly();
 		return {
 			to: MOCK_COORDINATOR,
 			data: keccak256(toBytes(`bankr:${params.name}:${params.ticker}`)),
@@ -66,14 +81,14 @@ export const bankrAdapter: LaunchpadAdapter = {
 				baseUrl: "https://api.bankr.bot",
 				endpoint: "/token-launches/deploy",
 				method: "POST",
-				simulateOnly: true,
+				simulateOnly,
 				body: {
 					tokenName: params.name,
 					tokenSymbol: params.ticker.toUpperCase().replace("$", ""),
 					description: params.description,
 					imageUrl: params.logoUrl,
 					feeRecipient: { type: "wallet", value: getAddress(params.founderAddress) },
-					simulateOnly: true,
+					simulateOnly,
 				},
 				auth: { userHeader: "X-API-Key", partnerHeader: "X-Partner-Key" },
 				mockResponse: {
@@ -97,16 +112,34 @@ export const bankrAdapter: LaunchpadAdapter = {
 		return { tokenAddress: receipt.tokenAddress, curveAddress: receipt.poolId };
 	},
 
-	async getCurveProgress(): Promise<{ raisedWei: bigint; targetWei: bigint }> {
-		throw new Error("Bankr curve progress reads require Bankr/Doppler indexer credentials");
+	async getCurveProgress(tokenAddress: string): Promise<{ raisedWei: bigint; targetWei: bigint }> {
+		const state = await fetchBankrLaunchState(tokenAddress);
+		if (!state?.curve) {
+			throw new Error(
+				"Bankr curve progress unavailable: set BANKR_API_KEY (and optionally BANKR_API_URL) to enable Doppler/Bankr reads",
+			);
+		}
+		return state.curve;
 	},
-	async getGraduationStatus(): Promise<{ graduated: boolean; lpAddress?: string }> {
-		throw new Error("Bankr graduation reads require Bankr/Doppler indexer credentials");
+	async getGraduationStatus(tokenAddress: string): Promise<{ graduated: boolean; lpAddress?: string }> {
+		const state = await fetchBankrLaunchState(tokenAddress);
+		if (!state) {
+			throw new Error(
+				"Bankr graduation status unavailable: set BANKR_API_KEY (and optionally BANKR_API_URL) to enable Doppler/Bankr reads",
+			);
+		}
+		return { graduated: state.graduated, ...(state.lpAddress ? { lpAddress: state.lpAddress } : {}) };
 	},
 	async getTradeFeeBps(): Promise<number> {
-		return 0;
+		// Bankr launches carry a fixed 1.2% swap fee (120 bps), split by Doppler.
+		return 120;
 	},
 	async getTreasuryAddress(tokenAddress: string): Promise<string | null> {
-		return isAddress(tokenAddress) ? null : null;
+		if (!isAddress(tokenAddress)) return null;
+		const state = await fetchBankrLaunchState(tokenAddress).catch(() => null);
+		return state?.creatorFeeRecipient ?? null;
 	},
 };
+
+export { executeBankrLaunch, BankrExecutorError } from "./executor.js";
+export type { BankrExecutorConfig, BankrLaunchResult } from "./executor.js";

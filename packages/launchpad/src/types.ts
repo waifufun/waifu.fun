@@ -115,74 +115,87 @@ export interface UnsignedTx {
 	external?: ExternalLaunchPlan;
 }
 
-export type ExternalLaunchPlan =
-	| {
-			kind: "bankr";
-			baseUrl: "https://api.bankr.bot";
-			endpoint: "/token-launches/deploy";
+export interface BankrExternalPlan {
+	kind: "bankr";
+	baseUrl: "https://api.bankr.bot";
+	endpoint: "/token-launches/deploy";
+	method: "POST";
+	/**
+	 * When true the plan is a dry-run scaffold (no real launch); the route must
+	 * NOT pass it to the executor. The executor refuses simulateOnly plans.
+	 * Set false (the default at build time when creds are configured) to make
+	 * the plan executable.
+	 */
+	simulateOnly: boolean;
+	body: {
+		tokenName: string;
+		tokenSymbol: string;
+		description: string;
+		imageUrl: string;
+		feeRecipient: { type: "wallet"; value: string };
+		simulateOnly: boolean;
+	};
+	auth: { userHeader: "X-API-Key"; partnerHeader: "X-Partner-Key" };
+	/** Documented fee distribution (Doppler enforces it on-chain). */
+	mockResponse: {
+		tokenAddress: string;
+		poolId: string;
+		feeDistribution: {
+			creator: { address: string; bps: number };
+			bankr: { address: string; bps: number };
+			partner: { address: string; bps: number };
+			alt: { address: string; bps: number };
+			protocol: { address: string; bps: number };
+		};
+	};
+}
+
+export interface BagsExternalPlan {
+	kind: "bags";
+	baseUrl: "https://public-api-v2.bags.fm/api/v1";
+	/** When true the plan is a dry-run scaffold; the executor refuses it. */
+	simulateOnly: boolean;
+	steps: [
+		{
+			endpoint: "/token-launch/create-token-info";
 			method: "POST";
-			simulateOnly: boolean;
+			contentType: "multipart/form-data";
 			body: {
-				tokenName: string;
-				tokenSymbol: string;
+				name: string;
+				symbol: string;
 				description: string;
 				imageUrl: string;
-				feeRecipient: { type: "wallet"; value: string };
-				simulateOnly: boolean;
+				website?: string;
+				twitter?: string;
+				telegram?: string;
 			};
-			auth: { userHeader: "X-API-Key"; partnerHeader: "X-Partner-Key" };
-			mockResponse: {
-				tokenAddress: string;
-				poolId: string;
-				feeDistribution: {
-					creator: { address: string; bps: number };
-					bankr: { address: string; bps: number };
-					partner: { address: string; bps: number };
-					alt: { address: string; bps: number };
-					protocol: { address: string; bps: number };
-				};
+		},
+		{
+			endpoint: "/fee-share/config";
+			method: "POST";
+			body: {
+				payer: string;
+				baseMint: string;
+				claimersArray: string[];
+				basisPointsArray: number[];
 			};
-	  }
-	| {
-			kind: "bags";
-			baseUrl: "https://public-api-v2.bags.fm/api/v1";
-			steps: [
-				{
-					endpoint: "/token-launch/create-token-info";
-					method: "POST";
-					contentType: "multipart/form-data";
-					body: {
-						name: string;
-						symbol: string;
-						description: string;
-						imageUrl: string;
-						website?: string;
-						twitter?: string;
-						telegram?: string;
-					};
-				},
-				{
-					endpoint: "/fee-share/config";
-					method: "POST";
-					body: {
-						payer: string;
-						baseMint: string;
-						claimersArray: string[];
-						basisPointsArray: number[];
-					};
-				},
-				{
-					endpoint: "/token-launch/create-launch-transaction";
-					method: "POST";
-					body: { ipfs: string; tokenMint: string; wallet: string; initialBuyLamports: number; configKey: string };
-				},
-				{ endpoint: "/solana/send-transaction"; method: "POST"; body: { transaction: string } },
-			];
-			auth: { header: "x-api-key"; agentAuthEndpoints: ["/agent/v2/auth/init", "/agent/v2/auth/callback"] };
-			mockResponse: {
-				tokenMint: string;
-				tokenMetadata: string;
-				configKey: string;
-				signature: string;
-			};
-	  };
+		},
+		{
+			endpoint: "/token-launch/create-launch-transaction";
+			method: "POST";
+			body: { ipfs: string; tokenMint: string; wallet: string; initialBuyLamports: number; configKey: string };
+		},
+		{ endpoint: "/solana/send-transaction"; method: "POST"; body: { transaction: string } },
+	];
+	auth: { header: "x-api-key"; agentAuthEndpoints: ["/agent/v2/auth/init", "/agent/v2/auth/callback"] };
+	/** Bags config type (Meteora fee structure); defaults to 2% pre/post. */
+	bagsConfigType?: string;
+	mockResponse: {
+		tokenMint: string;
+		tokenMetadata: string;
+		configKey: string;
+		signature: string;
+	};
+}
+
+export type ExternalLaunchPlan = BankrExternalPlan | BagsExternalPlan;

@@ -8,10 +8,31 @@ import type {
 	LaunchpadDescriptor,
 	LaunchpadFeeConfig,
 } from "../../types.js";
+import { fetchBagsPoolState } from "./reads.js";
 
 const SOLANA_MAINNET_CHAIN_ID = 101;
 const MOCK_BAGS_PROGRAM = "BAGS111111111111111111111111111111111111111";
 const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+/**
+ * Bags' default config type (2% fees both pre and post migration). Override via
+ * BAGS_CONFIG_TYPE to pick a different Meteora fee structure.
+ */
+const DEFAULT_BAGS_CONFIG_TYPE = "fa29606e-5e48-4c37-827f-4b03d58ee23d";
+
+/**
+ * Whether a built plan is executable (simulateOnly=false) or a dry-run
+ * scaffold. Executable by default once a Bags API key + Solana signer are
+ * configured; dry-run otherwise so dev/test never hits the live API.
+ */
+function defaultSimulateOnly(): boolean {
+	if (process.env.BAGS_SIMULATE_ONLY === "true") return true;
+	if (process.env.BAGS_SIMULATE_ONLY === "false") return false;
+	return !(
+		process.env.BAGS_API_KEY &&
+		(process.env.BAGS_LAUNCH_SIGNER_SECRET || process.env.SOLANA_LAUNCH_SIGNER_SECRET)
+	);
+}
 
 export const bagsDescriptor: LaunchpadDescriptor = {
 	id: "bags",
@@ -78,6 +99,8 @@ export const bagsAdapter: LaunchpadAdapter = {
 			external: {
 				kind: "bags",
 				baseUrl: "https://public-api-v2.bags.fm/api/v1",
+				simulateOnly: defaultSimulateOnly(),
+				bagsConfigType: process.env.BAGS_CONFIG_TYPE ?? DEFAULT_BAGS_CONFIG_TYPE,
 				steps: [
 					{
 						endpoint: "/token-launch/create-token-info",
@@ -133,16 +156,29 @@ export const bagsAdapter: LaunchpadAdapter = {
 		return { tokenAddress: receipt.tokenMint, curveAddress: receipt.signature };
 	},
 
-	async getCurveProgress(): Promise<{ raisedWei: bigint; targetWei: bigint }> {
-		throw new Error("Bags curve progress reads require Solana/Bags indexer credentials");
+	async getCurveProgress(tokenAddress: string): Promise<{ raisedWei: bigint; targetWei: bigint }> {
+		const state = await fetchBagsPoolState(tokenAddress);
+		if (!state?.curve) {
+			throw new Error("Bags curve progress unavailable: set BAGS_API_KEY to enable Bags/Meteora reads");
+		}
+		return state.curve;
 	},
-	async getGraduationStatus(): Promise<{ graduated: boolean; lpAddress?: string }> {
-		throw new Error("Bags graduation reads require Solana/Bags indexer credentials");
+	async getGraduationStatus(tokenAddress: string): Promise<{ graduated: boolean; lpAddress?: string }> {
+		const state = await fetchBagsPoolState(tokenAddress);
+		if (!state) {
+			throw new Error("Bags graduation status unavailable: set BAGS_API_KEY to enable Bags/Meteora reads");
+		}
+		return { graduated: state.graduated, ...(state.lpAddress ? { lpAddress: state.lpAddress } : {}) };
 	},
 	async getTradeFeeBps(): Promise<number> {
-		return 0;
+		// Bags default config: 2% fees (200 bps) both pre and post migration.
+		return 200;
 	},
-	async getTreasuryAddress(): Promise<string | null> {
-		return null;
+	async getTreasuryAddress(tokenAddress: string): Promise<string | null> {
+		const state = await fetchBagsPoolState(tokenAddress).catch(() => null);
+		return state?.feeShareWallet ?? null;
 	},
 };
+
+export { executeBagsLaunch, BagsExecutorError } from "./executor.js";
+export type { BagsExecutorConfig, BagsLaunchResult } from "./executor.js";
