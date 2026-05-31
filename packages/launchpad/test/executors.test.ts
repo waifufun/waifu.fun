@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { type BagsExternalPlan, executeBagsLaunch } from "../src/adapters/bags/executor.js";
+import { fetchBagsPoolState } from "../src/adapters/bags/reads.js";
 import { type BankrExternalPlan, executeBankrLaunch } from "../src/adapters/bankr/executor.js";
 
 const EVM_FOUNDER = "0x000000000000000000000000000000000000dEaD";
@@ -163,7 +164,6 @@ test("bags executor: runs the full v2 flow and signs + sends the launch tx", asy
 			return jsonResponse(200, {
 				success: true,
 				response: {
-					needsCreation: true,
 					meteoraConfigKey: "CfgKey123",
 					transactions: [{ blockhash: { blockhash: "bh", lastValidBlockHeight: 1 }, transaction: "feeTx1" }],
 				},
@@ -235,4 +235,22 @@ test("bags executor: validates signer + refuses dry-run plans", async () => {
 		/signer/i,
 	);
 	await assert.rejects(() => executeBagsLaunch(bagsPlan(), { apiKey: "", signer }), /API key|required/i);
+});
+
+test("bags reads: migrated pool address implies graduated even without status", async () => {
+	const fetchImpl = (async (url: string | URL) => {
+		const u = String(url);
+		if (u.includes("/bags-pools/")) {
+			return jsonResponse(200, { success: true, response: { dammV2Pool: "PoolAddress1111111111111111111111111111" } });
+		}
+		return jsonResponse(404, { success: false });
+	}) as unknown as typeof fetch;
+
+	const state = await fetchBagsPoolState("So11111111111111111111111111111111111111112", {
+		apiKey: "bags_test",
+		fetchImpl,
+	});
+
+	assert.equal(state?.graduated, true);
+	assert.equal(state?.lpAddress, "PoolAddress1111111111111111111111111111");
 });

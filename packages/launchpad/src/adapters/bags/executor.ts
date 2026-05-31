@@ -176,11 +176,11 @@ export async function executeBagsLaunch(plan: BagsExternalPlan, config: BagsExec
 	}
 
 	// The config may need creating: sign + send the returned transactions (and
-	// any bundles) before launching.
+	// any bundles) before launching. Bags docs require submitting returned txs;
+	// only skip when the API explicitly says the config already exists.
 	const feeShareSignatures: string[] = [];
-	const needsCreation = feeResolved.needsCreation === true;
 	const feeTxs = collectFeeShareTxs(feeResolved);
-	if (needsCreation && feeTxs.length > 0) {
+	if (feeResolved.needsCreation !== false && feeTxs.length > 0) {
 		const signed = await config.signer.signTransactions(feeTxs);
 		for (const tx of signed) {
 			const sig = await sendTransaction(fetchImpl, baseUrl, headers, tx, config.onStep);

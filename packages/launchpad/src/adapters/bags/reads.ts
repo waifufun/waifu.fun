@@ -73,7 +73,7 @@ function parsePoolState(record: JsonRecord): BagsPoolState {
 	const target = toBigIntOrUndefined(record.target ?? record.migrationThreshold ?? record.graduationTarget);
 	const curve = raised !== undefined && target !== undefined ? { raisedWei: raised, targetWei: target } : undefined;
 	return {
-		graduated: statusGraduated(status),
+		graduated: statusGraduated(status) || Boolean(lpAddress),
 		...(lpAddress ? { lpAddress } : {}),
 		...(feeShareWallet ? { feeShareWallet } : {}),
 		...(status ? { status } : {}),
