@@ -124,6 +124,70 @@ test("PUT /:id/runtime restarts an Eliza Cloud hosted agent through the service 
 	assert.deepEqual(calls, ["restart:cloud-agent-1", "status:cloud-agent-1"]);
 });
 
+test("PUT /:id/runtime suspends an Eliza Cloud hosted agent through the service API", async () => {
+	const db = createAuthDb();
+	installAuth(db);
+	const calls: string[] = [];
+	const app = createAgentRuntimeRoutes({
+		db,
+		getRuntimeState: async () => runtimeState(),
+		elizaClient: {
+			async pauseAgent(agentId) {
+				calls.push(`pause:${agentId}`);
+				return { ok: true };
+			},
+			async resumeAgent() {
+				throw new Error("suspend must not resume");
+			},
+			async getAgentRuntimeStatus(agentId) {
+				calls.push(`status:${agentId}`);
+				return { cloudAgentId: agentId, status: "suspended" };
+			},
+		},
+	});
+
+	const res = await app.request("/persona-row-1/runtime", {
+		method: "PUT",
+		headers: { ...authHeaders(), "content-type": "application/json" },
+		body: JSON.stringify({ action: "suspend" }),
+	});
+
+	assert.equal(res.status, 200);
+	const body = (await res.json()) as { ok: boolean; action: string; cloudAgentId: string };
+	assert.equal(body.ok, true);
+	assert.equal(body.action, "suspend");
+	assert.equal(body.cloudAgentId, "cloud-agent-1");
+	assert.deepEqual(calls, ["pause:cloud-agent-1", "status:cloud-agent-1"]);
+});
+
+test("PUT /:id/runtime rejects unsupported actions with 400", async () => {
+	const db = createAuthDb();
+	installAuth(db);
+	const app = createAgentRuntimeRoutes({
+		db,
+		getRuntimeState: async () => runtimeState(),
+		elizaClient: {
+			async pauseAgent() {
+				throw new Error("unsupported action must not reach the control plane");
+			},
+			async resumeAgent() {
+				throw new Error("unsupported action must not reach the control plane");
+			},
+		},
+	});
+
+	const res = await app.request("/persona-row-1/runtime", {
+		method: "PUT",
+		headers: { ...authHeaders(), "content-type": "application/json" },
+		body: JSON.stringify({ action: "explode" }),
+	});
+
+	assert.equal(res.status, 400);
+	const body = (await res.json()) as { ok: boolean; error: string };
+	assert.equal(body.ok, false);
+	assert.equal(body.error, "UNSUPPORTED_ACTION");
+});
+
 test("POST /:id/runtime/test returns hosted runtime status and web UI evidence", async () => {
 	const db = createAuthDb();
 	installAuth(db);
