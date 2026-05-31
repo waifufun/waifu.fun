@@ -6,7 +6,6 @@ on-chain treasury multisig, live agent runtime. zero founder allocation.
 - live: https://waifu.fun
 - docs: https://docs.waifu.fun
 - twitter: [@waifudotfun](https://x.com/waifudotfun)
-- discord: https://discord.gg/waifufun
 - design ground truth: every UI worker reads [`.impeccable.md`](./.impeccable.md) before touching frontend code
 
 ## what this is
