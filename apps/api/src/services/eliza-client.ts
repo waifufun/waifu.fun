@@ -210,6 +210,26 @@ export interface ElizaAppCreditVerifyResult {
 	[key: string]: unknown;
 }
 
+export interface ElizaAgentMessageInput {
+	/** Hosted agent id (cloudAgentId) the message is addressed to. */
+	agentId: string;
+	/** Patron's message text. */
+	text: string;
+	/** Stable conversation id so the agent threads replies; one per patron+agent. */
+	sessionId: string;
+	/** Opaque sender label surfaced to the runtime (the patron). */
+	senderId?: string;
+}
+
+export interface ElizaAgentMessageResult {
+	/** Reply text from the agent, when the runtime answered synchronously. */
+	text: string | null;
+	/** The conversation id the reply belongs to. */
+	sessionId: string;
+	/** Raw runtime payload for callers that want more than the text. */
+	raw?: unknown;
+}
+
 // ─── Client ───────────────────────────────────────────────────────
 
 export interface ElizaClientConfig {
@@ -670,6 +690,65 @@ export class ElizaClient {
 			asUserId: userId,
 		});
 	}
+
+	/**
+	 * Send a single chat turn to a hosted agent and return its reply.
+	 *
+	 * waifu-core is the gateway: the browser never talks to the container
+	 * directly, so the patron-authed proxy route calls this with the service
+	 * key. The runtime threads replies by `sessionId`, so callers pass a stable
+	 * conversation id (one per patron + agent).
+	 */
+	async sendAgentMessage(input: ElizaAgentMessageInput): Promise<ElizaAgentMessageResult> {
+		const result = await this.request<Record<string, unknown>>(
+			"POST",
+			`/api/v1/agents/${encodeURIComponent(input.agentId)}/message`,
+			{
+				body: {
+					text: input.text,
+					sessionId: input.sessionId,
+					...(input.senderId ? { senderId: input.senderId } : {}),
+					source: "waifu-patron-chat",
+				},
+			},
+		);
+		return {
+			text: extractReplyText(result),
+			sessionId: stringField(result, "sessionId") ?? input.sessionId,
+			raw: result,
+		};
+	}
+}
+
+/**
+ * Pull the reply text out of a runtime message payload. Eliza Cloud has
+ * shipped a couple of response shapes over time (`text`, `message`, a
+ * `messages[]` array, or `{ content: { text } }`), so we read defensively
+ * and fall back to null when nothing usable is present.
+ */
+function extractReplyText(payload: Record<string, unknown>): string | null {
+	const direct = stringField(payload, "text") ?? stringField(payload, "message") ?? stringField(payload, "reply");
+	if (direct) return direct;
+
+	const content = objectField(payload, "content");
+	if (content) {
+		const contentText = stringField(content, "text");
+		if (contentText) return contentText;
+	}
+
+	const messages = payload.messages;
+	if (Array.isArray(messages) && messages.length > 0) {
+		for (let i = messages.length - 1; i >= 0; i--) {
+			const entry = messages[i];
+			if (entry && typeof entry === "object") {
+				const record = entry as Record<string, unknown>;
+				const entryText = stringField(record, "text") ?? stringField(objectField(record, "content") ?? {}, "text");
+				if (entryText) return entryText;
+			}
+		}
+	}
+
+	return null;
 }
 
 export interface ElizaCloudClient {
@@ -691,6 +770,7 @@ export interface ElizaCloudClient {
 	verifyCreditCheckout?(sessionId: string): Promise<ElizaAppCreditVerifyResult>;
 	verifyAppCreditCheckout?(sessionId: string): Promise<ElizaAppCreditVerifyResult>;
 	getAgentRuntimeStatus?(agentId: string): Promise<ElizaAgentRuntimeStatus>;
+	sendAgentMessage?(input: ElizaAgentMessageInput): Promise<ElizaAgentMessageResult>;
 }
 
 // ─── Error classes ────────────────────────────────────────────────

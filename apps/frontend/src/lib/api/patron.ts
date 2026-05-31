@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "./_fetcher";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 /**
  * Patron-facing agent summary. Shape mirrors what the v2 API is expected
@@ -142,6 +142,47 @@ export function useAgentEvents(agentId?: string, limit = 30) {
 		},
 		refetchInterval: 20_000,
 		retry: 1,
+	});
+}
+
+/**
+ * Send one chat turn to the hosted agent through the patron-authed proxy
+ * (`POST /v2/agents/:id/chat`). The API verifies the caller is the patron and
+ * owner of the agent before forwarding to the runtime, so this hook is the
+ * only sanctioned way for the dashboard to talk to the agent.
+ */
+export type AgentChatReply = {
+	ok: boolean;
+	sessionId: string;
+	reply: string | null;
+	sentAt: string;
+};
+
+export type AgentChatErrorState = "provisioning" | "dormant" | "killed" | "unconfigured" | "forbidden" | "error";
+
+export function chatErrorState(err: unknown): AgentChatErrorState {
+	if (!isApiError(err)) return "error";
+	// apiFetch maps `code` from a `code` field and `message` from `error || message`.
+	// The chat route sends both, but read either so the classification holds even
+	// if only one is present.
+	const signal = (err as ApiError).code ?? err.message;
+	if (signal === "AGENT_NOT_RUNNING") return "provisioning";
+	if (signal === "AGENT_DORMANT") return "dormant";
+	if (signal === "AGENT_KILLED") return "killed";
+	if (signal === "CHAT_NOT_CONFIGURED") return "unconfigured";
+	if (err.status === 403) return "forbidden";
+	return "error";
+}
+
+export function useAgentChat(agentId?: string) {
+	return useMutation<AgentChatReply, ApiError, { text: string; sessionId?: string }>({
+		mutationFn: async ({ text, sessionId }) => {
+			if (!agentId) throw { status: 0, message: "missing agentId" } as ApiError;
+			return apiFetch<AgentChatReply>(`/v2/agents/${encodeURIComponent(agentId)}/chat`, {
+				method: "POST",
+				body: JSON.stringify({ text, ...(sessionId ? { sessionId } : {}) }),
+			});
+		},
 	});
 }
 
