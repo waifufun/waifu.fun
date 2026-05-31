@@ -17,23 +17,25 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 	},
 	{
 		id: "bags",
-		status: "live",
+		status: "coming-soon",
 		chain: "solana",
 		displayName: "bags",
 		shortDescription: "solana launch path through bags token-launch v2 with explicit creator fee sharing.",
 		feeSummary: "creator fee sharing.",
 		graduationTarget: "Meteora DLMM",
-		badges: ["advanced"],
+		comingSoonNotes:
+			"launch plan + fee-share modeled; needs bags API auth, a solana send-transaction executor, and a wallet adapter before it goes live.",
 	},
 	{
 		id: "bankr",
-		status: "live",
+		status: "coming-soon",
 		chain: "base",
 		displayName: "bankr",
 		shortDescription: "base launch path through bankr's sponsored doppler token-launch API.",
 		feeSummary: "57% creator, partner fee share.",
 		graduationTarget: "Uniswap v4 via Doppler",
-		badges: ["advanced"],
+		comingSoonNotes:
+			"launch plan + doppler fee distribution modeled; needs bankr api keys and a base executor that actually posts the deploy before it goes live.",
 	},
 	{
 		id: "four-meme-tax",
