@@ -28,7 +28,7 @@ import {
 	StatPill,
 	THEME_TOKENS,
 } from "@/components/agent-home/wave-t/_primitives";
-import { StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
+import { ElizaCloudIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 import type { AppStatus } from "@/lib/wave-t/apps";
 import { fetchAppsDirectory } from "@/lib/wave-t/apps-directory";
@@ -92,10 +92,16 @@ function priceLabel(app: DirectoryApp): string {
 const BRAND_LOGO_URLS: Record<string, string> = {
 	waifu: "/brand/icon/icon_256.png",
 	steward: "https://steward.fi/favicon.svg",
+	eliza: "/eliza-cloud/eliza.png",
+	"eliza-cloud": "/eliza-cloud/eliza.png",
+	elizacloud: "/eliza-cloud/eliza.png",
 };
 const BRAND_ICON: Record<string, (props: React.SVGProps<SVGSVGElement>) => React.ReactElement> = {
 	waifu: WaifuIcon,
 	steward: StewardIcon,
+	eliza: ElizaCloudIcon,
+	"eliza-cloud": ElizaCloudIcon,
+	elizacloud: ElizaCloudIcon,
 	"twitter-replies": XIcon,
 	content: XIcon,
 };

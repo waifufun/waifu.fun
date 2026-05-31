@@ -159,6 +159,17 @@ export function StewardIcon(props: IconProps) {
 	);
 }
 
+export function ElizaCloudIcon(props: IconProps) {
+	// Eliza Cloud mark: the square brand glyph (eliza's orange on transparent),
+	// the agent runtime + inference / credits layer. Image-backed like the
+	// waifu + Steward marks so it stays colour-accurate at feed size rather
+	// than approximated as a currentColor glyph. Reads crisp at 14px on dark.
+	return (
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/eliza-cloud/eliza.png" alt="Eliza Cloud" />
+	);
+}
+
 export function FlapIcon(props: IconProps) {
 	// FLAP (flap.sh) mark: the butterfly. Real left + right wing paths lifted
 	// from flap.sh's own butterfly-loader.svg (0 0 500 500 space), flattened
