@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import type { Database } from "../client.js";
 import { type AgentPersonaRow, type NewAgentPersona, agentPersonas } from "../schema/agent-personas.js";
@@ -238,11 +238,53 @@ export async function markLaunched(
 	agentId: string,
 	args: { tokenAddress: string; launchTxHash: string },
 ): Promise<void> {
+	await markLaunchedWithTokenAddress(db, agentId, {
+		...args,
+		// Existing EVM callers expect canonical lowercase token addresses.
+		normalizeTokenAddress: true,
+	});
+}
+
+/**
+ * Atomically reserve a prepared launch before calling an irreversible external
+ * launch API. Returns false when another request already moved the persona out
+ * of `prepared` (for example, a concurrent execute call won the race).
+ *
+ * Uses the existing `claimed` status as a short in-flight lock because the DB
+ * enum currently has no `launching` state. Callers should either mark launched
+ * on success or restore `prepared` on retryable failure.
+ */
+export async function tryBeginPreparedLaunchExecution(db: Database, agentId: string): Promise<boolean> {
+	const [row] = await db
+		.update(agentPersonas)
+		.set({ agentLaunchStatus: "claimed", updatedAt: new Date() })
+		.where(and(eq(agentPersonas.agentId, agentId), eq(agentPersonas.agentLaunchStatus, "prepared")))
+		.returning({ id: agentPersonas.id });
+	return Boolean(row);
+}
+
+/** Same persistence as markLaunched, but preserves token-address case. */
+export async function markLaunchedPreservingTokenAddress(
+	db: Database,
+	agentId: string,
+	args: { tokenAddress: string; launchTxHash: string },
+): Promise<void> {
+	await markLaunchedWithTokenAddress(db, agentId, {
+		...args,
+		normalizeTokenAddress: false,
+	});
+}
+
+async function markLaunchedWithTokenAddress(
+	db: Database,
+	agentId: string,
+	args: { tokenAddress: string; launchTxHash: string; normalizeTokenAddress: boolean },
+): Promise<void> {
 	await db
 		.update(agentPersonas)
 		.set({
 			agentLaunchStatus: "launched",
-			tokenAddress: args.tokenAddress.toLowerCase(),
+			tokenAddress: args.normalizeTokenAddress ? args.tokenAddress.toLowerCase() : args.tokenAddress,
 			launchTxHash: args.launchTxHash,
 			launchedAt: new Date(),
 			// Zero out the claim token so the URL is single-use.

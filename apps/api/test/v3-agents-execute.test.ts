@@ -61,12 +61,13 @@ function preparedPersona(kind: "bankr" | "bags", simulateOnly = false) {
 	};
 }
 
-test("POST /v3/agents/:id/launch/execute runs the executor and marks the persona launched", async () => {
-	const persona = preparedPersona("bankr");
+test("POST /v3/agents/:id/launch/execute runs the executor and preserves Solana mint case", async () => {
+	const persona = preparedPersona("bags");
 	installOwnershipAuth(persona);
 	test.after(resetMocks);
 
 	const launched: { agentId: string; args: unknown }[] = [];
+	const solanaMint = "SoLanaMintAbCdEfGh123456789XYZuvwPQR";
 	const routeDb = {
 		// route reads persona via agentPersonaQueries.getAgentPersonaById/ByAgentId,
 		// then markLaunched. We stub the underlying drizzle calls.
@@ -93,8 +94,8 @@ test("POST /v3/agents/:id/launch/execute runs the executor and marks the persona
 		isExternalExecutorConfigured: () => true,
 		executeExternalLaunch: async (plan) => {
 			executed = true;
-			assert.equal((plan as { kind: string }).kind, "bankr");
-			return { tokenAddress: "0xtoken", curveAddress: "0xpool", txHash: "0xhash", chain: "base", raw: {} };
+			assert.equal((plan as { kind: string }).kind, "bags");
+			return { tokenAddress: solanaMint, curveAddress: "Cfg", txHash: "Sig", chain: "solana", raw: {} };
 		},
 	});
 
@@ -107,10 +108,11 @@ test("POST /v3/agents/:id/launch/execute runs the executor and marks the persona
 	assert.equal(res.status, 200);
 	const json = (await res.json()) as Record<string, unknown>;
 	assert.equal(json.ok, true);
-	assert.equal(json.tokenAddress, "0xtoken");
-	assert.equal(json.txHash, "0xhash");
+	assert.equal(json.tokenAddress, solanaMint);
+	assert.equal(json.txHash, "Sig");
 	assert.equal(executed, true);
-	assert.equal(launched.length, 1);
+	assert.equal(launched.length, 2);
+	assert.equal((launched[1]?.args as { tokenAddress?: string }).tokenAddress, solanaMint);
 });
 
 test("execute refuses a simulateOnly prepared plan", async () => {
@@ -164,4 +166,39 @@ test("execute returns 503 when the executor is not configured", async () => {
 		body: "{}",
 	});
 	assert.equal(res.status, 503);
+});
+
+test("execute returns 409 when another request already reserved the prepared launch", async () => {
+	const persona = preparedPersona("bankr");
+	installOwnershipAuth(persona);
+	test.after(resetMocks);
+
+	let called = false;
+	const app = createV3Routes({
+		db: {
+			select() {
+				return { from: () => ({ where: () => ({ limit: async () => [persona] }) }) };
+			},
+			update() {
+				return {
+					set() {
+						return { where: () => ({ returning: async () => [] }) };
+					},
+				};
+			},
+		} as never,
+		isExternalExecutorConfigured: () => true,
+		executeExternalLaunch: async () => {
+			called = true;
+			throw new Error("should not be called");
+		},
+	});
+
+	const res = await app.request("/agents/persona-uuid/launch/execute", {
+		method: "POST",
+		headers: { authorization: "Bearer test", "content-type": "application/json" },
+		body: "{}",
+	});
+	assert.equal(res.status, 409);
+	assert.equal(called, false);
 });

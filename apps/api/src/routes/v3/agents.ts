@@ -378,17 +378,32 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 			return c.json({ ok: false, error: "third-party launch executor not configured for this chain", kind }, 503);
 		}
 
+		const reserved = await agentPersonaQueries.tryBeginPreparedLaunchExecution(db, persona.agentId);
+		if (!reserved) {
+			return c.json(
+				{
+					ok: false,
+					error: "launch is already executing or no longer prepared",
+					kind,
+				},
+				409,
+			);
+		}
+
 		let result: ExternalLaunchResult;
 		try {
 			result = await (options?.executeExternalLaunch ?? executeExternalLaunch)(
 				extPlan as unknown as ExternalLaunchPlan,
 			);
 		} catch (error) {
-			// Leave the persona in `prepared` so the launch can be retried.
+			// Restore `prepared` so retryable external/API failures can be retried.
+			await agentPersonaQueries.updateAgentPersona(db, persona.id, { agentLaunchStatus: "prepared" });
 			return c.json({ ok: false, error: "third-party launch failed", message: (error as Error).message, kind }, 502);
 		}
 
-		await agentPersonaQueries.markLaunched(db, persona.agentId, {
+		const markLaunched =
+			kind === "bags" ? agentPersonaQueries.markLaunchedPreservingTokenAddress : agentPersonaQueries.markLaunched;
+		await markLaunched(db, persona.agentId, {
 			tokenAddress: result.tokenAddress,
 			launchTxHash: result.txHash ?? result.curveAddress ?? "",
 		});
