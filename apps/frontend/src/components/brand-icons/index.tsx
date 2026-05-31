@@ -128,26 +128,34 @@ export function HetznerIcon(props: IconProps) {
 	);
 }
 
+// Image-backed brand marks: waifu (anime head) + Steward (gold compass rose)
+// render the real PNG marks rather than approximated SVG glyphs. They keep the
+// caller's sizing className (h-3.5 etc) and stay colour-accurate (the real
+// brand colours), unlike the currentColor mono icons.
+const markProps = (extra: IconProps): React.ImgHTMLAttributes<HTMLImageElement> => {
+	const { fill: _fill, stroke: _stroke, ...rest } = extra as Record<string, unknown>;
+	const merged = rest as React.ImgHTMLAttributes<HTMLImageElement>;
+	const className = ["inline-block object-contain", merged.className].filter(Boolean).join(" ");
+	return {
+		loading: "lazy",
+		decoding: "async",
+		"aria-hidden": "true",
+		...merged,
+		className,
+	};
+};
+
 export function WaifuIcon(props: IconProps) {
 	return (
-		<svg {...baseProps(props)}>
-			<title>waifu.fun</title>
-			<path d="M2 4l3 6 1.5-2.5L8 10l1.5-2.5L11 10l3-6h-2L10 8 8.5 5.5 8 6.5l-.5-1L6 8 4 4H2z" />
-		</svg>
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/brand/mark/waifu.png" alt="waifu.fun" />
 	);
 }
 
 export function StewardIcon(props: IconProps) {
-	// Steward (steward.fi) mark: an 8-point compass rose. Four long cardinal
-	// spikes, four shorter diagonal spikes, meeting at a center, deep concave
-	// gaps between points. Single solid silhouette so it tints via
-	// currentColor. Traced from the steward compass brand asset.
 	return (
-		<svg {...baseProps(props, "0 0 32 32")}>
-			<title>Steward</title>
-			<path d="M16 1 17.19 13.14 22.08 9.92 18.86 14.81 31 16 18.86 17.19 22.08 22.08 17.19 18.86 16 31 14.81 18.86 9.92 22.08 13.14 17.19 1 16 13.14 14.81 9.92 9.92 14.81 13.14Z" />
-			<circle cx="16" cy="16" r="2.3" />
-		</svg>
+		// eslint-disable-next-line @next/next/no-img-element
+		<img {...markProps(props)} src="/brand/mark/steward.png" alt="Steward" />
 	);
 }
 
