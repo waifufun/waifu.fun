@@ -61,6 +61,26 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	const persona = await agentPersonaQueries.getAgentPersonaByAgentId(context.db, payload.agentId);
 	if (!persona) throw new Error(`agent persona not found for ${payload.agentId}`);
 
+	// Idempotency guard. Provisioning is now enqueued at token-create AND again
+	// at DEX graduation (launched-to-dex / liquidity-added). If this persona
+	// already has a cloud agent, the container exists, so we short-circuit and
+	// return the stored result instead of POSTing /api/v1/agents a second time
+	// (which would create a duplicate container + duplicate billing).
+	if (persona.elizaCloudAgentId) {
+		const existing = recordFromUnknown(recordFromUnknown(persona.metadata)?.provisioning);
+		return {
+			agentId: payload.agentId,
+			cloudAgentId: persona.elizaCloudAgentId,
+			...(stringField(existing ?? {}, "containerId") ? { containerId: stringField(existing ?? {}, "containerId") as string } : {}),
+			...(stringField(existing ?? {}, "containerUrl") ? { containerUrl: stringField(existing ?? {}, "containerUrl") as string } : {}),
+			jobId: persona.elizaCloudAgentId,
+			status: stringField(existing ?? {}, "status") ?? "running",
+			walletProvisioning: (existing?.walletProvisioning as Record<string, unknown> | null) ?? null,
+			account: (existing?.account as Record<string, unknown> | null) ?? null,
+			polling: existing?.polling ?? null,
+		};
+	}
+
 	const [wallet] = await context.db
 		.select({ walletAddress: agentWallets.walletAddress })
 		.from(agentWallets)
