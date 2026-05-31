@@ -114,7 +114,8 @@ test("serializeAgentLaunch shapes a row into the public response", () => {
 	assert.ok(out);
 	assert.equal(out.id, SAMPLE_ID);
 	assert.equal(out.token, TOKEN);
-	assert.equal(out.tier, 80);
+	assert.equal(out.tier, "80");
+	assert.equal(out.tierNumber, 80);
 	assert.equal(out.state, "open");
 	assert.equal(out.vestingEnabled, false);
 	assert.equal(out.closeTimestamp, 1_900_000_000);

@@ -13,7 +13,7 @@ const persona = {
 	metadata: {},
 };
 
-test("agent.claimed provisions eliza agent and emits provisioning events", async () => {
+test("agent.claimed records the claim without provisioning before launch", async () => {
 	const events: { agentId: string | null; eventType: string; data: Record<string, unknown> }[] = [];
 	const createCalls: { userId: string; data: Record<string, unknown> }[] = [];
 
@@ -52,22 +52,8 @@ test("agent.claimed provisions eliza agent and emits provisioning events", async
 		},
 	);
 
-	assert.equal(createCalls.length, 1);
-	assert.equal(createCalls[0]?.userId, "waifu-demo-01");
-	assert.deepEqual(createCalls[0]?.data, {
-		agentName: "Demo Waifu",
-		agentConfig: {
-			personaId: "waifu-demo-01",
-			xHandle: "eliza",
-			taxConfig: { feeRate: 3 },
-			safeAddress: "0x1111111111111111111111111111111111111111",
-		},
-	});
-	assert.deepEqual(
-		events.map((event) => event.eventType),
-		["agent.provisioning_started", "agent.provisioned"],
-	);
-	assert.equal(events[1]?.data.containerId, "eliza-container-1");
+	assert.equal(createCalls.length, 0);
+	assert.deepEqual(events, []);
 });
 
 function fakeProvisioningDb() {
