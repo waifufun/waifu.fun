@@ -6,7 +6,7 @@ import type * as React from "react";
 
 import { ArrowUpRight } from "lucide-react";
 
-import { GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
+import { ElizaCloudIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
 import type { App } from "@/lib/wave-t/apps";
@@ -18,6 +18,9 @@ type IconComponent = (props: React.SVGProps<SVGSVGElement>) => React.ReactElemen
 const APP_ICONS: Record<string, IconComponent> = {
 	waifu: WaifuIcon,
 	steward: StewardIcon,
+	eliza: ElizaCloudIcon,
+	"eliza-cloud": ElizaCloudIcon,
+	elizacloud: ElizaCloudIcon,
 	"waifu-terminal": WaifuIcon,
 	terminal: WaifuIcon,
 	"twitter-replies": XIcon,
@@ -46,6 +49,9 @@ function appMeta(app: App): { tagline?: string; kind?: string; featured?: boolea
 const APP_LOGO_URLS: Record<string, string> = {
 	waifu: "/brand/icon/icon_256.png",
 	steward: "https://steward.fi/favicon.svg",
+	eliza: "/eliza-cloud/eliza.png",
+	"eliza-cloud": "/eliza-cloud/eliza.png",
+	elizacloud: "/eliza-cloud/eliza.png",
 };
 
 function AppIcon({ app, className }: { app: App; className?: string }) {
