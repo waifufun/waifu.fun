@@ -13,6 +13,7 @@ type ChatFrameProps = {
 };
 
 export const HOSTED_CHAT_IFRAME_ALLOW = "clipboard-read; clipboard-write";
+export const HOSTED_CHAT_IFRAME_REFERRER_POLICY = "no-referrer";
 export const HOSTED_CHAT_IFRAME_SANDBOX =
 	"allow-downloads allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts";
 
@@ -53,7 +54,7 @@ export default function ChatFrame({ params, tokenName, status, cloudAgentId }: C
 					src={chat.data.chatUrl}
 					className="min-h-[680px] flex-1 bg-black"
 					allow={HOSTED_CHAT_IFRAME_ALLOW}
-					referrerPolicy="no-referrer"
+					referrerPolicy={HOSTED_CHAT_IFRAME_REFERRER_POLICY}
 					sandbox={HOSTED_CHAT_IFRAME_SANDBOX}
 				/>
 			</div>
