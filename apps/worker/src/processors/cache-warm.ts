@@ -1,6 +1,6 @@
 import type { Job } from "bullmq";
 
-import { type CacheWarmJob, parseJobPayload } from "@waifufun/queue";
+import { type CacheWarmJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import { emitAgentEvent } from "../lib/emit.js";
 import type { WorkerContext } from "../lib/types.js";

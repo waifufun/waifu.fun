@@ -2,7 +2,8 @@ import type { Logger } from "@waifufun/logger";
 import type { Job } from "bullmq";
 
 import type { Database, DbClient } from "@waifufun/db";
-import type { JobName, QueueKey } from "@waifufun/queue";
+import type { QueueKey } from "@waifufun/queue/catalog";
+import type { JobName } from "@waifufun/queue/jobs";
 
 export type WorkerDbClient = Database & DbClient;
 

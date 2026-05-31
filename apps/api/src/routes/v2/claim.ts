@@ -124,6 +124,10 @@ function isTaxSplitPatch(value: TaxSplitPatch | { error: string }): value is Tax
 	return !("error" in value);
 }
 
+export function buildClaimLaunchAdminWallets(persona: { ownerAddress?: string | null }): string[] {
+	return persona.ownerAddress ? [persona.ownerAddress] : [];
+}
+
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	const url = process.env.DATABASE_URL;
 	if (!url || url.length === 0) return null;
@@ -903,7 +907,7 @@ app.post("/claim/:token/launch", requirePatronAuth(), async (c) => {
 			.where(eq(agentWallets.internalAgentId, claim.agentId))
 			.limit(1);
 		const agentWalletAddress = walletRow?.walletAddress ?? null;
-		const adminWallets = claim.taxRecipientAddress ? [claim.taxRecipientAddress] : [];
+		const adminWallets = buildClaimLaunchAdminWallets(persona);
 
 		await emitAgentEvent({
 			agentId: claim.agentId,

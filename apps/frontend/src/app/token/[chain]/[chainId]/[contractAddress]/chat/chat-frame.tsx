@@ -4,6 +4,11 @@ import { getTokenChatSession } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { ITokenLookUp } from "@waifufun/types";
 import { LoaderCircle, LockKeyhole, RefreshCw } from "lucide-react";
+import {
+	HOSTED_CHAT_IFRAME_ALLOW,
+	HOSTED_CHAT_IFRAME_REFERRER_POLICY,
+	HOSTED_CHAT_IFRAME_SANDBOX,
+} from "./chat-frame-policy";
 
 type ChatFrameProps = {
 	params: ITokenLookUp;
@@ -48,7 +53,9 @@ export default function ChatFrame({ params, tokenName, status, cloudAgentId }: C
 					title={`${tokenName} Eliza Cloud chat`}
 					src={chat.data.chatUrl}
 					className="min-h-[680px] flex-1 bg-black"
-					allow="clipboard-read; clipboard-write"
+					allow={HOSTED_CHAT_IFRAME_ALLOW}
+					referrerPolicy={HOSTED_CHAT_IFRAME_REFERRER_POLICY}
+					sandbox={HOSTED_CHAT_IFRAME_SANDBOX}
 				/>
 			</div>
 		);

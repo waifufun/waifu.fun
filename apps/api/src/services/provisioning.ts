@@ -1,5 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
-import type { Address } from "viem";
+import { type Address, isAddress } from "viem";
 
 import {
 	ElizaCloudRuntimeAdapter,
@@ -13,6 +13,7 @@ import {
 	agentPersonaQueries,
 	type agentPersonas,
 	agentSafes,
+	agentWallets,
 	agents,
 	creators,
 	getDatabase,
@@ -90,10 +91,11 @@ export async function provisionClaimedAgent(
 	}
 
 	const safe = await getAgentSafeAddress(db, persona.id);
+	const agentWalletAddress = await getStoredAgentWalletAddress(db, persona.agentId);
 	const registry = deps.runtimeRegistry ?? legacyRegistryFromDeps(deps) ?? getRuntimeRegistry();
 	const adapter = registry.get(runtimeKind);
 	if (!adapter) throw new Error(`runtime adapter not registered for ${runtimeKind}`);
-	const provisionOptions = buildProvisionOptions(agentId, persona, eventData, safe);
+	const provisionOptions = buildProvisionOptions(agentId, persona, eventData, safe, agentWalletAddress);
 
 	try {
 		const result = await adapter.provision(provisionOptions);
@@ -200,6 +202,7 @@ export function buildProvisionOptions(
 	},
 	eventData: Record<string, unknown>,
 	safeAddress: string | null,
+	storedAgentWalletAddress: string | null = null,
 ): ProvisionOptions {
 	const opts: ProvisionOptions = {
 		agentId,
@@ -238,24 +241,38 @@ export function buildProvisionOptions(
 	};
 
 	const primaryWalletAddress =
-		stringField(eventData, "walletAddress") ??
+		stringField(eventData, "primaryWalletAddress") ??
 		stringField(eventData, "agentWalletAddress") ??
-		stringField(eventData, "primaryWalletAddress");
+		stringField(eventData, "walletAddress") ??
+		storedAgentWalletAddress;
 	if (primaryWalletAddress) {
+		if (!isAddress(primaryWalletAddress)) {
+			throw new Error(`agent EVM wallet must be a valid EVM address for Eliza Cloud provisioning (${agentId})`);
+		}
 		opts.account = {
 			primaryWalletAddress,
-			walletKeyRef: `steward:${agentId}`,
+			walletKeyRef:
+				stringField(eventData, "walletKeyRef") ?? stringField(eventData, "agentWalletKeyRef") ?? `steward:${agentId}`,
 		};
 	}
 
 	const adminWallets = stringArrayField(eventData, "adminWallets");
 	const fallbackAdminWallet = persona.ownerAddress ?? safeAddress;
+	const resolvedAdminWallets = (
+		adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : []
+	)
+		.map((wallet) => wallet.trim())
+		.filter(Boolean);
 	opts.access = {
 		guestMinTokens: numberField(eventData, "guestMinTokens") ?? 1_000,
 		userMinTokens: numberField(eventData, "userMinTokens") ?? 100_000,
 		thresholdMode: "strict_gt",
-		adminWallets: adminWallets.length > 0 ? adminWallets : fallbackAdminWallet ? [fallbackAdminWallet] : [],
+		adminWallets: resolvedAdminWallets,
 	};
+	const invalidAdminWallet = resolvedAdminWallets.find((wallet) => !isAddress(wallet));
+	if (invalidAdminWallet) {
+		throw new Error(`admin wallet must be a valid EVM address for Eliza Cloud provisioning (${agentId})`);
+	}
 
 	const webhookUrl = stringField(eventData, "webhookUrl") ?? persona.runtimeWebhookUrl;
 	if (webhookUrl) opts.webhookUrl = webhookUrl;
@@ -292,12 +309,15 @@ export async function getAgentRuntimeState(db: Database, agentId: string) {
 	const cloudAgentId = stringField(provisioning ?? {}, "cloudAgentId");
 	const runtimeAgentId = stringField(provisioning ?? {}, "runtimeAgentId") ?? cloudAgentId;
 	const containerUrl = stringField(provisioning ?? {}, "containerUrl");
+	const webUiUrl = stringField(provisioning ?? {}, "webUiUrl");
+	const provisioningStatus = stringField(provisioning ?? {}, "status");
 	const lastError = stringField(provisioning ?? {}, "lastError") ?? latestError(events);
 
 	let state: "pending" | "provisioning" | "live" | "failed" | "dormant" = "pending";
 	if (killedOrPaused) state = "dormant";
 	else if (failed || deadLetter || lastError) state = "failed";
-	else if (containerId || runtimeAgentId) state = "live";
+	else if (containerUrl || webUiUrl) state = "live";
+	else if (runtimeAgentId) state = "provisioning";
 	else if (latestProvisioningEvent?.eventType === "agent.claimed") state = "provisioning";
 	else if (persona.agentLaunchStatus === "claimed") state = "provisioning";
 
@@ -307,6 +327,7 @@ export async function getAgentRuntimeState(db: Database, agentId: string) {
 		...(cloudAgentId ? { cloudAgentId } : {}),
 		...(containerId ? { containerId } : {}),
 		...(containerUrl ? { containerUrl } : {}),
+		...(webUiUrl ? { webUiUrl } : {}),
 		...(latestProvisioningEvent ? { lastEventAt: latestProvisioningEvent.createdAt.toISOString() } : {}),
 		...(lastError ? { lastError } : {}),
 	};
@@ -406,6 +427,15 @@ async function getAgentSafeAddress(db: Database, personaId: string): Promise<str
 	return row?.safeAddress ?? null;
 }
 
+async function getStoredAgentWalletAddress(db: Database, agentId: string): Promise<string | null> {
+	const [row] = await db
+		.select({ walletAddress: agentWallets.walletAddress })
+		.from(agentWallets)
+		.where(eq(agentWallets.internalAgentId, agentId))
+		.limit(1);
+	return row?.walletAddress ?? null;
+}
+
 async function storeProvisioningSuccess(
 	db: Database,
 	agentId: string,
@@ -420,8 +450,10 @@ async function storeProvisioningSuccess(
 			runtimeKind,
 			runtimeAgentId: result.runtimeAgentId,
 			containerId: result.containerId ?? null,
+			containerUrl: result.containerUrl ?? null,
+			webUiUrl: result.webUiUrl ?? null,
 			livenessCheckUrl: result.livenessCheckUrl ?? null,
-			status: "provisioned",
+			status: result.status ?? "provisioned",
 			lastError: null,
 			updatedAt: new Date().toISOString(),
 		},
@@ -451,15 +483,19 @@ async function syncProvisioningTokenOverlay(
 	if (!row) return;
 
 	const now = new Date();
+	const hostedUrl = result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl ?? null;
+	const isRunning = Boolean(hostedUrl) && isHostedRuntimeRunning(result.status);
+	const agentStatus = isRunning ? "running" : "provisioning";
+	const lifecycleState = isRunning ? "live" : "birth";
 	const agentValues = {
 		name: options.tokenName ?? options.agentName,
 		bio: options.persona.bio ?? null,
 		avatarUrl: options.persona.image ?? null,
 		cloudAgentId: result.runtimeAgentId,
 		runtimeProvider: "eliza-cloud",
-		agentStatus: "provisioning",
-		lifecycleState: "birth",
-		webUiUrl: result.livenessCheckUrl ?? null,
+		agentStatus,
+		lifecycleState,
+		webUiUrl: hostedUrl,
 		bridgeUrl: result.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
@@ -471,7 +507,7 @@ async function syncProvisioningTokenOverlay(
 		await db.update(agents).set(agentValues).where(eq(agents.id, row.agent.id));
 		await db
 			.update(tokens)
-			.set({ agentId: row.agent.id, agentStatus: "provisioning", ownerClaimStatus: "claimed", updatedAt: now })
+			.set({ agentId: row.agent.id, agentStatus, ownerClaimStatus: "claimed", updatedAt: now })
 			.where(eq(tokens.id, row.token.id));
 		return;
 	}
@@ -488,11 +524,15 @@ async function syncProvisioningTokenOverlay(
 		.update(tokens)
 		.set({
 			agentId: created?.id ?? row.token.agentId ?? null,
-			agentStatus: "provisioning",
+			agentStatus,
 			ownerClaimStatus: "claimed",
 			updatedAt: now,
 		})
 		.where(eq(tokens.id, row.token.id));
+}
+
+function isHostedRuntimeRunning(status: string | null | undefined): boolean {
+	return ["running", "ready", "online", "active", "started"].includes(String(status ?? "").toLowerCase());
 }
 
 async function storeProvisioningFailure(db: Database, agentId: string, err: unknown): Promise<void> {
@@ -596,9 +636,13 @@ function existingProvisionResult(metadata: unknown, runtimeKind: RuntimeKind): P
 	const containerId = stringField(provisioning, "containerId");
 	if (!runtimeAgentId && !containerId) return null;
 	const livenessCheckUrl = stringField(provisioning, "livenessCheckUrl");
+	const containerUrl = stringField(provisioning, "containerUrl");
+	const webUiUrl = stringField(provisioning, "webUiUrl");
 	return {
 		runtimeAgentId: runtimeAgentId ?? containerId ?? "",
 		...(containerId ? { containerId } : {}),
+		...(containerUrl ? { containerUrl } : {}),
+		...(webUiUrl ? { webUiUrl } : {}),
 		...(livenessCheckUrl ? { livenessCheckUrl } : {}),
 	};
 }

@@ -179,6 +179,7 @@
       "dependencies": {
         "@waifufun/db": "workspace:*",
         "@waifufun/logger": "workspace:*",
+        "@waifufun/queue": "workspace:*",
         "drizzle-orm": "^0.36.4",
         "viem": "^2.21.54",
       },

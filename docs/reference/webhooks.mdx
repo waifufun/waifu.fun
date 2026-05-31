@@ -21,7 +21,7 @@ consumer worker. each row eventually becomes one or more `agent_events`.
 | --- | --- | --- |
 | `POST /v2/webhooks/steward/policy` | Steward | `policy.applied`, `policy.denied`, `policy.needs_manual` |
 | `POST /v2/webhooks/steward/sign` | Steward | `safe.tx.signed_by_steward`, `session.opened`, `session.revoked` |
-| `POST /v2/webhooks/eliza-cloud/credits` | Eliza Cloud | `credits.topped_up`, `credits.deducted` |
+| `POST /v2/webhooks/eliza-cloud/credits` | Eliza Cloud | `credits.low`, `credits.depleted`, `credits.topped_up` |
 | `POST /v2/webhooks/eliza-cloud/inference` | Eliza Cloud | `inference.spent` (rolled up per agent per minute) |
 | `POST /v2/webhooks/github` | GitHub App | `pr.opened`, `pr.merged`, `commit.pushed` |
 | `POST /v2/webhooks/agent-events` | internal cross-service | any pre-formed `agent_events` row |

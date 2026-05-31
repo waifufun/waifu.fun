@@ -1,5 +1,6 @@
 import { type Database, getDatabase } from "@waifufun/db";
 import type { Logger } from "@waifufun/logger";
+import type { AgentProvisioningJob, CacheWarmJob, NotificationJob } from "@waifufun/queue/jobs";
 import { http, type Address, type Chain, type PublicClient, type Transport, createPublicClient } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 
@@ -33,6 +34,9 @@ export interface IndexerRuntime {
 	webhooks: WebhookDispatcher;
 	config: PortalIndexerConfig;
 	cursorIds: IndexerCursorIds;
+	enqueueAgentProvisioning?: (payload: AgentProvisioningJob, options?: { jobId?: string }) => Promise<unknown>;
+	enqueueCacheWarm?: (payload: CacheWarmJob, options?: { jobId?: string }) => Promise<unknown>;
+	enqueueNotification?: (payload: NotificationJob, options?: { jobId?: string }) => Promise<unknown>;
 }
 
 export function getBscChain(chainId: number): Chain {

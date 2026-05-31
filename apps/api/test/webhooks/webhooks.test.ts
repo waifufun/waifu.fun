@@ -230,6 +230,11 @@ test("POST /eliza-cloud/credits maps low and top-up credit statuses distinctly",
 		dispatched.map((event) => (event as { event?: string }).event),
 		["agent.credits.low", "credits.topped_up"],
 	);
+	assert.deepEqual(
+		dispatched.map((event) => (event as { agentId?: string }).agentId),
+		["waifu-demo-01", "waifu-demo-01"],
+	);
+	assert.equal((dispatched[1] as { data?: Record<string, unknown> }).data?.elizaCloudAgentId, "cloud-agent-1");
 });
 
 function post(app: ReturnType<typeof createWebhookRoutes>, payload: unknown) {

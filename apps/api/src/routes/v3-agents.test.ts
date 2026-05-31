@@ -15,6 +15,10 @@ function resetPatronAuthMocks() {
 	__setRequirePatronStewardParserForTest(undefined);
 }
 
+function liveLaunchpadAdapter(adapter: LaunchpadAdapter): LaunchpadAdapter {
+	return { ...adapter, descriptor: { ...adapter.descriptor, status: "live" } };
+}
+
 function installCreatePatronAuth() {
 	__setRequirePatronDbForTest({
 		select() {
@@ -373,7 +377,7 @@ test("POST /v3/agents/:id/launch prepares Bankr and Bags plans without BSC Safe 
 		{
 			id: "bankr",
 			chain: "base",
-			adapter: bankrAdapter,
+			adapter: liveLaunchpadAdapter(bankrAdapter),
 			body: { ticker: "BANKR", launch_wallet: OWNER },
 			expectExternal: "bankr",
 			expectFounder: OWNER,
@@ -381,7 +385,7 @@ test("POST /v3/agents/:id/launch prepares Bankr and Bags plans without BSC Safe 
 		{
 			id: "bags",
 			chain: "solana",
-			adapter: bagsAdapter,
+			adapter: liveLaunchpadAdapter(bagsAdapter),
 			body: { ticker: "BAGS", launch_wallet: "So11111111111111111111111111111111111111112" },
 			expectExternal: "bags",
 			expectFounder: "So11111111111111111111111111111111111111112",

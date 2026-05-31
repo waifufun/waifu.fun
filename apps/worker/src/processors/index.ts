@@ -1,4 +1,5 @@
-import { type JobName, jobDefinitions, queueDefinitions } from "@waifufun/queue";
+import { queueDefinitions } from "@waifufun/queue/catalog";
+import { type JobName, jobDefinitions } from "@waifufun/queue/jobs";
 
 import type { WorkerContext, WorkerProcessor, WorkerRegistration } from "../lib/types.js";
 import { createAgentProvisioningProcessor } from "./agent-provisioning.js";

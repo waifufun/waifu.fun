@@ -1,7 +1,7 @@
 import type { Job } from "bullmq";
 
 import { agentEvents, agentXAccounts, getDatabase } from "@waifufun/db";
-import { type XTokenRefreshJob, parseJobPayload } from "@waifufun/queue";
+import { type XTokenRefreshJob, parseJobPayload } from "@waifufun/queue/jobs";
 import { and, eq, lt, sql } from "drizzle-orm";
 
 import { decryptEnvelope, encryptEnvelope } from "../lib/envelope.js";

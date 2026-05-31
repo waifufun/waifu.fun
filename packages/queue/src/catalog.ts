@@ -53,7 +53,7 @@ export const queueDefinitions = {
 		redisName: "agent-provisioning",
 		ledgerName: "agent-provisioning",
 		concurrency: 1,
-		description: "Retry eliza-cloud agent provisioning failures.",
+		description: "Eliza Cloud agent container provisioning.",
 	},
 } as const;
 

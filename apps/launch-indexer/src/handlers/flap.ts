@@ -1,5 +1,6 @@
 import { schema } from "@waifufun/db";
-import { eq } from "drizzle-orm";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
+import { eq, sql } from "drizzle-orm";
 
 import type { FlapLaunchedToDexEvent, PortalTokenCreatedEvent } from "../lib/events.js";
 import { bumpCounter } from "../lib/metrics.js";
@@ -57,10 +58,10 @@ export async function handlePortalTokenCreated(
 export async function handleFlapLaunchedToDex(
 	runtime: LaunchIndexerRuntime,
 	event: FlapLaunchedToDexEvent,
-): Promise<{ launchId: string } | null> {
+): Promise<{ launchId: string; enqueuedJobs: string[] } | null> {
 	const token = event.data.token.toLowerCase();
 	const [launch] = await runtime.db
-		.select({ id: schema.agentLaunches.id })
+		.select({ id: schema.agentLaunches.id, tokenAddress: schema.agentLaunches.tokenAddress })
 		.from(schema.agentLaunches)
 		.where(eq(schema.agentLaunches.flapTokenAddress, token))
 		.limit(1);
@@ -90,5 +91,64 @@ export async function handleFlapLaunchedToDex(
 			updatedAt: new Date(),
 		})
 		.where(eq(schema.agentLaunches.id, launch.id));
-	return { launchId: launch.id };
+
+	const enqueuedJobs: string[] = [];
+	const agentId = await lookupAgentIdForFlapLaunch(runtime, [token, launch.tokenAddress]);
+	if (agentId) {
+		const enqueueAgentProvisioning =
+			runtime.enqueueAgentProvisioning ??
+			(async (payload: AgentProvisioningJob, options?: { jobId?: string }) => {
+				const { addAgentProvisioningJob } = await import("@waifufun/queue");
+				return addAgentProvisioningJob(payload, options);
+			});
+		await enqueueAgentProvisioning(buildFlapLaunchedToDexProvisioningJob(agentId, launch.id, event), {
+			jobId: `launch-indexer-${event.chainId}-${event.txHash}-${event.logIndex}-agent-provisioning-${agentId}`,
+		});
+		enqueuedJobs.push("agent-provisioning");
+	}
+
+	return { launchId: launch.id, enqueuedJobs };
+}
+
+async function lookupAgentIdForFlapLaunch(
+	runtime: LaunchIndexerRuntime,
+	tokenAddresses: Array<string | null | undefined>,
+): Promise<string | null> {
+	const normalized = [...new Set(tokenAddresses.filter(Boolean).map((value) => value!.toLowerCase()))];
+	if (normalized.length === 0) return null;
+	const [persona] = await runtime.db
+		.select({ agentId: schema.agentPersonas.agentId })
+		.from(schema.agentPersonas)
+		.where(
+			sql`lower(${schema.agentPersonas.tokenAddress}) in (${sql.join(
+				normalized.map((value) => sql`${value}`),
+				sql`,`,
+			)})`,
+		)
+		.limit(1);
+	return persona?.agentId ?? null;
+}
+
+export function buildFlapLaunchedToDexProvisioningJob(
+	agentId: string,
+	launchId: string,
+	event: FlapLaunchedToDexEvent,
+): AgentProvisioningJob {
+	return {
+		agentId,
+		source: "token.migrated",
+		data: {
+			tokenAddress: event.data.token,
+			tokenContractAddress: event.data.token,
+			chain: "bsc",
+			chainId: event.chainId,
+			launchType: "native",
+			launchId,
+			txHash: event.txHash,
+			blockNumber: event.blockNumber.toString(),
+			poolAddress: event.data.pair,
+			quoteAmount: event.data.quoteAmt,
+			dexName: "pancakeswap",
+		},
+	};
 }

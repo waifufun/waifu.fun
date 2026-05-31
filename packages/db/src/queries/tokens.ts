@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import type { Database } from "../client.js";
+import { agents } from "../schema/agents.js";
 import { tokens } from "../schema/tokens.js";
 import { trades } from "../schema/trades.js";
 
@@ -39,6 +40,12 @@ export interface TokenSummary {
 	launchPlatform: string;
 	ownerClaimStatus: string;
 	agentStatus: string;
+	agentLifecycleState: string | null;
+	cloudAgentId: string | null;
+	webUiUrl: string | null;
+	billingMode: string | null;
+	infraReserveUsd: string | null;
+	hasAgent: boolean;
 	lastTradeAt: string | null;
 }
 
@@ -175,8 +182,15 @@ function mapTokenSummary(row: {
 	launchPlatform: string;
 	ownerClaimStatus: string;
 	agentStatus: string;
+	agentRowStatus: string | null;
+	agentLifecycleState: string | null;
+	cloudAgentId: string | null;
+	webUiUrl: string | null;
+	billingMode: string | null;
+	infraReserveUsd: string | null;
 	lastTradeAt: Date | null;
 }): TokenSummary {
+	const agentStatus = row.agentRowStatus ?? row.agentStatus;
 	return {
 		address: row.address,
 		name: row.name,
@@ -199,7 +213,13 @@ function mapTokenSummary(row: {
 		isImported: row.isImported,
 		launchPlatform: row.launchPlatform,
 		ownerClaimStatus: row.ownerClaimStatus,
-		agentStatus: row.agentStatus,
+		agentStatus,
+		agentLifecycleState: row.agentLifecycleState,
+		cloudAgentId: row.cloudAgentId,
+		webUiUrl: row.webUiUrl,
+		billingMode: row.billingMode,
+		infraReserveUsd: row.infraReserveUsd,
+		hasAgent: Boolean(row.cloudAgentId || row.webUiUrl || agentStatus !== "none" || row.agentLifecycleState),
 		lastTradeAt: row.lastTradeAt?.toISOString() ?? null,
 	};
 }
@@ -271,9 +291,16 @@ export async function listTokens(db: Database, query: TokenListQuery): Promise<T
 				launchPlatform: tokens.launchPlatform,
 				ownerClaimStatus: tokens.ownerClaimStatus,
 				agentStatus: tokens.agentStatus,
+				agentRowStatus: agents.agentStatus,
+				agentLifecycleState: agents.lifecycleState,
+				cloudAgentId: agents.cloudAgentId,
+				webUiUrl: agents.webUiUrl,
+				billingMode: agents.billingMode,
+				infraReserveUsd: agents.infraReserveUsd,
 				lastTradeAt: tokens.lastTradeAt,
 			})
 			.from(tokens)
+			.leftJoin(agents, eq(agents.id, tokens.agentId))
 			.where(whereClause)
 			.orderBy(...orderByClause)
 			.limit(limit)
@@ -321,9 +348,16 @@ export async function getTokenByAddress(db: Database, address: string): Promise<
 			ownerClaimStatus: tokens.ownerClaimStatus,
 			agentId: tokens.agentId,
 			agentStatus: tokens.agentStatus,
+			agentRowStatus: agents.agentStatus,
+			agentLifecycleState: agents.lifecycleState,
+			cloudAgentId: agents.cloudAgentId,
+			webUiUrl: agents.webUiUrl,
+			billingMode: agents.billingMode,
+			infraReserveUsd: agents.infraReserveUsd,
 			lastTradeAt: tokens.lastTradeAt,
 		})
 		.from(tokens)
+		.leftJoin(agents, eq(agents.id, tokens.agentId))
 		.where(eq(tokens.contractAddress, address.toLowerCase()))
 		.limit(1);
 
@@ -365,6 +399,12 @@ export async function getTokenByAddress(db: Database, address: string): Promise<
 			launchPlatform: row.launchPlatform,
 			ownerClaimStatus: row.ownerClaimStatus,
 			agentStatus: row.agentStatus,
+			agentRowStatus: row.agentRowStatus,
+			agentLifecycleState: row.agentLifecycleState,
+			cloudAgentId: row.cloudAgentId,
+			webUiUrl: row.webUiUrl,
+			billingMode: row.billingMode,
+			infraReserveUsd: row.infraReserveUsd,
 			lastTradeAt: row.lastTradeAt,
 		}),
 		description: row.description ?? "",

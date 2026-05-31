@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { Job } from "bullmq";
 
 import { findFlapVanitySalt, getFlapPortalAddress, resolveFlapNetwork } from "@waifufun/flap";
-import { type SaltSearchJob, parseJobPayload } from "@waifufun/queue";
+import { type SaltSearchJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import type { WorkerContext } from "../lib/types.js";
 

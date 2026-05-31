@@ -1,6 +1,6 @@
 import type { Job } from "bullmq";
 
-import { type ReindexJob, addCacheWarmJob, parseJobPayload } from "@waifufun/queue";
+import { type ReindexJob, parseJobPayload } from "@waifufun/queue/jobs";
 
 import { emitAgentEvent } from "../lib/emit.js";
 import type { WorkerContext } from "../lib/types.js";
@@ -21,6 +21,7 @@ export function createReindexProcessor(context: WorkerContext) {
 
 			if (payload.scope === "token") {
 				const token = await context.db.getTokenByAddress(payload.tokenAddress);
+				const { addCacheWarmJob } = await import("@waifufun/queue");
 				await addCacheWarmJob(
 					{ target: "token", tokenAddress: payload.tokenAddress, reason: "post-reindex" },
 					{ jobId: `reindex:${payload.tokenAddress}:cache-warm` },

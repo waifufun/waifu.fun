@@ -114,8 +114,11 @@ test("serializeAgentLaunch shapes a row into the public response", () => {
 	assert.ok(out);
 	assert.equal(out.id, SAMPLE_ID);
 	assert.equal(out.token, TOKEN);
-	assert.equal(out.tier, "80");
+	// `tier` is the string label (or stringified numeric fallback); the numeric
+	// value is exposed separately as `tierNumber`. See serializeAgentLaunch.
+	assert.equal(out.tier, "TIER_80");
 	assert.equal(out.tierNumber, 80);
+	assert.equal(out.tierLabel, "TIER_80");
 	assert.equal(out.state, "open");
 	assert.equal(out.vestingEnabled, false);
 	assert.equal(out.closeTimestamp, 1_900_000_000);

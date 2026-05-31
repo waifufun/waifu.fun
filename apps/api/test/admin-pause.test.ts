@@ -8,6 +8,10 @@ const AGENT_ID = "waifu-test-agent";
 
 type ControlRow = {
 	agentId: string;
+	modelTier?: "premium" | "standard" | "free" | null;
+	lastWordsPostedAt?: Date | null;
+	dormantAt?: Date | null;
+	tokenAddress?: string | null;
 	brainPausedAt: Date | null;
 	brainPausedReason: string | null;
 	withdrawalsPausedAt: Date | null;
@@ -23,6 +27,10 @@ type ControlRow = {
 function freshRow(): ControlRow {
 	return {
 		agentId: AGENT_ID,
+		modelTier: "premium",
+		lastWordsPostedAt: null,
+		dormantAt: null,
+		tokenAddress: null,
 		brainPausedAt: null,
 		brainPausedReason: null,
 		withdrawalsPausedAt: null,
@@ -121,6 +129,23 @@ async function json(res: Response) {
 
 describe("v2 admin agent pause controls", () => {
 	beforeEach(() => {
+		delete process.env.ELIZA_CLOUD_BASE_URL;
+		delete process.env.ELIZA_CLOUD_SERVICE_KEY;
+		delete process.env.ELIZA_CLOUD_API_KEY;
+		delete process.env.ELIZAOS_CLOUD_API_KEY;
+		delete process.env.ELIZAOS_API_KEY;
+		delete process.env.ELIZACLOUD_API_KEY;
+		delete process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
+		delete process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+		delete process.env.WAIFU_API_BASE_URL;
+		delete process.env.API_ORIGIN;
+		delete process.env.NEXT_PUBLIC_API_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.WAIFU_ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_SECRET;
+		delete process.env.WEBHOOK_RECEIVER_SECRET;
+		delete process.env.WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE;
+		delete process.env.DATABASE_URL;
 		process.env.ADMIN_API_KEY = ADMIN_KEY;
 	});
 
@@ -135,6 +160,13 @@ describe("v2 admin agent pause controls", () => {
 		delete process.env.ELIZACLOUD_API_KEY;
 		delete process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI;
 		delete process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+		delete process.env.WAIFU_API_BASE_URL;
+		delete process.env.API_ORIGIN;
+		delete process.env.NEXT_PUBLIC_API_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.WAIFU_ELIZA_CLOUD_WEBHOOK_URL;
+		delete process.env.ELIZA_CLOUD_WEBHOOK_SECRET;
+		delete process.env.WEBHOOK_RECEIVER_SECRET;
 		delete process.env.WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE;
 		delete process.env.DATABASE_URL;
 	});
@@ -235,11 +267,20 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal(missing.status, 200);
 		let body = await json(missing);
 		assert.equal(body.data?.ready as boolean | undefined, false);
-		assert.deepEqual(body.data?.missing, ["serviceAuth", "containerImage", "chatAccessSecret", "database"]);
+		assert.deepEqual(body.data?.missing, [
+			"serviceAuth",
+			"containerImage",
+			"chatAccessSecret",
+			"webhookUrl",
+			"webhookSecret",
+			"database",
+		]);
 
 		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
 		process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI = "ecr.test/waifu-agent:latest";
 		process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = "chat_secret";
+		process.env.WAIFU_API_BASE_URL = "https://api.waifu.test";
+		process.env.WEBHOOK_RECEIVER_SECRET = "webhook_secret";
 		process.env.DATABASE_URL = "postgres://unit.test/waifu";
 		const ready = await request("/eliza-cloud/status", { admin: true });
 		assert.equal(ready.status, 200);
@@ -249,6 +290,7 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal((body.data?.checks as Record<string, boolean>).serviceAuth, true);
 		assert.equal(JSON.stringify(body).includes("svc_admin_test"), false);
 		assert.equal(JSON.stringify(body).includes("chat_secret"), false);
+		assert.equal(JSON.stringify(body).includes("webhook_secret"), false);
 	});
 
 	it("test-provision endpoint deploys an Eliza Cloud container with wallet and access controls", async () => {
@@ -265,6 +307,8 @@ describe("v2 admin agent pause controls", () => {
 					cloudAgentId: "cloud-admin-test",
 					characterId: "character-admin-test",
 					status: "running",
+					containerUrl: "http://admin-bridge.internal",
+					webUiUrl: "https://admin-agent.example",
 					jobId: "job-admin-test",
 					polling: {
 						endpoint: "/api/v1/jobs/job-admin-test",
@@ -273,6 +317,7 @@ describe("v2 admin agent pause controls", () => {
 					},
 					account: {
 						primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+						walletKeyRef: "steward:waifu-admin-test",
 						organizationId: "org-admin-test",
 						userId: "user-admin-test",
 						isNewAccount: true,
@@ -311,6 +356,8 @@ describe("v2 admin agent pause controls", () => {
 				cloudAgentId: "cloud-admin-test",
 				characterId: "character-admin-test",
 				status: "running",
+				containerUrl: "https://admin-agent.example",
+				webUiUrl: "https://admin-agent.example",
 				jobId: "job-admin-test",
 				polling: {
 					endpoint: "/api/v1/jobs/job-admin-test",
@@ -319,6 +366,7 @@ describe("v2 admin agent pause controls", () => {
 				},
 				account: {
 					primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+					walletKeyRef: "steward:waifu-admin-test",
 					organizationId: "org-admin-test",
 					userId: "user-admin-test",
 					isNewAccount: true,
@@ -340,6 +388,7 @@ describe("v2 admin agent pause controls", () => {
 
 		assert.deepEqual(requests[0]?.body.account, {
 			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+			walletKeyRef: "steward:waifu-admin-test",
 			chainType: "evm",
 		});
 		const character = requests[0]?.body.character as Record<string, unknown>;
@@ -387,6 +436,67 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal(fetchMock.mock.callCount(), 0);
 	});
 
+	it("test-provision endpoint rejects missing or invalid agent wallets before calling Eliza Cloud", async () => {
+		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
+		const fetchMock = mock.method(globalThis, "fetch", async () => {
+			throw new Error("fetch should not be called");
+		});
+
+		let res = await request("/eliza-cloud/test-provision", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+			}),
+		});
+
+		assert.equal(res.status, 400);
+		assert.equal((await json(res)).error, "INVALID_AGENT_WALLET");
+
+		res = await request("/eliza-cloud/test-provision", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "not-an-address",
+			}),
+		});
+
+		assert.equal(res.status, 400);
+		assert.equal((await json(res)).error, "INVALID_AGENT_WALLET");
+		assert.equal(fetchMock.mock.callCount(), 0);
+	});
+
+	it("test-enqueue-provisioning rejects invalid optional wallet fields before building payloads", async () => {
+		let res = await request("/eliza-cloud/test-enqueue-provisioning", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				dryRun: true,
+				agentId: "waifu-admin-test",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "not-an-address",
+			}),
+		});
+
+		assert.equal(res.status, 400);
+		assert.equal((await json(res)).error, "INVALID_AGENT_WALLET");
+
+		res = await request("/eliza-cloud/test-enqueue-provisioning", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				dryRun: true,
+				agentId: "waifu-admin-test",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				adminWallet: "not-an-address",
+			}),
+		});
+
+		assert.equal(res.status, 400);
+		assert.equal((await json(res)).error, "INVALID_ADMIN_WALLET");
+	});
+
 	it("test-enqueue-provisioning builds the bonding worker job payload in dry-run mode", async () => {
 		const res = await request("/eliza-cloud/test-enqueue-provisioning", {
 			method: "POST",
@@ -400,6 +510,7 @@ describe("v2 admin agent pause controls", () => {
 				tokenName: "Admin Test Waifu",
 				tokenTicker: "ATEST",
 				agentEvmAddress: "0x0000000000000000000000000000000000000009",
+				walletKeyRef: "steward:admin-test-key",
 				adminWallet: "0x0000000000000000000000000000000000000001",
 				containerImageUri: "ecr.test/waifu-agent:latest",
 				source: "agent.graduated",
@@ -424,6 +535,7 @@ describe("v2 admin agent pause controls", () => {
 				tokenTicker: "ATEST",
 				launchType: "native",
 				agentWalletAddress: "0x0000000000000000000000000000000000000009",
+				walletKeyRef: "steward:admin-test-key",
 				adminWallets: ["0x0000000000000000000000000000000000000001"],
 				containerImageUri: "ecr.test/waifu-agent:latest",
 			},
@@ -440,10 +552,12 @@ describe("v2 admin agent pause controls", () => {
 				provisioning: {
 					cloudAgentId: "cloud-worker-test",
 					containerId: "container-worker-test",
-					containerUrl: "https://agent.example",
+					containerUrl: "http://worker-bridge.internal",
+					webUiUrl: "https://agent.example",
 					status: "running",
 					account: {
 						primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+						walletKeyRef: "steward:waifu-worker-test",
 						organizationId: "org-worker-test",
 						userId: "user-worker-test",
 						isNewAccount: true,
@@ -472,9 +586,11 @@ describe("v2 admin agent pause controls", () => {
 				cloudAgentId: "cloud-worker-test",
 				containerId: "container-worker-test",
 				containerUrl: "https://agent.example",
+				webUiUrl: "https://agent.example",
 				status: "running",
 				account: {
 					primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+					walletKeyRef: "steward:waifu-worker-test",
 					organizationId: "org-worker-test",
 					userId: "user-worker-test",
 					isNewAccount: true,
@@ -540,7 +656,8 @@ describe("v2 admin agent pause controls", () => {
 					data: {
 						cloudAgentId: "cloud-admin-test",
 						containerId: "container-admin-test",
-						containerUrl: "https://agent.example",
+						containerUrl: "http://admin-bridge.internal",
+						webUiUrl: "https://admin-agent.example",
 						status: "running",
 					},
 				});
@@ -560,26 +677,32 @@ describe("v2 admin agent pause controls", () => {
 		let res = await request("/eliza-cloud/test-control", {
 			method: "POST",
 			admin: true,
-			body: JSON.stringify({ action: "pause", containerId: "container-admin-test" }),
+			body: JSON.stringify({ action: "pause", cloudAgentId: "cloud-admin-test", containerId: "container-admin-test" }),
 		});
 		assert.equal(res.status, 200);
-		assert.equal((await json(res)).data?.action, "pause");
+		let controlBody = await json(res);
+		assert.equal(controlBody.data?.action, "pause");
+		assert.equal(controlBody.data?.cloudAgentId, "cloud-admin-test");
 
 		res = await request("/eliza-cloud/test-control", {
 			method: "POST",
 			admin: true,
-			body: JSON.stringify({ action: "resume", containerId: "container-admin-test" }),
+			body: JSON.stringify({ action: "resume", cloudAgentId: "cloud-admin-test", containerId: "container-admin-test" }),
 		});
 		assert.equal(res.status, 200);
-		assert.equal((await json(res)).data?.action, "resume");
+		controlBody = await json(res);
+		assert.equal(controlBody.data?.action, "resume");
+		assert.equal(controlBody.data?.cloudAgentId, "cloud-admin-test");
 
 		res = await request("/eliza-cloud/test-control", {
 			method: "POST",
 			admin: true,
-			body: JSON.stringify({ action: "restart", containerId: "container-admin-test" }),
+			body: JSON.stringify({ action: "restart", cloudAgentId: "cloud-admin-test", containerId: "container-admin-test" }),
 		});
 		assert.equal(res.status, 200);
-		assert.equal((await json(res)).data?.action, "restart");
+		controlBody = await json(res);
+		assert.equal(controlBody.data?.action, "restart");
+		assert.equal(controlBody.data?.cloudAgentId, "cloud-admin-test");
 
 		res = await request("/eliza-cloud/test-control", {
 			method: "POST",
@@ -587,7 +710,9 @@ describe("v2 admin agent pause controls", () => {
 			body: JSON.stringify({ action: "status", cloudAgentId: "cloud-admin-test" }),
 		});
 		assert.equal(res.status, 200);
-		assert.equal((await json(res)).data?.status.status, "running");
+		controlBody = await json(res);
+		assert.equal((controlBody.data?.status as Record<string, unknown>).status, "running");
+		assert.equal((controlBody.data?.status as Record<string, unknown>).webUiUrl, "https://admin-agent.example");
 
 		res = await request("/eliza-cloud/test-control", {
 			method: "POST",
@@ -608,36 +733,114 @@ describe("v2 admin agent pause controls", () => {
 		res = await request("/eliza-cloud/test-control", {
 			method: "POST",
 			admin: true,
-			body: JSON.stringify({ action: "verify-top-up", sessionId: "cs_admin_test" }),
+			body: JSON.stringify({ action: "verify-top-up", cloudAgentId: "cloud-admin-test", sessionId: "cs_admin_test" }),
 		});
 		assert.equal(res.status, 200);
-		assert.equal((await json(res)).data?.verification.balance, 9.5);
+		controlBody = await json(res);
+		assert.equal(controlBody.data?.verification.balance, 9.5);
+		assert.equal(controlBody.data?.balance.balance, 4.5);
+		assert.equal((controlBody.data?.status as Record<string, unknown>).status, "running");
 
-		assert.equal(requests.length, 8);
+		assert.equal(requests.length, 9);
 		assert.equal(requests[0]?.method, "POST");
-		assert.equal(requests[0]?.url, "https://cloud.test/api/v1/agents/container-admin-test/suspend");
+		assert.equal(requests[0]?.url, "https://cloud.test/api/v1/agents/cloud-admin-test/suspend");
 		assert.deepEqual(requests[0]?.body, { reason: "waifu runtime pause" });
 		assert.equal(requests[1]?.method, "POST");
-		assert.equal(requests[1]?.url, "https://cloud.test/api/v1/agents/container-admin-test/resume");
+		assert.equal(requests[1]?.url, "https://cloud.test/api/v1/agents/cloud-admin-test/resume");
 		assert.deepEqual(requests[1]?.body, {});
 		assert.equal(requests[2]?.method, "POST");
-		assert.equal(requests[2]?.url, "https://cloud.test/api/v1/agents/container-admin-test/suspend");
-		assert.deepEqual(requests[2]?.body, { reason: "waifu runtime pause" });
-		assert.equal(requests[3]?.method, "POST");
-		assert.equal(requests[3]?.url, "https://cloud.test/api/v1/agents/container-admin-test/resume");
+		assert.equal(requests[2]?.url, "https://cloud.test/api/v1/agents/cloud-admin-test/restart");
+		assert.deepEqual(requests[2]?.body, {});
+		assert.equal(requests[3]?.method, "GET");
+		assert.equal(requests[3]?.url, "https://cloud.test/api/v1/agents/cloud-admin-test/status");
 		assert.deepEqual(requests[3]?.body, {});
-		assert.equal(requests[4]?.method, "GET");
-		assert.equal(requests[4]?.url, "https://cloud.test/api/v1/agents/cloud-admin-test/status");
-		assert.deepEqual(requests[4]?.body, {});
-		assert.equal(requests[5]?.method, "POST");
-		assert.equal(requests[5]?.url, "https://cloud.test/api/v1/credits/checkout");
-		assert.equal(requests[5]?.body.credits, 5);
-		assert.equal(requests[6]?.method, "GET");
-		assert.equal(requests[6]?.url, "https://cloud.test/api/v1/credits/balance?fresh=true&agent_id=cloud-admin-test");
-		assert.equal(requests[7]?.method, "POST");
-		assert.equal(requests[7]?.url, "https://cloud.test/api/billing/checkout/verify");
-		assert.deepEqual(requests[7]?.body, { session_id: "cs_admin_test", from: "waifu-agent-runtime" });
+		assert.equal(requests[4]?.method, "POST");
+		assert.equal(requests[4]?.url, "https://cloud.test/api/v1/credits/checkout");
+		assert.equal(requests[4]?.body.credits, 5);
+		assert.equal(requests[5]?.method, "GET");
+		assert.equal(requests[5]?.url, "https://cloud.test/api/v1/credits/balance?fresh=true&agent_id=cloud-admin-test");
+		assert.equal(requests[6]?.method, "POST");
+		assert.equal(requests[6]?.url, "https://cloud.test/api/billing/checkout/verify");
+		assert.deepEqual(requests[6]?.body, { session_id: "cs_admin_test", from: "waifu-agent-runtime" });
+		assert.equal(requests[7]?.method, "GET");
+		assert.equal(requests[7]?.url, "https://cloud.test/api/v1/credits/balance?fresh=true&agent_id=cloud-admin-test");
+		assert.equal(requests[8]?.method, "GET");
+		assert.equal(requests[8]?.url, "https://cloud.test/api/v1/agents/cloud-admin-test/status");
 		assert.equal(requests[0]?.headers["X-Service-Key"], "svc_admin_test");
 		assert.equal(requests[0]?.headers["X-API-Key"], "svc_admin_test");
+	});
+
+	it("test-control endpoint can simulate Eliza Cloud credit lifecycle webhooks", async () => {
+		process.env.ELIZA_CLOUD_BASE_URL = "https://cloud.test";
+		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
+		const fake = createFakeDb({
+			...freshRow(),
+			agentId: "waifu-lifecycle-test",
+			elizaCloudAgentId: "cloud-lifecycle-test",
+		});
+		__setAdminAgentsDbForTest(fake.db as never);
+		const requests: Array<{ url: string; method?: string; body: Record<string, unknown> }> = [];
+		mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+			const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+			requests.push({ url: String(url), method: init?.method, body });
+			if (String(url).endsWith("/status")) {
+				return Response.json({
+					success: true,
+					data: {
+						cloudAgentId: "cloud-lifecycle-test",
+						containerId: "container-lifecycle-test",
+						status: requests.some((request) => request.url.endsWith("/suspend")) ? "suspended" : "running",
+						webUiUrl: "https://lifecycle-agent.example",
+					},
+				});
+			}
+			return Response.json({ success: true, data: { ok: true } });
+		});
+
+		let res = await request("/eliza-cloud/test-control", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				action: "webhook-depleted",
+				agentId: "waifu-lifecycle-test",
+				cloudAgentId: "cloud-lifecycle-test",
+				containerId: "container-lifecycle-test",
+			}),
+		});
+		let text = await res.text();
+		assert.equal(res.status, 200, text);
+		let body = JSON.parse(text);
+		assert.equal(body.data?.action, "webhook-depleted");
+		assert.equal(body.data?.agentId, "waifu-lifecycle-test");
+		assert.equal((body.data?.status as Record<string, unknown>).status, "suspended");
+
+		res = await request("/eliza-cloud/test-control", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				action: "webhook-topped-up",
+				agentId: "waifu-lifecycle-test",
+				cloudAgentId: "cloud-lifecycle-test",
+				containerId: "container-lifecycle-test",
+				amountUsdCents: 500,
+				sessionId: "cs_lifecycle_test",
+			}),
+		});
+		text = await res.text();
+		assert.equal(res.status, 200, text);
+		body = JSON.parse(text);
+		assert.equal(body.data?.action, "webhook-topped-up");
+		assert.equal(body.data?.agentId, "waifu-lifecycle-test");
+
+		assert.deepEqual(
+			requests.map((request) => [request.method, request.url]),
+			[
+				["POST", "https://cloud.test/api/v1/agents/cloud-lifecycle-test/suspend"],
+				["GET", "https://cloud.test/api/v1/agents/cloud-lifecycle-test/status"],
+				["POST", "https://cloud.test/api/v1/agents/cloud-lifecycle-test/resume"],
+				["GET", "https://cloud.test/api/v1/agents/cloud-lifecycle-test/status"],
+				["GET", "https://cloud.test/api/v1/agents/cloud-lifecycle-test/status"],
+			],
+		);
 	});
 });
