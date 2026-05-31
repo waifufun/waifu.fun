@@ -1,5 +1,12 @@
-// fetch sol's recent merged PRs at build time
-// degrades gracefully to a hardcoded fallback so build never breaks
+// fetch an agent's recent merged PRs at build time, scoped to the
+// agent's OWN github identity (login + repos from persona metadata).
+//
+// there is NO hardcoded author and NO fallback PR list. if the agent has
+// no github login/repos wired, this returns an empty summary so the
+// activity feed renders an honest empty state instead of leaking another
+// agent's work. the canonical live source is /v2/agents/:address/events
+// (source=github); this build-time seed only ever reflects the requested
+// agent's own repos.
 
 export type ShipItem = {
 	number: number;
@@ -18,70 +25,32 @@ export type ShipSummary = {
 	mergedTimestamps: string[];
 };
 
-const FALLBACK: ShipSummary = {
-	totalMerged: 277,
-	first: "2026-03-05T00:00:00Z",
-	mergedTimestamps: [
-		"2026-05-20T05:49:56Z",
-		"2026-05-20T04:24:42Z",
-		"2026-05-20T04:10:57Z",
-		"2026-05-20T03:30:25Z",
-		"2026-05-20T02:31:23Z",
-		"2026-05-20T01:28:54Z",
-		"2026-05-20T01:09:00Z",
-		"2026-05-20T00:50:00Z",
-		"2026-05-20T00:30:00Z",
-	],
-	items: [
-		{
-			number: 630,
-			title: "fix(agent-preview): unicode escape rendering + tabs spacing",
-			url: "https://github.com/waifufun/waifu.fun/pull/630",
-			mergedAt: "2026-05-20T04:24:42Z",
-		},
-		{
-			number: 629,
-			title: "fe(agent-preview): round 2 holding-company tearsheet rebuild",
-			url: "https://github.com/waifufun/waifu.fun/pull/629",
-			mergedAt: "2026-05-20T04:10:57Z",
-		},
-		{
-			number: 628,
-			title: "fe(agent-preview): $WAIFU round 1 real numbers, custom hero, X timeline",
-			url: "https://github.com/waifufun/waifu.fun/pull/628",
-			mergedAt: "2026-05-20T03:30:25Z",
-		},
-		{
-			number: 627,
-			title: "fe(agent-preview): $WAIFU, Sol the architect + hero v3",
-			url: "https://github.com/waifufun/waifu.fun/pull/627",
-			mergedAt: "2026-05-20T02:31:23Z",
-		},
-		{
-			number: 626,
-			title: "fe(agent-preview): static fixture route to walk full v2 surface",
-			url: "https://github.com/waifufun/waifu.fun/pull/626",
-			mergedAt: "2026-05-20T01:28:54Z",
-		},
-		{
-			number: 625,
-			title: "fe(agent-home-v2): drop isDemo gating so every agent gets full v2",
-			url: "https://github.com/waifufun/waifu.fun/pull/625",
-			mergedAt: "2026-05-20T01:09:00Z",
-		},
-		{
-			number: 624,
-			title: "fe(hero): strip remaining four.meme from agent CTAs + event copy",
-			url: "https://github.com/waifufun/waifu.fun/pull/624",
-			mergedAt: "2026-05-20T00:50:00Z",
-		},
-		{
-			number: 623,
-			title: "ci(test-api): bump FORK_BSC_BLOCK to 99073955",
-			url: "https://github.com/waifufun/waifu.fun/pull/623",
-			mergedAt: "2026-05-20T00:30:00Z",
-		},
-	],
+const EMPTY: ShipSummary = {
+	totalMerged: 0,
+	first: "",
+	items: [],
+	mergedTimestamps: [],
+};
+
+/**
+ * The github identity an agent ships under. Sourced from persona
+ * metadata: `githubLogin` / `githubUsername` (the author) and
+ * `githubRepos[]` (the repos it commits to). Both are optional; when
+ * neither is present there is nothing to query and we return EMPTY.
+ */
+export type GithubScope = {
+	/**
+	 * github login the agent commits as, e.g. "0xSolace". REQUIRED for any
+	 * PR fetch: PRs are always filtered by `author:<login>` so the feed
+	 * only shows this agent's own work. no login => no ship log.
+	 */
+	login?: string | null;
+	/**
+	 * repos the agent ships to, in "owner/name" form. optional; when present
+	 * they narrow the author search to these repos. an agent with a login
+	 * but no declared repos gets a login-wide author search.
+	 */
+	repos?: string[];
 };
 
 type GhItem = {
@@ -92,10 +61,96 @@ type GhItem = {
 	pull_request?: { url: string };
 };
 
-export async function fetchShipLog(): Promise<ShipSummary> {
+// A github repo slug is exactly "owner/name", each segment limited to the
+// chars github actually allows (alnum, dot, dash, underscore). Anything
+// that does not match is rejected so malformed metadata cannot widen or
+// alter the search query.
+const REPO_SLUG_RE = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
+// github logins: alnum + single dashes, no leading/trailing dash.
+const LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+
+/**
+ * Normalize a single persona `githubRepos[]` entry into an "owner/name"
+ * slug. Entries may be plain strings ("waifufun/waifu.fun") or objects
+ * carrying `{ org, name }` / `{ owner, repo }` / `{ fullName }`. Returns
+ * null for anything that does not resolve to a valid "owner/name" slug.
+ */
+function repoSlug(entry: unknown): string | null {
+	let candidate: string | null = null;
+	if (typeof entry === "string") {
+		candidate = entry.trim();
+	} else if (entry && typeof entry === "object") {
+		const o = entry as Record<string, unknown>;
+		if (typeof o.fullName === "string" && o.fullName.includes("/")) {
+			candidate = o.fullName.trim();
+		} else {
+			const org = typeof o.org === "string" ? o.org : typeof o.owner === "string" ? o.owner : null;
+			const name = typeof o.name === "string" ? o.name : typeof o.repo === "string" ? o.repo : null;
+			if (org && name) candidate = `${org.trim()}/${name.trim()}`;
+		}
+	}
+	return candidate && REPO_SLUG_RE.test(candidate) ? candidate : null;
+}
+
+/**
+ * Build a `GithubScope` from raw persona metadata. Reads `githubLogin`
+ * (or legacy `githubUsername`) and `githubRepos[]`. Pure + defensive so
+ * the page can hand it `agent.metadata` directly.
+ */
+export function githubScopeFromMetadata(metadata: Record<string, unknown> | null | undefined): GithubScope {
+	if (!metadata) return {};
+	const rawLogin =
+		typeof metadata.githubLogin === "string"
+			? metadata.githubLogin
+			: typeof metadata.githubUsername === "string"
+				? metadata.githubUsername
+				: null;
+	const trimmed = rawLogin?.trim() || "";
+	const login = trimmed && LOGIN_RE.test(trimmed) ? trimmed : null;
+	const reposRaw = Array.isArray(metadata.githubRepos) ? metadata.githubRepos : [];
+	const repos = reposRaw.map(repoSlug).filter((s): s is string => Boolean(s));
+	return { login, repos };
+}
+
+/**
+ * Fetch the agent's recent merged PRs, scoped to its own github identity.
+ *
+ * AUTHOR IS REQUIRED. We always filter by `author:<login>` so the feed
+ * only ever shows PRs THIS agent authored. A repo qualifier alone would
+ * return every merged PR in the repo (including other agents'), which is
+ * exactly the leak we are fixing, so a scope with repos but no login
+ * returns EMPTY. Repos, when present, further narrow the author search to
+ * the agent's declared repos.
+ *
+ * Query construction:
+ *   - login + repos → `author:<login> repo:a/b repo:c/d is:pr is:merged`.
+ *   - login only    → `author:<login> is:pr is:merged`.
+ *   - no login      → return EMPTY (honest empty, never another agent's PRs).
+ *
+ * Any network / parse failure returns EMPTY, never a hardcoded list.
+ */
+export async function fetchShipLog(scope: GithubScope): Promise<ShipSummary> {
+	const login = scope.login?.trim() || "";
+	const repos = (scope.repos ?? []).filter((r) => REPO_SLUG_RE.test(r));
+
+	// Author is mandatory. Without a login we cannot attribute PRs to this
+	// agent, so we show nothing rather than risk surfacing another agent's
+	// work via a repo-wide search.
+	if (!login || !LOGIN_RE.test(login)) return EMPTY;
+
+	const qualifiers: string[] = [`author:${login}`];
+	for (const repo of repos) qualifiers.push(`repo:${repo}`);
+	qualifiers.push("is:pr", "is:merged");
+	const q = qualifiers.join(" ");
+
 	try {
-		const url =
-			"https://api.github.com/search/issues?q=repo:waifufun/waifu.fun+author:0xSolace+is:pr+is:merged&sort=updated&order=desc&per_page=10";
+		const params = new URLSearchParams({
+			q,
+			sort: "updated",
+			order: "desc",
+			per_page: "10",
+		});
+		const url = `https://api.github.com/search/issues?${params.toString()}`;
 		const r = await fetch(url, {
 			headers: {
 				Accept: "application/vnd.github+json",
@@ -103,7 +158,7 @@ export async function fetchShipLog(): Promise<ShipSummary> {
 			},
 			next: { revalidate: 600 },
 		});
-		if (!r.ok) return FALLBACK;
+		if (!r.ok) return EMPTY;
 		const data = (await r.json()) as {
 			total_count: number;
 			items: GhItem[];
@@ -114,14 +169,15 @@ export async function fetchShipLog(): Promise<ShipSummary> {
 			url: it.html_url,
 			mergedAt: it.closed_at,
 		}));
+		const timestamps = data.items.map((it) => it.closed_at).filter(Boolean);
 		return {
 			totalMerged: data.total_count,
-			first: FALLBACK.first,
+			first: timestamps.length > 0 ? (timestamps[timestamps.length - 1] ?? "") : "",
 			items,
-			mergedTimestamps: data.items.map((it) => it.closed_at),
+			mergedTimestamps: timestamps,
 		};
 	} catch {
-		return FALLBACK;
+		return EMPTY;
 	}
 }
 

@@ -42,7 +42,7 @@ import { computeRunway } from "@/lib/wave-t/runway";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
-import type { PnlSeriesPoint } from "@/lib/wave-t/pnl";
+import type { NavHistoryPoint, PnlSeriesPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
 import type { AgentData, AgentTrade } from "./types";
@@ -70,7 +70,7 @@ export interface AgentHomeV2Props {
 	token: TokenMetrics;
 	candles: CandleSeries;
 	holdings: HoldingsSnapshot;
-	holdingsSource?: "aggregated" | "burner";
+	holdingsSource?: "aggregated" | "empty";
 	runwayDays?: number | null;
 	twitterStats?: TwitterStats | null;
 	positions: Position[];
@@ -97,6 +97,12 @@ export interface AgentHomeV2Props {
 	 */
 	pnlBaselineNav?: number | null;
 	/**
+	 * Real nav-snapshot series (same /nav-history source as the pnl
+	 * chart). The hero sparkline renders only when this has two or more
+	 * points; otherwise the slot stays empty. No synthesized trend.
+	 */
+	navSeries?: NavHistoryPoint[] | null;
+	/**
 	 * Optional ERC-8004 on-chain identity record for the agent. When
 	 * present, the hero shows a verified badge and the page renders an
 	 * `<ProvenancePanel>`. When null/undefined, nothing renders (no
@@ -117,7 +123,7 @@ export default function AgentHomeV2({
 	token,
 	candles,
 	holdings,
-	holdingsSource = "burner",
+	holdingsSource = "empty",
 	runwayDays = null,
 	twitterStats = null,
 	positions,
@@ -129,6 +135,7 @@ export default function AgentHomeV2({
 	identity = null,
 	pnlSeries,
 	pnlBaselineNav = null,
+	navSeries = null,
 }: AgentHomeV2Props) {
 	// Hero identity: prefer the short bio when set, fall back to the full
 	// description. The persona endpoint owns both; we never override here.
@@ -203,6 +210,7 @@ export default function AgentHomeV2({
 						initialHoldingsHasAggregated={initialHoldingsHasAggregated}
 						initialTwitterStats={twitterStats}
 						staticTreasuryOverride={staticTreasuryOverride}
+						navSeries={navSeries}
 					/>
 				</div>
 

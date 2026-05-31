@@ -167,10 +167,10 @@ function StatRow({ agent }: { agent: AgentListItem }) {
 
 	return (
 		<div className="grid grid-cols-4 divide-x divide-white/[0.06]">
-			<StatCell label="mc" value={mc !== undefined ? formatUsdShort(mc) : "–"} align="start" />
-			<StatCell label="24h" value={change24h !== undefined ? formatPercentShort(change24h) : "–"} />
-			<StatCell label="holders" value={holders !== undefined ? formatNumberShort(holders) : "–"} />
-			<StatCell label="treasury" value={treasury !== undefined ? formatUsdShort(treasury) : "–"} />
+			<StatCell label="mc" value={mc !== undefined ? formatUsdShort(mc) : "·"} align="start" />
+			<StatCell label="24h" value={change24h !== undefined ? formatPercentShort(change24h) : "·"} />
+			<StatCell label="holders" value={holders !== undefined ? formatNumberShort(holders) : "·"} />
+			<StatCell label="treasury" value={treasury !== undefined ? formatUsdShort(treasury) : "·"} />
 		</div>
 	);
 }

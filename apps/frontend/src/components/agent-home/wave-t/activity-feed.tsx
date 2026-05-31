@@ -176,12 +176,12 @@ export type ActivityRowInput =
 type Tab = "all" | ActivityCategory;
 
 const TABS: { key: Tab; label: string }[] = [
-	{ key: "all", label: "All" },
-	{ key: "trading", label: "Trading" },
-	{ key: "apps", label: "Apps" },
-	{ key: "treasury", label: "Treasury" },
-	{ key: "market", label: "Market" },
-	{ key: "system", label: "System" },
+	{ key: "all", label: "all" },
+	{ key: "trading", label: "trading" },
+	{ key: "apps", label: "apps" },
+	{ key: "treasury", label: "treasury" },
+	{ key: "market", label: "market" },
+	{ key: "system", label: "system" },
 ];
 
 function categoryOf(row: ActivityRowInput): ActivityCategory {
@@ -448,16 +448,24 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 				};
 			}
 			if (row.kind === "open") {
-				const lev = row.leverage ? ` ${row.leverage}x` : "";
+				// title carries the action ("opened zec long"); the sub is the
+				// distinct numeric detail only, no repeat of the action verb.
+				// notional · leverage · entry, middot-separated, mono numbers.
+				const notional = row.notionalUsd ?? row.marginUsd ?? 0;
+				const sub = [
+					notional > 0 ? formatCompactUsd(notional) : null,
+					row.leverage ? `${row.leverage}x` : null,
+					row.entryPriceUsd ? `entry ${formatCompactUsd(row.entryPriceUsd)}` : null,
+				]
+					.filter(Boolean)
+					.join(" · ");
 				return {
 					icon: pickVenueIcon(row.venue),
 					title: `opened ${asset} ${row.side}`,
-					sub:
-						row.renderedText ??
-						`${formatCompactUsd(row.marginUsd ?? row.notionalUsd ?? 0)}${lev} at ${formatCompactUsd(row.entryPriceUsd ?? 0)} on ${row.venue.toLowerCase()}`,
+					sub: sub || `on ${row.venue.toLowerCase()}`,
 					right: (
 						<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
-							{formatCompactUsd(row.notionalUsd ?? 0)}
+							{formatCompactUsd(notional)}
 						</span>
 					),
 					url: row.url,
@@ -470,10 +478,20 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 					row.pnlPct === null || row.pnlPct === undefined
 						? null
 						: `${row.pnlPct > 0 ? "+" : ""}${row.pnlPct.toFixed(2)}%`;
+				// pnl + pct live in the right column; the sub stays distinct from the
+				// "closed zec long" title: leverage · entry · venue, mono numbers.
+				const sub =
+					[
+						row.leverage ? `${row.leverage}x` : null,
+						row.entryPriceUsd ? `entry ${formatCompactUsd(row.entryPriceUsd)}` : null,
+						row.venue.toLowerCase(),
+					]
+						.filter(Boolean)
+						.join(" · ") || `on ${row.venue.toLowerCase()}`;
 				return {
 					icon: pickVenueIcon(row.venue),
 					title: `closed ${asset} ${row.side}`,
-					sub: row.renderedText ?? `closed on ${row.venue.toLowerCase()}`,
+					sub,
 					right: (
 						<span className={cn("tabular-nums", tone.cls)}>
 							{tone.sign}
@@ -813,7 +831,7 @@ export function ActivityFeed({
 					) : undefined
 				}
 			>
-				Activity Feed
+				activity feed
 			</Label>
 
 			{/* tabs */}

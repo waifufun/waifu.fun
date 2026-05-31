@@ -13,8 +13,8 @@ import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type App, fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
-import { fetchShipLog } from "@/lib/wave-t/github";
-import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
+import { type GithubScope, fetchShipLog, githubScopeFromMetadata } from "@/lib/wave-t/github";
+import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchNavHistory, selectPnlBaselineNav, selectPnlSeries } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
@@ -360,19 +360,24 @@ async function fetchLaunch(address: string): Promise<AgentLaunchByToken | null> 
 }
 
 /**
- * Build the Wave T activity feed. Composes ship log (when the agent has
- * github repos wired), tweets (when twitterPolling is enabled), and
- * on-chain history into one chronological stream. Each source is
- * presence-gated on agent fields, never on identity.
+ * Build the Wave T activity feed. Composes ship log (scoped to the
+ * agent's OWN github identity), tweets (when twitterPolling is enabled),
+ * and on-chain history into one chronological stream. Each source is
+ * presence-gated on the agent's own fields, never on identity. The ship
+ * log only ever reflects the requested agent's own repos/login, so a new
+ * agent never inherits another agent's PRs.
  */
 async function buildAgentActivity(opts: {
 	tokenAddress: string;
-	includeShipLog: boolean;
+	githubScope: GithubScope;
 	includeTweets: boolean;
 }): Promise<ActivityRowInput[]> {
+	// Author (login) is required: a repo-only scope would surface other
+	// agents' PRs. fetchShipLog enforces the same rule defensively.
+	const hasGithubScope = Boolean(opts.githubScope.login);
 	const [ship, tweets, onchain] = await Promise.all([
-		opts.includeShipLog
-			? fetchShipLog()
+		hasGithubScope
+			? fetchShipLog(opts.githubScope)
 			: Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
 		opts.includeTweets ? fetchTweets(opts.tokenAddress) : Promise.resolve([]),
 		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
@@ -441,12 +446,13 @@ export default async function AgentPage({
 	}));
 	// Holdings: prefer the aggregated /v2/agents/:address/holdings endpoint
 	// (PR #712, NAV aggregator). Falls back to the legacy burner-stub when
-	// the endpoint is unavailable (404 in prod today) so the donut still
-	// renders something honest instead of empty.
+	// the agent's keyed source of truth. When it returns null (404 / stale /
+	// not yet funded) we fall back to an honest EMPTY snapshot, NEVER to a
+	// hardcoded shared burner. A non-keyed native-balance read would render
+	// the platform burner's money on this agent's page, a launch-blocking
+	// integrity bug. The hero NAV can still recover a real number from the
+	// agent's OWN AgentSafe balance (keyed off the launch row, below).
 	const aggregatedHoldingsP = fetchAgentHoldingsSnapshot(address).catch(() => null);
-	const legacyHoldingsP = fetchHoldings().catch(
-		() => ({ holdings: [], navUsd: 0, fetchedAt: Date.now() }) as HoldingsSnapshot,
-	);
 	// Burn-rate snapshot powers the hero runway readout. Null when the
 	// endpoint is unavailable (404 in prod today), in which case the hero
 	// renders "not yet measured" rather than inventing a number.
@@ -472,7 +478,6 @@ export default async function AgentPage({
 		token,
 		candles,
 		aggregatedHoldings,
-		legacyHoldings,
 		burnRate,
 		twitterStats,
 		positions,
@@ -486,7 +491,6 @@ export default async function AgentPage({
 		tokenP,
 		candlesP,
 		aggregatedHoldingsP,
-		legacyHoldingsP,
 		burnRateP,
 		twitterStatsP,
 		positionsP,
@@ -500,22 +504,23 @@ export default async function AgentPage({
 
 	// Presence-based gates. Modular for any agent: persona populates these
 	// fields, the page renders. No identity branches.
-	//   - ship log fetch: enabled when persona.metadata.githubRepos[] is non-empty
+	//   - ship log fetch: scoped to THIS agent's own github identity
+	//     (metadata.githubLogin / githubUsername + metadata.githubRepos[]).
+	//     With no login and no repos the scope is empty and the ship log
+	//     returns nothing, so a new agent never inherits another agent's PRs.
 	//   - tweet fetch: enabled when persona.twitterPollingEnabled === true
-	// Architect-fixture fallback: when the DB row is absent pre-mint, the
-	// fixture supplies both fields so the architect surface still renders.
-	const personaMeta = (agent?.metadata as { githubRepos?: unknown } | null) ?? null;
-	const githubRepos = Array.isArray(personaMeta?.githubRepos) ? personaMeta.githubRepos : [];
-	const includeShipLog = githubRepos.length > 0;
+	const githubScope: GithubScope = githubScopeFromMetadata(agent?.metadata ?? null);
 	const includeTweets = agent?.twitterPollingEnabled === true;
 	const activity = await buildAgentActivity({
 		tokenAddress: address,
-		includeShipLog,
+		githubScope,
 		includeTweets,
 	}).catch(() => [] as ActivityRowInput[]);
 
-	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
-	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
+	const holdings: HoldingsSnapshot = aggregatedHoldings
+		? holdingsSnapshotFromApi(aggregatedHoldings)
+		: { holdings: [], navUsd: 0, fetchedAt: Date.now() };
+	const holdingsSource: "aggregated" | "empty" = aggregatedHoldings ? "aggregated" : "empty";
 
 	// Open perp positions come from the dedicated
 	// /v2/agents/:address/hyperliquid/positions endpoint, polled client-side
@@ -568,6 +573,7 @@ export default async function AgentPage({
 			identity={identity}
 			pnlSeries={pnlSeries}
 			pnlBaselineNav={pnlBaselineNav}
+			navSeries={navHistory}
 		/>
 	);
 }

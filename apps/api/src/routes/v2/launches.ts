@@ -139,6 +139,11 @@ export function createLaunchV2Routes(
 	app.get("/:id", async (c) => {
 		const id = c.req.param("id");
 		if (!id || id.length > 128) return c.json({ error: "invalid launch id" }, 400);
+		// Guard against reserved sibling paths being swallowed by this catch-all
+		// /:id lookup. If route registration order lands /:id before a literal
+		// sibling (e.g. /gate), a request for /gate would otherwise reach here and
+		// fail a uuid cast with a 500. Reserved literals must never resolve here.
+		if (id === "gate") return c.notFound();
 
 		const db = options.db ?? requireDb();
 		if (!db) return c.json({ error: "database unavailable" }, 503);

@@ -37,6 +37,7 @@
         "@waifufun/metrics": "workspace:*",
         "@waifufun/queue": "workspace:*",
         "@waifufun/redis": "workspace:*",
+        "@waifufun/s3-uploader": "workspace:*",
         "@waifufun/types": "workspace:*",
         "drizzle-orm": "^0.36.4",
         "hono": "^4.6.12",
