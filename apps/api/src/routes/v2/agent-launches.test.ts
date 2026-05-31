@@ -411,3 +411,214 @@ test("POST / accepts an agent api key + valid SIWE (Wave J)", async () => {
 
 	__setAgentOrPatronDbForTest(undefined);
 });
+
+// ─── upload-metadata route (skill.md step 1) ───────────────────────
+
+import type { UploadFlapMetadataInput, UploadFlapMetadataResult } from "@waifufun/flap";
+
+function pngFile(name = "logo.png", bytes = 16, type = "image/png"): File {
+	return new File([new Uint8Array(bytes)], name, { type });
+}
+
+function uploadForm(
+	opts: { name?: string; symbol?: string; description?: string; image?: File | null } = {},
+): FormData {
+	const form = new FormData();
+	if (opts.name !== undefined) form.append("name", opts.name);
+	if (opts.symbol !== undefined) form.append("symbol", opts.symbol);
+	if (opts.description !== undefined) form.append("description", opts.description);
+	const img = opts.image === undefined ? pngFile() : opts.image;
+	if (img) form.append("image", img);
+	return form;
+}
+
+function uploadHeaders() {
+	return { authorization: `Bearer ${VALID_AGK}` };
+}
+
+test("POST /upload-metadata returns flapMetaCid on success (skill.md shape)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	let received: UploadFlapMetadataInput | null = null;
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (input): Promise<UploadFlapMetadataResult> => {
+			received = input;
+			return { cid: "QmFakeCid123", uploadUrl: "https://funcs.flap.sh/api/upload" };
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "Demo Agent", symbol: "demo", description: "a friendly agent token" }),
+	});
+	const body = (await res.json()) as { ok: boolean; data: { flapMetaCid: string } };
+	assert.equal(res.status, 200, JSON.stringify(body));
+	assert.equal(body.ok, true);
+	assert.equal(body.data.flapMetaCid, "QmFakeCid123");
+	// symbol is uppercased; description forwarded into the metadata record.
+	assert.ok(received);
+	assert.equal((received as UploadFlapMetadataInput).metadata.description, "a friendly agent token");
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST /upload-metadata succeeds without a description (optional)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => ({
+			cid: "QmNoDesc",
+			uploadUrl: "https://funcs.flap.sh/api/upload",
+		}),
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "Demo Agent", symbol: "DEMO" }),
+	});
+	const body = (await res.json()) as { data: { flapMetaCid: string } };
+	assert.equal(res.status, 200, JSON.stringify(body));
+	assert.equal(body.data.flapMetaCid, "QmNoDesc");
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST /upload-metadata requires auth (401 without agk_)", async () => {
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => {
+			throw new Error("uploader must not run without auth");
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		body: uploadForm({ name: "Demo Agent", symbol: "DEMO" }),
+	});
+	assert.equal(res.status, 401);
+});
+
+test("POST /upload-metadata rejects a missing image (400)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => {
+			throw new Error("uploader must not run when image is missing");
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "Demo Agent", symbol: "DEMO", image: null }),
+	});
+	const body = (await res.json()) as { error: { code: string } };
+	assert.equal(res.status, 400, JSON.stringify(body));
+	assert.equal(body.error.code, "IMAGE_REQUIRED");
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST /upload-metadata rejects missing name/symbol (400)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => {
+			throw new Error("uploader must not run when fields are invalid");
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "x", image: pngFile() }),
+	});
+	const body = (await res.json()) as { error: { code: string } };
+	assert.equal(res.status, 400, JSON.stringify(body));
+	assert.equal(body.error.code, "INVALID_METADATA");
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST /upload-metadata rejects an oversized image (400)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => {
+			throw new Error("uploader must not run for oversized image");
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	// 9MB > 8MB cap.
+	const big = pngFile("big.png", 9 * 1024 * 1024);
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "Demo Agent", symbol: "DEMO", image: big }),
+	});
+	const body = (await res.json()) as { error: { code: string } };
+	assert.equal(res.status, 400, JSON.stringify(body));
+	assert.equal(body.error.code, "IMAGE_TOO_LARGE");
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST /upload-metadata rejects a non-image file (400)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => {
+			throw new Error("uploader must not run for non-image");
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const textFile = new File([new Uint8Array(8)], "evil.txt", { type: "text/plain" });
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "Demo Agent", symbol: "DEMO", image: textFile }),
+	});
+	const body = (await res.json()) as { error: { code: string } };
+	assert.equal(res.status, 400, JSON.stringify(body));
+	assert.equal(body.error.code, "INVALID_IMAGE_TYPE");
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST /upload-metadata maps an uploader failure to a clean 400", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		uploadMetadata: async (): Promise<UploadFlapMetadataResult> => {
+			throw new Error("Flap upload failed with 502 Bad Gateway");
+		},
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/upload-metadata", {
+		method: "POST",
+		headers: uploadHeaders(),
+		body: uploadForm({ name: "Demo Agent", symbol: "DEMO" }),
+	});
+	const body = (await res.json()) as { error: { code: string } };
+	assert.equal(res.status, 400, JSON.stringify(body));
+	assert.equal(body.error.code, "FLAP_UPLOAD_FAILED");
+
+	__setAgentOrPatronDbForTest(undefined);
+});

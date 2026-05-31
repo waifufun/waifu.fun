@@ -15,6 +15,7 @@ import { z } from "zod";
 
 import { getDatabase } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
+import { type UploadFlapMetadataInput, type UploadFlapMetadataResult, uploadFlapMetadata } from "@waifufun/flap";
 
 import { verifySiweMessage } from "../../lib/auth-service.js";
 import type { AppBindings } from "../../lib/bindings.js";
@@ -52,6 +53,39 @@ const siweProofSchema = z.object({
 const nonceBodySchema = z.object({
 	address: addressSchema,
 });
+
+// Metadata upload field constraints. These mirror skill.md (the agent-facing
+// launch doc served at waifu.fun/skill.md) and the launch-create body schema:
+//   name        2-48 chars
+//   symbol      2-10 uppercase chars, no spaces
+//   description optional, max 280 chars
+// Kept as a standalone shape (not parsed via parseJsonBody) because the route
+// reads multipart/form-data, not JSON.
+const uploadMetadataNameSchema = z
+	.string()
+	.trim()
+	.min(2, "name must be at least 2 characters")
+	.max(48, "name must be at most 48 characters");
+const uploadMetadataSymbolSchema = z
+	.string()
+	.trim()
+	.min(2, "symbol must be at least 2 characters")
+	.max(10, "symbol must be at most 10 characters")
+	.regex(/^[A-Za-z0-9]+$/, "symbol must be alphanumeric with no spaces")
+	.transform((v) => v.toUpperCase());
+const uploadMetadataDescriptionSchema = z.string().trim().max(280, "description must be at most 280 characters");
+
+const uploadMetadataFieldsSchema = z.object({
+	name: uploadMetadataNameSchema,
+	symbol: uploadMetadataSymbolSchema,
+	description: uploadMetadataDescriptionSchema.optional(),
+});
+
+// Accepted image MIME types + extensions for the token logo, and a sane upper
+// bound on the upload size so a single bad request can't pin memory.
+const UPLOAD_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const UPLOAD_IMAGE_ALLOWED_TYPES = new Set(["image/png", "image/jpeg"]);
+const UPLOAD_IMAGE_ALLOWED_EXTENSIONS = new Set([".png", ".jpg", ".jpeg"]);
 
 const agentSafeOwnersSchema = z
 	.array(addressSchema)
@@ -150,6 +184,10 @@ export interface AgentLaunchRoutesOptions {
 	getDb?: () => Database | null;
 	getService?: () => LaunchService | null;
 	siweVerifier?: typeof verifySiweMessage;
+	// Injectable FLAP metadata uploader. Defaults to the @waifufun/flap package
+	// adapter (which POSTs to funcs.flap.sh). Overridden in tests so we never
+	// touch the real FLAP host.
+	uploadMetadata?: (input: UploadFlapMetadataInput) => Promise<UploadFlapMetadataResult>;
 }
 
 function defaultDb(): Database | null {
@@ -355,6 +393,112 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			expiresInSeconds: 600,
 		});
 	});
+
+	const resolveUploadMetadata = (): ((input: UploadFlapMetadataInput) => Promise<UploadFlapMetadataResult>) =>
+		options.uploadMetadata ?? uploadFlapMetadata;
+
+	// POST /v2/launches/upload-metadata - upload a token logo + metadata to
+	// FLAP's IPFS uploader and return the resulting flapMetaCid. This is step 1
+	// of the agent launch flow documented in skill.md: the returned
+	// `flapMetaCid` feeds straight into POST /v2/launches.
+	//
+	// Accepts multipart/form-data (NOT JSON), so we read c.req.formData()
+	// directly rather than going through parseJsonBody.
+	app.post(
+		"/upload-metadata",
+		requireAgentOrPatron() as never,
+		rateLimit({
+			bucket: "launch:upload",
+			limit: 30,
+			windowMs: 60 * 60 * 1000,
+			keyGenerator: (c) => {
+				const patron = (
+					c as unknown as {
+						get(key: "patron"): { stewardUserId?: string; primaryAddress?: string | null } | undefined;
+					}
+				).get("patron");
+				return patron?.primaryAddress?.toLowerCase() ?? patron?.stewardUserId ?? null;
+			},
+		}) as never,
+		async (c) => {
+			let form: FormData;
+			try {
+				form = await c.req.formData();
+			} catch {
+				throw badRequest("INVALID_MULTIPART", "Request body must be multipart/form-data");
+			}
+
+			const parsedFields = uploadMetadataFieldsSchema.safeParse({
+				name: form.get("name"),
+				symbol: form.get("symbol"),
+				// An empty-string description from the form is treated as absent.
+				description:
+					typeof form.get("description") === "string" && (form.get("description") as string).trim() === ""
+						? undefined
+						: (form.get("description") ?? undefined),
+			});
+			if (!parsedFields.success) {
+				throw badRequest("INVALID_METADATA", "Invalid metadata fields", parsedFields.error.flatten());
+			}
+
+			const imageEntry = form.get("image");
+			if (!imageEntry || typeof imageEntry === "string") {
+				throw badRequest("IMAGE_REQUIRED", "image file is required");
+			}
+			const image = imageEntry as File;
+
+			if (image.size === 0) {
+				throw badRequest("IMAGE_REQUIRED", "image file is required");
+			}
+			if (image.size > UPLOAD_IMAGE_MAX_BYTES) {
+				throw badRequest("IMAGE_TOO_LARGE", `image must be at most ${UPLOAD_IMAGE_MAX_BYTES / (1024 * 1024)}MB`);
+			}
+
+			const contentType = (image.type || "").toLowerCase();
+			const filename = typeof image.name === "string" ? image.name : "image.png";
+			const extension = filename.includes(".") ? `.${filename.split(".").pop()?.toLowerCase()}` : "";
+			const typeOk = contentType ? UPLOAD_IMAGE_ALLOWED_TYPES.has(contentType) : false;
+			const extOk = UPLOAD_IMAGE_ALLOWED_EXTENSIONS.has(extension);
+			// Accept if either the declared MIME type or the filename extension is a
+			// supported image. Reject when both are unknown/unsupported.
+			if (!typeOk && !extOk) {
+				throw badRequest("INVALID_IMAGE_TYPE", "image must be a PNG or JPG");
+			}
+
+			const upload = resolveUploadMetadata();
+			let result: UploadFlapMetadataResult;
+			try {
+				result = await upload({
+					image,
+					metadata: {
+						// The on-chain creator is set by the launch-create call; the IPFS
+						// metadata record's `creator` field is informational only, so we
+						// leave it as the zero address here (agents don't send a creator to
+						// this step per skill.md).
+						creator: "0x0000000000000000000000000000000000000000",
+						description: parsedFields.data.description ?? "",
+						buy: null,
+						sell: null,
+						telegram: null,
+						twitter: null,
+						website: null,
+					},
+				});
+			} catch (error) {
+				// Map any uploader failure to a clean badRequest. We never surface a
+				// raw 500 for a known upload failure, and we don't leak FLAP internals
+				// beyond a short message.
+				const message = error instanceof Error ? error.message : "flap metadata upload failed";
+				throw badRequest("FLAP_UPLOAD_FAILED", message);
+			}
+
+			if (!result?.cid) {
+				throw badRequest("FLAP_UPLOAD_FAILED", "flap upload did not return a cid");
+			}
+
+			return respondOk(c, { flapMetaCid: result.cid });
+		},
+	);
 
 	// POST /v2/launches - submit createLaunch on-chain and persist a row.
 	app.post(
