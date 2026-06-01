@@ -35,6 +35,10 @@ export default function TokenRow({
 }) {
 	const dollarWorth = (data?.amountHeld ?? 0) * (data?.dollarWorth ?? 0);
 
+	// Token detail route is /token/[chain]/[chainId]/[contractAddress]; fall back
+	// to BSC (evm/56) when chain/chainId are unset, matching agents-tab.tsx.
+	const tokenHref = `/token/${data.chain ?? "evm"}/${data.chainId ?? 56}/${data.contractAddress}`;
+
 	// formats really high decimal amounts
 	const formatAmount = (value?: string | number) =>
 		value != null
@@ -46,7 +50,7 @@ export default function TokenRow({
 	return (
 		<div className="group w-full border-b border-[rgba(255,255,255,0.04)] last:border-b-0 hover:bg-[rgba(255,255,255,0.02)] transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
 			<div className="flex items-center space-x-2 sm:space-x-4 flex-nowrap overflow-hidden">
-				<Link href={`/token/${data.contractAddress}`} className="flex-shrink-0 flex items-center">
+				<Link href={tokenHref} className="flex-shrink-0 flex items-center">
 					{data.image ? (
 						<Image
 							src={data.image}
@@ -71,7 +75,7 @@ export default function TokenRow({
 				<div className="flex items-start gap-2 h-full min-w-0 pr-2">
 					<div className="flex flex-col justify-center min-w-0">
 						<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
-							<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
+							<Link href={tokenHref} className="truncate max-w-full">
 								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-[#00ff87] text-[#e4e4e7] cursor-pointer">
 									{data.title}
 								</p>
@@ -141,9 +145,7 @@ export default function TokenRow({
 					{mode === "activity" ? (
 						<div className="flex justify-end items-center text-[#e4e4e7] text-base h-[60px] pl-2 flex-shrink-0">
 							<Link
-								href={
-									mode === "activity" ? `https://bscscan.com/tx/${data.signature}` : `/token/${data.contractAddress}`
-								}
+								href={mode === "activity" ? `https://bscscan.com/tx/${data.signature}` : tokenHref}
 								target={mode === "activity" ? "_blank" : undefined}
 							>
 								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 [&_svg]:shrink-0 hover:bg-accent text-[#71717a] hover:text-[#00ff87] h-[14px] w-[14px] sm:h-[16px] sm:w-[16px]" />
