@@ -64,7 +64,7 @@ function tokenAddressFromAgent(raw: Record<string, unknown>): string | null {
 }
 
 /**
- * Architect agent token address (ElizaOS placeholder until $WAIFU mints).
+ * Architect agent token address (live $WAIFU on BSC since the 2026-05-22 launch).
  * Inlined here so the static-export build always generates `/agent/{this address}`,
  * even when the API returns zero seeded agents. Without this, `/agent/sol` redirects
  * to a URL Next never pre-rendered, and Cloudflare Pages serves the global 404.
@@ -73,7 +73,7 @@ function tokenAddressFromAgent(raw: Record<string, unknown>): string | null {
  * importing the constant from there to keep this module free of @-alias
  * resolution at `next.config.mjs` boot time.
  */
-const ARCHITECT_AGENT_ADDRESS_STATIC = "0xea17df5cf6d172224892b5477a16acb111182478";
+const ARCHITECT_AGENT_ADDRESS_STATIC = "0x15fc6086064afe50ccf4c70000c55cecb6e17777";
 
 /**
  * Walks `/v2/agents` pages until exhaustion so `/agent/[address]` (and patron/profile stubs) can pre-render.
