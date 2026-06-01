@@ -438,7 +438,7 @@ export class ElizaClient {
 			throw new ElizaCloudNotConfiguredError("admin wallet must be a valid EVM address");
 		}
 		const environmentVars = {
-			WAIFU_AGENT_ID: input.agentId,
+			ELIZA_BILLING_AGENT_ID: input.agentId,
 			TOKEN_CONTRACT_ADDRESS: input.tokenContractAddress,
 			TOKEN_CHAIN: input.chain,
 			TOKEN_CHAIN_ID: String(input.chainId),
@@ -455,7 +455,11 @@ export class ElizaClient {
 			...(process.env.WAIFU_CHAT_ACCESS_JWT_SECRET
 				? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 				: {}),
-			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
+			...(process.env.WAIFU_CHAT_FRAME_ANCESTORS
+				? { WAIFU_CHAT_FRAME_ANCESTORS: process.env.WAIFU_CHAT_FRAME_ANCESTORS }
+				: {}),
+			...(webhookUrl ? { ELIZA_BILLING_WEBHOOK_URL: webhookUrl } : {}),
+			...(webhookSecret ? { ELIZA_BILLING_WEBHOOK_SECRET: webhookSecret } : {}),
 			...(input.modelDefaults ?? {}),
 			...(input.container?.environmentVars ?? {}),
 			ELIZA_UI_ENABLE: "true",
@@ -497,6 +501,13 @@ export class ElizaClient {
 				},
 				container: {
 					image: imageUri,
+					...(input.container?.projectName ? { projectName: input.container.projectName } : {}),
+					...(input.container?.port ? { port: input.container.port } : {}),
+					...(input.container?.cpu ? { cpu: input.container.cpu } : {}),
+					...(input.container?.memory ? { memory: input.container.memory } : {}),
+					...(input.container?.desiredCount ? { desiredCount: input.container.desiredCount } : {}),
+					...(input.container?.architecture ? { architecture: input.container.architecture } : {}),
+					...(input.container?.healthCheckPath ? { healthCheckPath: input.container.healthCheckPath } : {}),
 					env: environmentVars,
 				},
 				...(input.modelDefaults ? { modelDefaults: input.modelDefaults } : {}),
@@ -512,13 +523,13 @@ export class ElizaClient {
 		const characterId = stringField(agent, "characterId") ?? cloudAgentId;
 		const jobId = stringField(agent, "jobId") ?? stringField(agent, "id") ?? cloudAgentId;
 		const webUiUrl = stringField(agent, "webUiUrl");
-		const hostedUrl = webUiUrl ?? stringField(agent, "containerUrl");
+		const containerUrl = stringField(agent, "containerUrl");
 		const normalized: ElizaCloudProvisionResult = {
 			agentId: input.agentId,
 			cloudAgentId,
 			status: stringField(agent, "status") ?? "pending",
 			...(stringField(agent, "containerId") ? { containerId: stringField(agent, "containerId") as string } : {}),
-			...(hostedUrl ? { containerUrl: hostedUrl } : {}),
+			...(containerUrl ? { containerUrl } : {}),
 			...(webUiUrl ? { webUiUrl } : {}),
 			...(characterId ? { characterId } : {}),
 			...(jobId ? { jobId } : {}),

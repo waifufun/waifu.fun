@@ -15,6 +15,7 @@ export const handlers: Record<string, Handler> = {
 	[AgentEventTypes.Created]: handleAgentCreated,
 	[AgentEventTypes.TradeBuy]: handleAgentTradeBuy,
 	[AgentEventTypes.TradeSell]: handleAgentTradeSell,
+	[AgentEventTypes.Bonded]: handleAgentGraduated,
 	[AgentEventTypes.Graduated]: handleAgentGraduated,
 };
 

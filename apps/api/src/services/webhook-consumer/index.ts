@@ -450,7 +450,7 @@ function runtimeOverlayAfterResume(
 	};
 	tokenStatus: string;
 } {
-	const hostedUrl = status?.webUiUrl ?? status?.containerUrl ?? stringField(data, "webUiUrl", "containerUrl");
+	const hostedUrl = status?.webUiUrl ?? stringField(data, "webUiUrl");
 	const rawStatus = status?.status ?? "provisioning";
 	const running = isHostedRuntimeRunning(rawStatus) && Boolean(hostedUrl);
 	const agentStatus = running ? "running" : isHostedRuntimeRunning(rawStatus) ? "provisioning" : rawStatus;

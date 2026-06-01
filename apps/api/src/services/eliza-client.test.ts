@@ -86,6 +86,10 @@ test("provisionAgent creates an Eliza Cloud app agent with bearer auth", async (
 });
 
 test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth", async () => {
+	const previousChatSecret = process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+	const previousFrameAncestors = process.env.WAIFU_CHAT_FRAME_ANCESTORS;
+	process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = "waifu-chat-secret";
+	process.env.WAIFU_CHAT_FRAME_ANCESTORS = "https://waifu.fun https://staging.waifu.fun";
 	const fetchMock = mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
 		assert.equal(String(url), "https://cloud.test/api/v1/agents");
 		assert.equal(init?.method, "POST");
@@ -128,8 +132,15 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 			},
 			container: {
 				image: "ecr.test/waifu-agent:latest",
+				projectName: "waifu-demo-01",
+				port: 3000,
+				cpu: 512,
+				memory: 1024,
+				desiredCount: 1,
+				architecture: "arm64",
+				healthCheckPath: "/api/health",
 				env: {
-					WAIFU_AGENT_ID: "waifu-demo-01",
+					ELIZA_BILLING_AGENT_ID: "waifu-demo-01",
 					TOKEN_CONTRACT_ADDRESS: "0x0000000000000000000000000000000000000004",
 					TOKEN_CHAIN: "bsc",
 					TOKEN_CHAIN_ID: "56",
@@ -143,6 +154,8 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 					WAIFU_ACCESS_ADMIN_WALLETS: "0x0000000000000000000000000000000000000001",
 					WAIFU_AGENT_EVM_ADDRESS: "0x0000000000000000000000000000000000000009",
 					WAIFU_AGENT_EVM_KEY_REF: "steward:waifu-demo-01",
+					WAIFU_CHAT_ACCESS_JWT_SECRET: "waifu-chat-secret",
+					WAIFU_CHAT_FRAME_ANCESTORS: "https://waifu.fun https://staging.waifu.fun",
 					ELIZA_UI_ENABLE: "true",
 					CUSTOM_ENV: "kept",
 					ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b",
@@ -170,13 +183,90 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 		});
 	});
 
+	try {
+		const client = createElizaCloudClient({
+			baseUrl: "https://cloud.test/",
+			serviceKey: "svc_123",
+			logger: {},
+		});
+		const result = await client.provisionWaifuAgent?.({
+			agentId: "waifu-demo-01",
+			tokenContractAddress: "0x0000000000000000000000000000000000000004",
+			chain: "bsc",
+			chainId: 56,
+			tokenName: "Test Waifu",
+			tokenTicker: "TEST",
+			launchType: "native",
+			character: { name: "Test Waifu", bio: "a test agent" },
+			account: {
+				primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+				walletKeyRef: "steward:waifu-demo-01",
+			},
+			access: {
+				adminWallets: ["0x0000000000000000000000000000000000000001"],
+			},
+			container: {
+				imageUri: "ecr.test/waifu-agent:latest",
+				projectName: "waifu-demo-01",
+				port: 3000,
+				cpu: 512,
+				memory: 1024,
+				desiredCount: 1,
+				architecture: "arm64",
+				healthCheckPath: "/api/health",
+				environmentVars: { ELIZA_UI_ENABLE: "false", CUSTOM_ENV: "kept" },
+			},
+			modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
+		});
+
+		assert.deepEqual(result, {
+			agentId: "waifu-demo-01",
+			cloudAgentId: "cloud-agent-1",
+			characterId: "character-1",
+			status: "pending",
+			containerUrl: "http://agent-bridge.internal",
+			webUiUrl: "https://agent-public.example",
+			jobId: "job-1",
+			account: {
+				primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+				walletKeyRef: "steward:waifu-demo-01",
+				organizationId: "org-wallet-1",
+				userId: "user-wallet-1",
+				isNewAccount: true,
+				initialFreeCreditsUsd: 5,
+			},
+			polling: { endpoint: "/api/v1/jobs/job-1", intervalMs: 5000, expectedDurationMs: 90000 },
+			tokenAddress: "0x0000000000000000000000000000000000000004",
+			tokenChain: "bsc",
+			tokenName: "Test Waifu",
+			tokenTicker: "TEST",
+		});
+		assert.equal(fetchMock.mock.callCount(), 1);
+	} finally {
+		if (previousChatSecret === undefined) delete process.env.WAIFU_CHAT_ACCESS_JWT_SECRET;
+		else process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = previousChatSecret;
+		if (previousFrameAncestors === undefined) delete process.env.WAIFU_CHAT_FRAME_ANCESTORS;
+		else process.env.WAIFU_CHAT_FRAME_ANCESTORS = previousFrameAncestors;
+	}
+});
+
+test("provisionWaifuAgent does not treat a container URL as a hosted web UI URL", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async () => {
+		return Response.json({
+			success: true,
+			cloudAgentId: "cloud-agent-container-only",
+			status: "running",
+			containerUrl: "http://agent-bridge.internal",
+		});
+	});
+
 	const client = createElizaCloudClient({
 		baseUrl: "https://cloud.test/",
 		serviceKey: "svc_123",
 		logger: {},
 	});
 	const result = await client.provisionWaifuAgent?.({
-		agentId: "waifu-demo-01",
+		agentId: "waifu-container-only",
 		tokenContractAddress: "0x0000000000000000000000000000000000000004",
 		chain: "bsc",
 		chainId: 56,
@@ -186,41 +276,18 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 		character: { name: "Test Waifu", bio: "a test agent" },
 		account: {
 			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
-			walletKeyRef: "steward:waifu-demo-01",
 		},
 		access: {
 			adminWallets: ["0x0000000000000000000000000000000000000001"],
 		},
 		container: {
 			imageUri: "ecr.test/waifu-agent:latest",
-			environmentVars: { ELIZA_UI_ENABLE: "false", CUSTOM_ENV: "kept" },
 		},
-		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
 	});
 
-	assert.deepEqual(result, {
-		agentId: "waifu-demo-01",
-		cloudAgentId: "cloud-agent-1",
-		characterId: "character-1",
-		status: "pending",
-		containerUrl: "https://agent-public.example",
-		webUiUrl: "https://agent-public.example",
-		jobId: "job-1",
-		account: {
-			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
-			walletKeyRef: "steward:waifu-demo-01",
-			organizationId: "org-wallet-1",
-			userId: "user-wallet-1",
-			isNewAccount: true,
-			initialFreeCreditsUsd: 5,
-		},
-		polling: { endpoint: "/api/v1/jobs/job-1", intervalMs: 5000, expectedDurationMs: 90000 },
-		tokenAddress: "0x0000000000000000000000000000000000000004",
-		tokenChain: "bsc",
-		tokenName: "Test Waifu",
-		tokenTicker: "TEST",
-	});
 	assert.equal(fetchMock.mock.callCount(), 1);
+	assert.equal(result?.containerUrl, "http://agent-bridge.internal");
+	assert.equal(result?.webUiUrl, undefined);
 });
 
 test("provisionWaifuAgent surfaces wallet provisioning returned by Eliza Cloud", async () => {

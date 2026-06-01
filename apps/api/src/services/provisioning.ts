@@ -269,6 +269,23 @@ export function buildProvisionOptions(
 		thresholdMode: "strict_gt",
 		adminWallets: resolvedAdminWallets,
 	};
+	opts.billing = {
+		mode: "owner_credits",
+		initialReserveUsd: numberField(eventData, "initialReserveUsd") ?? 5,
+	};
+	const containerImageUri = stringField(eventData, "containerImageUri") ?? stringField(eventData, "imageUri");
+	const containerProjectName = stringField(eventData, "containerProjectName");
+	const containerPort = numberField(eventData, "containerPort");
+	const containerEnvironmentVars =
+		stringRecordField(eventData, "containerEnvironmentVars") ?? stringRecordField(eventData, "containerEnv");
+	if (containerImageUri) {
+		opts.container = {
+			imageUri: containerImageUri,
+			...(containerProjectName ? { projectName: containerProjectName } : {}),
+			...(containerPort ? { port: containerPort } : {}),
+			...(containerEnvironmentVars ? { environmentVars: containerEnvironmentVars } : {}),
+		};
+	}
 	const invalidAdminWallet = resolvedAdminWallets.find((wallet) => !isAddress(wallet));
 	if (invalidAdminWallet) {
 		throw new Error(`admin wallet must be a valid EVM address for Eliza Cloud provisioning (${agentId})`);
@@ -316,7 +333,7 @@ export async function getAgentRuntimeState(db: Database, agentId: string) {
 	let state: "pending" | "provisioning" | "live" | "failed" | "dormant" = "pending";
 	if (killedOrPaused) state = "dormant";
 	else if (failed || deadLetter || lastError) state = "failed";
-	else if (containerUrl || webUiUrl) state = "live";
+	else if (webUiUrl) state = "live";
 	else if (runtimeAgentId) state = "provisioning";
 	else if (latestProvisioningEvent?.eventType === "agent.claimed") state = "provisioning";
 	else if (persona.agentLaunchStatus === "claimed") state = "provisioning";
@@ -483,7 +500,7 @@ async function syncProvisioningTokenOverlay(
 	if (!row) return;
 
 	const now = new Date();
-	const hostedUrl = result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl ?? null;
+	const hostedUrl = result.webUiUrl ?? null;
 	const isRunning = Boolean(hostedUrl) && isHostedRuntimeRunning(result.status);
 	const agentStatus = isRunning ? "running" : "provisioning";
 	const lifecycleState = isRunning ? "live" : "birth";
@@ -496,7 +513,7 @@ async function syncProvisioningTokenOverlay(
 		agentStatus,
 		lifecycleState,
 		webUiUrl: hostedUrl,
-		bridgeUrl: result.containerId ?? null,
+		bridgeUrl: result.containerUrl ?? result.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
 		suspendedReason: null,
@@ -604,6 +621,13 @@ function stringArrayField(data: Record<string, unknown>, key: string): string[] 
 	const value = data[key];
 	if (!Array.isArray(value)) return [];
 	return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function stringRecordField(data: Record<string, unknown>, key: string): Record<string, string> | null {
+	const value = recordFromUnknown(data[key]);
+	if (!value) return null;
+	const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string");
+	return entries.length > 0 ? Object.fromEntries(entries) : null;
 }
 
 function tokenParam(value: unknown, key: string): string | null {

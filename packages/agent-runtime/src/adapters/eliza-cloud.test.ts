@@ -51,6 +51,18 @@ test("provision uses Eliza Cloud service contract when token metadata is availab
 		webhookUrl: "https://waifu.fun/webhooks/eliza",
 		webhookSecret: "secret_123",
 		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
+		container: {
+			imageUri: "ecr.test/waifu-agent:latest",
+			projectName: "waifu-demo-01",
+			port: 3000,
+			environmentVars: {
+				WAIFU_AGENT_EVM_ADDRESS: "0x0000000000000000000000000000000000000009",
+			},
+		},
+		billing: {
+			mode: "owner_credits",
+			initialReserveUsd: 5,
+		},
 	});
 
 	assert.equal(result.runtimeAgentId, "cloud-agent-1");
@@ -87,10 +99,63 @@ test("provision uses Eliza Cloud service contract when token metadata is availab
 			thresholdMode: "strict_gt",
 			adminWallets: ["0x0000000000000000000000000000000000000001"],
 		},
+		billing: {
+			mode: "owner_credits",
+			initialReserveUsd: 5,
+		},
+		container: {
+			imageUri: "ecr.test/waifu-agent:latest",
+			projectName: "waifu-demo-01",
+			port: 3000,
+			environmentVars: {
+				WAIFU_AGENT_EVM_ADDRESS: "0x0000000000000000000000000000000000000009",
+			},
+		},
 		webhookUrl: "https://waifu.fun/webhooks/eliza",
 		webhookSecret: "secret_123",
 		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
 	});
+});
+
+test("provision keeps raw container URL separate from hosted liveness URL", async () => {
+	const adapter = new ElizaCloudRuntimeAdapter({
+		client: {
+			async createAgent() {
+				throw new Error("legacy createAgent should not be called");
+			},
+			async provisionWaifuAgent() {
+				return {
+					cloudAgentId: "cloud-agent-container-only",
+					status: "running",
+					containerUrl: "http://agent-bridge.internal",
+				};
+			},
+			async pauseAgent() {},
+			async resumeAgent() {},
+			async deprovisionAgent() {},
+		},
+	});
+
+	const result = await adapter.provision({
+		agentId: "waifu-container-only",
+		agentName: "Container Only",
+		persona: { name: "Container Only", bio: "container-only fixture" },
+		safeAddress: null,
+		xHandle: null,
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		chainId: 56,
+		tokenName: "Demo Token",
+		tokenTicker: "DEMO",
+		account: {
+			primaryWalletAddress: "0x0000000000000000000000000000000000000009",
+		},
+	});
+
+	assert.equal(result.runtimeAgentId, "cloud-agent-container-only");
+	assert.equal(result.containerUrl, "http://agent-bridge.internal");
+	assert.equal(result.webUiUrl, undefined);
+	assert.equal(result.livenessCheckUrl, undefined);
 });
 
 test("provision falls back to legacy createAgent when token metadata is unavailable", async () => {

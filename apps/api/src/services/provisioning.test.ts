@@ -22,6 +22,13 @@ test("buildProvisionOptions uses agent wallet for account and creator/safe walle
 		},
 		{
 			agentWalletAddress: "0x0000000000000000000000000000000000000009",
+			containerImageUri: "ecr.test/waifu-agent:latest",
+			containerProjectName: "waifu-demo-01",
+			containerPort: 3000,
+			containerEnvironmentVars: {
+				WAIFU_AGENT_EVM_ADDRESS: "0x0000000000000000000000000000000000000009",
+				IGNORED_NUMERIC_VALUE: 1,
+			},
 		},
 		"0x0000000000000000000000000000000000000002",
 	);
@@ -34,6 +41,18 @@ test("buildProvisionOptions uses agent wallet for account and creator/safe walle
 	assert.equal(options.access?.guestMinTokens, 1_000);
 	assert.equal(options.access?.userMinTokens, 100_000);
 	assert.equal(options.access?.thresholdMode, "strict_gt");
+	assert.deepEqual(options.billing, {
+		mode: "owner_credits",
+		initialReserveUsd: 5,
+	});
+	assert.deepEqual(options.container, {
+		imageUri: "ecr.test/waifu-agent:latest",
+		projectName: "waifu-demo-01",
+		port: 3000,
+		environmentVars: {
+			WAIFU_AGENT_EVM_ADDRESS: "0x0000000000000000000000000000000000000009",
+		},
+	});
 });
 
 test("buildProvisionOptions forwards explicit agent wallet key references", () => {
@@ -222,6 +241,7 @@ test("getAgentRuntimeState keeps running containers provisioning until a hosted 
 					runtimeAgentId: "cloud-agent-container-only",
 					cloudAgentId: "cloud-agent-container-only",
 					containerId: "container-only-1",
+					containerUrl: "http://container-only.internal",
 					status: "running",
 				},
 			},
@@ -234,6 +254,7 @@ test("getAgentRuntimeState keeps running containers provisioning until a hosted 
 	assert.equal(state?.state, "provisioning");
 	assert.equal(state?.cloudAgentId, "cloud-agent-container-only");
 	assert.equal(state?.containerId, "container-only-1");
+	assert.equal(state?.containerUrl, "http://container-only.internal");
 	assert.equal(state?.webUiUrl, undefined);
 });
 

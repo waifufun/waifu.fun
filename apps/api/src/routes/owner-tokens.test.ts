@@ -75,12 +75,13 @@ test("topUpOwnedTokenRuntime creates organization credit checkout and marks runt
 		checkoutUrl: "https://checkout.example/org",
 	});
 	assert.deepEqual(toppedUp, [{ agentId: "cloud-agent-1", amount: 5 }]);
-	assert.equal(updates.length, 2);
+	assert.equal(updates.length, 3);
 	assert.equal(updates[0]?.agentStatus, "suspended");
 	assert.equal(updates[0]?.lifecycleState, "dormant");
 	assert.equal(updates[0]?.infraReserveUsd, "2.5");
 	assert.equal(updates[0]?.suspendedReason, "credits_checkout_pending");
 	assert.equal(updates[1]?.agentStatus, "suspended");
+	assert.equal(updates[2]?.elizaCloudAgentId, "cloud-agent-1");
 });
 
 test("topUpOwnedTokenRuntime requires a provisioned Eliza Cloud agent id", async () => {
@@ -286,6 +287,12 @@ test("POST runtime/activate provisions with the agent EVM wallet and stores the 
 		assert.equal(updates[2]?.webUiUrl, "https://hosted-agent.example");
 		assert.equal(updates[2]?.bridgeUrl, "container-activate");
 		assert.equal(updates[2]?.agentStatus, "running");
+		const personaUpdate = updates.find((update) => update.elizaCloudAgentId === "cloud-agent-activate");
+		assert.equal(personaUpdate?.elizaCloudAgentId, "cloud-agent-activate");
+		assert.equal(
+			((personaUpdate?.metadata as { provisioning?: { cloudAgentId?: string } })?.provisioning ?? {}).cloudAgentId,
+			"cloud-agent-activate",
+		);
 	} finally {
 		__setRequirePatronDbForTest(undefined);
 		__setOwnerTokenDbForTest(undefined);
@@ -401,6 +408,18 @@ test("POST runtime/activate keeps owner token runtime provisioning when hosted U
 		assert.equal(updates[2]?.bridgeUrl, "container-activate");
 		assert.equal(updates[2]?.agentStatus, "provisioning");
 		assert.equal(updates[2]?.lifecycleState, "birth");
+		const personaUpdate = updates.find((update) => update.elizaCloudAgentId === "cloud-agent-activate");
+		assert.equal(personaUpdate?.elizaCloudAgentId, "cloud-agent-activate");
+		assert.equal(
+			((personaUpdate?.metadata as { provisioning?: { status?: string; webUiUrl?: string | null } })?.provisioning ?? {})
+				.status,
+			"provisioning",
+		);
+		assert.equal(
+			((personaUpdate?.metadata as { provisioning?: { status?: string; webUiUrl?: string | null } })?.provisioning ?? {})
+				.webUiUrl,
+			null,
+		);
 	} finally {
 		__setRequirePatronDbForTest(undefined);
 		__setOwnerTokenDbForTest(undefined);

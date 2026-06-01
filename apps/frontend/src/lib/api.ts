@@ -1507,6 +1507,7 @@ export interface AgentStatus {
 	status: "queued" | "provisioning" | "running" | "stopped" | "failed" | "deleted";
 	tokenAddress?: string;
 	containerUrl?: string;
+	webUiUrl?: string;
 	platforms?: string[];
 	createdAt?: string;
 	updatedAt?: string;
@@ -1525,6 +1526,7 @@ export interface UserAgent {
 	status: "queued" | "provisioning" | "running" | "stopped" | "failed" | "deleted";
 	tokenAddress?: string;
 	containerUrl?: string;
+	webUiUrl?: string;
 	platforms?: string[];
 	createdAt?: string;
 }

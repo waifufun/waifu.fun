@@ -161,6 +161,7 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
 			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
 			WAIFU_CHAT_ACCESS_JWT_SECRET: "chat_secret_worker",
+			WAIFU_CHAT_FRAME_ANCESTORS: "https://waifu.fun https://staging.waifu.fun",
 			WAIFU_ELIZA_DEFAULT_MODEL: "openai/gpt-oss-120b",
 			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
 		},
@@ -185,6 +186,19 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 					walletAddress: "0x0000000000000000000000000000000000000002",
 					agentWalletAddress: "0x0000000000000000000000000000000000000009",
 					walletKeyRef: "steward:custom-worker-key",
+					containerImageUri: "ecr.test/waifu-agent:bonded",
+					containerProjectName: "waifu-demo-01",
+					containerPort: 3000,
+					containerCpu: 512,
+					containerMemory: 1024,
+					containerDesiredCount: 1,
+					containerArchitecture: "arm64",
+					containerHealthCheckPath: "/api/health",
+					containerEnvironmentVars: {
+						CUSTOM_ENV: "kept",
+						ELIZA_UI_ENABLE: "false",
+						IGNORED_NUMERIC_VALUE: 1,
+					},
 					poolAddress: "0x0000000000000000000000000000000000000008",
 					dexName: "pancakeswap",
 				},
@@ -194,7 +208,7 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 				agentId: "waifu-demo-01",
 				cloudAgentId: "123e4567-e89b-12d3-a456-426614174000",
 				containerId: "container-worker",
-				containerUrl: "https://worker-agent.example",
+				containerUrl: "http://worker-bridge.internal",
 				webUiUrl: "https://worker-agent.example",
 				jobId: "job-worker",
 				status: "running",
@@ -249,12 +263,22 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 	});
 
 	const container = requests[0]?.body?.container as Record<string, unknown>;
-	assert.equal(container.image, "ecr.test/waifu-agent:latest");
+	assert.equal(container.image, "ecr.test/waifu-agent:bonded");
+	assert.equal(container.projectName, "waifu-demo-01");
+	assert.equal(container.port, 3000);
+	assert.equal(container.cpu, 512);
+	assert.equal(container.memory, 1024);
+	assert.equal(container.desiredCount, 1);
+	assert.equal(container.architecture, "arm64");
+	assert.equal(container.healthCheckPath, "/api/health");
 	const env = container.env as Record<string, string>;
 	assert.equal(env.WAIFU_AGENT_EVM_ADDRESS, "0x0000000000000000000000000000000000000009");
 	assert.equal(env.WAIFU_AGENT_EVM_KEY_REF, "steward:custom-worker-key");
 	assert.equal(env.ELIZA_UI_ENABLE, "true");
+	assert.equal(env.CUSTOM_ENV, "kept");
+	assert.equal("IGNORED_NUMERIC_VALUE" in env, false);
 	assert.equal(env.WAIFU_CHAT_ACCESS_JWT_SECRET, "chat_secret_worker");
+	assert.equal(env.WAIFU_CHAT_FRAME_ANCESTORS, "https://waifu.fun https://staging.waifu.fun");
 	assert.equal(env.WAIFU_INITIAL_CREDIT_USD, "5");
 	assert.equal(env.WAIFU_ACCESS_GUEST_MIN_TOKENS, "1000");
 	assert.equal(env.WAIFU_ACCESS_USER_MIN_TOKENS, "100000");
@@ -642,7 +666,6 @@ test("agent-provisioning worker skips duplicate Eliza Cloud launches when metada
 		agentId: "waifu-demo-01",
 		cloudAgentId: "cloud-existing-1",
 		containerId: "container-existing-1",
-		containerUrl: "https://existing-agent.example",
 		webUiUrl: "https://existing-agent.example",
 		jobId: "cloud-existing-1",
 		status: "running",

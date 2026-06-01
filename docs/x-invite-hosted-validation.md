@@ -91,7 +91,7 @@ explicit wallet input. Do not use production agent private keys in operator
 shells; production agents should use Steward/KMS custody and verify the key
 reference with `WAIFU_ELIZA_SMOKE_WALLET_KEY_REF`.
 
-Passing output includes readiness, provision, account evidence with a primary wallet matching `WAIFU_ELIZA_SMOKE_AGENT_WALLET`, the address derived from `WAIFU_ELIZA_SMOKE_AGENT_PRIVATE_KEY`, or the generated smoke wallet, `$5` initial free credit when Eliza reports a new account, repeated runtime status checks until running, runtime URL reachability when available, balance, pause, resume, restart, running-status checks after resume and restart, and a final JSON object with `cloudAgentId`, optional `containerId`, optional `containerUrl`, `status`, `polling`, and wallet/account provisioning metadata. Set `WAIFU_ELIZA_SMOKE_WALLET_KEY_REF` to verify the Steward/KMS key reference used as the agent account key. Set `WAIFU_ELIZA_SMOKE_WAIT_SECONDS` to change the default 180-second runtime readiness timeout. Set `WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1` with `WEBHOOK_RECEIVER_SECRET` to post signed Eliza Cloud `credits.depleted` and `credits.topped_up` webhooks, verify the hosted runtime becomes dormant/shut down, and verify it returns to running. Set `WAIFU_ELIZA_SMOKE_TOP_UP=1` only when the run should create a real organization credit checkout. After completing a checkout, rerun with `WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION=cs_...` to verify Eliza Cloud applied or recognized the payment, re-read the organization balance, and confirm the runtime is running again.
+Passing output includes readiness, provision, account evidence with a primary wallet matching `WAIFU_ELIZA_SMOKE_AGENT_WALLET`, the address derived from `WAIFU_ELIZA_SMOKE_AGENT_PRIVATE_KEY`, or the generated smoke wallet, `$5` initial free credit when Eliza reports a new account, repeated runtime status checks until running with `webUiUrl`, hosted web UI reachability, balance, pause, resume, restart, running-status checks after resume and restart, and a final JSON object with `cloudAgentId`, optional `containerId`, `webUiUrl`, `status`, `polling`, and wallet/account provisioning metadata. `containerUrl` may appear as lower-level metadata, but it is not accepted as token-page chat proof. When chat verification is enabled, the summary must include `chatSession.hostedApiAcceptedToken: true` after the runner calls hosted Eliza `/api/conversations` with the waifu JWT. Set `WAIFU_ELIZA_SMOKE_WALLET_KEY_REF` to verify the Steward/KMS key reference used as the agent account key. Set `WAIFU_ELIZA_SMOKE_WAIT_SECONDS` to change the default 180-second runtime readiness timeout. Set `WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK=1` with `WEBHOOK_RECEIVER_SECRET` to post signed Eliza Cloud `credits.depleted` and `credits.topped_up` webhooks, verify the hosted runtime becomes dormant/shut down, and verify it returns to running. Set `WAIFU_ELIZA_SMOKE_TOP_UP=1` only when the run should create a real organization credit checkout. After completing a checkout, rerun with `WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION=cs_...` to verify Eliza Cloud applied or recognized the payment, re-read the organization balance, and confirm the runtime is running again.
 
 For the strongest staging proof, set `WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E=1`
 or pass `--full-e2e`.
@@ -131,13 +131,16 @@ WAIFU_ELIZA_SMOKE_EXPECT_CHAT_ROLE=user \
 npm run test:eliza-cloud:live
 ```
 
-The chat branch calls `/owner/tokens/:chain/:chainId/:contractAddress/chat-session`, verifies the role-scoped `waifu_access_token` URL, and probes the hosted chat URL. It requires the smoke token to exist in the API database with hosted runtime metadata; the standalone admin test-provision endpoint creates cloud resources but does not itself create a token DB row.
+The chat branch calls `/owner/tokens/:chain/:chainId/:contractAddress/chat-session`, verifies the role-scoped `waifu_access_token` URL, probes the hosted chat URL, and verifies the hosted Eliza API accepts the JWT. It requires the smoke token to exist in the API database with hosted runtime metadata; the standalone admin test-provision endpoint creates cloud resources but does not itself create a token DB row.
 
 For the final hosted-agent proof, keep the JSON summary printed after
-`[eliza-cloud-smoke] live smoke passed`. In full-E2E mode it should show the
+`[eliza-cloud-smoke] live smoke passed`, or set `WAIFU_ELIZA_SMOKE_PROOF_FILE`
+to write the same summary to disk. In full-E2E mode it should show the
 wallet-owned `account`, `cloudAgentId`, `webUiUrl`,
 `hostedUrlReachable: true`, `hostedUrlStatus`, running runtime status,
-`chatSession.role` with `hasChatUrl: true`, `ownerRuntime.running: true`,
+`chatSession.role` with `hasChatUrl: true`,
+`chatSession.tokenSignatureVerified: true`,
+`chatSession.hostedApiAcceptedToken: true`, `ownerRuntime.running: true`,
 `ownerRuntime.hasWebUiUrl: true`, `ownerRuntime.controlOk: true`,
 `lifecycleWebhooks.dormantStatus`, `lifecycleWebhooks.runningStatus`, and
 `topUpVerification` evidence for a completed or already-applied checkout. The

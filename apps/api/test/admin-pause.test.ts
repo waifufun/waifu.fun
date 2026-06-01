@@ -345,6 +345,16 @@ describe("v2 admin agent pause controls", () => {
 				adminWallet: "0x0000000000000000000000000000000000000001",
 				containerImageUri: "ecr.test/waifu-agent:latest",
 				projectName: "waifu-admin-test",
+				containerPort: 3000,
+				containerCpu: 512,
+				containerMemory: 1024,
+				containerDesiredCount: 1,
+				containerArchitecture: "arm64",
+				containerHealthCheckPath: "/api/health",
+				containerEnvironmentVars: {
+					CUSTOM_ENV: "kept",
+					IGNORED_NUMERIC_VALUE: 1,
+				},
 			}),
 		});
 
@@ -356,7 +366,7 @@ describe("v2 admin agent pause controls", () => {
 				cloudAgentId: "cloud-admin-test",
 				characterId: "character-admin-test",
 				status: "running",
-				containerUrl: "https://admin-agent.example",
+				containerUrl: "http://admin-bridge.internal",
 				webUiUrl: "https://admin-agent.example",
 				jobId: "job-admin-test",
 				polling: {
@@ -410,6 +420,13 @@ describe("v2 admin agent pause controls", () => {
 
 		const container = requests[0]?.body.container as Record<string, unknown>;
 		assert.equal(container.image, "ecr.test/waifu-agent:latest");
+		assert.equal(container.projectName, "waifu-admin-test");
+		assert.equal(container.port, 3000);
+		assert.equal(container.cpu, 512);
+		assert.equal(container.memory, 1024);
+		assert.equal(container.desiredCount, 1);
+		assert.equal(container.architecture, "arm64");
+		assert.equal(container.healthCheckPath, "/api/health");
 		const env = container.env as Record<string, string>;
 		assert.equal(env.WAIFU_AGENT_EVM_ADDRESS, "0x0000000000000000000000000000000000000009");
 		assert.equal(env.WAIFU_AGENT_EVM_KEY_REF, "steward:waifu-admin-test");
@@ -418,6 +435,8 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal(env.WAIFU_ACCESS_USER_MIN_TOKENS, "100000");
 		assert.equal(env.WAIFU_ACCESS_THRESHOLD_MODE, "strict_gt");
 		assert.equal(env.WAIFU_ACCESS_ADMIN_WALLETS, "0x0000000000000000000000000000000000000001");
+		assert.equal(env.CUSTOM_ENV, "kept");
+		assert.equal("IGNORED_NUMERIC_VALUE" in env, false);
 	});
 
 	it("test-provision endpoint rejects invalid token addresses before calling Eliza Cloud", async () => {
@@ -513,7 +532,18 @@ describe("v2 admin agent pause controls", () => {
 				walletKeyRef: "steward:admin-test-key",
 				adminWallet: "0x0000000000000000000000000000000000000001",
 				containerImageUri: "ecr.test/waifu-agent:latest",
-				source: "agent.graduated",
+				projectName: "waifu-admin-test",
+				containerPort: 3000,
+				containerCpu: 512,
+				containerMemory: 1024,
+				containerDesiredCount: 1,
+				containerArchitecture: "arm64",
+				containerHealthCheckPath: "/api/health",
+				containerEnvironmentVars: {
+					CUSTOM_ENV: "kept",
+					IGNORED_NUMERIC_VALUE: 1,
+				},
+				source: "agent.bonded",
 				jobId: "admin-test-job",
 			}),
 		});
@@ -525,7 +555,7 @@ describe("v2 admin agent pause controls", () => {
 		assert.equal(body.data?.jobId, "admin-test-job");
 		assert.deepEqual(body.data?.payload, {
 			agentId: "waifu-admin-test",
-			source: "agent.graduated",
+			source: "agent.bonded",
 			data: {
 				tokenContractAddress: "0x0000000000000000000000000000000000000004",
 				tokenAddress: "0x0000000000000000000000000000000000000004",
@@ -538,6 +568,16 @@ describe("v2 admin agent pause controls", () => {
 				walletKeyRef: "steward:admin-test-key",
 				adminWallets: ["0x0000000000000000000000000000000000000001"],
 				containerImageUri: "ecr.test/waifu-agent:latest",
+				containerProjectName: "waifu-admin-test",
+				containerPort: 3000,
+				containerCpu: 512,
+				containerMemory: 1024,
+				containerDesiredCount: 1,
+				containerArchitecture: "arm64",
+				containerHealthCheckPath: "/api/health",
+				containerEnvironmentVars: {
+					CUSTOM_ENV: "kept",
+				},
 			},
 		});
 	});
@@ -585,7 +625,7 @@ describe("v2 admin agent pause controls", () => {
 				agentId: "waifu-worker-test",
 				cloudAgentId: "cloud-worker-test",
 				containerId: "container-worker-test",
-				containerUrl: "https://agent.example",
+				containerUrl: "http://worker-bridge.internal",
 				webUiUrl: "https://agent.example",
 				status: "running",
 				account: {
@@ -636,6 +676,166 @@ describe("v2 admin agent pause controls", () => {
 				polling: { endpoint: "/api/v1/jobs/job-worker-pending" },
 			},
 		});
+	});
+
+	it("test-proof returns a bonded worker proof ledger in dry-run mode", async () => {
+		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
+		process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI = "ecr.test/waifu-agent:latest";
+		process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = "chat_secret";
+		process.env.WAIFU_API_BASE_URL = "https://api.waifu.test";
+		process.env.WEBHOOK_RECEIVER_SECRET = "webhook_secret";
+		process.env.DATABASE_URL = "postgres://unit.test/waifu";
+		const fake = createFakeDb({
+			...freshRow(),
+			agentId: "waifu-proof-test",
+			runtimeKind: "eliza-cloud",
+			metadata: { provisioning: { status: "queued" } },
+		});
+		__setAdminAgentsDbForTest(fake.db as never);
+
+		const res = await request("/eliza-cloud/test-proof", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				dryRun: true,
+				agentId: "waifu-proof-test",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "0x0000000000000000000000000000000000000009",
+				adminWallet: "0x0000000000000000000000000000000000000001",
+				containerImageUri: "ecr.test/waifu-agent:latest",
+				projectName: "waifu-proof-test",
+				containerPort: 3000,
+				source: "agent.bonded",
+				jobId: "proof-job-dry-run",
+			}),
+		});
+
+		assert.equal(res.status, 200);
+		const body = await json(res);
+		assert.equal(body.data?.jobId, "proof-job-dry-run");
+		const steps = body.data?.steps as Array<{ key: string; state: string; data?: Record<string, unknown> }>;
+		assert.deepEqual(
+			steps.map((step) => [step.key, step.state]),
+			[
+				["readiness", "passed"],
+				["agent.bonded", "skipped"],
+				["runtime", "skipped"],
+				["runtime-status", "skipped"],
+				["credits", "skipped"],
+				["lifecycle", "skipped"],
+			],
+		);
+		const payload = (steps[1]?.data as Record<string, unknown>).payload as Record<string, unknown>;
+		assert.equal(payload.source, "agent.bonded");
+		assert.deepEqual((payload.data as Record<string, unknown>).containerProjectName, "waifu-proof-test");
+		assert.deepEqual((payload.data as Record<string, unknown>).containerPort, 3000);
+	});
+
+	it("test-proof refuses real enqueue when Eliza Cloud readiness is missing", async () => {
+		process.env.WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE = "true";
+		const fake = createFakeDb({
+			...freshRow(),
+			agentId: "waifu-proof-not-ready",
+			runtimeKind: "eliza-cloud",
+		});
+		__setAdminAgentsDbForTest(fake.db as never);
+
+		const res = await request("/eliza-cloud/test-proof", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				dryRun: false,
+				agentId: "waifu-proof-not-ready",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "0x0000000000000000000000000000000000000009",
+				source: "agent.bonded",
+				jobId: "proof-job-not-ready",
+			}),
+		});
+
+		assert.equal(res.status, 503);
+		const body = await json(res);
+		assert.equal(body.ok, false);
+		assert.equal(body.error, "ELIZA_CLOUD_NOT_READY");
+		assert.equal(body.data?.jobId, "proof-job-not-ready");
+		assert.equal(body.data?.ready, false);
+		const steps = body.data?.steps as Array<{ key: string; state: string; detail?: string }>;
+		assert.deepEqual(
+			steps.map((step) => [step.key, step.state]),
+			[["readiness", "failed"]],
+		);
+		assert.match(steps[0]?.detail ?? "", /missing:/);
+	});
+
+	it("test-proof verifies hosted runtime status and credit balance when runtime metadata exists", async () => {
+		process.env.ELIZA_CLOUD_BASE_URL = "https://cloud.test";
+		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
+		process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI = "ecr.test/waifu-agent:latest";
+		process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = "chat_secret";
+		process.env.WAIFU_API_BASE_URL = "https://api.waifu.test";
+		process.env.WEBHOOK_RECEIVER_SECRET = "webhook_secret";
+		process.env.DATABASE_URL = "postgres://unit.test/waifu";
+		const fake = createFakeDb({
+			...freshRow(),
+			agentId: "waifu-proof-runtime-test",
+			elizaCloudAgentId: "cloud-proof-test",
+			runtimeKind: "eliza-cloud",
+			metadata: {
+				provisioning: {
+					cloudAgentId: "cloud-proof-test",
+					containerId: "container-proof-test",
+					webUiUrl: "https://proof-agent.example",
+					status: "running",
+				},
+			},
+		});
+		__setAdminAgentsDbForTest(fake.db as never);
+		const requests: Array<{ method?: string; url: string }> = [];
+		mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+			requests.push({ method: init?.method, url: String(url) });
+			if (String(url).endsWith("/api/v1/agents/cloud-proof-test/status")) {
+				return Response.json({
+					success: true,
+					data: {
+						cloudAgentId: "cloud-proof-test",
+						containerId: "container-proof-test",
+						status: "running",
+						webUiUrl: "https://proof-agent.example",
+					},
+				});
+			}
+			if (String(url).includes("/api/v1/credits/balance")) {
+				return Response.json({ success: true, balance: 4.25 });
+			}
+			throw new Error(`unexpected fetch ${url}`);
+		});
+
+		const res = await request("/eliza-cloud/test-proof", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				dryRun: true,
+				agentId: "waifu-proof-runtime-test",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "0x0000000000000000000000000000000000000009",
+				source: "agent.bonded",
+			}),
+		});
+
+		assert.equal(res.status, 200);
+		const body = await json(res);
+		assert.equal(body.data?.ready, true);
+		const steps = body.data?.steps as Array<{ key: string; state: string }>;
+		assert.equal(steps.find((step) => step.key === "runtime")?.state, "passed");
+		assert.equal(steps.find((step) => step.key === "runtime-status")?.state, "passed");
+		assert.equal(steps.find((step) => step.key === "credits")?.state, "passed");
+		assert.deepEqual(
+			requests.map((request) => [request.method, request.url]),
+			[
+				["GET", "https://cloud.test/api/v1/agents/cloud-proof-test/status"],
+				["GET", "https://cloud.test/api/v1/credits/balance?fresh=true&agent_id=cloud-proof-test"],
+			],
+		);
 	});
 
 	it("test-control endpoint pauses, resumes, restarts, and tops up Eliza Cloud test containers", async () => {

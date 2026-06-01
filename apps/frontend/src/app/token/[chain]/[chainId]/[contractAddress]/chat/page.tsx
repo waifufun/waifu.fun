@@ -155,7 +155,7 @@ async function fetchAgentTokenFallback(params: ITokenLookUp): Promise<ChatToken 
 			curveCompleted: Boolean(agent.curveCompleted),
 			agentStatus: stringField(agent, "agentStatus", "runtimeStatus", "status"),
 			cloudAgentId: stringField(agent, "cloudAgentId", "elizaCloudAgentId"),
-			webUiUrl: stringField(agent, "webUiUrl", "chatUrl", "containerUrl"),
+			webUiUrl: stringField(agent, "webUiUrl", "chatUrl"),
 			billingMode: stringField(agent, "billingMode") ?? undefined,
 			infraReserveUsd: numberField(agent, "infraReserveUsd", 0),
 			hasAgent: Boolean(agent.cloudAgentId || agent.elizaCloudAgentId || agent.webUiUrl),

@@ -64,6 +64,17 @@ export interface ElizaProvisionWaifuAgentInput {
 	webhookUrl?: string;
 	webhookSecret?: string;
 	modelDefaults?: Record<string, string>;
+	container?: {
+		imageUri?: string;
+		projectName?: string;
+		port?: number;
+		cpu?: number;
+		memory?: number;
+		desiredCount?: number;
+		architecture?: "arm64" | "x86_64";
+		healthCheckPath?: string;
+		environmentVars?: Record<string, string>;
+	};
 }
 
 export interface ElizaAgentStatus {
@@ -110,7 +121,7 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 			status: result.status,
 		});
 
-		const runtimeUrl = result.webUiUrl ?? result.livenessCheckUrl ?? result.containerUrl;
+		const runtimeUrl = result.webUiUrl ?? result.livenessCheckUrl;
 		return {
 			runtimeAgentId,
 			...(result.containerId ? { containerId: result.containerId } : {}),
@@ -143,6 +154,8 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 				},
 				...(opts.account ? { account: opts.account } : {}),
 				...(opts.access ? { access: opts.access } : {}),
+				...(opts.billing ? { billing: opts.billing } : {}),
+				...(opts.container ? { container: opts.container } : {}),
 				...(opts.webhookUrl ? { webhookUrl: opts.webhookUrl } : {}),
 				...(opts.webhookSecret ? { webhookSecret: opts.webhookSecret } : {}),
 				...(opts.modelDefaults ? { modelDefaults: opts.modelDefaults } : {}),

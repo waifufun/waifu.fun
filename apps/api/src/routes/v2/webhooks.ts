@@ -2,8 +2,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { type Context, Hono } from "hono";
 
-import { agentPersonas, getDatabase, webhookInbox } from "@waifufun/db";
-import { eq, or } from "drizzle-orm";
+import { agentPersonas, agents, getDatabase, tokens, webhookInbox } from "@waifufun/db";
+import { eq, or, sql } from "drizzle-orm";
 import { emitAgentEvent } from "../../services/events/emit.js";
 
 import { type ElizaCloudClient, createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
@@ -62,7 +62,7 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 			rawBody,
 			payload,
 			secret: expectedSecret,
-			signature: c.req.header("X-Waifu-Webhook-Signature"),
+			signature: readWebhookSignature(c),
 			maxSkewMs: options.maxSkewMs ?? DEFAULT_MAX_SKEW_MS,
 		});
 		if (authError) {
@@ -133,6 +133,19 @@ export async function insertInboxRow(db: Db, payload: WebhookConsumerEvent): Pro
 
 export function signWebhookPayload(rawBody: string, timestamp: string, secret: string): string {
 	return `${SIGNATURE_PREFIX}${createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex")}`;
+}
+
+/**
+ * Read the inbound webhook signature header. The upstream emitter now sends
+ * `X-Eliza-Webhook-Signature`; the legacy `X-Waifu-*` headers stay accepted as
+ * a backward-compat fallback. The signature value/algorithm is identical.
+ */
+function readWebhookSignature(c: Context): string | undefined {
+	return (
+		c.req.header("X-Eliza-Webhook-Signature") ??
+		c.req.header("X-Waifu-Webhook-Signature") ??
+		c.req.header("X-Waifu-Signature")
+	);
 }
 
 function verifyWebhookRequest(args: {
@@ -226,7 +239,7 @@ async function receiveDirectAgentEvent(
 		rawBody,
 		payload: { event: source, timestamp, agentId: null, data: body, idempotencyKey: directIdempotencyKey(body) },
 		secret: expectedSecret,
-		signature: c.req.header("X-Waifu-Webhook-Signature") ?? c.req.header("X-Waifu-Signature"),
+		signature: readWebhookSignature(c),
 		maxSkewMs: options.maxSkewMs ?? DEFAULT_MAX_SKEW_MS,
 	});
 	if (authError) return c.json({ error: "unauthorized", detail: authError }, 401);
@@ -291,7 +304,7 @@ async function receiveDirectAgentEvent(
 	}
 }
 
-async function resolveWebhookAgentId(
+export async function resolveWebhookAgentId(
 	db: Db,
 	lookup: string | null | undefined,
 	source: string,
@@ -306,7 +319,17 @@ async function resolveWebhookAgentId(
 				: or(eq(agentPersonas.elizaCloudAgentId, lookup), eq(agentPersonas.agentId, lookup)),
 		)
 		.limit(1);
-	return row?.agentId ?? lookup;
+	if (row?.agentId) return row.agentId;
+	if (source === "steward-webhook") return lookup;
+
+	const [overlay] = await db
+		.select({ agentId: agentPersonas.agentId })
+		.from(agents)
+		.leftJoin(tokens, eq(tokens.id, agents.tokenId))
+		.leftJoin(agentPersonas, sql`lower(${agentPersonas.tokenAddress}) = lower(${tokens.contractAddress})`)
+		.where(eq(agents.cloudAgentId, lookup))
+		.limit(1);
+	return overlay?.agentId ?? lookup;
 }
 
 function mapStewardPolicy(payload: Record<string, unknown>): DirectMapResult {
@@ -342,7 +365,7 @@ function mapElizaCredits(payload: Record<string, unknown>): DirectMapResult {
 				: "credits.topped_up";
 	return {
 		eventType,
-		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId"),
+		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId", "cloudAgentId", "runtimeAgentId", "containerId"),
 		data: payload,
 		sourceEventId: `eliza:${stringField(payload, "eventId", "creditId") ?? crypto.randomUUID()}`,
 	};
@@ -351,7 +374,7 @@ function mapElizaCredits(payload: Record<string, unknown>): DirectMapResult {
 function mapElizaInference(payload: Record<string, unknown>): DirectMapResult {
 	return {
 		eventType: "inference.spent",
-		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId"),
+		agentLookup: stringField(payload, "agentId", "elizaCloudAgentId", "cloudAgentId", "runtimeAgentId", "containerId"),
 		data: payload,
 		sourceEventId: `eliza:${stringField(payload, "eventId", "inferenceId") ?? crypto.randomUUID()}`,
 	};

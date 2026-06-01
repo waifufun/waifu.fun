@@ -44,6 +44,21 @@ class InsertBuilder {
 
 	returning() {
 		if (this.table === schema.events) return Promise.resolve([{ id: 1n }]);
+		if (this.table === schema.agentEvents) {
+			const value = this.db.inserts.at(-1)?.value as Record<string, unknown>;
+			return Promise.resolve([
+				{
+					id: "agent-event-id",
+					type: value.type,
+					eventType: value.eventType,
+					tokenAddress: value.tokenAddress,
+					agentId: value.agentId,
+					data: value.data,
+					payload: value.payload,
+					createdAt: new Date("2026-04-24T00:05:00.000Z"),
+				},
+			]);
+		}
 		return Promise.resolve([]);
 	}
 }
@@ -283,10 +298,10 @@ test("TokenSale writes sell trade, updates token metrics, and emits trade webhoo
 	assert.deepEqual((emitted[0] as { event: string }).event, "trade.happened");
 });
 
-test("LiquidityAdded provisioning job payload launches Eliza Cloud for graduated agent token", () => {
+test("LiquidityAdded provisioning job payload launches Eliza Cloud for bonded agent token", () => {
 	assert.deepEqual(buildLiquidityAddedProvisioningJob("agent-test", liquidityAddedEvent()), {
 		agentId: "agent-test",
-		source: "agent.graduated",
+		source: "agent.bonded",
 		data: {
 			tokenAddress,
 			tokenContractAddress: tokenAddress,
@@ -300,7 +315,7 @@ test("LiquidityAdded provisioning job payload launches Eliza Cloud for graduated
 	});
 });
 
-test("LiquidityAdded handler enqueues Eliza Cloud provisioning for tracked graduated agent token", async () => {
+test("LiquidityAdded handler enqueues Eliza Cloud provisioning for tracked bonded agent token", async () => {
 	const previousDisable = process.env.INDEXER_DISABLE_QUEUE_JOBS;
 	delete process.env.INDEXER_DISABLE_QUEUE_JOBS;
 	const { runtime } = createRuntime();
@@ -330,16 +345,21 @@ test("LiquidityAdded handler enqueues Eliza Cloud provisioning for tracked gradu
 				},
 			},
 		);
+		const agentEvents = (runtime.db as unknown as FakeDb).inserts.filter((insert) => insert.table === schema.agentEvents);
+		assert.deepEqual(
+			agentEvents.map((insert) => (insert.value as { eventType: string }).eventType),
+			["agent.bonded", "agent.graduated"],
+		);
 	} finally {
 		if (previousDisable === undefined) delete process.env.INDEXER_DISABLE_QUEUE_JOBS;
 		else process.env.INDEXER_DISABLE_QUEUE_JOBS = previousDisable;
 	}
 });
 
-test("LaunchedToDEX provisioning job payload launches Eliza Cloud for migrated token", () => {
+test("LaunchedToDEX provisioning job payload launches Eliza Cloud for bonded token", () => {
 	assert.deepEqual(buildLaunchedToDexProvisioningJob("agent-test", launchedToDexEvent()), {
 		agentId: "agent-test",
-		source: "token.migrated",
+		source: "agent.bonded",
 		data: {
 			tokenAddress,
 			tokenContractAddress: tokenAddress,
@@ -354,7 +374,7 @@ test("LaunchedToDEX provisioning job payload launches Eliza Cloud for migrated t
 	});
 });
 
-test("LaunchedToDEX handler enqueues Eliza Cloud provisioning for migrated agent token", async () => {
+test("LaunchedToDEX handler enqueues Eliza Cloud provisioning for bonded agent token", async () => {
 	const { runtime } = createRuntime();
 	const enqueued: Array<{ kind: string; payload: unknown; options?: { jobId?: string } }> = [];
 	runtime.enqueueCacheWarm = async (payload, options) => {
@@ -380,5 +400,10 @@ test("LaunchedToDEX handler enqueues Eliza Cloud provisioning for migrated agent
 				jobId: `indexer-${event.txHash}-${event.logIndex}-agent-provisioning-agent-test`,
 			},
 		},
+	);
+	const agentEvents = (runtime.db as unknown as FakeDb).inserts.filter((insert) => insert.table === schema.agentEvents);
+	assert.deepEqual(
+		agentEvents.map((insert) => (insert.value as { eventType: string }).eventType),
+		["agent.bonded", "agent.graduated"],
 	);
 });

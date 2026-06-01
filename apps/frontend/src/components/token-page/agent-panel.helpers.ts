@@ -7,11 +7,11 @@ export type PublicAgentSnapshot = {
 	canChat: boolean;
 };
 
-export function canAgentStatusChat(status: string | null | undefined): boolean {
+export function canAgentStatusChat(status: string | null | undefined, webUiUrl?: string | null): boolean {
 	return (
 		String(status ?? "")
 			.trim()
-			.toLowerCase() === "running"
+			.toLowerCase() === "running" && Boolean(webUiUrl)
 	);
 }
 
@@ -47,7 +47,7 @@ export function getPublicAgentSnapshot(token: IToken): PublicAgentSnapshot {
 		hasAgent,
 		status: publicStatus,
 		lifecycle: rawLifecycle || null,
-		canChat: canAgentStatusChat(publicStatus),
+		canChat: canAgentStatusChat(publicStatus, publicToken.webUiUrl),
 	};
 }
 
