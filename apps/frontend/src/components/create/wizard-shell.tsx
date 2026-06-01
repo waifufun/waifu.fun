@@ -305,6 +305,13 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 			if (!state.launchpad.selectedId) return "pick a launchpad";
 			return null;
 		}
+		case "safe": {
+			const owners = state.safe.owners ?? [];
+			if (owners.length === 0) return "link an EVM wallet to be a safe owner";
+			if (!owners.every((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim())))
+				return "one or more owner addresses are invalid";
+			return null;
+		}
 		default:
 			return null;
 	}
