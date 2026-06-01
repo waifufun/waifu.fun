@@ -16,7 +16,7 @@ const MOCK_DOPPLER_PROTOCOL_WALLET = "0x0000000000000000000000000000000000D0B105
 
 export const bankrDescriptor: LaunchpadDescriptor = {
 	id: "bankr",
-	status: "live",
+	status: "coming-soon",
 	chain: "base",
 	displayName: "Bankr",
 	shortDescription: "Base launch path through Bankr's sponsored Doppler token-launch API.",
