@@ -403,6 +403,7 @@ app.post("/prepare", requireAgentAuth(), async (c) => {
 				claimToken: rawToken,
 				claimExpiresAt: claimExpiresAt.toISOString(),
 				fourMeme: prepared.fourMeme,
+				identityRegistrationStatus: prepared.identityRegistrationStatus,
 				...(prepared.agentIdentity
 					? {
 							agentIdentity: {

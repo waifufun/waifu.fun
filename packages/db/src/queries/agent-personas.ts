@@ -95,10 +95,12 @@ export async function setPersonaIdentity(
 	db: Database,
 	agentId: string,
 	identity: {
-		eip8004TokenId: string;
-		contractAddress: string;
+		identityRegistrationStatus: "minted" | "pending_approval" | "skipped" | "failed";
+		eip8004TokenId?: string;
+		contractAddress?: string;
 		txHash?: string;
 		agentURI?: string;
+		error?: string;
 	},
 ): Promise<AgentPersonaRow | null> {
 	const current = await getAgentPersonaByAgentId(db, agentId);
@@ -110,10 +112,12 @@ export async function setPersonaIdentity(
 	const mergedMeta = {
 		...existingMeta,
 		identity: {
-			eip8004TokenId: identity.eip8004TokenId,
-			contractAddress: identity.contractAddress,
+			identityRegistrationStatus: identity.identityRegistrationStatus,
+			...(identity.eip8004TokenId ? { eip8004TokenId: identity.eip8004TokenId } : {}),
+			...(identity.contractAddress ? { contractAddress: identity.contractAddress } : {}),
 			...(identity.txHash ? { txHash: identity.txHash } : {}),
 			...(identity.agentURI ? { agentURI: identity.agentURI } : {}),
+			...(identity.error ? { error: identity.error } : {}),
 		},
 	};
 	const [row] = await db

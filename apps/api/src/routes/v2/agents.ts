@@ -3,10 +3,10 @@ import type { Context, Next } from "hono";
 
 import {
 	agentApps,
-	agentWallets,
 	agentPersonaQueries,
 	agentPersonas,
 	agentQueries,
+	agentWallets,
 	agents,
 	creators,
 	getDatabase,
@@ -180,7 +180,8 @@ export function buildLaunchOrchestratorDeps(): OrchestratorDeps {
 							personaJson && typeof personaJson.ownerStewardUserId === "string" ? personaJson.ownerStewardUserId : null,
 						ownerAddress: personaJson && typeof personaJson.ownerAddress === "string" ? personaJson.ownerAddress : null,
 						runtimeKind,
-						runtimeWebhookUrl: personaJson && typeof personaJson.webhookUrl === "string" ? personaJson.webhookUrl : null,
+						runtimeWebhookUrl:
+							personaJson && typeof personaJson.webhookUrl === "string" ? personaJson.webhookUrl : null,
 						runtimeWebhookSecretHash:
 							personaJson && typeof personaJson.runtimeWebhookSecretHash === "string"
 								? personaJson.runtimeWebhookSecretHash
@@ -1696,6 +1697,7 @@ app.post("/launch", requireAgentAuth(), async (c) => {
 				treasuryAddress: result.treasuryAddress,
 				txHash: result.txHash,
 				fourMeme: result.fourMeme,
+				identityRegistrationStatus: result.identityRegistrationStatus,
 				...(result.agentIdentity ? { agentIdentity: result.agentIdentity } : {}),
 			},
 			200,

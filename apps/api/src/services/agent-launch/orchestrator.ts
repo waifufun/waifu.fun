@@ -42,7 +42,13 @@ import { fourMemeLogin } from "./fourmeme-auth.js";
 import { type FourMemeCreateTokenInput, fourMemeCreateToken } from "./fourmeme-create.js";
 import { fourMemeUploadImage } from "./fourmeme-upload.js";
 import { type StewardClient, StewardError, isBroadcastResult, isPendingApproval } from "./steward.js";
-import type { AgentLaunchInput, AgentLaunchResult, AgentPersonaConfig, FourMemeTaxConfig } from "./types.js";
+import type {
+	AgentLaunchInput,
+	AgentLaunchResult,
+	AgentPersonaConfig,
+	FourMemeTaxConfig,
+	IdentityRegistrationStatus,
+} from "./types.js";
 
 /**
  * Result returned by `prepare()` — everything needed to broadcast later,
@@ -64,6 +70,7 @@ export interface AgentLaunchPrepareResult {
 		imageUrl: string;
 		createArgHash: string;
 	};
+	identityRegistrationStatus: IdentityRegistrationStatus;
 	agentIdentity?: {
 		agentId: string;
 		txHash: Hex;
@@ -113,10 +120,12 @@ export interface PersonaStore {
 	setIdentity?: (
 		agentId: string,
 		identity: {
-			eip8004TokenId: string;
-			contractAddress: string;
+			identityRegistrationStatus: IdentityRegistrationStatus;
+			eip8004TokenId?: string;
+			contractAddress?: string;
 			txHash?: string;
 			agentURI?: string;
+			error?: string;
 		},
 	) => Promise<void>;
 }
@@ -216,6 +225,16 @@ interface TaxRecipientResolution {
 	taxSplit?: PreparedTaxSplit;
 }
 
+function identityFailureStatus(err: unknown): IdentityRegistrationStatus {
+	const cause = err instanceof AgentLaunchError ? err.cause : undefined;
+	if (isPendingApproval(cause as never)) return "pending_approval";
+	return "failed";
+}
+
+function errorMessage(err: unknown): string {
+	return err instanceof Error ? err.message : String(err);
+}
+
 export class AgentLaunchOrchestrator {
 	constructor(private readonly deps: OrchestratorDeps) {}
 
@@ -275,6 +294,7 @@ export class AgentLaunchOrchestrator {
 		// AgentIdentifier` chain resolves by the time Four.Meme's backend signs
 		// the createToken args. Without this the token won't get the (AI) badge.
 		let identity: RegisterAgentIdentityResult | null = null;
+		let identityRegistrationStatus: IdentityRegistrationStatus = "skipped";
 		if (input.skipIdentityRegistration !== true) {
 			const { publicClient } = this.buildChainClients();
 			const identityContract =
@@ -315,13 +335,16 @@ export class AgentLaunchOrchestrator {
 						...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
 						...(input.description !== undefined ? { description: input.description } : {}),
 						contractAddress: identityContract,
+						chainId: this.deps.chainId,
 						...(this.deps.receiptTimeoutMs !== undefined ? { receiptTimeoutMs: this.deps.receiptTimeoutMs } : {}),
 					});
 				});
+				identityRegistrationStatus = "minted";
 				// Persist identity metadata for the UI to surface (EIP-8004 badge, etc.)
 				if (identity && this.deps.personaStore?.setIdentity) {
 					try {
 						await this.deps.personaStore.setIdentity(wallet.agentId, {
+							identityRegistrationStatus,
 							eip8004TokenId: identity.agentId.toString(),
 							contractAddress: identity.contractAddress,
 							txHash: identity.txHash,
@@ -344,10 +367,25 @@ export class AgentLaunchOrchestrator {
 				}
 				// Non-fatal: log + continue. The token launch still succeeds, it
 				// just won't carry the (AI) badge in Four.Meme's UI.
+				identityRegistrationStatus = identityFailureStatus(err);
+				const message = errorMessage(err);
 				this.deps.onStep?.("identity.register.warning", {
-					error: err instanceof Error ? err.message : String(err),
+					error: message,
+					identityRegistrationStatus,
 					continuing: true,
 				});
+				if (this.deps.personaStore?.setIdentity) {
+					await this.deps.personaStore
+						.setIdentity(wallet.agentId, {
+							identityRegistrationStatus,
+							error: message,
+						})
+						.catch((e) => {
+							this.deps.onStep?.("identity.persist.warning", {
+								error: errorMessage(e),
+							});
+						});
+				}
 				identity = null;
 			}
 		}
@@ -517,6 +555,7 @@ export class AgentLaunchOrchestrator {
 				createArgHash: hashHexPrefix(created.createArg),
 				...(created.requestId ? { requestId: created.requestId } : {}),
 			},
+			identityRegistrationStatus,
 			...(identity
 				? {
 						agentIdentity: {
@@ -592,6 +631,7 @@ export class AgentLaunchOrchestrator {
 		// EIP-8004 identity registration (same logic as launch()). Kept in
 		// prepare so the four.meme create call sees the NFT and mints the (AI) badge.
 		let identity: RegisterAgentIdentityResult | null = null;
+		let identityRegistrationStatus: IdentityRegistrationStatus = "skipped";
 		if (input.skipIdentityRegistration !== true) {
 			const identityContract =
 				input.identityContractAddress ?? this.deps.eip8004NftAddress ?? DEFAULT_EIP8004_NFT_ADDRESS;
@@ -630,12 +670,15 @@ export class AgentLaunchOrchestrator {
 						...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
 						...(input.description !== undefined ? { description: input.description } : {}),
 						contractAddress: identityContract,
+						chainId: this.deps.chainId,
 						...(this.deps.receiptTimeoutMs !== undefined ? { receiptTimeoutMs: this.deps.receiptTimeoutMs } : {}),
 					});
 				});
+				identityRegistrationStatus = "minted";
 				if (identity && this.deps.personaStore?.setIdentity) {
 					try {
 						await this.deps.personaStore.setIdentity(wallet.agentId, {
+							identityRegistrationStatus,
 							eip8004TokenId: identity.agentId.toString(),
 							contractAddress: identity.contractAddress,
 							txHash: identity.txHash,
@@ -654,10 +697,25 @@ export class AgentLaunchOrchestrator {
 				if (strict) {
 					throw rethrow("identity.register", err);
 				}
+				identityRegistrationStatus = identityFailureStatus(err);
+				const message = errorMessage(err);
 				this.deps.onStep?.("identity.register.warning", {
-					error: err instanceof Error ? err.message : String(err),
+					error: message,
+					identityRegistrationStatus,
 					continuing: true,
 				});
+				if (this.deps.personaStore?.setIdentity) {
+					await this.deps.personaStore
+						.setIdentity(wallet.agentId, {
+							identityRegistrationStatus,
+							error: message,
+						})
+						.catch((e) => {
+							this.deps.onStep?.("persona.setIdentity.warning", {
+								error: errorMessage(e),
+							});
+						});
+				}
 				identity = null;
 			}
 		}
@@ -750,6 +808,7 @@ export class AgentLaunchOrchestrator {
 				imageUrl: upload.imageUrl,
 				createArgHash: hashHexPrefix(created.createArg),
 			},
+			identityRegistrationStatus,
 			...(identity
 				? {
 						agentIdentity: {
