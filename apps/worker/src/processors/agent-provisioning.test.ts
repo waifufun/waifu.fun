@@ -1314,7 +1314,9 @@ test("agent-provisioning worker surfaces a clear error when Eliza Cloud times ou
 			};
 		},
 		update() {
-			return { set: () => ({ where: () => Promise.resolve() }) };
+			// Merged code path now performs an atomic claim via .update().set().where().returning();
+			// return a non-empty claim result so provisioning proceeds to the timed-out fetch.
+			return { set: () => ({ where: () => updateResult([{ agentId: "waifu-timeout-01" }]) }) };
 		},
 		insert() {
 			return { values: () => ({ returning: () => Promise.resolve([{ id: "event-row-timeout" }]) }) };
@@ -1414,7 +1416,8 @@ function statusPollDb() {
 			};
 		},
 		update() {
-			return { set: () => ({ where: () => Promise.resolve() }) };
+			// Atomic claim shape: return a non-empty claim result so provisioning proceeds.
+			return { set: () => ({ where: () => updateResult([{ agentId: "waifu-poll-01" }]) }) };
 		},
 		insert() {
 			return { values: () => ({ returning: () => Promise.resolve([{ id: "row-poll" }]) }) };
