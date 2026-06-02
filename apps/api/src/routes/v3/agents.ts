@@ -275,7 +275,11 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 		const socials = asRecord(body.socials) as CreateTokenParams["socials"] | null;
 		if (socials) txParams.socials = socials;
 		if (body.initial_buy_bnb || body.initialBuyBnb) {
-			txParams.initialBuyWei = parseEther(String(body.initial_buy_bnb ?? body.initialBuyBnb));
+			try {
+				txParams.initialBuyWei = parseEther(String(body.initial_buy_bnb ?? body.initialBuyBnb));
+			} catch {
+				return c.json({ ok: false, error: "initial_buy_bnb must be a decimal BNB amount" }, 400);
+			}
 		}
 		if (body.fourMemeSignedPayload) txParams.fourMemeSignedPayload = body.fourMemeSignedPayload;
 
@@ -325,10 +329,12 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 
 		const chain = c.req.query("chain");
 		const routeId = c.req.param("id");
+		const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeId);
 		const persona =
-			(await agentPersonaQueries.getAgentPersonaById(db, routeId)) ??
+			(isUuid ? await agentPersonaQueries.getAgentPersonaById(db, routeId) : null) ??
 			(await agentPersonaQueries.getAgentPersonaByAgentId(db, routeId));
-		const safe = await agentSafeQueries.getSafeByAgentId(db, persona?.id ?? routeId, chain);
+		if (!persona) return c.json({ error: "safe not found" }, 404);
+		const safe = await agentSafeQueries.getSafeByAgentId(db, persona.id, chain);
 		if (!safe) return c.json({ error: "safe not found" }, 404);
 		return c.json({ ok: true, safe: safeMetadata(safe) }, 200);
 	});

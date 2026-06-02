@@ -44,8 +44,12 @@ export const createLaunchpadRoutes = () => {
 			return respondOk(c, { ok: false, errors: ["feeConfig is required"] });
 		}
 
-		const result = adapter.validateFeeConfig(body.feeConfig, body.env ?? "prod");
-		return respondOk(c, result);
+		try {
+			const result = adapter.validateFeeConfig(body.feeConfig, body.env ?? "prod");
+			return respondOk(c, result);
+		} catch {
+			return respondOk(c, { ok: false, errors: ["invalid feeConfig"] });
+		}
 	});
 
 	return app;
