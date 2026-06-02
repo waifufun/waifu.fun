@@ -404,13 +404,19 @@ async function waitForRuntimeStatus(
 	if (initialUrl && initialStatus && isHostedRuntimeRunning(initialStatus)) return initial;
 
 	const attempts = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS") ?? 18;
-	const intervalMs =
-		numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS") ??
-		numberField(recordFromUnknown(initial.polling) ?? {}, "intervalMs") ??
-		5_000;
+	// An explicit interval env pins a fixed cadence; otherwise we ramp from a
+	// small initial delay up to the cap so a fast-booting container is detected
+	// in ~1s instead of waiting a full fixed interval. Both bound time-to-live.
+	const fixedIntervalMs = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS");
+	const maxIntervalMs = fixedIntervalMs ?? numberField(recordFromUnknown(initial.polling) ?? {}, "intervalMs") ?? 5_000;
+	const initialIntervalMs = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INITIAL_MS") ?? Math.min(1_000, maxIntervalMs);
 	let latest = initial;
 	for (let attempt = 0; attempt < attempts; attempt++) {
-		if (attempt > 0 && intervalMs > 0) await sleep(intervalMs);
+		if (attempt > 0) {
+			const delayMs =
+				fixedIntervalMs !== null ? fixedIntervalMs : adaptivePollDelayMs(attempt, initialIntervalMs, maxIntervalMs);
+			if (delayMs > 0) await sleep(delayMs);
+		}
 		const status = await requestJson<Record<string, unknown>>(
 			baseUrl,
 			`/api/v1/agents/${encodeURIComponent(cloudAgentId)}/status`,
@@ -582,6 +588,13 @@ function numberEnv(key: string): number | null {
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Exponential ramp from initial to max, doubling each poll (1s → 2s → 4s → cap). */
+export function adaptivePollDelayMs(attempt: number, initialMs: number, maxMs: number): number {
+	if (initialMs <= 0) return Math.max(0, maxMs);
+	const scaled = initialMs * 2 ** (attempt - 1);
+	return Math.min(maxMs, scaled);
 }
 
 function stringArrayField(data: Record<string, unknown>, key: string): string[] {

@@ -3,7 +3,7 @@ import test, { mock } from "node:test";
 
 import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 
-import { createAgentProvisioningProcessor } from "./agent-provisioning.js";
+import { adaptivePollDelayMs, createAgentProvisioningProcessor } from "./agent-provisioning.js";
 
 type UpdateRecord = { table: unknown; values: Record<string, unknown> };
 type InsertRecord = { table: unknown; values: Record<string, unknown> };
@@ -1299,4 +1299,16 @@ test("agent-provisioning worker surfaces a clear error when Eliza Cloud times ou
 	);
 
 	assert.equal(fetchMock.mock.callCount(), 1);
+});
+
+test("adaptivePollDelayMs ramps from the initial delay up to the cap", () => {
+	// 1s initial, 5s cap: 1s → 2s → 4s → 5s (capped) → 5s …
+	assert.equal(adaptivePollDelayMs(1, 1_000, 5_000), 1_000);
+	assert.equal(adaptivePollDelayMs(2, 1_000, 5_000), 2_000);
+	assert.equal(adaptivePollDelayMs(3, 1_000, 5_000), 4_000);
+	assert.equal(adaptivePollDelayMs(4, 1_000, 5_000), 5_000);
+	assert.equal(adaptivePollDelayMs(8, 1_000, 5_000), 5_000);
+	// initial >= cap collapses to a fixed cadence at the cap.
+	assert.equal(adaptivePollDelayMs(1, 5_000, 5_000), 5_000);
+	assert.equal(adaptivePollDelayMs(3, 5_000, 5_000), 5_000);
 });
