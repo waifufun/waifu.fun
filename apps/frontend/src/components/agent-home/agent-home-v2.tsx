@@ -284,7 +284,7 @@ export default function AgentHomeV2({
 						// legacy fallback (deposit-naive) until hl payload lands.
 						<PnlChart series={pnlSeries} baselineNav={pnlBaselineNav} />
 					) : (
-						<PnlChart hlPnl={hlPnl ?? undefined} />
+						<PnlChart hlPnl={hlPnl ?? null} />
 					)}
 					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
