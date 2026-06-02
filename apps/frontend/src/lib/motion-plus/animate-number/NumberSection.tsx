@@ -83,7 +83,11 @@ export const NumberSection = forwardRef<
 			const undo = undos[i];
 			if (undo) undo();
 		}
-		animate(ref.current, { width: newWidth }, transition as AnimationOptions);
+		// Capture and cancel the width tween on re-key/unmount so the playback
+		// handle (and its rAF) is released — same leak fixed in NumberDigit. All
+		// effect paths return explicitly (the two early returns + this cleanup).
+		const controls = animate(ref.current, { width: newWidth }, transition as AnimationOptions);
+		return () => controls.cancel();
 	}, [parts.map((p) => p.value).join("")]);
 
 	return (
