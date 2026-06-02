@@ -53,6 +53,9 @@ function usePoller(tick: (signal: AbortSignal) => Promise<void>, intervalMs: num
 		const controller = new AbortController();
 		const run = async () => {
 			if (cancelled) return;
+			// Skip polling while the tab is hidden — don't burn network/CPU in the
+			// background; we refresh on visibilitychange and the next interval tick.
+			if (typeof document !== "undefined" && document.hidden) return;
 			try {
 				await tick(controller.signal);
 			} catch {
@@ -62,10 +65,15 @@ function usePoller(tick: (signal: AbortSignal) => Promise<void>, intervalMs: num
 		// First tick immediately after hydration so we replace SSG values fast.
 		run();
 		const id = window.setInterval(run, intervalMs);
+		const onVisible = () => {
+			if (!document.hidden) run();
+		};
+		document.addEventListener("visibilitychange", onVisible);
 		return () => {
 			cancelled = true;
 			controller.abort();
 			window.clearInterval(id);
+			document.removeEventListener("visibilitychange", onVisible);
 		};
 	}, deps);
 }
