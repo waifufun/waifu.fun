@@ -57,9 +57,9 @@ export type HeroIdentity = {
 	tokenAddress?: string | undefined;
 	/**
 	 * Optional ERC-8004 identity record. When present, the hero shows a
-	 * dedicated `<Erc8004Badge>` next to the name + tooltip + click to
-	 * scroll the provenance panel. When absent, the legacy plain
-	 * checkmark renders (or nothing, depending on `verified`).
+	 * dedicated `<Erc8004Badge>` next to the name + tooltip + link to the
+	 * agent's 8004scan profile. When absent, the legacy plain checkmark
+	 * renders (or nothing, depending on `verified`).
 	 */
 	erc8004?: Erc8004IdentityRecord | undefined;
 };
