@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { type PatronUser, logout as apiLogout, fetchMe, redirectToXLogin } from "@/lib/auth-api";
 
@@ -42,11 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setPatronUser(null);
 	}, []);
 
-	return (
-		<AuthContext.Provider value={{ patronUser, isLoading, loginWithX, logout, refetch }}>
-			{children}
-		</AuthContext.Provider>
+	// loginWithX/logout/refetch are useCallback-stable; memoizing keeps the
+	// app-wide provider from re-rendering every usePatronAuth consumer whenever
+	// an unrelated parent above it re-renders.
+	const value = useMemo(
+		() => ({ patronUser, isLoading, loginWithX, logout, refetch }),
+		[patronUser, isLoading, loginWithX, logout, refetch],
 	);
+
+	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function usePatronAuth(): AuthContextValue {

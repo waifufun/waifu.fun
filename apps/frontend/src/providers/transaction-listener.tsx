@@ -5,7 +5,7 @@ import { getExplorerTxUrl, resolveEvmChainId } from "@/lib/explorer";
 import { DEFAULT_EVM_CHAIN_ID } from "@/providers/evm-provider";
 import { useQueryClient } from "@tanstack/react-query";
 import { EvmChainIds, type IToken } from "@waifufun/types";
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import { usePublicClient } from "wagmi";
@@ -211,11 +211,17 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		}
 	}, [publicClient]);
 
-	const value = {
-		pendingTransactions,
-		addTransaction,
-		clearConfirmedTransactions,
-	};
+	// This provider wraps the whole app; addTransaction/clearConfirmedTransactions
+	// are already useCallback-stable, so memoizing the value object keeps every
+	// useTransactionListener consumer from re-rendering on unrelated parent renders.
+	const value = useMemo(
+		() => ({
+			pendingTransactions,
+			addTransaction,
+			clearConfirmedTransactions,
+		}),
+		[pendingTransactions, addTransaction, clearConfirmedTransactions],
+	);
 
 	return <TransactionListenerContext.Provider value={value}>{children}</TransactionListenerContext.Provider>;
 };
