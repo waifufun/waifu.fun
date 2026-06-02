@@ -6,6 +6,7 @@ import type { TokenCreateEvent } from "../lib/fourmeme-events.js";
 import { getFourMemeEventId } from "../lib/fourmeme-events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
 import { emitAgentEvent } from "./agent-event-bus.js";
+import { materializePendingErc8004Identity } from "./erc8004-registered.js";
 import { isKnownAgentWallet, lookupAgentIdByWallet, upsertAgentWalletToken } from "./fourmeme-filters.js";
 import type { PortalEventHandlerResult } from "./index.js";
 
@@ -152,6 +153,7 @@ export async function handleTokenCreateEvent(
 	});
 
 	await upsertAgentWalletToken(runtime, event.data.creator, event.data.token, event.blockTimestamp);
+	await materializePendingErc8004Identity(runtime, event.data.creator, event.data.token);
 
 	if (process.env.INDEXER_DISABLE_QUEUE_JOBS !== "1") {
 		const { addAgentProvisioningJob, addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");

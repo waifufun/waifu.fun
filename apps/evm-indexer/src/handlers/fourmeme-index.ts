@@ -1,5 +1,6 @@
 import type { FourMemeEvent, FourMemeEventName } from "../lib/fourmeme-events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
+import { handleErc8004RegisteredEvent } from "./erc8004-registered.js";
 import { handleLiquidityAddedEvent } from "./fourmeme-liquidity-added.js";
 import { handleNftAddedEvent, handleNftRemovedEvent } from "./fourmeme-nft-registry.js";
 import { handleTokenCreateEvent } from "./fourmeme-token-create.js";
@@ -21,6 +22,7 @@ export const handlerMap: { [K in FourMemeEventName]: FourMemeHandler<K> } = {
 	TradeStop: handleTradeStopEvent,
 	NftAdded: handleNftAddedEvent,
 	NftRemoved: handleNftRemovedEvent,
+	Registered: handleErc8004RegisteredEvent,
 };
 
 export async function processFourMemeEvent(
