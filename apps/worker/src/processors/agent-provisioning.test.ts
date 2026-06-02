@@ -1275,7 +1275,6 @@ test("agent-provisioning worker rejects invalid admin wallets before calling Eli
 	assert.equal(fetchMock.mock.callCount(), 0);
 });
 
-
 test("agent-provisioning worker surfaces a clear error when Eliza Cloud times out", async () => {
 	const persona = {
 		id: "persona-row-timeout",

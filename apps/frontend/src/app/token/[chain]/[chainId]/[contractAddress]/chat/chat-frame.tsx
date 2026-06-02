@@ -1,17 +1,17 @@
 "use client";
 
-import { getTokenChatSession } from "@/lib/api";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
+import { getTokenChatSession } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { ITokenLookUp } from "@waifufun/types";
 import { LoaderCircle, LockKeyhole, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-	canRequestHostedChatSession,
 	HOSTED_CHAT_IFRAME_ALLOW,
 	HOSTED_CHAT_IFRAME_REFERRER_POLICY,
 	HOSTED_CHAT_IFRAME_SANDBOX,
+	canRequestHostedChatSession,
 } from "./chat-frame-policy";
 
 type ChatFrameProps = {

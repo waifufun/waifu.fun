@@ -290,7 +290,7 @@ test("POST runtime/activate provisions with the agent EVM wallet and stores the 
 		const personaUpdate = updates.find((update) => update.elizaCloudAgentId === "cloud-agent-activate");
 		assert.equal(personaUpdate?.elizaCloudAgentId, "cloud-agent-activate");
 		assert.equal(
-			((personaUpdate?.metadata as { provisioning?: { cloudAgentId?: string } })?.provisioning ?? {}).cloudAgentId,
+			(personaUpdate?.metadata as { provisioning?: { cloudAgentId?: string } })?.provisioning?.cloudAgentId,
 			"cloud-agent-activate",
 		);
 	} finally {
@@ -411,13 +411,13 @@ test("POST runtime/activate keeps owner token runtime provisioning when hosted U
 		const personaUpdate = updates.find((update) => update.elizaCloudAgentId === "cloud-agent-activate");
 		assert.equal(personaUpdate?.elizaCloudAgentId, "cloud-agent-activate");
 		assert.equal(
-			((personaUpdate?.metadata as { provisioning?: { status?: string; webUiUrl?: string | null } })?.provisioning ?? {})
-				.status,
+			(personaUpdate?.metadata as { provisioning?: { status?: string; webUiUrl?: string | null } })?.provisioning
+				?.status,
 			"provisioning",
 		);
 		assert.equal(
-			((personaUpdate?.metadata as { provisioning?: { status?: string; webUiUrl?: string | null } })?.provisioning ?? {})
-				.webUiUrl,
+			(personaUpdate?.metadata as { provisioning?: { status?: string; webUiUrl?: string | null } })?.provisioning
+				?.webUiUrl,
 			null,
 		);
 	} finally {

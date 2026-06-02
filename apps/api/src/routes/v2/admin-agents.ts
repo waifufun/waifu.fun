@@ -269,7 +269,8 @@ function directProvisionContainerInput(body: Record<string, unknown>) {
 	const desiredCount = numberField(body, "containerDesiredCount", Number.NaN);
 	const architecture = containerArchitectureField(body, "containerArchitecture");
 	const healthCheckPath = stringField(body, "containerHealthCheckPath");
-	const environmentVars = stringRecordField(body, "containerEnvironmentVars") ?? stringRecordField(body, "containerEnv");
+	const environmentVars =
+		stringRecordField(body, "containerEnvironmentVars") ?? stringRecordField(body, "containerEnv");
 	return {
 		...(imageUri ? { imageUri } : {}),
 		...(projectName ? { projectName } : {}),
@@ -292,7 +293,8 @@ function workerProvisioningContainerData(body: Record<string, unknown>) {
 	const desiredCount = numberField(body, "containerDesiredCount", Number.NaN);
 	const architecture = containerArchitectureField(body, "containerArchitecture");
 	const healthCheckPath = stringField(body, "containerHealthCheckPath");
-	const environmentVars = stringRecordField(body, "containerEnvironmentVars") ?? stringRecordField(body, "containerEnv");
+	const environmentVars =
+		stringRecordField(body, "containerEnvironmentVars") ?? stringRecordField(body, "containerEnv");
 	return {
 		...(imageUri ? { containerImageUri: imageUri } : {}),
 		...(projectName ? { containerProjectName: projectName } : {}),
@@ -539,7 +541,8 @@ app.post("/eliza-cloud/test-proof", async (c) => {
 	);
 
 	const agentId = stringField(body, "agentId");
-	if (!agentId) return c.json({ ok: false, error: "AGENT_REQUIRED", message: "agentId is required", data: { steps } }, 400);
+	if (!agentId)
+		return c.json({ ok: false, error: "AGENT_REQUIRED", message: "agentId is required", data: { steps } }, 400);
 	const tokenContractAddress = stringField(body, "tokenContractAddress");
 	if (!tokenContractAddress || !EVM_ADDRESS_RE.test(tokenContractAddress)) {
 		return c.json(
@@ -654,7 +657,9 @@ app.post("/eliza-cloud/test-proof", async (c) => {
 		proofStep(
 			"runtime",
 			cloudAgentId && runtimeRef.webUiUrl ? "passed" : "skipped",
-			cloudAgentId && runtimeRef.webUiUrl ? "hosted runtime metadata includes webUiUrl" : "worker runtime not hosted yet",
+			cloudAgentId && runtimeRef.webUiUrl
+				? "hosted runtime metadata includes webUiUrl"
+				: "worker runtime not hosted yet",
 			runtimeRef,
 		),
 	);
@@ -662,7 +667,14 @@ app.post("/eliza-cloud/test-proof", async (c) => {
 	const client = configuredElizaCloudClient();
 	if (cloudAgentId && client?.getAgentRuntimeStatus) {
 		const status = await client.getAgentRuntimeStatus(cloudAgentId);
-		steps.push(proofStep("runtime-status", status.webUiUrl ? "passed" : "failed", status.webUiUrl ?? "no hosted webUiUrl", status));
+		steps.push(
+			proofStep(
+				"runtime-status",
+				status.webUiUrl ? "passed" : "failed",
+				status.webUiUrl ?? "no hosted webUiUrl",
+				status,
+			),
+		);
 	} else {
 		steps.push(proofStep("runtime-status", "skipped", "cloud agent id or status API unavailable"));
 	}
@@ -681,7 +693,13 @@ app.post("/eliza-cloud/test-proof", async (c) => {
 			const event =
 				action === "webhook-depleted"
 					? { event: "agent.credits.depleted", data: { creditsRemaining: 0 } }
-					: { event: "credits.topped_up", data: { amountUsdCents: numberField(body, "amountUsdCents", 500), sessionId: stringField(body, "sessionId") } };
+					: {
+							event: "credits.topped_up",
+							data: {
+								amountUsdCents: numberField(body, "amountUsdCents", 500),
+								sessionId: stringField(body, "sessionId"),
+							},
+						};
 			await dispatchEvent(
 				{
 					event: event.event,
