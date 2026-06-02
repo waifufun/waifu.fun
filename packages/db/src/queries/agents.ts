@@ -595,7 +595,7 @@ function humanizeEventType(t: string): string {
 	if (t.startsWith("agent.ship")) return "ship";
 	if (t.startsWith("agent.decide") || t.startsWith("agent.choice")) return "decide";
 	if (t === "token.created" || t === "agent.created") return "mint";
-	if (t === "agent.graduated") return "graduate";
+	if (t === "agent.bonded" || t === "agent.graduated") return "graduate";
 	if (t === "agent.prepared" || t === "agent.claimed" || t === "agent.launched") return "launch";
 	if (t.startsWith("tax.") || t.startsWith("treasury.")) return "treasury";
 	if (t.startsWith("credits.") || t.startsWith("inference.")) return "spend";

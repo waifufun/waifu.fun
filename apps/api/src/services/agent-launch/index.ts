@@ -68,3 +68,11 @@ export {
 	type RegisterAgentIdentityResult,
 	type Eip8004RegistrationPayload,
 } from "./fourmeme-8004-register.js";
+
+export {
+	DEFAULT_ERC8004_REPUTATION_REGISTRY,
+	ERC8004_REPUTATION_ABI,
+	readReputation,
+	type Erc8004ReputationSummary,
+	type ReadReputationOptions,
+} from "./erc8004-reputation.js";

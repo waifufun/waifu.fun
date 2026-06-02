@@ -11,7 +11,8 @@ export type FourMemeEventName =
 	| "LiquidityAdded"
 	| "TradeStop"
 	| "NftAdded"
-	| "NftRemoved";
+	| "NftRemoved"
+	| "Registered";
 
 // ---------------------------------------------------------------------------
 // Envelope
@@ -105,6 +106,15 @@ export type NftRemovedEvent = FourMemeEventEnvelope<
 	}
 >;
 
+export type Erc8004RegisteredEvent = FourMemeEventEnvelope<
+	"Registered",
+	{
+		agentId: string;
+		agentURI: string;
+		owner: Address;
+	}
+>;
+
 export type FourMemeEvent =
 	| TokenCreateEvent
 	| TokenPurchaseEvent
@@ -112,7 +122,8 @@ export type FourMemeEvent =
 	| LiquidityAddedEvent
 	| TradeStopEvent
 	| NftAddedEvent
-	| NftRemovedEvent;
+	| NftRemovedEvent
+	| Erc8004RegisteredEvent;
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -63,7 +63,7 @@
 		"start:evm-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/evm-indexer' start",
 		"start:sol-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/sol-indexer' start",
 		"sync": "dotenv -e .env -- bun run --filter @waifufun/sync -- sync tokens",
-		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test --continue --filter=@waifufun/api --filter=@waifufun/brain --filter=@waifufun/frontend --filter=@waifufun/evm-indexer --filter=@waifufun/launch-indexer --filter=@waifufun/agent-actions --filter=@waifufun/db --filter=@waifufun/launchpad && bun run test:eliza-cloud:smoke",
+		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test --continue --filter=@waifufun/api --filter=@waifufun/brain --filter=@waifufun/frontend --filter=@waifufun/evm-indexer --filter=@waifufun/launch-indexer --filter=@waifufun/agent-actions --filter=@waifufun/db --filter=@waifufun/launchpad --filter=@waifufun/worker && bun run test:eliza-cloud:smoke",
 		"test:e2e": "bun run test:contracts",
 		"test:eliza-cloud:live": "node scripts/eliza-cloud-live-smoke.mjs",
 		"test:eliza-cloud:smoke": "node --test scripts/eliza-cloud-live-smoke.test.mjs scripts/eliza-cloud-live-smoke.integration.test.mjs",

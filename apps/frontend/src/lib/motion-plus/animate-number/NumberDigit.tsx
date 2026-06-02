@@ -76,9 +76,12 @@ export const NumberDigit = forwardRef<
 
 		const initialY = box.height * delta + (box.top - (refBox ? refBox.top || 0 : box.top));
 
-		animate(scope.current, { y: [initialY, 0] }, transition as AnimationOptions);
+		const controls = animate(scope.current, { y: [initialY, 0] }, transition as AnimationOptions);
 
 		return () => {
+			// Cancel the spring so the playback handle (and its rAF) is released on
+			// re-key/unmount; a fresh value supersedes it anyway, so this is visually inert.
+			controls.cancel();
 			prevValue.current = value;
 		};
 	}, [value]);
@@ -88,10 +91,10 @@ export const NumberDigit = forwardRef<
 		const targetEl = numberRefs.current[value];
 		if (!targetEl) return;
 		const w = getWidthInEm(targetEl);
-		if (ref.current) targetWidths.set(ref.current, w);
-		if (ref.current) {
-			animate(ref.current, { width: w }, transition as AnimationOptions) as AnimationPlaybackControls;
-		}
+		if (!ref.current) return;
+		targetWidths.set(ref.current, w);
+		const controls = animate(ref.current, { width: w }, transition as AnimationOptions) as AnimationPlaybackControls;
+		return () => controls.cancel();
 	}, [value]);
 
 	const renderNumber = (i: number) => (

@@ -1,4 +1,4 @@
-import { schema } from "@waifufun/db";
+import { agentEventQueries, schema } from "@waifufun/db";
 import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 import { eq, sql } from "drizzle-orm";
 
@@ -104,6 +104,27 @@ export async function handleFlapLaunchedToDex(
 		await enqueueAgentProvisioning(buildFlapLaunchedToDexProvisioningJob(agentId, launch.id, event), {
 			jobId: `launch-indexer-${event.chainId}-${event.txHash}-${event.logIndex}-agent-provisioning-${agentId}`,
 		});
+		const agentEventPayload = {
+			source: "launch-indexer",
+			tokenAddress: event.data.token,
+			pancakePair: event.data.pair,
+			blockNumber: event.blockNumber.toString(),
+			txHash: event.txHash,
+			chainId: String(event.chainId),
+			launchId: launch.id,
+		};
+		await emitAgentEvent(runtime, {
+			agentId,
+			tokenAddress: event.data.token,
+			type: "agent.bonded",
+			payload: agentEventPayload,
+		});
+		await emitAgentEvent(runtime, {
+			agentId,
+			tokenAddress: event.data.token,
+			type: "agent.graduated",
+			payload: agentEventPayload,
+		});
 		enqueuedJobs.push("agent-provisioning");
 	}
 
@@ -136,7 +157,7 @@ export function buildFlapLaunchedToDexProvisioningJob(
 ): AgentProvisioningJob {
 	return {
 		agentId,
-		source: "token.migrated",
+		source: "agent.bonded",
 		data: {
 			tokenAddress: event.data.token,
 			tokenContractAddress: event.data.token,
@@ -151,4 +172,32 @@ export function buildFlapLaunchedToDexProvisioningJob(
 			dexName: "pancakeswap",
 		},
 	};
+}
+
+async function emitAgentEvent(
+	runtime: LaunchIndexerRuntime,
+	input: agentEventQueries.EnqueueAgentEventInput,
+): Promise<void> {
+	try {
+		const row = await agentEventQueries.enqueueAgentEvent(runtime.db, input);
+		runtime.logger.debug(
+			{
+				agentEventId: row.id,
+				type: row.type,
+				tokenAddress: row.tokenAddress,
+				agentId: row.agentId,
+			},
+			"agent-brain: launch event enqueued",
+		);
+	} catch (err) {
+		runtime.logger.warn(
+			{
+				err,
+				type: input.type,
+				tokenAddress: input.tokenAddress,
+				agentId: input.agentId,
+			},
+			"agent-brain: failed to enqueue launch event (non-fatal)",
+		);
+	}
 }

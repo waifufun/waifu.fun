@@ -629,6 +629,10 @@ function mergeAgentApps(agent: AgentData, registryApps: App[]): App[] {
 				revenue24hUsd: 0,
 				revenue7dUsd: typeof p.revenueUsd === "number" ? p.revenueUsd : 0,
 				revenue7dDeltaPct: null,
+				// synthetic persona-shipped product (storefront). Not a callable
+				// mini-app, so it carries the default credits settlement mode and
+				// is excluded from selectServiceApps regardless.
+				settlementMode: "credits",
 				metadata: meta,
 				createdAt: "",
 				updatedAt: "",

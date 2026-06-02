@@ -32,7 +32,11 @@ export const agentIdentifierEventsAbi = parseAbi([
 	"event NftRemoved(address indexed nft)",
 ]);
 
-const allFourMemeAbis = [...tokenManager2EventsAbi, ...agentIdentifierEventsAbi];
+export const erc8004IdentityEventsAbi = parseAbi([
+	"event Registered(uint256 indexed agentId, string agentURI, address indexed owner)",
+]);
+
+const allFourMemeAbis = [...tokenManager2EventsAbi, ...agentIdentifierEventsAbi, ...erc8004IdentityEventsAbi];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -41,6 +45,7 @@ const allFourMemeAbis = [...tokenManager2EventsAbi, ...agentIdentifierEventsAbi]
 export interface FourMemeContractAddresses {
 	tokenManager2: Address;
 	agentIdentifier: Address;
+	erc8004IdentityRegistry: Address;
 }
 
 export interface FourMemeEventSourceConfig {
@@ -79,6 +84,7 @@ const INDEXED_FOURMEME_EVENTS: ReadonlySet<string> = new Set([
 	"TradeStop",
 	"NftAdded",
 	"NftRemoved",
+	"Registered",
 ]);
 
 async function sleep(ms: number): Promise<void> {
@@ -117,7 +123,11 @@ class ViemFourMemeEventSource implements FourMemeEventSource {
 		});
 
 		this.contractAddresses = Array.from(
-			new Set([config.contracts.tokenManager2 as `0x${string}`, config.contracts.agentIdentifier as `0x${string}`]),
+			new Set([
+				config.contracts.tokenManager2 as `0x${string}`,
+				config.contracts.agentIdentifier as `0x${string}`,
+				config.contracts.erc8004IdentityRegistry as `0x${string}`,
+			]),
 		);
 	}
 
@@ -344,6 +354,17 @@ class ViemFourMemeEventSource implements FourMemeEventSource {
 					eventName: "NftRemoved" as const,
 					data: {
 						nft: args.nft as Address,
+					},
+				};
+
+			case "Registered":
+				return {
+					...base,
+					eventName: "Registered" as const,
+					data: {
+						agentId: (args.agentId as bigint).toString(),
+						agentURI: args.agentURI as string,
+						owner: args.owner as Address,
 					},
 				};
 

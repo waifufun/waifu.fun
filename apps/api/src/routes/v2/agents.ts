@@ -6,9 +6,11 @@ import {
 	agentPersonaQueries,
 	agentPersonas,
 	agentQueries,
+	agentWallets,
 	agents,
 	creators,
 	getDatabase,
+	getSettlementMode,
 	inviteCodes,
 	inviteRedemptions,
 	tokens,
@@ -147,48 +149,60 @@ export function buildLaunchOrchestratorDeps(): OrchestratorDeps {
 		personaStore = {
 			writeInitial: async (args) => {
 				const existing = await agentPersonaQueries.getAgentPersonaByAgentId(db, args.agentId);
-				if (existing) return;
 				const personaJson =
 					args.persona && typeof args.persona === "object" ? (args.persona as Record<string, unknown>) : undefined;
-				const preset = personaJson && typeof personaJson.preset === "string" ? personaJson.preset : null;
-				const systemPrompt =
-					personaJson && typeof personaJson.systemPrompt === "string" ? personaJson.systemPrompt : null;
-				const traits =
-					personaJson && Array.isArray(personaJson.traits)
-						? (personaJson.traits.filter((t: unknown) => typeof t === "string") as string[])
-						: [];
-				const twitterHandle =
-					personaJson && typeof personaJson.twitterHandle === "string" ? personaJson.twitterHandle : null;
-				const runtimeKind =
-					personaJson?.runtimeKind === "webhook"
-						? "third-party-webhook"
-						: personaJson?.runtimeKind === "pull"
-							? "third-party-pull"
-							: "eliza-cloud";
-				const persona = await agentPersonaQueries.createAgentPersona(db, {
+				if (!existing) {
+					const preset = personaJson && typeof personaJson.preset === "string" ? personaJson.preset : null;
+					const systemPrompt =
+						personaJson && typeof personaJson.systemPrompt === "string" ? personaJson.systemPrompt : null;
+					const traits =
+						personaJson && Array.isArray(personaJson.traits)
+							? (personaJson.traits.filter((t: unknown) => typeof t === "string") as string[])
+							: [];
+					const twitterHandle =
+						personaJson && typeof personaJson.twitterHandle === "string" ? personaJson.twitterHandle : null;
+					const runtimeKind =
+						personaJson?.runtimeKind === "webhook"
+							? "third-party-webhook"
+							: personaJson?.runtimeKind === "pull"
+								? "third-party-pull"
+								: "eliza-cloud";
+					const persona = await agentPersonaQueries.createAgentPersona(db, {
+						agentId: args.agentId,
+						name: args.name,
+						bio: args.bio ?? null,
+						avatarUrl: args.avatarUrl ?? null,
+						preset,
+						systemPrompt,
+						traits,
+						twitterHandle,
+						metadata: personaJson ?? null,
+						ownerStewardUserId:
+							personaJson && typeof personaJson.ownerStewardUserId === "string" ? personaJson.ownerStewardUserId : null,
+						ownerAddress: personaJson && typeof personaJson.ownerAddress === "string" ? personaJson.ownerAddress : null,
+						runtimeKind,
+						runtimeWebhookUrl:
+							personaJson && typeof personaJson.webhookUrl === "string" ? personaJson.webhookUrl : null,
+						runtimeWebhookSecretHash:
+							personaJson && typeof personaJson.runtimeWebhookSecretHash === "string"
+								? personaJson.runtimeWebhookSecretHash
+								: null,
+					});
+					await seedDefaultAdapterPolicies(db, persona);
+				}
+				await upsertLaunchAgentWallet(db, {
 					agentId: args.agentId,
-					name: args.name,
-					bio: args.bio ?? null,
-					avatarUrl: args.avatarUrl ?? null,
-					preset,
-					systemPrompt,
-					traits,
-					twitterHandle,
-					metadata: personaJson ?? null,
-					ownerStewardUserId:
-						personaJson && typeof personaJson.ownerStewardUserId === "string" ? personaJson.ownerStewardUserId : null,
-					ownerAddress: personaJson && typeof personaJson.ownerAddress === "string" ? personaJson.ownerAddress : null,
-					runtimeKind,
-					runtimeWebhookUrl: personaJson && typeof personaJson.webhookUrl === "string" ? personaJson.webhookUrl : null,
-					runtimeWebhookSecretHash:
-						personaJson && typeof personaJson.runtimeWebhookSecretHash === "string"
-							? personaJson.runtimeWebhookSecretHash
-							: null,
+					walletAddress: args.walletAddress,
+					safeAddress: args.taxVaultAddress ?? null,
+					persona: personaJson ?? null,
 				});
-				await seedDefaultAdapterPolicies(db, persona);
 			},
 			setToken: async (agentId, tokenAddress) => {
 				await agentPersonaQueries.setTokenAddressOnPersona(db, agentId, tokenAddress);
+				await db
+					.update(agentWallets)
+					.set({ agentToken: tokenAddress, updatedAt: new Date() })
+					.where(eq(agentWallets.internalAgentId, agentId));
 			},
 			setIdentity: async (agentId, identity) => {
 				await agentPersonaQueries.setPersonaIdentity(db, agentId, identity);
@@ -217,6 +231,43 @@ export function buildLaunchOrchestratorDeps(): OrchestratorDeps {
 function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
 	if (agentsRouteDepsForTest.createOrchestrator) return agentsRouteDepsForTest.createOrchestrator();
 	return createOrchestrator(buildLaunchOrchestratorDeps());
+}
+
+async function upsertLaunchAgentWallet(
+	db: Database,
+	args: {
+		agentId: string;
+		walletAddress: string;
+		safeAddress: string | null;
+		persona: Record<string, unknown> | null;
+	},
+): Promise<void> {
+	const [existing] = await db
+		.select({ id: agentWallets.id })
+		.from(agentWallets)
+		.where(eq(agentWallets.internalAgentId, args.agentId))
+		.limit(1);
+
+	const now = new Date();
+	const values = {
+		walletAddress: args.walletAddress,
+		safeAddress: args.safeAddress,
+		internalAgentId: args.agentId,
+		stewardAgentId: args.agentId,
+		stewardTenantId: process.env.STEWARD_TENANT_ID ?? "waifu",
+		persona: args.persona,
+		updatedAt: now,
+	};
+
+	if (existing) {
+		await db.update(agentWallets).set(values).where(eq(agentWallets.id, existing.id));
+		return;
+	}
+
+	await db.insert(agentWallets).values({
+		...values,
+		createdAt: now,
+	});
 }
 
 function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifuAgent"> | null {
@@ -389,7 +440,7 @@ async function syncTokenRuntimeOverlay(
 	if (!row) return;
 
 	const now = new Date();
-	const hostedUrl = args.cloud.webUiUrl ?? args.cloud.containerUrl ?? null;
+	const hostedUrl = args.cloud.webUiUrl ?? null;
 	const isRunning = isHostedRuntimeRunning(args.cloud.status) && Boolean(hostedUrl);
 	const agentStatus = isRunning ? "running" : "provisioning";
 	const lifecycleState = isRunning ? "live" : "birth";
@@ -585,7 +636,7 @@ function resurrectedRuntimeOverlay(status: ElizaAgentRuntimeStatus | null): {
 	webUiUrl?: string | null;
 	containerId?: string | null;
 } {
-	const webUiUrl = status?.webUiUrl ?? status?.containerUrl ?? null;
+	const webUiUrl = status?.webUiUrl ?? null;
 	const running = isHostedRuntimeRunning(status?.status) && Boolean(webUiUrl);
 	return {
 		agentStatus: running ? "running" : "provisioning",
@@ -975,6 +1026,7 @@ app.get("/:token/apps", async (c) => {
 				revenue24hUsd,
 				revenue7dUsd,
 				revenue7dDeltaPct: metadataNumber(row.metadata, "revenue7dDeltaPct"),
+				settlementMode: getSettlementMode(row.metadata),
 				metadata: row.metadata,
 				createdAt: row.createdAt.toISOString(),
 				updatedAt: row.updatedAt.toISOString(),
@@ -1647,6 +1699,7 @@ app.post("/launch", requireAgentAuth(), async (c) => {
 				treasuryAddress: result.treasuryAddress,
 				txHash: result.txHash,
 				fourMeme: result.fourMeme,
+				identityRegistrationStatus: result.identityRegistrationStatus,
 				...(result.agentIdentity ? { agentIdentity: result.agentIdentity } : {}),
 			},
 			200,

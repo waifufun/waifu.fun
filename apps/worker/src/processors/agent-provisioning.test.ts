@@ -3,7 +3,7 @@ import test, { mock } from "node:test";
 
 import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 
-import { createAgentProvisioningProcessor } from "./agent-provisioning.js";
+import { adaptivePollDelayMs, createAgentProvisioningProcessor } from "./agent-provisioning.js";
 
 type UpdateRecord = { table: unknown; values: Record<string, unknown> };
 type InsertRecord = { table: unknown; values: Record<string, unknown> };
@@ -184,6 +184,7 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
 			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
 			WAIFU_CHAT_ACCESS_JWT_SECRET: "chat_secret_worker",
+			WAIFU_CHAT_FRAME_ANCESTORS: "https://waifu.fun https://staging.waifu.fun",
 			WAIFU_ELIZA_DEFAULT_MODEL: "openai/gpt-oss-120b",
 			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
 		},
@@ -208,6 +209,19 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 					walletAddress: "0x0000000000000000000000000000000000000002",
 					agentWalletAddress: "0x0000000000000000000000000000000000000009",
 					walletKeyRef: "steward:custom-worker-key",
+					containerImageUri: "ecr.test/waifu-agent:bonded",
+					containerProjectName: "waifu-demo-01",
+					containerPort: 3000,
+					containerCpu: 512,
+					containerMemory: 1024,
+					containerDesiredCount: 1,
+					containerArchitecture: "arm64",
+					containerHealthCheckPath: "/api/health",
+					containerEnvironmentVars: {
+						CUSTOM_ENV: "kept",
+						ELIZA_UI_ENABLE: "false",
+						IGNORED_NUMERIC_VALUE: 1,
+					},
 					poolAddress: "0x0000000000000000000000000000000000000008",
 					dexName: "pancakeswap",
 				},
@@ -217,7 +231,7 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 				agentId: "waifu-demo-01",
 				cloudAgentId: "123e4567-e89b-12d3-a456-426614174000",
 				containerId: "container-worker",
-				containerUrl: "https://worker-agent.example",
+				containerUrl: "http://worker-bridge.internal",
 				webUiUrl: "https://worker-agent.example",
 				jobId: "job-worker",
 				status: "running",
@@ -272,12 +286,22 @@ test("agent-provisioning worker creates Eliza Cloud app agent, deploys container
 	});
 
 	const container = requests[0]?.body?.container as Record<string, unknown>;
-	assert.equal(container.image, "ecr.test/waifu-agent:latest");
+	assert.equal(container.image, "ecr.test/waifu-agent:bonded");
+	assert.equal(container.projectName, "waifu-demo-01");
+	assert.equal(container.port, 3000);
+	assert.equal(container.cpu, 512);
+	assert.equal(container.memory, 1024);
+	assert.equal(container.desiredCount, 1);
+	assert.equal(container.architecture, "arm64");
+	assert.equal(container.healthCheckPath, "/api/health");
 	const env = container.env as Record<string, string>;
 	assert.equal(env.WAIFU_AGENT_EVM_ADDRESS, "0x0000000000000000000000000000000000000009");
 	assert.equal(env.WAIFU_AGENT_EVM_KEY_REF, "steward:custom-worker-key");
 	assert.equal(env.ELIZA_UI_ENABLE, "true");
+	assert.equal(env.CUSTOM_ENV, "kept");
+	assert.equal("IGNORED_NUMERIC_VALUE" in env, false);
 	assert.equal(env.WAIFU_CHAT_ACCESS_JWT_SECRET, "chat_secret_worker");
+	assert.equal(env.WAIFU_CHAT_FRAME_ANCESTORS, "https://waifu.fun https://staging.waifu.fun");
 	assert.equal(env.WAIFU_INITIAL_CREDIT_USD, "5");
 	assert.equal(env.WAIFU_ACCESS_GUEST_MIN_TOKENS, "1000");
 	assert.equal(env.WAIFU_ACCESS_USER_MIN_TOKENS, "100000");
@@ -680,7 +704,6 @@ test("agent-provisioning worker skips duplicate Eliza Cloud launches when metada
 		agentId: "waifu-demo-01",
 		cloudAgentId: "cloud-existing-1",
 		containerId: "container-existing-1",
-		containerUrl: "https://existing-agent.example",
 		webUiUrl: "https://existing-agent.example",
 		jobId: "cloud-existing-1",
 		status: "running",
@@ -1250,6 +1273,249 @@ test("agent-provisioning worker rejects invalid admin wallets before calling Eli
 	);
 
 	assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("agent-provisioning worker surfaces a clear error when Eliza Cloud times out", async () => {
+	const persona = {
+		id: "persona-row-timeout",
+		agentId: "waifu-timeout-01",
+		name: "Timeout Waifu",
+		bio: "provision timeout test",
+		avatarUrl: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Timeout Waifu", symbol: "TMO" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			// Merged code path now performs an atomic claim via .update().set().where().returning();
+			// return a non-empty claim result so provisioning proceeds to the timed-out fetch.
+			return { set: () => ({ where: () => updateResult([{ agentId: "waifu-timeout-01" }]) }) };
+		},
+		insert() {
+			return { values: () => ({ returning: () => Promise.resolve([{ id: "event-row-timeout" }]) }) };
+		},
+	} as never;
+
+	const fetchMock = mock.method(globalThis, "fetch", async () => {
+		throw new DOMException("The operation timed out.", "TimeoutError");
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS: "1234",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db,
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			const payload: AgentProvisioningJob = {
+				agentId: "waifu-timeout-01",
+				source: "token.migrated",
+				data: {
+					tokenContractAddress: "0x0000000000000000000000000000000000000004",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					chain: "bsc",
+					chainId: 56,
+					tokenName: "Timeout Waifu",
+					tokenTicker: "TMO",
+					launchType: "native",
+				},
+			};
+			await assert.rejects(
+				() => processor({ id: "job-timeout", data: payload, attemptsMade: 0 } as never),
+				/timed out after 1234ms/,
+			);
+		},
+	);
+
+	assert.equal(fetchMock.mock.callCount(), 1);
+});
+
+test("adaptivePollDelayMs ramps from the initial delay up to the cap", () => {
+	// 1s initial, 5s cap: 1s → 2s → 4s → 5s (capped) → 5s …
+	assert.equal(adaptivePollDelayMs(1, 1_000, 5_000), 1_000);
+	assert.equal(adaptivePollDelayMs(2, 1_000, 5_000), 2_000);
+	assert.equal(adaptivePollDelayMs(3, 1_000, 5_000), 4_000);
+	assert.equal(adaptivePollDelayMs(4, 1_000, 5_000), 5_000);
+	assert.equal(adaptivePollDelayMs(8, 1_000, 5_000), 5_000);
+	// initial >= cap collapses to a fixed cadence at the cap.
+	assert.equal(adaptivePollDelayMs(1, 5_000, 5_000), 5_000);
+	assert.equal(adaptivePollDelayMs(3, 5_000, 5_000), 5_000);
+});
+
+function statusPollDb() {
+	const persona = {
+		id: "persona-row-poll",
+		agentId: "waifu-poll-01",
+		name: "Poll Waifu",
+		bio: "status poll resilience",
+		avatarUrl: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Poll Waifu", symbol: "POLL" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const tokenRow = { id: "token-row-poll", agentId: "agent-overlay-poll" };
+	return {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) return Promise.resolve([{ token: tokenRow, agent: null }]);
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			// Atomic claim shape: return a non-empty claim result so provisioning proceeds.
+			return { set: () => ({ where: () => updateResult([{ agentId: "waifu-poll-01" }]) }) };
+		},
+		insert() {
+			return { values: () => ({ returning: () => Promise.resolve([{ id: "row-poll" }]) }) };
+		},
+	} as never;
+}
+
+const pollPayload: AgentProvisioningJob = {
+	agentId: "waifu-poll-01",
+	source: "token.migrated",
+	data: {
+		tokenContractAddress: "0x0000000000000000000000000000000000000004",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		chainId: 56,
+		tokenName: "Poll Waifu",
+		tokenTicker: "POLL",
+		launchType: "native",
+	},
+};
+
+test("agent-provisioning worker keeps polling through a transient status blip", async () => {
+	let statusPolls = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		const target = String(url);
+		if (target.endsWith("/api/v1/agents")) {
+			return Response.json({ success: true, data: { cloudAgentId: "cloud-poll-1", status: "pending" } });
+		}
+		if (target.includes("/status")) {
+			statusPolls += 1;
+			if (statusPolls === 1) return new Response("upstream hiccup", { status: 503 });
+			return Response.json({
+				success: true,
+				data: { cloudAgentId: "cloud-poll-1", status: "running", webUiUrl: "https://poll-agent.example" },
+			});
+		}
+		throw new Error(`unexpected fetch ${target}`);
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db: statusPollDb(),
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			const result = await processor({ id: "job-poll-transient", data: pollPayload, attemptsMade: 0 } as never);
+			assert.equal((result as { webUiUrl?: string }).webUiUrl, "https://poll-agent.example");
+		},
+	);
+
+	assert.equal(statusPolls, 2);
+});
+
+test("agent-provisioning worker fails fast when the status endpoint rejects auth", async () => {
+	let statusPolls = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		const target = String(url);
+		if (target.endsWith("/api/v1/agents")) {
+			return Response.json({ success: true, data: { cloudAgentId: "cloud-poll-2", status: "pending" } });
+		}
+		if (target.includes("/status")) {
+			statusPolls += 1;
+			return new Response("forbidden", { status: 401 });
+		}
+		throw new Error(`unexpected fetch ${target}`);
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS: "18",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db: statusPollDb(),
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			await assert.rejects(
+				() => processor({ id: "job-poll-auth", data: pollPayload, attemptsMade: 0 } as never),
+				/401/,
+			);
+		},
+	);
+
+	// Auth failures are not retried inside the poll loop.
+	assert.equal(statusPolls, 1);
 });
 
 test("worker provisioning injects WAIFU_INFERENCE_WEBHOOK_URL and WAIFU_WEBHOOK_SECRET into container env", async () => {

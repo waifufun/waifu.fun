@@ -1,4 +1,4 @@
-import { type AgentEvent, agentEventQueries, agentPersonas, getDatabase } from "@waifufun/db";
+import { type AgentEvent, agentEventQueries, agentPersonas, agentWallets, getDatabase } from "@waifufun/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context } from "hono";
@@ -24,6 +24,13 @@ type AgentControlState = {
 	withdrawalsPausedReason: string | null;
 	killedAt: Date | null;
 	killedReason: string | null;
+};
+type ProofStepState = "passed" | "failed" | "skipped";
+type ProofStep = {
+	key: string;
+	state: ProofStepState;
+	detail?: string;
+	data?: unknown;
 };
 
 let testDbOverride: Db | null | undefined;
@@ -227,9 +234,78 @@ function recordField(data: Record<string, unknown>, key: string): Record<string,
 	return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
-function provisioningSourceField(value: string | null): "agent.graduated" | "token.migrated" | "manual" {
-	if (value === "agent.graduated" || value === "token.migrated" || value === "manual") return value;
-	return "agent.graduated";
+function stringRecordField(data: Record<string, unknown>, key: string): Record<string, string> | null {
+	const value = recordField(data, key);
+	if (!value) return null;
+	const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string");
+	return entries.length > 0 ? Object.fromEntries(entries) : null;
+}
+
+function proofStep(key: string, state: ProofStepState, detail?: string, data?: unknown): ProofStep {
+	return { key, state, ...(detail ? { detail } : {}), ...(data !== undefined ? { data } : {}) };
+}
+
+function provisioningSourceField(
+	value: string | null,
+): "agent.bonded" | "agent.graduated" | "token.migrated" | "manual" {
+	if (value === "agent.bonded" || value === "agent.graduated" || value === "token.migrated" || value === "manual") {
+		return value;
+	}
+	return "agent.bonded";
+}
+
+function containerArchitectureField(data: Record<string, unknown>, key: string): "arm64" | "x86_64" | null {
+	const value = stringField(data, key);
+	if (value === "arm64" || value === "x86_64") return value;
+	return null;
+}
+
+function directProvisionContainerInput(body: Record<string, unknown>) {
+	const imageUri = stringField(body, "containerImageUri");
+	const projectName = stringField(body, "containerProjectName") ?? stringField(body, "projectName");
+	const port = numberField(body, "containerPort", Number.NaN);
+	const cpu = numberField(body, "containerCpu", Number.NaN);
+	const memory = numberField(body, "containerMemory", Number.NaN);
+	const desiredCount = numberField(body, "containerDesiredCount", Number.NaN);
+	const architecture = containerArchitectureField(body, "containerArchitecture");
+	const healthCheckPath = stringField(body, "containerHealthCheckPath");
+	const environmentVars =
+		stringRecordField(body, "containerEnvironmentVars") ?? stringRecordField(body, "containerEnv");
+	return {
+		...(imageUri ? { imageUri } : {}),
+		...(projectName ? { projectName } : {}),
+		...(port > 0 ? { port } : {}),
+		...(cpu > 0 ? { cpu } : {}),
+		...(memory > 0 ? { memory } : {}),
+		...(desiredCount > 0 ? { desiredCount } : {}),
+		...(architecture ? { architecture } : {}),
+		...(healthCheckPath ? { healthCheckPath } : {}),
+		...(environmentVars ? { environmentVars } : {}),
+	};
+}
+
+function workerProvisioningContainerData(body: Record<string, unknown>) {
+	const imageUri = stringField(body, "containerImageUri");
+	const projectName = stringField(body, "containerProjectName") ?? stringField(body, "projectName");
+	const port = numberField(body, "containerPort", Number.NaN);
+	const cpu = numberField(body, "containerCpu", Number.NaN);
+	const memory = numberField(body, "containerMemory", Number.NaN);
+	const desiredCount = numberField(body, "containerDesiredCount", Number.NaN);
+	const architecture = containerArchitectureField(body, "containerArchitecture");
+	const healthCheckPath = stringField(body, "containerHealthCheckPath");
+	const environmentVars =
+		stringRecordField(body, "containerEnvironmentVars") ?? stringRecordField(body, "containerEnv");
+	return {
+		...(imageUri ? { containerImageUri: imageUri } : {}),
+		...(projectName ? { containerProjectName: projectName } : {}),
+		...(port > 0 ? { containerPort: port } : {}),
+		...(cpu > 0 ? { containerCpu: cpu } : {}),
+		...(memory > 0 ? { containerMemory: memory } : {}),
+		...(desiredCount > 0 ? { containerDesiredCount: desiredCount } : {}),
+		...(architecture ? { containerArchitecture: architecture } : {}),
+		...(healthCheckPath ? { containerHealthCheckPath: healthCheckPath } : {}),
+		...(environmentVars ? { containerEnvironmentVars: environmentVars } : {}),
+	};
 }
 
 function isElizaCloudTestEnabled(): boolean {
@@ -355,12 +431,7 @@ app.post("/eliza-cloud/test-provision", async (c) => {
 				userMinTokens: 100_000,
 				adminWallets: adminWallet ? [adminWallet] : [],
 			},
-			container: {
-				...(stringField(body, "containerImageUri")
-					? { imageUri: stringField(body, "containerImageUri") as string }
-					: {}),
-				...(stringField(body, "projectName") ? { projectName: stringField(body, "projectName") as string } : {}),
-			},
+			container: directProvisionContainerInput(body),
 		});
 		return c.json({ ok: true, data: result });
 	} catch (err) {
@@ -423,7 +494,7 @@ app.post("/eliza-cloud/test-enqueue-provisioning", async (c) => {
 			...(agentEvmAddress ? { agentWalletAddress: agentEvmAddress } : {}),
 			...(stringField(body, "walletKeyRef") ? { walletKeyRef: stringField(body, "walletKeyRef") } : {}),
 			...(adminWallet ? { adminWallets: [adminWallet] } : {}),
-			...(stringField(body, "containerImageUri") ? { containerImageUri: stringField(body, "containerImageUri") } : {}),
+			...workerProvisioningContainerData(body),
 			...(numberField(body, "initialReserveUsd", Number.NaN) > 0
 				? { initialReserveUsd: numberField(body, "initialReserveUsd", 5) }
 				: {}),
@@ -432,11 +503,288 @@ app.post("/eliza-cloud/test-enqueue-provisioning", async (c) => {
 	const jobId = stringField(body, "jobId") ?? `admin-${source}-${agentId}-${Date.now()}`;
 	const dryRun = booleanField(body, "dryRun");
 	if (!dryRun) {
+		const { db, response } = await withDb(c);
+		if (!db) return response;
+		const preflight = await preflightWorkerProvisioningAgent(c, db, agentId, agentEvmAddress);
+		if (preflight) return preflight;
+
 		const { addAgentProvisioningJob } = await import("@waifufun/queue");
 		await addAgentProvisioningJob(payload, { jobId });
 	}
 	return c.json({ ok: true, data: { enqueued: !dryRun, dryRun, jobId, payload } });
 });
+
+app.post("/eliza-cloud/test-proof", async (c) => {
+	if (!isElizaCloudTestEnabled()) {
+		return c.json(
+			{
+				ok: false,
+				error: "TEST_PROVISION_DISABLED",
+				message: "Set WAIFU_ENABLE_ELIZA_CLOUD_TEST_PAGE=true to enable this production test endpoint.",
+			},
+			403,
+		);
+	}
+
+	const body = await readJsonObject(c);
+	if (body instanceof Response) return body;
+
+	const steps: ProofStep[] = [];
+	const readiness = getElizaCloudReadiness();
+	steps.push(
+		proofStep(
+			"readiness",
+			readiness.ready ? "passed" : "failed",
+			readiness.ready ? "Eliza Cloud admin config is ready" : `missing: ${readiness.missing.join(", ") || "unknown"}`,
+			readiness,
+		),
+	);
+
+	const agentId = stringField(body, "agentId");
+	if (!agentId)
+		return c.json({ ok: false, error: "AGENT_REQUIRED", message: "agentId is required", data: { steps } }, 400);
+	const tokenContractAddress = stringField(body, "tokenContractAddress");
+	if (!tokenContractAddress || !EVM_ADDRESS_RE.test(tokenContractAddress)) {
+		return c.json(
+			{ ok: false, error: "INVALID_TOKEN", message: "tokenContractAddress must be an EVM address", data: { steps } },
+			400,
+		);
+	}
+	const agentEvmAddress = stringField(body, "agentEvmAddress");
+	if (agentEvmAddress && !EVM_ADDRESS_RE.test(agentEvmAddress)) {
+		return c.json(
+			{ ok: false, error: "INVALID_AGENT_WALLET", message: "agentEvmAddress must be an EVM address", data: { steps } },
+			400,
+		);
+	}
+	const adminWallet = stringField(body, "adminWallet");
+	if (adminWallet && !EVM_ADDRESS_RE.test(adminWallet)) {
+		return c.json(
+			{ ok: false, error: "INVALID_ADMIN_WALLET", message: "adminWallet must be an EVM address", data: { steps } },
+			400,
+		);
+	}
+
+	const source = provisioningSourceField(stringField(body, "source"));
+	const chain = stringField(body, "chain") ?? "bsc";
+	const chainId = numberField(body, "chainId", 56);
+	const payload = {
+		agentId,
+		source,
+		data: {
+			tokenContractAddress,
+			tokenAddress: tokenContractAddress,
+			chain,
+			chainId,
+			tokenName: stringField(body, "tokenName") ?? stringField(body, "name") ?? "Waifu Test Agent",
+			tokenTicker: stringField(body, "tokenTicker") ?? "WTEST",
+			launchType: "native",
+			...(agentEvmAddress ? { agentWalletAddress: agentEvmAddress } : {}),
+			...(stringField(body, "walletKeyRef") ? { walletKeyRef: stringField(body, "walletKeyRef") } : {}),
+			...(adminWallet ? { adminWallets: [adminWallet] } : {}),
+			...workerProvisioningContainerData(body),
+			...(numberField(body, "initialReserveUsd", Number.NaN) > 0
+				? { initialReserveUsd: numberField(body, "initialReserveUsd", 5) }
+				: {}),
+		},
+	};
+	const dryRun = booleanField(body, "dryRun");
+	const jobId = stringField(body, "jobId") ?? `admin-proof-${source}-${agentId}-${Date.now()}`;
+	const { db, response } = await withDb(c);
+	if (!db) return response;
+
+	if (!dryRun && !readiness.ready) {
+		return c.json(
+			{
+				ok: false,
+				error: "ELIZA_CLOUD_NOT_READY",
+				message: "Eliza Cloud admin config must be ready before enqueueing real worker provisioning",
+				data: { ready: false, dryRun, jobId, steps },
+			},
+			503,
+		);
+	}
+
+	if (!dryRun) {
+		const preflight = await preflightWorkerProvisioningAgent(c, db, agentId, agentEvmAddress);
+		if (preflight) return preflight;
+		const { addAgentProvisioningJob } = await import("@waifufun/queue");
+		await addAgentProvisioningJob(payload, { jobId });
+	}
+	steps.push(
+		proofStep(
+			"agent.bonded",
+			dryRun ? "skipped" : "passed",
+			dryRun ? "validated bonded worker payload without enqueueing" : `enqueued ${jobId}`,
+			{ jobId, payload },
+		),
+	);
+
+	const [row] = await db
+		.select({
+			agentId: agentPersonas.agentId,
+			elizaCloudAgentId: agentPersonas.elizaCloudAgentId,
+			metadata: agentPersonas.metadata,
+			runtimeKind: agentPersonas.runtimeKind,
+		})
+		.from(agentPersonas)
+		.where(eq(agentPersonas.agentId, agentId))
+		.limit(1);
+	if (!row) {
+		steps.push(proofStep("runtime", "skipped", `agent ${agentId} not found after worker payload validation`));
+		return c.json({ ok: true, data: { ready: false, dryRun, jobId, steps } });
+	}
+
+	const metadata = row.metadata && typeof row.metadata === "object" ? (row.metadata as Record<string, unknown>) : {};
+	const provisioning = recordField(metadata, "provisioning") ?? {};
+	const cloudAgentId =
+		row.elizaCloudAgentId ??
+		stringField(provisioning, "cloudAgentId") ??
+		stringField(provisioning, "runtimeAgentId") ??
+		null;
+	const runtimeRef = {
+		agentId,
+		cloudAgentId,
+		containerId: stringField(provisioning, "containerId"),
+		containerUrl: stringField(provisioning, "containerUrl"),
+		webUiUrl: stringField(provisioning, "webUiUrl"),
+		status: stringField(provisioning, "status"),
+		account: recordField(provisioning, "account"),
+		walletProvisioning: recordField(provisioning, "walletProvisioning"),
+		polling: recordField(provisioning, "polling"),
+	};
+	steps.push(
+		proofStep(
+			"runtime",
+			cloudAgentId && runtimeRef.webUiUrl ? "passed" : "skipped",
+			cloudAgentId && runtimeRef.webUiUrl
+				? "hosted runtime metadata includes webUiUrl"
+				: "worker runtime not hosted yet",
+			runtimeRef,
+		),
+	);
+
+	const client = configuredElizaCloudClient();
+	if (cloudAgentId && client?.getAgentRuntimeStatus) {
+		const status = await client.getAgentRuntimeStatus(cloudAgentId);
+		steps.push(
+			proofStep(
+				"runtime-status",
+				status.webUiUrl ? "passed" : "failed",
+				status.webUiUrl ?? "no hosted webUiUrl",
+				status,
+			),
+		);
+	} else {
+		steps.push(proofStep("runtime-status", "skipped", "cloud agent id or status API unavailable"));
+	}
+
+	const getCreditBalance = client?.getCreditBalance ?? client?.getAppCreditBalance;
+	if (cloudAgentId && getCreditBalance) {
+		const balance = await getCreditBalance.call(client, cloudAgentId);
+		steps.push(proofStep("credits", "passed", "credit balance API returned", balance));
+	} else {
+		steps.push(proofStep("credits", "skipped", "cloud agent id or credit API unavailable"));
+	}
+
+	if (!dryRun && booleanField(body, "verifyLifecycle") && cloudAgentId && client) {
+		const containerId = runtimeRef.containerId ?? undefined;
+		for (const action of ["webhook-depleted", "webhook-topped-up"] as const) {
+			const event =
+				action === "webhook-depleted"
+					? { event: "agent.credits.depleted", data: { creditsRemaining: 0 } }
+					: {
+							event: "credits.topped_up",
+							data: {
+								amountUsdCents: numberField(body, "amountUsdCents", 500),
+								sessionId: stringField(body, "sessionId"),
+							},
+						};
+			await dispatchEvent(
+				{
+					event: event.event,
+					timestamp: new Date().toISOString(),
+					agentId,
+					idempotencyKey: `admin-eliza-cloud:test-proof:${action}:${cloudAgentId}:${Date.now()}`,
+					data: {
+						...event.data,
+						agentId,
+						cloudAgentId,
+						elizaCloudAgentId: cloudAgentId,
+						...(containerId ? { containerId } : {}),
+						source: "admin-eliza-cloud-test-proof",
+					},
+				},
+				{
+					db,
+					elizaCloud: client,
+					logger: console,
+					personaStore: adminPersonaStore(db),
+					emitEvent: adminEmitEvent(db),
+					getXClient: async () => null,
+				},
+			);
+			steps.push(proofStep(action, "passed", "lifecycle webhook dispatch completed"));
+		}
+	} else if (dryRun && booleanField(body, "verifyLifecycle")) {
+		steps.push(
+			proofStep(
+				"lifecycle",
+				"skipped",
+				"verifyLifecycle does not run under dryRun (it dispatches real credits.depleted/topped_up webhooks to the live agent)",
+			),
+		);
+	} else {
+		steps.push(proofStep("lifecycle", "skipped", "set verifyLifecycle=true after runtime exists"));
+	}
+
+	const failed = steps.some((step) => step.state === "failed");
+	return c.json({ ok: true, data: { ready: !failed, dryRun, jobId, steps } });
+});
+
+async function preflightWorkerProvisioningAgent(
+	c: AdminAgentContext,
+	db: Db,
+	agentId: string,
+	payloadWalletAddress: string | null,
+): Promise<Response | null> {
+	const [persona] = await db
+		.select({ agentId: agentPersonas.agentId })
+		.from(agentPersonas)
+		.where(eq(agentPersonas.agentId, agentId))
+		.limit(1);
+	if (!persona) {
+		return c.json(
+			{
+				ok: false,
+				error: "AGENT_NOT_FOUND",
+				message: `agent ${agentId} must exist before enqueueing real Eliza Cloud worker provisioning`,
+			},
+			404,
+		);
+	}
+
+	if (payloadWalletAddress) return null;
+
+	const [wallet] = await db
+		.select({ walletAddress: agentWallets.walletAddress })
+		.from(agentWallets)
+		.where(eq(agentWallets.internalAgentId, agentId))
+		.limit(1);
+	if (!wallet?.walletAddress || !EVM_ADDRESS_RE.test(wallet.walletAddress)) {
+		return c.json(
+			{
+				ok: false,
+				error: "AGENT_WALLET_NOT_READY",
+				message:
+					"agentWalletAddress must be provided or the existing agent must have a valid EVM wallet before real worker provisioning",
+			},
+			409,
+		);
+	}
+
+	return null;
+}
 
 app.get("/eliza-cloud/test-runtime-ref", async (c) => {
 	if (!isElizaCloudTestEnabled()) {
@@ -492,8 +840,8 @@ app.get("/eliza-cloud/test-runtime-ref", async (c) => {
 			agentId,
 			cloudAgentId,
 			containerId: stringField(provisioning, "containerId"),
-			containerUrl: stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl"),
-			webUiUrl: stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl"),
+			containerUrl: stringField(provisioning, "containerUrl"),
+			webUiUrl: stringField(provisioning, "webUiUrl"),
 			status: stringField(provisioning, "status"),
 			account: recordField(provisioning, "account"),
 			walletProvisioning: recordField(provisioning, "walletProvisioning"),

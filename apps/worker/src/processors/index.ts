@@ -21,10 +21,25 @@ function createWorkerRegistration(jobName: JobName, processor: WorkerProcessor):
 		jobName,
 		queueKey: jobDefinition.queueKey,
 		queueName: queueDefinition.redisName,
-		concurrency: queueDefinition.concurrency,
+		concurrency: resolveConcurrency(jobName, queueDefinition.concurrency),
 		description: jobDefinition.description,
 		processor,
 	};
+}
+
+/**
+ * Provisioning runs serially (concurrency 1) by default so two same-agent jobs
+ * can never race a duplicate Eliza Cloud create. Operators can raise it via
+ * WAIFU_PROVISIONING_CONCURRENCY to parallelize launch bursts — safe because
+ * Eliza Cloud is the source of truth per token and the worker adopts 409
+ * "already exists" responses instead of creating a second runtime.
+ */
+function resolveConcurrency(jobName: JobName, fallback: number): number {
+	if (jobName !== "agent-provisioning") return fallback;
+	const raw = process.env.WAIFU_PROVISIONING_CONCURRENCY?.trim();
+	if (!raw) return fallback;
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 export function createWorkerRegistrations(context: WorkerContext): WorkerRegistration[] {

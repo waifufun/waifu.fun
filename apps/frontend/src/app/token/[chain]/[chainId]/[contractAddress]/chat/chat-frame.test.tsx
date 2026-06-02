@@ -4,6 +4,7 @@ import {
 	HOSTED_CHAT_IFRAME_ALLOW,
 	HOSTED_CHAT_IFRAME_REFERRER_POLICY,
 	HOSTED_CHAT_IFRAME_SANDBOX,
+	canRequestHostedChatSession,
 } from "./chat-frame-policy";
 
 describe("hosted token chat iframe policy", () => {
@@ -20,5 +21,15 @@ describe("hosted token chat iframe policy", () => {
 				"allow-scripts",
 			].sort(),
 		);
+	});
+
+	it("waits for an authenticated EVM session before requesting signed chat access", () => {
+		expect(canRequestHostedChatSession({ isLoading: true, isAuthenticated: true, primaryChain: "evm" })).toBe(false);
+		expect(canRequestHostedChatSession({ isLoading: false, isAuthenticated: false, primaryChain: "evm" })).toBe(false);
+		expect(canRequestHostedChatSession({ isLoading: false, isAuthenticated: true, primaryChain: "solana" })).toBe(
+			false,
+		);
+		expect(canRequestHostedChatSession({ isLoading: false, isAuthenticated: true, primaryChain: null })).toBe(false);
+		expect(canRequestHostedChatSession({ isLoading: false, isAuthenticated: true, primaryChain: "evm" })).toBe(true);
 	});
 });

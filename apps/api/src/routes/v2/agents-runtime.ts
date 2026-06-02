@@ -155,7 +155,7 @@ export function createAgentRuntimeRoutes(
 			);
 		}
 		const status = await client.getAgentRuntimeStatus(cloudAgentId);
-		const webUiUrl = status.webUiUrl ?? status.containerUrl ?? state.webUiUrl ?? state.containerUrl ?? null;
+		const webUiUrl = status.webUiUrl ?? state.webUiUrl ?? null;
 		return c.json({
 			ok: isHostedRuntimeRunning(status.status),
 			cloudAgentId,

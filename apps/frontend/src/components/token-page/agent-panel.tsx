@@ -256,7 +256,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 	/* ── owner management row ── */
 	const canRestart = agent.status === "running" || agent.status === "stopped" || agent.status === "failed";
 	const canStop = agent.status === "running";
-	const canChat = canAgentStatusChat(agent.status);
+	const canChat = canAgentStatusChat(agent.status, agent.webUiUrl);
 	const isProvisioning = agent.status === "queued" || agent.status === "provisioning";
 
 	return (

@@ -25,8 +25,21 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false,
 	const [now, setNow] = useState(() => Date.now());
 
 	useEffect(() => {
-		const id = setInterval(() => setNow(Date.now()), 1_000);
-		return () => clearInterval(id);
+		// Skip ticking while the tab is hidden (launch-card mounts one of these per
+		// launch in the live rail); resync on visibilitychange so the display is
+		// correct the instant the tab is focused again.
+		const id = setInterval(() => {
+			if (typeof document !== "undefined" && document.hidden) return;
+			setNow(Date.now());
+		}, 1_000);
+		const onVisible = () => {
+			if (!document.hidden) setNow(Date.now());
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		return () => {
+			clearInterval(id);
+			document.removeEventListener("visibilitychange", onVisible);
+		};
 	}, []);
 
 	if (target === null) {

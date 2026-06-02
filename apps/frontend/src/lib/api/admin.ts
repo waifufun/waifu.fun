@@ -289,6 +289,14 @@ export type AdminElizaCloudTestInput = {
 	walletKeyRef?: string;
 	containerImageUri?: string;
 	projectName?: string;
+	containerProjectName?: string;
+	containerPort?: number;
+	containerCpu?: number;
+	containerMemory?: number;
+	containerDesiredCount?: number;
+	containerArchitecture?: "arm64" | "x86_64";
+	containerHealthCheckPath?: string;
+	containerEnvironmentVars?: Record<string, string>;
 };
 
 export type AdminElizaCloudWalletProvisioning = {
@@ -333,7 +341,7 @@ export function useElizaCloudTestProvision(token: string | null) {
 }
 
 export type AdminElizaCloudTestEnqueueInput = AdminElizaCloudTestInput & {
-	source?: "agent.graduated" | "token.migrated" | "manual";
+	source?: "agent.bonded" | "agent.graduated" | "token.migrated" | "manual";
 	dryRun?: boolean;
 	jobId?: string;
 };
@@ -362,6 +370,41 @@ export function useElizaCloudTestEnqueueProvisioning(token: string | null) {
 				token,
 				body,
 			),
+	});
+}
+
+export type AdminElizaCloudProofStep = {
+	key: string;
+	state: "passed" | "failed" | "skipped";
+	detail?: string;
+	data?: unknown;
+};
+
+export type AdminElizaCloudTestProofInput = AdminElizaCloudTestEnqueueInput & {
+	verifyLifecycle?: boolean;
+	amountUsdCents?: number;
+	sessionId?: string;
+};
+
+export type AdminElizaCloudTestProofResult = {
+	ok: boolean;
+	data?: {
+		ready: boolean;
+		dryRun: boolean;
+		jobId: string;
+		steps: AdminElizaCloudProofStep[];
+	};
+	error?: string;
+	message?: string;
+};
+
+export function requestElizaCloudTestProof(token: string | null, body: AdminElizaCloudTestProofInput) {
+	return adminPostJson<AdminElizaCloudTestProofResult>("/v2/admin/agents/eliza-cloud/test-proof", token, body);
+}
+
+export function useElizaCloudTestProof(token: string | null) {
+	return useMutation({
+		mutationFn: (body: AdminElizaCloudTestProofInput) => requestElizaCloudTestProof(token, body),
 	});
 }
 
@@ -526,6 +569,40 @@ export function requestElizaCloudTokenChatSession({
 export function useElizaCloudTokenChatSession() {
 	return useMutation({
 		mutationFn: requestElizaCloudTokenChatSession,
+	});
+}
+
+export type AdminElizaCloudHostedChatApiInput = {
+	chatUrl: string;
+};
+
+export type AdminElizaCloudHostedChatApiResult = {
+	ok: boolean;
+	status: number;
+	url: string;
+};
+
+export async function requestElizaCloudHostedChatApi({ chatUrl }: AdminElizaCloudHostedChatApiInput) {
+	const parsed = new URL(chatUrl);
+	const token = parsed.searchParams.get("waifu_access_token");
+	if (!token) throw new Error("chatUrl is missing waifu_access_token");
+	const url = new URL("/api/conversations", parsed.origin).toString();
+	const response = await fetch(url, {
+		method: "GET",
+		headers: {
+			Accept: "application/json",
+			Authorization: `Bearer ${token}`,
+		},
+	});
+	if (!response.ok) {
+		throw new Error(`Hosted Eliza chat API rejected waifu token: ${response.status}`);
+	}
+	return { ok: true, status: response.status, url } satisfies AdminElizaCloudHostedChatApiResult;
+}
+
+export function useElizaCloudHostedChatApi() {
+	return useMutation({
+		mutationFn: requestElizaCloudHostedChatApi,
 	});
 }
 

@@ -442,7 +442,7 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 			revenueLifetimeUsd: "42.5",
 			revenue24hUsd: "2.5",
 			revenue7dUsd: "10.25",
-			metadata: { revenue7dDeltaPct: 12.5 },
+			metadata: { revenue7dDeltaPct: 12.5, settlementMode: "escrow" },
 			createdAt: new Date("2026-05-19T12:00:00Z"),
 			updatedAt: new Date("2026-05-22T12:00:00Z"),
 		},
@@ -473,7 +473,7 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 		const body = (await res.json()) as {
 			ok: boolean;
 			data: {
-				apps: Array<{ id: string; appId: string; revenue7dUsd: number }>;
+				apps: Array<{ id: string; appId: string; revenue7dUsd: number; settlementMode: string }>;
 				totalRevenue7d: number;
 				totalLifetime: number;
 			};
@@ -485,6 +485,8 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 			["2", "1"],
 		);
 		assert.equal(body.data.apps[0]?.revenue7dUsd, 10.25);
+		assert.equal(body.data.apps[0]?.settlementMode, "escrow");
+		assert.equal(body.data.apps[1]?.settlementMode, "credits");
 		assert.equal(body.data.totalRevenue7d, 10.25);
 		assert.equal(body.data.totalLifetime, 42.5);
 	} finally {
@@ -540,6 +542,47 @@ test("buildLaunchOrchestratorDeps forwards tax splitter factory address", () => 
 		else process.env.STEWARD_API_KEY = previous.stewardKey;
 		if (previous.taxFactory === undefined) delete process.env.TAX_SPLITTER_FACTORY_ADDRESS;
 		else process.env.TAX_SPLITTER_FACTORY_ADDRESS = previous.taxFactory;
+	}
+});
+
+test("buildLaunchOrchestratorDeps persona store persists Steward wallet for bonded provisioning lookup", async () => {
+	const db = createProvisionDb();
+	__setAgentsRouteDepsForTest({ db });
+	const previous = {
+		stewardUrl: process.env.STEWARD_API_URL,
+		stewardKey: process.env.STEWARD_API_KEY,
+	};
+	process.env.STEWARD_API_URL = "https://steward.example";
+	process.env.STEWARD_API_KEY = "steward-key";
+	try {
+		const deps = buildLaunchOrchestratorDeps();
+		assert.ok(deps.personaStore);
+		await deps.personaStore.writeInitial({
+			agentId: "waifu-wallet-store",
+			walletAddress: "0x0000000000000000000000000000000000000002",
+			name: "Wallet Store",
+			persona: { ownerAddress: "0x0000000000000000000000000000000000000001" },
+			taxVaultAddress: "0x0000000000000000000000000000000000000003",
+		});
+		await deps.personaStore.setToken("waifu-wallet-store", "0x0000000000000000000000000000000000000004");
+
+		const walletUpdate = db.__updates.find(
+			(values) =>
+				values.internalAgentId === "waifu-wallet-store" &&
+				values.walletAddress === "0x0000000000000000000000000000000000000002",
+		);
+		assert.equal(walletUpdate?.stewardAgentId, "waifu-wallet-store");
+		assert.equal(walletUpdate?.safeAddress, "0x0000000000000000000000000000000000000003");
+		const tokenWalletUpdate = db.__updates.find(
+			(values) => values.agentToken === "0x0000000000000000000000000000000000000004",
+		);
+		assert.equal(tokenWalletUpdate?.agentToken, "0x0000000000000000000000000000000000000004");
+	} finally {
+		resetProvisionDeps();
+		if (previous.stewardUrl === undefined) delete process.env.STEWARD_API_URL;
+		else process.env.STEWARD_API_URL = previous.stewardUrl;
+		if (previous.stewardKey === undefined) delete process.env.STEWARD_API_KEY;
+		else process.env.STEWARD_API_KEY = previous.stewardKey;
 	}
 });
 

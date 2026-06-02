@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
+import { chdir, cwd } from "node:process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 import {
 	__resetSmokeEnvStateForTest,
@@ -7,6 +11,7 @@ import {
 	deriveAddressFromPrivateKey,
 	isDormantStatus,
 	isRunningStatus,
+	loadSmokeEnvFiles,
 	resolveAgentWalletAddress,
 	runtimeStatusText,
 	runtimeUrl,
@@ -30,6 +35,7 @@ const SMOKE_ENV_KEYS = [
 	"WAIFU_ELIZA_SMOKE_MODE",
 	"WAIFU_ELIZA_SMOKE_OWNER_BEARER",
 	"WAIFU_ELIZA_SMOKE_OWNER_RUNTIME_ACTION",
+	"WAIFU_ELIZA_SMOKE_PROOF_FILE",
 	"WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E",
 	"WAIFU_ELIZA_SMOKE_STEWARD_BEARER",
 	"WAIFU_ELIZA_SMOKE_TOKEN_ADDRESS",
@@ -80,6 +86,18 @@ function withSmokeArgv(args, fn) {
 	}
 }
 
+function withTempCwd(fn) {
+	const previous = cwd();
+	const dir = mkdtempSync(join(tmpdir(), "waifu-eliza-smoke-"));
+	try {
+		chdir(dir);
+		return fn(dir);
+	} finally {
+		chdir(previous);
+		rmSync(dir, { recursive: true, force: true });
+	}
+}
+
 afterEach(() => {
 	__resetSmokeEnvStateForTest();
 });
@@ -95,6 +113,37 @@ describe("eliza-cloud-live-smoke preflight", () => {
 
 			assert.match(smokeInputHelp(smokeInputErrors()), /Env files loaded by this process: none/);
 		});
+	});
+
+	it("loads API-local env files without overriding exported smoke inputs", () => {
+		withSmokeEnv(
+			{
+				ADMIN_API_KEY: "exported-admin-key",
+			},
+			() => {
+				withTempCwd(() => {
+					mkdirSync("apps/api", { recursive: true });
+					writeFileSync(
+						"apps/api/.env.local",
+						[
+							"ADMIN_API_KEY=file-admin-key",
+							"WAIFU_ELIZA_SMOKE_TOKEN_ADDRESS=0x0000000000000000000000000000000000000004",
+							"WAIFU_ELIZA_SMOKE_AGENT_WALLET=0x0000000000000000000000000000000000000009",
+							"NEXT_PUBLIC_API_URL=http://localhost:3001/",
+						].join("\n"),
+					);
+
+					loadSmokeEnvFiles();
+
+					assert.equal(process.env.ADMIN_API_KEY, "exported-admin-key");
+					assert.equal(process.env.WAIFU_ELIZA_SMOKE_TOKEN_ADDRESS, "0x0000000000000000000000000000000000000004");
+					assert.equal(process.env.WAIFU_ELIZA_SMOKE_AGENT_WALLET, "0x0000000000000000000000000000000000000009");
+					assert.equal(apiBaseUrl(), "http://localhost:3001");
+					assert.deepEqual(smokeInputErrors(), []);
+					assert.match(smokeInputHelp([]), /Env files loaded by this process: apps\/api\/\.env\.local/);
+				});
+			},
+		);
 	});
 
 	it("rejects invalid EVM addresses", () => {
@@ -395,7 +444,7 @@ describe("eliza-cloud-live-smoke runtime helpers", () => {
 			}),
 			"https://agent.elizacloud.ai",
 		);
-		assert.equal(runtimeUrl({ containerUrl: "https://container.example" }), "https://container.example");
+		assert.equal(runtimeUrl({ containerUrl: "https://container.example" }), null);
 		assert.equal(runtimeUrl(null), null);
 	});
 

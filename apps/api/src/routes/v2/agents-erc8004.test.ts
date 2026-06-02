@@ -5,7 +5,12 @@ import { BSC_MAINNET_ERC8004_REGISTRY, SOL_TOKEN_ADDRESS } from "@waifufun/ident
 
 import app, { __setErc8004RouteDepsForTest } from "./agents-erc8004.js";
 
-function createMockDb(args: { identity?: Record<string, unknown>; persona?: Record<string, unknown> }) {
+function createMockDb(args: {
+	identity?: Record<string, unknown>;
+	persona?: Record<string, unknown>;
+	wallet?: Record<string, unknown>;
+	throwOnIdentity?: unknown;
+}) {
 	let call = 0;
 	return {
 		select: () => ({
@@ -13,8 +18,12 @@ function createMockDb(args: { identity?: Record<string, unknown>; persona?: Reco
 				where: () => ({
 					limit: async () => {
 						call += 1;
-						if (call === 1) return args.identity ? [args.identity] : [];
-						return args.persona ? [args.persona] : [];
+						if (call === 1) {
+							if (args.throwOnIdentity) throw args.throwOnIdentity;
+							return args.identity ? [args.identity] : [];
+						}
+						if (call === 2) return args.persona ? [args.persona] : [];
+						return args.wallet ? [args.wallet] : [];
 					},
 				}),
 			}),
@@ -32,8 +41,8 @@ const identity = {
 	uri: "ipfs://bafybeigdyrzt5sfp7udm7hu76v2r4h2t6b77s64z5m2r4examplecid",
 	uriIpfs: "ipfs://bafybeigdyrzt5sfp7udm7hu76v2r4h2t6b77s64z5m2r4examplecid",
 	uriHttps: `https://api.waifu.fun/v2/agents/${SOL_TOKEN_ADDRESS}/erc8004.json`,
-	registrationTx: null,
-	registeredAt: null,
+	registrationTx: "0x1111111111111111111111111111111111111111111111111111111111111111",
+	registeredAt: new Date("2026-05-24T00:00:00.000Z"),
 	createdAt: new Date("2026-05-24T00:00:00.000Z"),
 	updatedAt: new Date("2026-05-24T00:00:00.000Z"),
 };
@@ -46,9 +55,56 @@ const persona = {
 	avatarUrl: "https://waifu.fun/agents/sol/avatar.png",
 	twitterHandle: "0xSolace_",
 	metadata: {},
+	ownerAddress: "0xCF3104986C4ef45326A918A9F7F80DE57953Fc21",
 	launchedAt: new Date("2026-05-24T00:00:00.000Z"),
 	createdAt: new Date("2026-05-24T00:00:00.000Z"),
 };
+
+const wallet = {
+	walletAddress: "0xCF3104986C4ef45326A918A9F7F80DE57953Fc21",
+};
+
+describe("GET /:address/identity", () => {
+	afterEach(() => __setErc8004RouteDepsForTest({ db: undefined }));
+
+	it("serves the frontend ERC-8004 identity shape", async () => {
+		__setErc8004RouteDepsForTest({ db: createMockDb({ identity, persona, wallet }) as never });
+		const res = await app.request(`/${SOL_TOKEN_ADDRESS}/identity`);
+		assert.equal(res.status, 200);
+		assert.equal(res.headers.get("cache-control"), "public, max-age=300");
+		const body = (await res.json()) as { data: Record<string, unknown> };
+		assert.deepEqual(body.data, {
+			standard: "erc-8004",
+			chain: "bsc",
+			chainId: 56,
+			registryAddress: BSC_MAINNET_ERC8004_REGISTRY,
+			tokenId: "123456",
+			agentURI: identity.uri,
+			metadataHttpsUrl: identity.uriHttps,
+			metadataIpfsUri: identity.uriIpfs,
+			ownerWalletAddress: wallet.walletAddress,
+			txHash: identity.registrationTx,
+			blockNumber: null,
+			registeredAt: "2026-05-24T00:00:00.000Z",
+		});
+	});
+
+	it("returns 404 for agents without an identity row", async () => {
+		__setErc8004RouteDepsForTest({ db: createMockDb({ persona, wallet }) as never });
+		const res = await app.request(`/${SOL_TOKEN_ADDRESS}/identity`);
+		assert.equal(res.status, 404);
+	});
+
+	it("returns 404 when the identity table is missing", async () => {
+		__setErc8004RouteDepsForTest({
+			db: createMockDb({
+				throwOnIdentity: { code: "42P01", message: 'relation "agent_identities" does not exist' },
+			}) as never,
+		});
+		const res = await app.request(`/${SOL_TOKEN_ADDRESS}/identity`);
+		assert.equal(res.status, 404);
+	});
+});
 
 describe("GET /:address/erc8004.json", () => {
 	afterEach(() => __setErc8004RouteDepsForTest({ db: undefined }));

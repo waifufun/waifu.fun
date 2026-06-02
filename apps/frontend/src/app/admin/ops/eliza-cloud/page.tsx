@@ -4,12 +4,14 @@ import { useAdminTokenState } from "@/components/admin/ops-token-gate";
 import { Label, Panel, THEME_TOKENS } from "@/components/agent-home/wave-t/_primitives";
 import {
 	type AdminElizaCloudTestInput,
+	useElizaCloudHostedChatApi,
 	useElizaCloudOwnerRuntimeControl,
 	useElizaCloudOwnerRuntimeTest,
 	useElizaCloudRuntimeRef,
 	useElizaCloudStatus,
 	useElizaCloudTestControl,
 	useElizaCloudTestEnqueueProvisioning,
+	useElizaCloudTestProof,
 	useElizaCloudTestProvision,
 	useElizaCloudTokenChatSession,
 } from "@/lib/api/admin";
@@ -31,16 +33,28 @@ import { useEffect, useMemo, useState } from "react";
 const DEFAULT_TOKEN = "0x0000000000000000000000000000000000000001";
 const DEFAULT_AGENT_WALLET = "0x0000000000000000000000000000000000000009";
 const DEFAULT_ADMIN_WALLET = "0x0000000000000000000000000000000000000001";
+const PROOF_POLL_INTERVAL_MS = 5_000;
+const PROOF_POLL_ATTEMPTS = 24;
+
+type ProofStepState = "pending" | "running" | "passed" | "failed" | "skipped";
+type ProofStep = {
+	key: string;
+	label: string;
+	state: ProofStepState;
+	detail?: string;
+};
 
 export default function ElizaCloudOpsPage() {
 	const { token } = useAdminTokenState();
 	const status = useElizaCloudStatus(token);
 	const provision = useElizaCloudTestProvision(token);
 	const enqueueProvisioning = useElizaCloudTestEnqueueProvisioning(token);
+	const backendProof = useElizaCloudTestProof(token);
 	const control = useElizaCloudTestControl(token);
 	const ownerRuntimeTest = useElizaCloudOwnerRuntimeTest();
 	const ownerRuntimeControl = useElizaCloudOwnerRuntimeControl();
 	const chatSession = useElizaCloudTokenChatSession();
+	const hostedChatApi = useElizaCloudHostedChatApi();
 	const [form, setForm] = useState<AdminElizaCloudTestInput>({
 		agentId: `waifu-test-${crypto.randomUUID().slice(0, 8)}`,
 		tokenContractAddress: DEFAULT_TOKEN,
@@ -52,9 +66,13 @@ export default function ElizaCloudOpsPage() {
 		bio: "End-to-end Eliza Cloud provisioning test.",
 		agentEvmAddress: DEFAULT_AGENT_WALLET,
 		adminWallet: DEFAULT_ADMIN_WALLET,
+		containerPort: 3000,
+		containerDesiredCount: 1,
+		containerArchitecture: "arm64",
+		containerHealthCheckPath: "/api/health",
 	});
-	const [enqueueSource, setEnqueueSource] = useState<"agent.graduated" | "token.migrated" | "manual">(
-		"agent.graduated",
+	const [enqueueSource, setEnqueueSource] = useState<"agent.bonded" | "agent.graduated" | "token.migrated" | "manual">(
+		"agent.bonded",
 	);
 	const [enqueueDryRun, setEnqueueDryRun] = useState(true);
 	const [jobId, setJobId] = useState("");
@@ -63,6 +81,8 @@ export default function ElizaCloudOpsPage() {
 	const [ownerBearer, setOwnerBearer] = useState("");
 	const [ownerRuntimeAction, setOwnerRuntimeAction] = useState<"status" | "resume" | "restart" | "suspend">("status");
 	const [expectedRole, setExpectedRole] = useState<"admin" | "user" | "guest" | "">("");
+	const [proofRunning, setProofRunning] = useState(false);
+	const [proofSteps, setProofSteps] = useState<ProofStep[]>([]);
 	const runtimeRef = useElizaCloudRuntimeRef(
 		token,
 		form.agentId,
@@ -74,7 +94,7 @@ export default function ElizaCloudOpsPage() {
 	const result = workerResult ?? directResult;
 	const controlResult = control.data?.data;
 	const readiness = status.data?.data;
-	const resultWebUiUrl = result?.webUiUrl ?? result?.containerUrl ?? null;
+	const resultWebUiUrl = result?.webUiUrl ?? null;
 	const payloadPreview = useMemo(() => JSON.stringify(form, null, 2), [form]);
 	const canControl = Boolean(result?.containerId || result?.cloudAgentId);
 	const pollingEndpoint =
@@ -82,6 +102,17 @@ export default function ElizaCloudOpsPage() {
 
 	function setField<K extends keyof AdminElizaCloudTestInput>(key: K, value: AdminElizaCloudTestInput[K]) {
 		setForm((current) => ({ ...current, [key]: value }));
+	}
+
+	function setNumberField(
+		key: "containerPort" | "containerCpu" | "containerMemory" | "containerDesiredCount",
+		value: string,
+	) {
+		const parsed = Number(value);
+		setForm((current) => ({
+			...current,
+			[key]: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
+		}));
 	}
 
 	function runControl(
@@ -108,12 +139,19 @@ export default function ElizaCloudOpsPage() {
 
 	function runChatSession() {
 		if (!stewardBearer || !form.tokenContractAddress) return;
+		hostedChatApi.reset();
 		chatSession.mutate({
 			bearer: stewardBearer,
 			chain: form.chain ?? "bsc",
 			chainId: form.chainId ?? 56,
 			tokenContractAddress: form.tokenContractAddress,
 		});
+	}
+
+	function runHostedChatApi() {
+		const chatUrl = chatSession.data?.chatUrl;
+		if (!chatUrl) return;
+		hostedChatApi.mutate({ chatUrl });
 	}
 
 	function runOwnerRuntimeTest() {
@@ -128,6 +166,155 @@ export default function ElizaCloudOpsPage() {
 			agentId: form.agentId,
 			bearer: ownerBearer,
 		});
+	}
+
+	function upsertProofStep(step: ProofStep) {
+		setProofSteps((current) => {
+			const index = current.findIndex((item) => item.key === step.key);
+			if (index === -1) return [...current, step];
+			const next = [...current];
+			next[index] = { ...next[index], ...step };
+			return next;
+		});
+	}
+
+	async function pollRuntimeForProof() {
+		for (let attempt = 0; attempt < PROOF_POLL_ATTEMPTS; attempt += 1) {
+			const runtime = await runtimeRef.refetch();
+			const data = runtime.data?.ok ? runtime.data.data : undefined;
+			if (data?.cloudAgentId && data.webUiUrl) return data;
+			await new Promise((resolve) => setTimeout(resolve, PROOF_POLL_INTERVAL_MS));
+		}
+		throw new Error("runtime did not expose hosted web ui before timeout");
+	}
+
+	async function runFullProof() {
+		if (!form.agentId || !form.tokenContractAddress || !form.agentEvmAddress) return;
+		setProofRunning(true);
+		setProofSteps([]);
+		try {
+			upsertProofStep({ key: "readiness", label: "readiness", state: "running" });
+			const readinessCheck = await status.refetch();
+			if (!readinessCheck.data?.data?.ready) {
+				throw new Error(readinessCheck.data?.data?.missing.join(", ") || "eliza cloud readiness failed");
+			}
+			upsertProofStep({ key: "readiness", label: "readiness", state: "passed", detail: "configured" });
+
+			upsertProofStep({ key: "bonded", label: "agent.bonded", state: "running" });
+			const enqueue = await enqueueProvisioning.mutateAsync({
+				...form,
+				source: "agent.bonded",
+				dryRun: enqueueDryRun,
+				...(jobId ? { jobId } : {}),
+			});
+			if (!enqueue.data?.jobId) throw new Error("worker enqueue did not return a job id");
+			upsertProofStep({
+				key: "bonded",
+				label: "agent.bonded",
+				state: enqueue.data.enqueued ? "passed" : "skipped",
+				detail: enqueue.data.enqueued ? enqueue.data.jobId : "dry run payload only",
+			});
+			if (!enqueue.data.enqueued) return;
+
+			upsertProofStep({ key: "runtime", label: "hosted runtime", state: "running" });
+			const runtime = await pollRuntimeForProof();
+			upsertProofStep({
+				key: "runtime",
+				label: "hosted runtime",
+				state: "passed",
+				detail: runtime.webUiUrl ?? runtime.cloudAgentId,
+			});
+			const ids = {
+				agentId: form.agentId,
+				cloudAgentId: runtime.cloudAgentId,
+				...(runtime.containerId ? { containerId: runtime.containerId } : {}),
+			};
+
+			upsertProofStep({ key: "balance", label: "credits", state: "running" });
+			await control.mutateAsync({ action: "balance", ...ids });
+			upsertProofStep({ key: "balance", label: "credits", state: "passed", detail: "balance api ok" });
+
+			for (const action of ["pause", "resume", "restart"] as const) {
+				upsertProofStep({ key: action, label: action, state: "running" });
+				await control.mutateAsync({ action, ...ids });
+				upsertProofStep({ key: action, label: action, state: "passed", detail: "control api ok" });
+			}
+
+			for (const action of ["webhook-depleted", "webhook-topped-up"] as const) {
+				upsertProofStep({ key: action, label: action, state: "running" });
+				await control.mutateAsync({ action, ...ids, amountUsdCents: 500, ...(sessionId ? { sessionId } : {}) });
+				upsertProofStep({ key: action, label: action, state: "passed", detail: "lifecycle ok" });
+			}
+
+			if (stewardBearer) {
+				upsertProofStep({ key: "chat", label: "token chat", state: "running" });
+				const session = await chatSession.mutateAsync({
+					bearer: stewardBearer,
+					chain: form.chain ?? "bsc",
+					chainId: form.chainId ?? 56,
+					tokenContractAddress: form.tokenContractAddress,
+				});
+				if (expectedRole && session.role !== expectedRole) {
+					throw new Error(`chat role mismatch: expected ${expectedRole}, got ${session.role ?? "none"}`);
+				}
+				if (session.chatUrl) await hostedChatApi.mutateAsync({ chatUrl: session.chatUrl });
+				upsertProofStep({ key: "chat", label: "token chat", state: "passed", detail: session.role ?? "role ok" });
+			} else {
+				upsertProofStep({ key: "chat", label: "token chat", state: "skipped", detail: "no steward bearer" });
+			}
+
+			if (ownerBearer) {
+				upsertProofStep({ key: "owner", label: "owner control", state: "running" });
+				const owner = await ownerRuntimeTest.mutateAsync({ agentId: form.agentId, bearer: ownerBearer });
+				if (!owner.hasWebUiUrl) throw new Error("owner runtime test did not report hosted web ui");
+				await ownerRuntimeControl.mutateAsync({ action: "restart", agentId: form.agentId, bearer: ownerBearer });
+				upsertProofStep({ key: "owner", label: "owner control", state: "passed", detail: "creator api ok" });
+			} else {
+				upsertProofStep({ key: "owner", label: "owner control", state: "skipped", detail: "no owner bearer" });
+			}
+		} catch (err) {
+			upsertProofStep({
+				key: "error",
+				label: "proof error",
+				state: "failed",
+				detail: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setProofRunning(false);
+		}
+	}
+
+	async function runBackendProof() {
+		if (!form.agentId || !form.tokenContractAddress || !form.agentEvmAddress) return;
+		setProofSteps([{ key: "backend-proof", label: "backend proof", state: "running" }]);
+		try {
+			const result = await backendProof.mutateAsync({
+				...form,
+				source: "agent.bonded",
+				dryRun: enqueueDryRun,
+				...(jobId ? { jobId } : {}),
+				amountUsdCents: 500,
+				...(sessionId ? { sessionId } : {}),
+				verifyLifecycle: true,
+			});
+			setProofSteps(
+				(result.data?.steps ?? []).map((step) => ({
+					key: step.key,
+					label: proofLabel(step.key),
+					state: step.state,
+					...(step.detail ? { detail: step.detail } : {}),
+				})),
+			);
+		} catch (err) {
+			setProofSteps([
+				{
+					key: "backend-proof",
+					label: "backend proof",
+					state: "failed",
+					detail: err instanceof Error ? err.message : String(err),
+				},
+			]);
+		}
 	}
 
 	useEffect(() => {
@@ -194,6 +381,28 @@ export default function ElizaCloudOpsPage() {
 						{provision.isPending ? <LoaderCircle className="size-3 animate-spin" /> : <Rocket className="size-3" />}
 						run provision
 					</button>
+					<button
+						type="button"
+						onClick={runFullProof}
+						disabled={proofRunning || !form.agentId || !form.tokenContractAddress || !form.agentEvmAddress}
+						className="inline-flex items-center gap-2 rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-[#00ff87] hover:bg-[#00ff87]/15 disabled:opacity-50"
+					>
+						{proofRunning ? <LoaderCircle className="size-3 animate-spin" /> : <Rocket className="size-3" />}
+						run proof
+					</button>
+					<button
+						type="button"
+						onClick={runBackendProof}
+						disabled={backendProof.isPending || !form.agentId || !form.tokenContractAddress || !form.agentEvmAddress}
+						className="inline-flex items-center gap-2 rounded-sm border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-neutral-100 hover:bg-white/10 disabled:opacity-50"
+					>
+						{backendProof.isPending ? (
+							<LoaderCircle className="size-3 animate-spin" />
+						) : (
+							<RefreshCw className="size-3" />
+						)}
+						api proof
+					</button>
 				</div>
 			</div>
 
@@ -245,6 +454,64 @@ export default function ElizaCloudOpsPage() {
 								onChange={(v) => setField("containerImageUri", v)}
 							/>
 						</div>
+						<Field
+							label="container project"
+							value={form.containerProjectName ?? ""}
+							onChange={(v) => setField("containerProjectName", v)}
+						/>
+						<Field
+							label="port"
+							value={String(form.containerPort ?? "")}
+							onChange={(v) => setNumberField("containerPort", v)}
+						/>
+						<Field
+							label="cpu"
+							value={String(form.containerCpu ?? "")}
+							onChange={(v) => setNumberField("containerCpu", v)}
+						/>
+						<Field
+							label="memory"
+							value={String(form.containerMemory ?? "")}
+							onChange={(v) => setNumberField("containerMemory", v)}
+						/>
+						<Field
+							label="desired"
+							value={String(form.containerDesiredCount ?? "")}
+							onChange={(v) => setNumberField("containerDesiredCount", v)}
+						/>
+						<label className="grid gap-1">
+							<span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">architecture</span>
+							<select
+								value={form.containerArchitecture ?? ""}
+								onChange={(event) =>
+									setField(
+										"containerArchitecture",
+										event.target.value === "arm64" || event.target.value === "x86_64" ? event.target.value : undefined,
+									)
+								}
+								className="rounded-sm border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-red-400"
+							>
+								<option value="">auto</option>
+								<option value="arm64">arm64</option>
+								<option value="x86_64">x86_64</option>
+							</select>
+						</label>
+						<div className="sm:col-span-2">
+							<Field
+								label="health path"
+								value={form.containerHealthCheckPath ?? ""}
+								onChange={(v) => setField("containerHealthCheckPath", v)}
+							/>
+						</div>
+						<label className="sm:col-span-2 grid gap-1">
+							<span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">container env</span>
+							<textarea
+								value={formatEnvVars(form.containerEnvironmentVars)}
+								onChange={(event) => setField("containerEnvironmentVars", parseEnvVars(event.target.value))}
+								className="min-h-20 rounded-sm border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs text-white outline-none focus:border-red-400"
+								placeholder="CUSTOM_ENV=1"
+							/>
+						</label>
 						<label className="sm:col-span-2 grid gap-1">
 							<span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">bio</span>
 							<textarea
@@ -259,10 +526,13 @@ export default function ElizaCloudOpsPage() {
 								<select
 									value={enqueueSource}
 									onChange={(event) =>
-										setEnqueueSource(event.target.value as "agent.graduated" | "token.migrated" | "manual")
+										setEnqueueSource(
+											event.target.value as "agent.bonded" | "agent.graduated" | "token.migrated" | "manual",
+										)
 									}
 									className="rounded-sm border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-red-400"
 								>
+									<option value="agent.bonded">agent.bonded</option>
 									<option value="agent.graduated">agent.graduated</option>
 									<option value="token.migrated">token.migrated</option>
 									<option value="manual">manual</option>
@@ -283,6 +553,32 @@ export default function ElizaCloudOpsPage() {
 				</Panel>
 
 				<aside className="space-y-4">
+					<Panel>
+						<Label>proof run</Label>
+						{proofSteps.length > 0 ? (
+							<div className="mt-3 space-y-2">
+								{proofSteps.map((step) => (
+									<div
+										key={step.key}
+										className="grid grid-cols-[96px_1fr] gap-2 border-t border-white/5 pt-2 first:border-t-0 first:pt-0"
+									>
+										<span className={`text-[10px] font-mono uppercase tracking-wider ${proofTone(step.state)}`}>
+											{step.state}
+										</span>
+										<span className="min-w-0 text-xs font-mono text-neutral-300">
+											{step.label}
+											{step.detail ? <span className="block break-all text-neutral-500">{step.detail}</span> : null}
+										</span>
+									</div>
+								))}
+							</div>
+						) : (
+							<p className="mt-3 text-xs text-neutral-500">
+								runs bonded worker provisioning, hosted runtime checks, controls, lifecycle webhooks, and optional chat
+								or owner checks.
+							</p>
+						)}
+					</Panel>
 					<Panel>
 						<Label>readiness</Label>
 						{status.error ? (
@@ -575,14 +871,34 @@ export default function ElizaCloudOpsPage() {
 								</p>
 								{chatSession.data.expiresInSeconds ? <p>expires: {chatSession.data.expiresInSeconds}s</p> : null}
 								{chatSession.data.chatUrl ? (
-									<a
-										href={chatSession.data.chatUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="block break-all text-[#00ff87] hover:text-white"
-									>
-										open hosted chat
-									</a>
+									<>
+										<a
+											href={chatSession.data.chatUrl}
+											target="_blank"
+											rel="noreferrer"
+											className="block break-all text-[#00ff87] hover:text-white"
+										>
+											open hosted chat
+										</a>
+										<button
+											type="button"
+											disabled={hostedChatApi.isPending}
+											onClick={runHostedChatApi}
+											className="inline-flex items-center gap-1 rounded-sm border border-white/10 px-2 py-1 text-[10px] uppercase tracking-wider text-neutral-200 hover:border-white/20 disabled:opacity-40"
+										>
+											{hostedChatApi.isPending ? (
+												<LoaderCircle className="size-3 animate-spin" />
+											) : (
+												<MessageCircle className="size-3" />
+											)}
+											verify hosted api
+										</button>
+									</>
+								) : null}
+								{hostedChatApi.error ? (
+									<p className="text-red-300">{(hostedChatApi.error as Error).message}</p>
+								) : hostedChatApi.data ? (
+									<Row label="hosted api" value={`${hostedChatApi.data.status} ${hostedChatApi.data.url}`} />
 								) : null}
 							</div>
 						) : (
@@ -717,6 +1033,45 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 			/>
 		</label>
 	);
+}
+
+function formatEnvVars(value: Record<string, string> | undefined): string {
+	if (!value) return "";
+	return Object.entries(value)
+		.map(([key, envValue]) => `${key}=${envValue}`)
+		.join("\n");
+}
+
+function parseEnvVars(value: string): Record<string, string> | undefined {
+	const entries = value
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.map((line) => {
+			const index = line.indexOf("=");
+			if (index <= 0) return null;
+			const key = line.slice(0, index).trim();
+			const envValue = line.slice(index + 1).trim();
+			return key ? [key, envValue] : null;
+		})
+		.filter((entry): entry is [string, string] => Array.isArray(entry));
+	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function proofTone(state: ProofStepState): string {
+	if (state === "passed") return "text-[#00ff87]";
+	if (state === "failed") return "text-red-300";
+	if (state === "running") return "text-amber-300";
+	if (state === "skipped") return "text-neutral-500";
+	return "text-neutral-600";
+}
+
+function proofLabel(key: string): string {
+	if (key === "agent.bonded") return "agent.bonded";
+	if (key === "runtime-status") return "runtime status";
+	if (key === "webhook-depleted") return "credits depleted";
+	if (key === "webhook-topped-up") return "credits topped";
+	return key.replaceAll("-", " ");
 }
 
 function Row({ label, value }: { label: string; value: string }) {

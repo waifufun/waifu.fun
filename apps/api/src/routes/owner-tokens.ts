@@ -134,16 +134,27 @@ function getCloudAgentId(row: TokenRuntimeRow): string | null {
 	);
 }
 
-function getContainerUrl(row: TokenRuntimeRow): string | null {
+// Sol conflict-resolution (#896): the DISPLAY/hosted-URL returned to the frontend
+// keeps develop's `webUiUrl ?? containerUrl` fallback, so containerUrl-only agents
+// (no webUiUrl yet) still surface a URL. #896's webUiUrl-only check is honored for
+// the LIVE-STATE gate only (see getHostedLiveUrl below).
+function getHostedWebUiUrl(row: TokenRuntimeRow): string | null {
 	const provisioning = getProvisioning(row.persona);
 	return (
 		stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl") ?? row.agent?.webUiUrl ?? null
 	);
 }
 
+// Live-state GATE value: webUiUrl-only (no containerUrl fallback), per #896's intent
+// that an agent only flips to "live"/"running" once a real webUiUrl exists.
+function getHostedLiveUrl(row: TokenRuntimeRow): string | null {
+	const provisioning = getProvisioning(row.persona);
+	return stringField(provisioning, "webUiUrl") ?? row.agent?.webUiUrl ?? null;
+}
+
 function serializeRuntime(row: TokenRuntimeRow) {
 	const cloudAgentId = getCloudAgentId(row);
-	const containerUrl = getContainerUrl(row);
+	const webUiUrl = getHostedWebUiUrl(row);
 	const status = row.agent?.agentStatus ?? row.token.agentStatus ?? "none";
 	return {
 		mint: row.token.contractAddress,
@@ -155,12 +166,12 @@ function serializeRuntime(row: TokenRuntimeRow) {
 		cloudAgentId: cloudAgentId ?? undefined,
 		agentStatus: status,
 		agentLifecycleState: row.agent?.lifecycleState ?? null,
-		webUiUrl: containerUrl ?? undefined,
+		webUiUrl: webUiUrl ?? undefined,
 		billingMode: row.agent?.billingMode ?? "owner_credits",
 		infraReserveUsd: row.agent?.infraReserveUsd == null ? 5 : Number(row.agent.infraReserveUsd),
 		lastHeartbeatAt: row.agent?.lastHeartbeatAt?.toISOString() ?? null,
 		suspendedReason: row.agent?.suspendedReason ?? null,
-		hasAgent: Boolean(cloudAgentId || containerUrl || status !== "none"),
+		hasAgent: Boolean(cloudAgentId || webUiUrl || status !== "none"),
 	};
 }
 
@@ -181,8 +192,10 @@ function runtimeOverlayFromStatus(
 	suspendedReason: string | null;
 } {
 	const runtimeStatus = status?.status ?? row.agent?.agentStatus ?? row.token.agentStatus ?? "provisioning";
-	const webUiUrl = status?.webUiUrl ?? status?.containerUrl ?? getContainerUrl(row);
-	const running = isHostedRuntimeRunning(runtimeStatus) && Boolean(webUiUrl);
+	// Display URL keeps the containerUrl fallback; the live gate uses webUiUrl-only.
+	const webUiUrl = status?.webUiUrl ?? getHostedWebUiUrl(row);
+	const liveUrl = status?.webUiUrl ?? getHostedLiveUrl(row);
+	const running = isHostedRuntimeRunning(runtimeStatus) && Boolean(liveUrl);
 	const agentStatus = running
 		? "running"
 		: isHostedRuntimeRunning(runtimeStatus)
@@ -300,6 +313,33 @@ async function ensureAgentOverlay(
 			updatedAt: now,
 		})
 		.where(eq(tokens.id, row.token.id));
+
+	if (input.cloudAgentId && row.persona?.agentId) {
+		const metadata = recordFromUnknown(row.persona.metadata);
+		const provisioning = recordFromUnknown(metadata.provisioning);
+		await db
+			.update(agentPersonas)
+			.set({
+				elizaCloudAgentId: input.cloudAgentId,
+				metadata: {
+					...metadata,
+					provisioning: {
+						...provisioning,
+						runtimeKind: "eliza-cloud",
+						provider: "eliza-cloud",
+						cloudAgentId: input.cloudAgentId,
+						runtimeAgentId: input.cloudAgentId,
+						containerId: input.containerId ?? provisioning.containerId ?? null,
+						containerUrl: provisioning.containerUrl ?? null,
+						webUiUrl: input.webUiUrl ?? provisioning.webUiUrl ?? null,
+						status: input.agentStatus,
+						updatedAt: now.toISOString(),
+					},
+				},
+				updatedAt: now,
+			})
+			.where(eq(agentPersonas.agentId, row.persona.agentId));
+	}
 }
 
 function getElizaClient() {
@@ -488,7 +528,7 @@ app.get("/tokens/:chain/:chainId/:contractAddress/chat-session", async (c) => {
 	}
 
 	const cloudAgentId = getCloudAgentId(resolved.row);
-	const chatUrl = getContainerUrl(resolved.row);
+	const chatUrl = getHostedWebUiUrl(resolved.row);
 	if (!cloudAgentId || !chatUrl) {
 		return c.json(
 			{
@@ -631,11 +671,11 @@ app.post("/tokens/:chain/:chainId/:contractAddress/runtime/activate", async (c) 
 	});
 	if (!cloud) throw new Error("Eliza Cloud client did not return a provisioning result");
 
-	const hasHostedRuntimeUrl = Boolean(cloud.webUiUrl ?? cloud.containerUrl);
+	const hasHostedRuntimeUrl = Boolean(cloud.webUiUrl);
 	const isRunningWithHostedRuntime = isHostedRuntimeRunning(cloud.status) && hasHostedRuntimeUrl;
 	await ensureAgentOverlay(resolved.db, resolved.row, {
 		cloudAgentId: cloud.cloudAgentId,
-		webUiUrl: cloud.webUiUrl ?? cloud.containerUrl ?? null,
+		webUiUrl: cloud.webUiUrl ?? null,
 		containerId: cloud.containerId ?? null,
 		agentStatus: isRunningWithHostedRuntime ? "running" : "provisioning",
 		lifecycleState: isRunningWithHostedRuntime ? "live" : "birth",
@@ -758,7 +798,7 @@ export async function topUpOwnedTokenRuntime(
 	const currentReserve = row.agent?.infraReserveUsd == null ? 0 : Number(row.agent.infraReserveUsd);
 	await ensureAgentOverlay(db, row, {
 		cloudAgentId: getCloudAgentId(row),
-		webUiUrl: getContainerUrl(row),
+		webUiUrl: getHostedWebUiUrl(row),
 		containerId,
 		agentStatus: row.agent?.agentStatus ?? row.token.agentStatus ?? "provisioning",
 		lifecycleState: row.agent?.lifecycleState ?? "birth",

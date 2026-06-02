@@ -34,8 +34,19 @@ export function VestingTimeline({
 
 	useEffect(() => {
 		if (!launchTimestamp || launchTimestamp <= 0n) return;
-		const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1_000);
-		return () => clearInterval(id);
+		const update = () => setNow(Math.floor(Date.now() / 1000));
+		const id = setInterval(() => {
+			if (typeof document !== "undefined" && document.hidden) return;
+			update();
+		}, 1_000);
+		const onVisible = () => {
+			if (!document.hidden) update();
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		return () => {
+			clearInterval(id);
+			document.removeEventListener("visibilitychange", onVisible);
+		};
 	}, [launchTimestamp]);
 
 	if (!vestingEnabled) {

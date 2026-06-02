@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHmac } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { once } from "node:events";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 
 const TOKEN_ADDRESS = "0x0000000000000000000000000000000000000004";
@@ -430,7 +433,15 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 	});
 
 	it("runs full E2E mode through worker launch, token chat, owner controls, and top-up verification", async () => {
+		const proofDir = mkdtempSync(join(tmpdir(), "waifu-eliza-proof-"));
+		const proofFile = join(proofDir, "proof.json");
 		const runtime = await startServer(async (_req, res) => {
+			const url = new URL(_req.url ?? "/", "http://runtime.local");
+			if (_req.method === "GET" && url.pathname === "/api/conversations") {
+				assert.match(_req.headers.authorization ?? "", /^Bearer [^.]+\.[^.]+\.[^.]+$/);
+				writeJson(res, 200, { conversations: [] });
+				return;
+			}
 			res.writeHead(200, { "content-type": "text/html" });
 			res.end("<!doctype html><title>Eliza Cloud Full E2E Agent</title>");
 		});
@@ -444,6 +455,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 				WAIFU_ELIZA_SMOKE_OWNER_BEARER: "owner-token",
 				WAIFU_ELIZA_SMOKE_REQUIRE_FULL_E2E: "1",
 				WAIFU_ELIZA_SMOKE_STEWARD_BEARER: "steward-token",
+				WAIFU_ELIZA_SMOKE_PROOF_FILE: proofFile,
 				WAIFU_ELIZA_SMOKE_VERIFY_LIFECYCLE_WEBHOOK: "1",
 				WAIFU_ELIZA_SMOKE_VERIFY_TOP_UP_SESSION: "cs_mock",
 				WAIFU_ELIZA_SMOKE_WALLET_KEY_REF: WALLET_KEY_REF,
@@ -453,6 +465,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			assert.equal(result.code, 0, result.stderr || result.stdout);
 			assert.match(result.stdout, /worker provisioning enqueued jobId=job-1/);
 			assert.match(result.stdout, /chat-session ok role=user/);
+			assert.match(result.stdout, /hosted chat API accepted waifu token status=200/);
 			assert.match(result.stdout, /owner runtime test ok status=running/);
 			assert.match(result.stdout, /owner runtime control ok action=restart/);
 			assert.doesNotMatch(result.stdout, /top-up checkout ok/);
@@ -460,10 +473,20 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 			assert.match(result.stdout, /lifecycle topped_up webhook ok status=running/);
 			assert.match(result.stdout, /top-up verification ok session=cs_mock/);
 			assert.match(result.stdout, /"chatSession": \{/);
+			assert.match(result.stdout, /"hostedApiAcceptedToken": true/);
 			assert.match(result.stdout, /"tokenSignatureVerified": true/);
 			assert.match(result.stdout, /"ownerRuntime": \{/);
 			assert.match(result.stdout, /"hostedUrlReachable": true/);
+			assert.match(result.stdout, /proof file wrote /);
 			assert.match(result.stdout, /live smoke passed/);
+			const proof = JSON.parse(readFileSync(proofFile, "utf8"));
+			assert.equal(proof.cloudAgentId, "cloud-worker-agent");
+			assert.equal(proof.account.primaryWalletAddress, AGENT_WALLET);
+			assert.equal(proof.account.initialFreeCreditsUsd, 5);
+			assert.equal(proof.webUiUrl, runtime.url);
+			assert.equal(proof.chatSession.hostedApiAcceptedToken, true);
+			assert.equal(proof.ownerRuntime.controlOk, true);
+			assert.equal(proof.lifecycleWebhooks.runningStatus, "running");
 			assert.equal(
 				apiContract.calls.some((call) => call.path === "/v2/admin/agents/eliza-cloud/test-provision"),
 				false,
@@ -503,6 +526,7 @@ describe("eliza-cloud-live-smoke CLI contract", () => {
 		} finally {
 			await api.close();
 			await runtime.close();
+			rmSync(proofDir, { force: true, recursive: true });
 		}
 	});
 });

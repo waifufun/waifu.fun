@@ -12,6 +12,7 @@ import LaunchReadyHero from "@/components/patron/launch-ready-hero";
 import PatronHeader from "@/components/patron/patron-header";
 import PolicyEditor from "@/components/patron/policy-editor";
 import RuntimeConnectionPanel from "@/components/patron/runtime-connection-panel";
+import TradingPolicyEditor from "@/components/patron/trading-policy-editor";
 import TreasuryCard from "@/components/patron/treasury-card";
 import WhatHappensNext from "@/components/patron/what-happens-next";
 import XConnectionPanel from "@/components/patron/x-connection";
@@ -184,6 +185,7 @@ export default function PatronAgentDetailPage({
 						<ActivityFeed events={events} isLoading={eventsLoading} error={eventsError as Error | null} />
 					</div>
 					<PolicyEditor agentId={agentId} />
+					<TradingPolicyEditor agentId={agentId} />
 					<EmergencyControls />
 				</div>
 			)}

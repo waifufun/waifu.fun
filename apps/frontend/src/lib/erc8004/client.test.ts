@@ -67,12 +67,22 @@ describe("isErc8004IdentityRecord", () => {
 });
 
 describe("URL builders", () => {
-	it("build8004ScanUrl produces the canonical agent path", () => {
+	it("build8004ScanUrl produces the canonical agent path (chain slug, not chainId)", () => {
 		const url = build8004ScanUrl(FIXTURE);
-		expect(url).toContain("8004scan.io");
-		expect(url).toContain("/56/");
-		expect(url).toContain(FIXTURE.registryAddress.toLowerCase());
-		expect(url).toContain(`/${FIXTURE.tokenId}`);
+		// Verified live 2026-06-02: canonical path is /agents/<chain>/<tokenId>.
+		expect(url).toBe("https://8004scan.io/agents/bsc/1");
+	});
+
+	it("build8004ScanUrl maps known chainIds to slugs and falls back to chain label", () => {
+		expect(build8004ScanUrl({ ...FIXTURE, chainId: 97, chain: "bsc-testnet" })).toBe(
+			"https://8004scan.io/agents/bsc-testnet/1",
+		);
+		expect(build8004ScanUrl({ ...FIXTURE, chainId: 1, chain: "ethereum" })).toBe(
+			"https://8004scan.io/agents/ethereum/1",
+		);
+		expect(build8004ScanUrl({ ...FIXTURE, chainId: 8453, chain: "base" })).toBe("https://8004scan.io/agents/base/1");
+		// Unknown chainId falls back to the record's chain label.
+		expect(build8004ScanUrl({ ...FIXTURE, chainId: 42161, chain: "base" })).toBe("https://8004scan.io/agents/base/1");
 	});
 
 	it("buildScanTxUrl routes BSC mainnet to bscscan.com", () => {

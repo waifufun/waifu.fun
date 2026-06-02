@@ -1,7 +1,17 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 
-import { agentApps, agentPersonas, getDatabase } from "@waifufun/db";
+import {
+	DEFAULT_SETTLEMENT_MODE,
+	type Database,
+	type SettlementMode,
+	agentApps,
+	agentPersonas,
+	getDatabase,
+	getEscrowThresholdUsd,
+	getSettlementMode,
+	isSettlementMode,
+} from "@waifufun/db";
 import { and, eq, sql } from "drizzle-orm";
 
 import { type StewardAuthPrincipal, verifyStewardJwt } from "../../middleware/steward-auth.js";
@@ -11,6 +21,7 @@ const app = new Hono();
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 const DEFAULT_IMAGE_GEN_MARKUP_PERCENTAGE = 100;
 const DEFAULT_IMAGE_GEN_MODEL = "google/gemini-2.5-flash-image";
+const DEFAULT_AUTO_ESCROW_THRESHOLD_USD = 1;
 const VALID_ASPECTS = new Set(["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]);
 
 type JsonRecord = Record<string, unknown>;
@@ -19,14 +30,39 @@ type AppAuth =
 	| { mode: "steward"; principal: StewardAuthPrincipal }
 	| { mode: "agent-app-key"; principal: { userId: string } };
 
-type ImageGenBody = {
+export type ImageGenBody = {
 	prompt?: unknown;
 	style?: unknown;
 	aspect?: unknown;
 	idempotencyKey?: unknown;
 };
 
+type AppsRouteDepsForTest = {
+	db: Database | undefined;
+	auth: AppAuth | undefined;
+	createElizaImageApp: typeof createElizaImageApp | undefined;
+	generateImageThroughEliza: typeof generateImageThroughEliza | undefined;
+	fetchElizaEarnings: typeof fetchElizaEarnings | undefined;
+};
+
+const appsRouteDepsForTest: AppsRouteDepsForTest = {
+	db: undefined,
+	auth: undefined,
+	createElizaImageApp: undefined,
+	generateImageThroughEliza: undefined,
+	fetchElizaEarnings: undefined,
+};
+
+export function __setAppsRouteDepsForTest(deps: Partial<AppsRouteDepsForTest>): void {
+	appsRouteDepsForTest.db = deps.db;
+	appsRouteDepsForTest.auth = deps.auth;
+	appsRouteDepsForTest.createElizaImageApp = deps.createElizaImageApp;
+	appsRouteDepsForTest.generateImageThroughEliza = deps.generateImageThroughEliza;
+	appsRouteDepsForTest.fetchElizaEarnings = deps.fetchElizaEarnings;
+}
+
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
+	if (appsRouteDepsForTest.db) return appsRouteDepsForTest.db;
 	const url = process.env.DATABASE_URL;
 	if (!url || url.length === 0) return null;
 	return getDatabase(url).db;
@@ -39,6 +75,7 @@ function getBearer(header: string | undefined): string | null {
 }
 
 async function authenticate(c: Context): Promise<AppAuth | Response> {
+	if (appsRouteDepsForTest.auth) return appsRouteDepsForTest.auth;
 	const configuredInvokeKey = process.env.WAIFU_APP_INVOKE_KEY?.trim();
 	const presentedInvokeKey = c.req.header("x-waifu-app-invoke-key")?.trim();
 	if (configuredInvokeKey && presentedInvokeKey && presentedInvokeKey === configuredInvokeKey) {
@@ -106,7 +143,53 @@ function stringFromMetadata(metadata: unknown, key: string): string | null {
 	const value = metadataRecord(metadata)[key];
 	return typeof value === "string" && value.trim() ? value.trim() : null;
 }
-function normalizePrompt(
+
+function settlementModeFromRegisterBody(body: JsonRecord): SettlementMode {
+	if (isSettlementMode(body.settlementMode)) return body.settlementMode;
+	return isSettlementMode(body.settlement) ? body.settlement : DEFAULT_SETTLEMENT_MODE;
+}
+
+function isEscrowEnabled(): boolean {
+	return process.env.ENABLE_ERC8183_ESCROW === "true" || process.env.ENABLE_ERC8183_ESCROW === "1";
+}
+
+function nonNegativeNumber(value: unknown): number | null {
+	const number = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function estimatedSettlementCostUsd(metadata: unknown): number {
+	const record = metadataRecord(metadata);
+	return nonNegativeNumber(record.estimatedCostUsd ?? record.pricePerUseUsd ?? record.priceUsd) ?? 0;
+}
+
+function shouldUseEscrowForSettlement(metadata: unknown, estimatedCostUsd: number): boolean {
+	const mode = getSettlementMode(metadata);
+	if (mode === "escrow") return true;
+	if (mode === "credits") return false;
+	// `auto` keeps today's credits path below the manifest threshold and routes
+	// higher-value jobs through the future ERC-8183 escrow seam. The default
+	// threshold is intentionally conservative and can be overridden per app via
+	// `metadata.escrowThresholdUsd` once real pricing is available.
+	return estimatedCostUsd >= getEscrowThresholdUsd(metadata, DEFAULT_AUTO_ESCROW_THRESHOLD_USD);
+}
+
+type EscrowSettlementInput = {
+	appId: string;
+	agentTokenAddress: string;
+	prompt: string;
+	aspect: string;
+	estimatedCostUsd: number;
+};
+
+async function settleViaEscrow(_input: EscrowSettlementInput): Promise<never> {
+	// TODO(W-2B): wire this boundary to @stwd/erc8183 once the package and
+	// on-chain job settlement flow are published. Do not broadcast here until the
+	// W-2B integration owns chain selection, signing, receipts, and retries.
+	throw new Error("not implemented — see @stwd/erc8183 (W-2B)");
+}
+
+export function normalizePrompt(
 	body: ImageGenBody,
 ): { prompt: string; style: string | null; aspect: string } | { error: string } {
 	const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
@@ -116,7 +199,7 @@ function normalizePrompt(
 	return { prompt, style, aspect };
 }
 
-function composePrompt(input: { prompt: string; style: string | null }): string {
+export function composePrompt(input: { prompt: string; style: string | null }): string {
 	if (!input.style) return input.prompt;
 	return `${input.prompt}\n\nStyle: ${input.style}`;
 }
@@ -264,6 +347,18 @@ async function fetchElizaEarnings(elizaCloudAppId: string): Promise<ElizaEarning
 	});
 }
 
+/**
+ * Recognise an exhausted-credit / payment-required failure from the Eliza
+ * Cloud charge. `elizaJson` throws `Eliza Cloud request failed (402): ...` for
+ * an upstream 402; we also catch common insufficient-balance phrasings so a
+ * non-402 status carrying the same meaning still maps to a 402 for the client.
+ */
+export function isInsufficientCreditsError(err: unknown): boolean {
+	const message = err instanceof Error ? err.message : String(err ?? "");
+	if (/\(402\)/.test(message)) return true;
+	return /insufficient\s+(credits?|balance|funds)|payment\s+required|out\s+of\s+credits/i.test(message);
+}
+
 function imageGenAppUrl(tokenAddress: string): string {
 	const base = (process.env.WAIFU_API_PUBLIC_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun").replace(
 		/\/+$/,
@@ -311,13 +406,16 @@ app.post("/agents/:token/apps/image-gen/register", async (c) => {
 	const existingElizaAppId = stringFromMetadata(existingRows[0]?.metadata, "elizaCloudAppId");
 	const elizaCloudAppId =
 		existingElizaAppId ??
-		(await createElizaImageApp({
+		(await (appsRouteDepsForTest.createElizaImageApp ?? createElizaImageApp)({
 			tokenAddress,
 			name,
 			description,
 			appUrl,
 			markupPercentage: inferenceMarkupPercentage,
 		}));
+	const settlementMode = settlementModeFromRegisterBody(body);
+	const escrowThresholdUsd = nonNegativeNumber(body.escrowThresholdUsd) ?? DEFAULT_AUTO_ESCROW_THRESHOLD_USD;
+	const estimatedCostUsd = nonNegativeNumber(body.estimatedCostUsd ?? body.pricePerUseUsd ?? body.priceUsd) ?? 0;
 
 	const values = {
 		agentTokenAddress: tokenAddress,
@@ -331,6 +429,9 @@ app.post("/agents/:token/apps/image-gen/register", async (c) => {
 		metadata: {
 			kind: "agent-mini-app",
 			category: "image-generation",
+			settlementMode,
+			escrowThresholdUsd,
+			estimatedCostUsd,
 			currency: "USD",
 			unit: "image",
 			endpoint: appUrl,
@@ -395,6 +496,43 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 	if ("error" in normalized) return c.json({ ok: false, error: "BAD_REQUEST", message: normalized.error }, 400);
 
 	const metadata = metadataRecord(existing.metadata);
+	const settlementMode = getSettlementMode(metadata);
+	const estimatedCostUsd = estimatedSettlementCostUsd(metadata);
+	if (shouldUseEscrowForSettlement(metadata, estimatedCostUsd)) {
+		if (!isEscrowEnabled()) {
+			return c.json(
+				{
+					ok: false,
+					error: "ESCROW_SETTLEMENT_NOT_YET_ENABLED",
+					message: "ERC-8183 escrow settlement is flag-gated and not enabled for mini-app invocations yet.",
+					settlementMode,
+				},
+				501,
+			);
+		}
+		try {
+			await settleViaEscrow({
+				appId: "image-gen",
+				agentTokenAddress: tokenAddress,
+				prompt: normalized.prompt,
+				aspect: normalized.aspect,
+				estimatedCostUsd,
+			});
+		} catch (err) {
+			if (err instanceof Error && err.message.includes("not implemented")) {
+				return c.json(
+					{
+						ok: false,
+						error: "ESCROW_SETTLEMENT_NOT_YET_ENABLED",
+						message: "ERC-8183 escrow settlement is still stubbed pending @stwd/erc8183 W-2B wiring.",
+						settlementMode,
+					},
+					501,
+				);
+			}
+			throw err;
+		}
+	}
 	const elizaCloudAppId = stringFromMetadata(metadata, "elizaCloudAppId");
 	if (!elizaCloudAppId) {
 		return c.json({ ok: false, error: "MISCONFIGURED", message: "image-gen app is missing Eliza Cloud app id" }, 503);
@@ -442,13 +580,15 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 
 	let generated: Awaited<ReturnType<typeof generateImageThroughEliza>>;
 	try {
-		generated = await generateImageThroughEliza({
+		generated = await (appsRouteDepsForTest.generateImageThroughEliza ?? generateImageThroughEliza)({
 			apiKey: callerKey,
 			elizaCloudAppId,
 			prompt: composePrompt(normalized),
 			aspect: normalized.aspect,
 		});
 	} catch (err) {
+		// Release the idempotency reservation so the caller can retry once the
+		// underlying issue (e.g. topped-up credits) is resolved.
 		await db
 			.update(agentApps)
 			.set({
@@ -456,10 +596,26 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 				updatedAt: new Date(),
 			})
 			.where(and(eq(agentApps.agentTokenAddress, tokenAddress), eq(agentApps.appId, "image-gen")));
+		// Eliza Cloud surfaces an exhausted-credit charge as a 402 (or a
+		// payment/insufficient-balance message). Map it to a real 402 so the UI
+		// can show its insufficient-credits recovery path instead of a generic
+		// 500 from the global error handler.
+		if (isInsufficientCreditsError(err)) {
+			return c.json(
+				{
+					ok: false,
+					error: "INSUFFICIENT_CREDITS",
+					message: "Eliza Cloud credits are exhausted for this caller; top up to generate images.",
+				},
+				402,
+			);
+		}
 		throw err;
 	}
 
-	const earnings = await fetchElizaEarnings(elizaCloudAppId).catch(() => null);
+	const earnings = await (appsRouteDepsForTest.fetchElizaEarnings ?? fetchElizaEarnings)(elizaCloudAppId).catch(
+		() => null,
+	);
 	const now = new Date();
 	const image = generated.images?.[0];
 	const imageUrl = image?.url ?? image?.image;
@@ -480,6 +636,7 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 		model: generated.model ?? process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
 		cloudCallable: true,
 		readCacheSource: "eliza-cloud-earnings",
+		settlementMode,
 		elizaCloudAppId,
 		lastElizaCharge: generated.charge ?? null,
 	};
@@ -516,6 +673,7 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 						revenue7dUsd: toUsdString(revenue7d),
 					}
 				: null,
+			settlementMode,
 			billingReality: "charged through Eliza Cloud app metered generate-image endpoint",
 		},
 	});
