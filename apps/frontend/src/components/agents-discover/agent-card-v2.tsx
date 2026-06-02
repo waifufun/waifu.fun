@@ -48,7 +48,7 @@ import type { AgentListItem } from "./types";
 const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
 const CHAIN_BADGE: Record<number, { label: string; icon: string }> = {
-	56: { label: "BSC", icon: "/chain-icons/bsc.svg" },
+	56: { label: "BSC", icon: "/chain-icons/bnb.svg" },
 	8453: { label: "Base", icon: "/chain-icons/base.svg" },
 	101: { label: "Solana", icon: "/chain-icons/solana.svg" },
 };
@@ -152,7 +152,7 @@ function LogoBadge({ label, icon }: { label: string; icon: string }) {
 	return (
 		<span className="inline-flex h-6 items-center gap-1.5 rounded-sm border border-white/15 bg-black/70 px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/70 backdrop-blur-sm">
 			<span className="relative h-3.5 w-3.5 overflow-hidden rounded-[2px] bg-black">
-				<Image src={icon} alt="" fill sizes="14px" className="object-cover" />
+				<Image src={icon} alt="" fill sizes="14px" className="object-contain" />
 			</span>
 			{label}
 		</span>
