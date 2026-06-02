@@ -42,9 +42,21 @@ describe("agent panel hosted chat helpers", () => {
 				token({
 					agentStatus: "running",
 					cloudAgentId: "cloud-agent-1",
+					webUiUrl: "https://agent.elizacloud.ai",
 				} as Partial<IToken>),
 			),
 		).toEqual({ hasAgent: true, status: "running", lifecycle: null, canChat: true });
+	});
+
+	it("keeps chat closed when running metadata has no hosted web UI URL", () => {
+		expect(
+			getPublicAgentSnapshot(
+				token({
+					agentStatus: "running",
+					cloudAgentId: "cloud-agent-1",
+				} as Partial<IToken>),
+			),
+		).toEqual({ hasAgent: true, status: "running", lifecycle: null, canChat: false });
 	});
 
 	it("maps dormant lifecycle to stopped so depleted-credit shutdowns stay visible", () => {
@@ -70,11 +82,12 @@ describe("agent panel hosted chat helpers", () => {
 	});
 
 	it("uses the same running-only readiness rule for creator and public chat links", () => {
-		expect(canAgentStatusChat("running")).toBe(true);
-		expect(canAgentStatusChat(" RUNNING ")).toBe(true);
-		expect(canAgentStatusChat("provisioning")).toBe(false);
-		expect(canAgentStatusChat("stopped")).toBe(false);
-		expect(canAgentStatusChat("suspended")).toBe(false);
-		expect(canAgentStatusChat(null)).toBe(false);
+		expect(canAgentStatusChat("running", "https://agent.elizacloud.ai")).toBe(true);
+		expect(canAgentStatusChat(" RUNNING ", "https://agent.elizacloud.ai")).toBe(true);
+		expect(canAgentStatusChat("running", null)).toBe(false);
+		expect(canAgentStatusChat("provisioning", "https://agent.elizacloud.ai")).toBe(false);
+		expect(canAgentStatusChat("stopped", "https://agent.elizacloud.ai")).toBe(false);
+		expect(canAgentStatusChat("suspended", "https://agent.elizacloud.ai")).toBe(false);
+		expect(canAgentStatusChat(null, "https://agent.elizacloud.ai")).toBe(false);
 	});
 });

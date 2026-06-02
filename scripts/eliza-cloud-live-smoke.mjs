@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createECDH, createHmac, randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
@@ -30,6 +30,7 @@ Optional:
   WAIFU_ELIZA_SMOKE_ADMIN_WALLET=0x...
   WAIFU_ELIZA_SMOKE_WALLET_KEY_REF=steward:agent-key
   WAIFU_ELIZA_SMOKE_CONTAINER_IMAGE_URI=registry/image:tag
+  WAIFU_ELIZA_SMOKE_PROOF_FILE=tmp/eliza-cloud-live-proof.json
   WAIFU_ELIZA_SMOKE_PROJECT_NAME=waifu-live-smoke
   WAIFU_ELIZA_SMOKE_AGENT_ID=waifu-live-smoke-...
   WAIFU_ELIZA_SMOKE_WAIT_SECONDS=180
@@ -64,7 +65,19 @@ function ownerRuntimeAction() {
 
 function loadSmokeEnvFiles() {
 	const explicit = process.env.WAIFU_ELIZA_SMOKE_ENV_FILE?.trim();
-	const files = [explicit, ".env.local", ".env", "apps/api/.env"].filter(Boolean);
+	const files = [
+		explicit,
+		".env.local",
+		".env.production.local",
+		".env.staging",
+		".env.live",
+		".env",
+		"apps/api/.env.local",
+		"apps/api/.env.production.local",
+		"apps/api/.env.staging",
+		"apps/api/.env.live",
+		"apps/api/.env",
+	].filter(Boolean);
 	for (const file of files) {
 		if (!existsSync(file)) {
 			if (file === explicit) missingExplicitEnvFile = file;
@@ -384,7 +397,7 @@ function runtimeStatusText(status) {
 }
 
 function runtimeUrl(status) {
-	return status?.webUiUrl ?? status?.containerUrl ?? status?.url ?? null;
+	return status?.webUiUrl ?? null;
 }
 
 function base64UrlDecodeJson(segment) {
@@ -425,6 +438,7 @@ function decodeWaifuAccessClaims(chatUrl) {
 	assert(payload && typeof payload === "object", "waifu_access_token payload is not valid JSON");
 	const signingSecret = env("WAIFU_CHAT_ACCESS_JWT_SECRET");
 	return {
+		token,
 		header,
 		payload,
 		signatureVerified: signingSecret ? verifyHs256JwtSignature(token, signingSecret) : null,
@@ -690,6 +704,27 @@ async function probeRuntimeUrl(url) {
 	return { url, status: response.status, ok: response.status < 500 };
 }
 
+async function verifyHostedChatApiAccess(webUiUrl, chatSession) {
+	if (!chatSession) return null;
+	const token = chatSession.waifuAccessToken?.token;
+	assert(token, "hosted chat API verification requires a waifu access token");
+	assert(webUiUrl, "hosted chat API verification requires a web UI URL");
+	const url = new URL("/api/conversations", webUiUrl).toString();
+	const response = await fetch(url, {
+		method: "GET",
+		headers: {
+			Accept: "application/json",
+			Authorization: `Bearer ${token}`,
+		},
+	});
+	assert(response.ok, `hosted Eliza chat API rejected waifu access token with ${response.status}`, {
+		url,
+		status: response.status,
+	});
+	console.log(`[eliza-cloud-smoke] hosted chat API accepted waifu token status=${response.status}`);
+	return { url, status: response.status, ok: true };
+}
+
 async function verifyTokenChatSession(input) {
 	const bearer = env("WAIFU_ELIZA_SMOKE_STEWARD_BEARER");
 	if (!bearer) {
@@ -888,7 +923,7 @@ async function enqueueWorkerProvisioning(input) {
 			adminWallet: input.adminWallet,
 			walletKeyRef: input.walletKeyRef,
 			containerImageUri: input.containerImageUri,
-			source: "agent.graduated",
+			source: "agent.bonded",
 			dryRun: env("WAIFU_ELIZA_SMOKE_ENQUEUE_DRY_RUN") === "1",
 		},
 	});
@@ -987,6 +1022,7 @@ async function main() {
 		tokenContractAddress,
 		cloudAgentId: result.cloudAgentId,
 	});
+	const hostedChatApi = await verifyHostedChatApiAccess(runtimeUrl(runtime), chatSession);
 	const ownerRuntime = await verifyOwnerRuntimeApi({ agentId, cloudAgentId: result.cloudAgentId });
 
 	const balance = await control("balance", ids);
@@ -1025,59 +1061,62 @@ async function main() {
 	topUpVerification = await verifyCompletedTopUp(ids);
 	hostedUrlProbe = await probeRuntimeUrl(runtimeUrl(runtime));
 
+	const proofSummary = {
+		agentId,
+		cloudAgentId: result.cloudAgentId,
+		containerId: runtime?.containerId ?? result.containerId ?? null,
+		containerUrl: runtime?.containerUrl ?? result.containerUrl ?? null,
+		webUiUrl: runtimeUrl(runtime) ?? result.webUiUrl ?? null,
+		hostedUrlReachable: hostedUrlProbe?.ok ?? false,
+		hostedUrlStatus: hostedUrlProbe?.status ?? null,
+		status: runtimeStatusText(runtime) || result.status,
+		polling: result.polling ?? null,
+		account: evidence.account ?? null,
+		walletProvisioning: evidence.wallet ?? null,
+		chatSession: chatSession
+			? {
+					role: chatSession.role ?? null,
+					expiresInSeconds: chatSession.expiresInSeconds ?? null,
+					hasChatUrl: typeof chatSession.chatUrl === "string",
+					hostedApiAcceptedToken: hostedChatApi?.ok ?? null,
+					hostedApiStatus: hostedChatApi?.status ?? null,
+					tokenCloudAgentId: chatSession.waifuAccessToken?.payload?.cloudAgentId ?? null,
+					tokenSignatureVerified: chatSession.waifuAccessToken?.signatureVerified ?? null,
+				}
+			: null,
+		ownerRuntime: ownerRuntime
+			? {
+					testStatus: runtimeStatusText(ownerRuntime.test?.status) || null,
+					running: ownerRuntime.test?.running ?? null,
+					hasWebUiUrl: ownerRuntime.test?.hasWebUiUrl ?? null,
+					controlAction: ownerRuntime.control?.action ?? null,
+					controlOk: ownerRuntime.control?.ok ?? null,
+				}
+			: null,
+		topUpVerification: topUpVerification
+			? {
+					alreadyApplied: topUpVerification.verification?.alreadyApplied ?? null,
+					balance: topUpVerification.balance ?? null,
+					status: runtimeStatusText(topUpVerification.runtime) || null,
+				}
+			: null,
+		lifecycleWebhooks: lifecycleWebhooks
+			? {
+					depletedAccepted: lifecycleWebhooks.depleted?.status ?? null,
+					dormantStatus: runtimeStatusText(lifecycleWebhooks.dormantRuntime) || null,
+					toppedUpAccepted: lifecycleWebhooks.toppedUp?.status ?? null,
+					runningStatus: runtimeStatusText(lifecycleWebhooks.runningRuntime) || null,
+				}
+			: null,
+	};
+	const proofJson = JSON.stringify(proofSummary, null, 2);
+	const proofFile = env("WAIFU_ELIZA_SMOKE_PROOF_FILE");
+	if (proofFile) {
+		writeFileSync(proofFile, `${proofJson}\n`);
+		console.log(`[eliza-cloud-smoke] proof file wrote ${proofFile}`);
+	}
 	console.log("[eliza-cloud-smoke] live smoke passed");
-	console.log(
-		JSON.stringify(
-			{
-				agentId,
-				cloudAgentId: result.cloudAgentId,
-				containerId: runtime?.containerId ?? result.containerId ?? null,
-				containerUrl: runtimeUrl(runtime) ?? result.containerUrl ?? null,
-				webUiUrl: runtimeUrl(runtime) ?? result.webUiUrl ?? null,
-				hostedUrlReachable: hostedUrlProbe?.ok ?? false,
-				hostedUrlStatus: hostedUrlProbe?.status ?? null,
-				status: runtimeStatusText(runtime) || result.status,
-				polling: result.polling ?? null,
-				account: evidence.account ?? null,
-				walletProvisioning: evidence.wallet ?? null,
-				chatSession: chatSession
-					? {
-							role: chatSession.role ?? null,
-							expiresInSeconds: chatSession.expiresInSeconds ?? null,
-							hasChatUrl: typeof chatSession.chatUrl === "string",
-							tokenCloudAgentId: chatSession.waifuAccessToken?.payload?.cloudAgentId ?? null,
-							tokenSignatureVerified: chatSession.waifuAccessToken?.signatureVerified ?? null,
-						}
-					: null,
-				ownerRuntime: ownerRuntime
-					? {
-							testStatus: runtimeStatusText(ownerRuntime.test?.status) || null,
-							running: ownerRuntime.test?.running ?? null,
-							hasWebUiUrl: ownerRuntime.test?.hasWebUiUrl ?? null,
-							controlAction: ownerRuntime.control?.action ?? null,
-							controlOk: ownerRuntime.control?.ok ?? null,
-						}
-					: null,
-				topUpVerification: topUpVerification
-					? {
-							alreadyApplied: topUpVerification.verification?.alreadyApplied ?? null,
-							balance: topUpVerification.balance ?? null,
-							status: runtimeStatusText(topUpVerification.runtime) || null,
-						}
-					: null,
-				lifecycleWebhooks: lifecycleWebhooks
-					? {
-							depletedAccepted: lifecycleWebhooks.depleted?.status ?? null,
-							dormantStatus: runtimeStatusText(lifecycleWebhooks.dormantRuntime) || null,
-							toppedUpAccepted: lifecycleWebhooks.toppedUp?.status ?? null,
-							runningStatus: runtimeStatusText(lifecycleWebhooks.runningRuntime) || null,
-						}
-					: null,
-			},
-			null,
-			2,
-		),
-	);
+	console.log(proofJson);
 }
 
 const isCli = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];

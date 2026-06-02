@@ -36,7 +36,7 @@ test("POST /agent-events rejects a tampered raw body", async () => {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			"X-Waifu-Webhook-Signature": signBody(signedPayload, signedBody),
+			"X-Eliza-Webhook-Signature": signBody(signedPayload, signedBody),
 		},
 		body: tamperedBody,
 	});
@@ -53,7 +53,7 @@ test("POST /agent-events validates payload shape", async () => {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			"X-Waifu-Webhook-Signature": signBody(payload),
+			"X-Eliza-Webhook-Signature": signBody(payload),
 		},
 		body: JSON.stringify(payload),
 	});
@@ -318,7 +318,7 @@ function post(app: ReturnType<typeof createWebhookRoutes>, payload: unknown) {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			"X-Waifu-Webhook-Signature": signBody(payload, body),
+			"X-Eliza-Webhook-Signature": signBody(payload, body),
 		},
 		body,
 	});
@@ -330,7 +330,7 @@ function postDirect(app: ReturnType<typeof createWebhookRoutes>, path: string, p
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			"X-Waifu-Webhook-Signature": signBody(payload, body),
+			"X-Eliza-Webhook-Signature": signBody(payload, body),
 		},
 		body,
 	});

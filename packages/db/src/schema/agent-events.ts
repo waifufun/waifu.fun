@@ -6,6 +6,7 @@ export const AGENT_EVENT_TYPES = [
 	"agent.prepared",
 	"agent.claimed",
 	"agent.launched",
+	"agent.bonded",
 	"agent.graduated",
 	"agent.paused",
 	"agent.resumed",
@@ -235,6 +236,7 @@ export const AgentEventTypes = {
 	Prepared: "agent.prepared",
 	Claimed: "agent.claimed",
 	Launched: "agent.launched",
+	Bonded: "agent.bonded",
 	Graduated: "agent.graduated",
 	Paused: "agent.paused",
 	Resumed: "agent.resumed",
@@ -366,3 +368,5 @@ export interface AgentGraduatedPayload {
 	blockNumber: string;
 	txHash: string;
 }
+
+export interface AgentBondedPayload extends AgentGraduatedPayload {}

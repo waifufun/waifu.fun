@@ -322,13 +322,24 @@ export class ElizaClient {
 		const fetchOptions: RequestInit = {
 			method,
 			headers,
+			signal: AbortSignal.timeout(elizaCloudRequestTimeoutMs()),
 		};
 
 		if (options?.body !== undefined) {
 			fetchOptions.body = JSON.stringify(options.body);
 		}
 
-		const res = await fetch(url, fetchOptions);
+		let res: Response;
+		try {
+			res = await fetch(url, fetchOptions);
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "TimeoutError") {
+				const message = `eliza-cloud ${method} ${path}: timed out after ${elizaCloudRequestTimeoutMs()}ms`;
+				this.config.logger?.error?.(message, { method, path, timeoutMs: elizaCloudRequestTimeoutMs() });
+				throw new ElizaApiError(504, message, { method, path });
+			}
+			throw err;
+		}
 
 		if (!res.ok) {
 			const text = await res.text().catch(() => "");
@@ -462,7 +473,12 @@ export class ElizaClient {
 			throw new ElizaCloudNotConfiguredError("admin wallet must be a valid EVM address");
 		}
 		const environmentVars = {
+			// Sol conflict-resolution (#896): write BOTH the legacy and renamed agent-id
+			// env vars to the same value. develop writes WAIFU_AGENT_ID; #896 renamed it to
+			// ELIZA_BILLING_AGENT_ID. The eliza runtime currently reads neither, so emitting
+			// both is forward-compatible regardless of which the future consumer reads.
 			WAIFU_AGENT_ID: input.agentId,
+			ELIZA_BILLING_AGENT_ID: input.agentId,
 			TOKEN_CONTRACT_ADDRESS: input.tokenContractAddress,
 			TOKEN_CHAIN: input.chain,
 			TOKEN_CHAIN_ID: String(input.chainId),
@@ -479,9 +495,17 @@ export class ElizaClient {
 			...(process.env.WAIFU_CHAT_ACCESS_JWT_SECRET
 				? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 				: {}),
+			...(process.env.WAIFU_CHAT_FRAME_ANCESTORS
+				? { WAIFU_CHAT_FRAME_ANCESTORS: process.env.WAIFU_CHAT_FRAME_ANCESTORS }
+				: {}),
+			// Sol conflict-resolution (#896): keep BOTH develop's WAIFU_* webhook env vars
+			// AND #896's ELIZA_BILLING_* names pointing at the same values. Forward-compatible
+			// for whichever the container consumer reads.
 			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
 			...(inferenceWebhookUrl ? { WAIFU_INFERENCE_WEBHOOK_URL: inferenceWebhookUrl } : {}),
 			...(inferenceWebhookSecret ? { WAIFU_WEBHOOK_SECRET: inferenceWebhookSecret } : {}),
+			...(webhookUrl ? { ELIZA_BILLING_WEBHOOK_URL: webhookUrl } : {}),
+			...(webhookSecret ? { ELIZA_BILLING_WEBHOOK_SECRET: webhookSecret } : {}),
 			...(input.modelDefaults ?? {}),
 			...(input.container?.environmentVars ?? {}),
 			ELIZA_UI_ENABLE: "true",
@@ -523,6 +547,13 @@ export class ElizaClient {
 				},
 				container: {
 					image: imageUri,
+					...(input.container?.projectName ? { projectName: input.container.projectName } : {}),
+					...(input.container?.port ? { port: input.container.port } : {}),
+					...(input.container?.cpu ? { cpu: input.container.cpu } : {}),
+					...(input.container?.memory ? { memory: input.container.memory } : {}),
+					...(input.container?.desiredCount ? { desiredCount: input.container.desiredCount } : {}),
+					...(input.container?.architecture ? { architecture: input.container.architecture } : {}),
+					...(input.container?.healthCheckPath ? { healthCheckPath: input.container.healthCheckPath } : {}),
 					env: environmentVars,
 				},
 				...(input.modelDefaults ? { modelDefaults: input.modelDefaults } : {}),
@@ -538,13 +569,13 @@ export class ElizaClient {
 		const characterId = stringField(agent, "characterId") ?? cloudAgentId;
 		const jobId = stringField(agent, "jobId") ?? stringField(agent, "id") ?? cloudAgentId;
 		const webUiUrl = stringField(agent, "webUiUrl");
-		const hostedUrl = webUiUrl ?? stringField(agent, "containerUrl");
+		const containerUrl = stringField(agent, "containerUrl");
 		const normalized: ElizaCloudProvisionResult = {
 			agentId: input.agentId,
 			cloudAgentId,
 			status: stringField(agent, "status") ?? "pending",
 			...(stringField(agent, "containerId") ? { containerId: stringField(agent, "containerId") as string } : {}),
-			...(hostedUrl ? { containerUrl: hostedUrl } : {}),
+			...(containerUrl ? { containerUrl } : {}),
 			...(webUiUrl ? { webUiUrl } : {}),
 			...(characterId ? { characterId } : {}),
 			...(jobId ? { jobId } : {}),
@@ -850,6 +881,20 @@ export function resolveElizaCloudApiKey(): string | undefined {
 function nonEmpty(value: string | undefined): string | undefined {
 	const trimmed = value?.trim();
 	return trimmed ? trimmed : undefined;
+}
+
+const DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS = 20_000;
+
+/**
+ * Bound every Eliza Cloud HTTP call so a hung upstream connection can never
+ * stall a request handler (or the single-concurrency provisioning worker)
+ * indefinitely. Tunable via WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS.
+ */
+function elizaCloudRequestTimeoutMs(): number {
+	const raw = process.env.WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS?.trim();
+	if (!raw) return DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
 }
 
 function defaultFrontendUrl(): string {

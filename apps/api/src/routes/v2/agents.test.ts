@@ -543,6 +543,47 @@ test("buildLaunchOrchestratorDeps forwards tax splitter factory address", () => 
 	}
 });
 
+test("buildLaunchOrchestratorDeps persona store persists Steward wallet for bonded provisioning lookup", async () => {
+	const db = createProvisionDb();
+	__setAgentsRouteDepsForTest({ db });
+	const previous = {
+		stewardUrl: process.env.STEWARD_API_URL,
+		stewardKey: process.env.STEWARD_API_KEY,
+	};
+	process.env.STEWARD_API_URL = "https://steward.example";
+	process.env.STEWARD_API_KEY = "steward-key";
+	try {
+		const deps = buildLaunchOrchestratorDeps();
+		assert.ok(deps.personaStore);
+		await deps.personaStore.writeInitial({
+			agentId: "waifu-wallet-store",
+			walletAddress: "0x0000000000000000000000000000000000000002",
+			name: "Wallet Store",
+			persona: { ownerAddress: "0x0000000000000000000000000000000000000001" },
+			taxVaultAddress: "0x0000000000000000000000000000000000000003",
+		});
+		await deps.personaStore.setToken("waifu-wallet-store", "0x0000000000000000000000000000000000000004");
+
+		const walletUpdate = db.__updates.find(
+			(values) =>
+				values.internalAgentId === "waifu-wallet-store" &&
+				values.walletAddress === "0x0000000000000000000000000000000000000002",
+		);
+		assert.equal(walletUpdate?.stewardAgentId, "waifu-wallet-store");
+		assert.equal(walletUpdate?.safeAddress, "0x0000000000000000000000000000000000000003");
+		const tokenWalletUpdate = db.__updates.find(
+			(values) => values.agentToken === "0x0000000000000000000000000000000000000004",
+		);
+		assert.equal(tokenWalletUpdate?.agentToken, "0x0000000000000000000000000000000000000004");
+	} finally {
+		resetProvisionDeps();
+		if (previous.stewardUrl === undefined) delete process.env.STEWARD_API_URL;
+		else process.env.STEWARD_API_URL = previous.stewardUrl;
+		if (previous.stewardKey === undefined) delete process.env.STEWARD_API_KEY;
+		else process.env.STEWARD_API_KEY = previous.stewardKey;
+	}
+});
+
 test("redeemProvisionInviteCode is idempotent per patron and enforces max uses", async () => {
 	const { db, state } = createInviteRedemptionDb();
 

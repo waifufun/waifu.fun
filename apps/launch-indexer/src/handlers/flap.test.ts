@@ -35,6 +35,7 @@ class FakeDb {
 	private launchRows: Row[];
 	private personaRows: Row[];
 	public updates: Array<{ patch: Row }> = [];
+	public inserts: Array<{ table: unknown; value: Row }> = [];
 	constructor(launchRows: Row[], personaRows: Row[] = []) {
 		this.launchRows = launchRows;
 		this.personaRows = personaRows;
@@ -67,6 +68,31 @@ class FakeDb {
 					where(_predicate: unknown) {
 						captures.push({ patch: value });
 						return Promise.resolve([]);
+					},
+				};
+			},
+		};
+	}
+
+	insert(table: unknown) {
+		const captures = this.inserts;
+		return {
+			values(value: Row) {
+				captures.push({ table, value });
+				return {
+					returning() {
+						return Promise.resolve([
+							{
+								id: "agent-event-id",
+								type: value.type,
+								eventType: value.eventType,
+								tokenAddress: value.tokenAddress,
+								agentId: value.agentId,
+								data: value.data,
+								payload: value.payload,
+								createdAt: new Date("2026-05-13T00:10:00.000Z"),
+							},
+						]);
 					},
 				};
 			},
@@ -210,7 +236,7 @@ test("handleFlapLaunchedToDex: writes v2Pair + curveFillBnb + state when launch 
 
 test("handleFlapLaunchedToDex: enqueues Eliza Cloud provisioning when an agent persona is linked", async () => {
 	resetCountersForTests();
-	const { runtime } = makeRuntime(
+	const { runtime, db } = makeRuntime(
 		[
 			{
 				id: "launch-3",
@@ -242,6 +268,11 @@ test("handleFlapLaunchedToDex: enqueues Eliza Cloud provisioning when an agent p
 			},
 		},
 	]);
+	const agentEvents = db.inserts.filter((insert) => insert.table === schema.agentEvents);
+	assert.deepEqual(
+		agentEvents.map((insert) => (insert.value as { eventType: string }).eventType),
+		["agent.bonded", "agent.graduated"],
+	);
 });
 
 test("handleFlapLaunchedToDex: warns + bumps metric when launch row missing", async () => {

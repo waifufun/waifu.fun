@@ -126,6 +126,7 @@ export const agentProvisioningJobSchema = z.object({
 		.enum([
 			"agent.claimed",
 			"agent.launched",
+			"agent.bonded",
 			"agent.graduated",
 			"token.migrated",
 			"agent.provisioning_failed",

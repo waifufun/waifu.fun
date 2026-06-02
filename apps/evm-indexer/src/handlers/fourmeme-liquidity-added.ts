@@ -184,16 +184,23 @@ export async function handleLiquidityAddedEvent(
 	});
 
 	agentId ??= await lookupAgentIdByToken(runtime, event.data.base);
+	const agentEventPayload = {
+		tokenAddress: event.data.base,
+		pancakePair: null,
+		blockNumber: event.blockNumber.toString(),
+		txHash: event.txHash,
+	};
+	await emitAgentEvent(runtime, {
+		agentId,
+		tokenAddress: event.data.base,
+		type: "agent.bonded",
+		payload: agentEventPayload,
+	});
 	await emitAgentEvent(runtime, {
 		agentId,
 		tokenAddress: event.data.base,
 		type: "agent.graduated",
-		payload: {
-			tokenAddress: event.data.base,
-			pancakePair: null,
-			blockNumber: event.blockNumber.toString(),
-			txHash: event.txHash,
-		},
+		payload: agentEventPayload,
 	});
 
 	return { handled: true, enqueuedJobs };
@@ -202,7 +209,7 @@ export async function handleLiquidityAddedEvent(
 export function buildLiquidityAddedProvisioningJob(agentId: string, event: LiquidityAddedEvent): AgentProvisioningJob {
 	return {
 		agentId,
-		source: "agent.graduated",
+		source: "agent.bonded",
 		data: {
 			tokenAddress: event.data.base,
 			tokenContractAddress: event.data.base,

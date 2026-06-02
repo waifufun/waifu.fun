@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import { type LaunchedToDexEvent, getPortalEventId } from "../lib/events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
+import { emitAgentEvent } from "./agent-event-bus.js";
 import { lookupAgentIdByToken } from "./fourmeme-filters.js";
 
 export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: LaunchedToDexEvent) {
@@ -131,6 +132,24 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 		await queue.addAgentProvisioningJob(buildLaunchedToDexProvisioningJob(agentId, event), {
 			jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
 		});
+		const agentEventPayload = {
+			tokenAddress: event.data.tokenAddress,
+			pancakePair: event.data.poolAddress,
+			blockNumber: event.blockNumber.toString(),
+			txHash: event.txHash,
+		};
+		await emitAgentEvent(runtime, {
+			agentId,
+			tokenAddress: event.data.tokenAddress,
+			type: "agent.bonded",
+			payload: agentEventPayload,
+		});
+		await emitAgentEvent(runtime, {
+			agentId,
+			tokenAddress: event.data.tokenAddress,
+			type: "agent.graduated",
+			payload: agentEventPayload,
+		});
 	}
 
 	return {
@@ -142,7 +161,7 @@ export async function handleLaunchedToDexEvent(runtime: IndexerRuntime, event: L
 export function buildLaunchedToDexProvisioningJob(agentId: string, event: LaunchedToDexEvent): AgentProvisioningJob {
 	return {
 		agentId,
-		source: "token.migrated",
+		source: "agent.bonded",
 		data: {
 			tokenAddress: event.data.tokenAddress,
 			tokenContractAddress: event.data.tokenAddress,

@@ -36,7 +36,7 @@ export function createAgentProvisioningProcessor(context: WorkerContext): Worker
 					runtimeAgentId: result.cloudAgentId,
 					containerId: result.containerId ?? null,
 					containerUrl: result.containerUrl ?? null,
-					webUiUrl: result.webUiUrl ?? result.containerUrl ?? null,
+					webUiUrl: result.webUiUrl ?? null,
 					jobId: result.jobId ?? null,
 					status: result.status,
 					account: result.account ?? null,
@@ -194,6 +194,15 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	const modelDefaults = defaultHostedModelSettings();
 	const webhookUrl = defaultElizaCloudWebhookUrl();
 	const webhookSecret = webhookUrl ? defaultElizaCloudWebhookSecret() : undefined;
+	const containerProjectName = stringField(payload.data, "containerProjectName");
+	const containerPort = numberField(payload.data, "containerPort");
+	const containerCpu = numberField(payload.data, "containerCpu");
+	const containerMemory = numberField(payload.data, "containerMemory");
+	const containerDesiredCount = numberField(payload.data, "containerDesiredCount");
+	const containerArchitecture = containerArchitectureField(payload.data, "containerArchitecture");
+	const containerHealthCheckPath = stringField(payload.data, "containerHealthCheckPath");
+	const containerEnvironmentVars =
+		stringRecordField(payload.data, "containerEnvironmentVars") ?? stringRecordField(payload.data, "containerEnv");
 	// Per-inference burn metering: the launch-time provisioning path (token-create)
 	// also has to inject the inference receiver URL plus the shared webhook secret,
 	// otherwise containers launched here boot without the metering knobs the
@@ -204,7 +213,11 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	const inferenceWebhookSecret = webhookSecret ?? defaultElizaCloudWebhookSecret();
 
 	const containerEnv = {
+		// Sol conflict-resolution (#896): emit BOTH the legacy WAIFU_AGENT_ID and the
+		// renamed ELIZA_BILLING_AGENT_ID to the same value (forward-compatible; the
+		// runtime currently reads neither).
 		WAIFU_AGENT_ID: payload.agentId,
+		ELIZA_BILLING_AGENT_ID: payload.agentId,
 		TOKEN_CONTRACT_ADDRESS: tokenAddress,
 		TOKEN_CHAIN: chain,
 		TOKEN_CHAIN_ID: String(chainId),
@@ -218,14 +231,22 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		WAIFU_ACCESS_ADMIN_WALLETS: access.adminWallets.join(","),
 		WAIFU_AGENT_EVM_ADDRESS: primaryWalletAddress,
 		WAIFU_AGENT_EVM_KEY_REF: walletKeyRef,
-		ELIZA_UI_ENABLE: "true",
 		...(process.env.WAIFU_CHAT_ACCESS_JWT_SECRET
 			? { WAIFU_CHAT_ACCESS_JWT_SECRET: process.env.WAIFU_CHAT_ACCESS_JWT_SECRET }
 			: {}),
+		...(process.env.WAIFU_CHAT_FRAME_ANCESTORS
+			? { WAIFU_CHAT_FRAME_ANCESTORS: process.env.WAIFU_CHAT_FRAME_ANCESTORS }
+			: {}),
+		// Sol conflict-resolution (#896): keep BOTH develop's WAIFU_* webhook env vars
+		// AND #896's ELIZA_BILLING_* names pointing at the same values.
 		...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
 		...(inferenceWebhookUrl ? { WAIFU_INFERENCE_WEBHOOK_URL: inferenceWebhookUrl } : {}),
 		...(inferenceWebhookSecret ? { WAIFU_WEBHOOK_SECRET: inferenceWebhookSecret } : {}),
+		...(webhookUrl ? { ELIZA_BILLING_WEBHOOK_URL: webhookUrl } : {}),
+		...(webhookSecret ? { ELIZA_BILLING_WEBHOOK_SECRET: webhookSecret } : {}),
 		...modelDefaults,
+		...(containerEnvironmentVars ?? {}),
+		ELIZA_UI_ENABLE: "true",
 	};
 
 	// Atomic claim, taken only after all validation passes and immediately before
@@ -291,6 +312,13 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 				},
 				container: {
 					image: imageUri,
+					...(containerProjectName ? { projectName: containerProjectName } : {}),
+					...(containerPort ? { port: containerPort } : {}),
+					...(containerCpu ? { cpu: containerCpu } : {}),
+					...(containerMemory ? { memory: containerMemory } : {}),
+					...(containerDesiredCount ? { desiredCount: containerDesiredCount } : {}),
+					...(containerArchitecture ? { architecture: containerArchitecture } : {}),
+					...(containerHealthCheckPath ? { healthCheckPath: containerHealthCheckPath } : {}),
 					env: containerEnv,
 				},
 				modelDefaults,
@@ -349,15 +377,25 @@ async function requestJson<T>(
 		body?: Record<string, unknown>;
 	},
 ): Promise<T> {
-	const response = await fetch(`${baseUrl}${normalizeApiPath(baseUrl, path)}`, {
-		method: options.method ?? "GET",
-		headers: {
-			"content-type": "application/json",
-			"X-API-Key": authKey,
-			"X-Service-Key": authKey,
-		},
-		...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
-	});
+	const method = options.method ?? "GET";
+	let response: Response;
+	try {
+		response = await fetch(`${baseUrl}${normalizeApiPath(baseUrl, path)}`, {
+			method,
+			headers: {
+				"content-type": "application/json",
+				"X-API-Key": authKey,
+				"X-Service-Key": authKey,
+			},
+			signal: AbortSignal.timeout(elizaCloudRequestTimeoutMs()),
+			...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+		});
+	} catch (err) {
+		if (err instanceof DOMException && err.name === "TimeoutError") {
+			throw new ElizaCloudRequestTimeoutError(method, path, elizaCloudRequestTimeoutMs());
+		}
+		throw err;
+	}
 	const text = await response.text().catch(() => "");
 	let json: unknown = null;
 	try {
@@ -394,6 +432,24 @@ class ElizaCloudRequestError extends Error {
 	}
 }
 
+class ElizaCloudRequestTimeoutError extends Error {
+	constructor(
+		readonly method: string,
+		readonly path: string,
+		readonly timeoutMs: number,
+	) {
+		super(`eliza-cloud ${method} ${path}: timed out after ${timeoutMs}ms`);
+		this.name = "ElizaCloudRequestTimeoutError";
+	}
+}
+
+const DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS = 20_000;
+
+function elizaCloudRequestTimeoutMs(): number {
+	const configured = numberEnv("WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS");
+	return configured && configured > 0 ? configured : DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
+}
+
 async function waitForRuntimeStatus(
 	baseUrl: string,
 	authKey: string,
@@ -405,19 +461,35 @@ async function waitForRuntimeStatus(
 	if (initialUrl && initialStatus && isHostedRuntimeRunning(initialStatus)) return initial;
 
 	const attempts = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS") ?? 18;
-	const intervalMs =
-		numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS") ??
-		numberField(recordFromUnknown(initial.polling) ?? {}, "intervalMs") ??
-		5_000;
+	// An explicit interval env pins a fixed cadence; otherwise we ramp from a
+	// small initial delay up to the cap so a fast-booting container is detected
+	// in ~1s instead of waiting a full fixed interval. Both bound time-to-live.
+	const fixedIntervalMs = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS");
+	const maxIntervalMs = fixedIntervalMs ?? numberField(recordFromUnknown(initial.polling) ?? {}, "intervalMs") ?? 5_000;
+	const initialIntervalMs = numberEnv("WAIFU_ELIZA_PROVISION_STATUS_POLL_INITIAL_MS") ?? Math.min(1_000, maxIntervalMs);
 	let latest = initial;
 	for (let attempt = 0; attempt < attempts; attempt++) {
-		if (attempt > 0 && intervalMs > 0) await sleep(intervalMs);
-		const status = await requestJson<Record<string, unknown>>(
-			baseUrl,
-			`/api/v1/agents/${encodeURIComponent(cloudAgentId)}/status`,
-			authKey,
-			{ method: "GET" },
-		);
+		if (attempt > 0) {
+			const delayMs =
+				fixedIntervalMs !== null ? fixedIntervalMs : adaptivePollDelayMs(attempt, initialIntervalMs, maxIntervalMs);
+			if (delayMs > 0) await sleep(delayMs);
+		}
+		let status: Record<string, unknown>;
+		try {
+			status = await requestJson<Record<string, unknown>>(
+				baseUrl,
+				`/api/v1/agents/${encodeURIComponent(cloudAgentId)}/status`,
+				authKey,
+				{ method: "GET" },
+			);
+		} catch (err) {
+			// A just-created runtime is transiently unqueryable (404) and the
+			// status endpoint can blip (timeout / 5xx). Those are expected during
+			// boot, so keep polling. Only auth/permission errors (401/403) mean a
+			// misconfig that more polling can't fix — surface those immediately.
+			if (isTransientStatusError(err)) continue;
+			throw err;
+		}
 		latest = { ...latest, ...status };
 		const publicUrl = stringField(latest, "webUiUrl");
 		const runtimeUrl = publicUrl ?? stringField(latest, "containerUrl") ?? stringField(latest, "url");
@@ -425,6 +497,12 @@ async function waitForRuntimeStatus(
 		if (publicUrl && runtimeUrl && runtimeStatus && isHostedRuntimeRunning(runtimeStatus)) return latest;
 	}
 	return latest;
+}
+
+function isTransientStatusError(err: unknown): boolean {
+	if (err instanceof ElizaCloudRequestTimeoutError) return true;
+	if (err instanceof ElizaCloudRequestError) return err.status === 404 || err.status >= 500;
+	return false;
 }
 
 function normalizeApiPath(baseUrl: string, path: string): string {
@@ -528,7 +606,7 @@ async function storeProvisioningMetadata(
 					runtimeAgentId: result.cloudAgentId,
 					containerId: result.containerId ?? null,
 					containerUrl: result.containerUrl ?? null,
-					webUiUrl: result.webUiUrl ?? result.containerUrl ?? null,
+					webUiUrl: result.webUiUrl ?? null,
 					status: result.status,
 					walletProvisioning: result.walletProvisioning ?? null,
 					account: result.account ?? null,
@@ -561,7 +639,7 @@ async function syncTokenRuntimeOverlay(
 
 	const now = new Date();
 	const isRunning = isHostedRuntimeRunning(args.result.status);
-	const hasHostedChatUrl = Boolean(args.result.webUiUrl ?? args.result.containerUrl);
+	const hasHostedChatUrl = Boolean(args.result.webUiUrl);
 	const agentStatus = isRunning && hasHostedChatUrl ? "running" : "provisioning";
 	const lifecycleState = isRunning && hasHostedChatUrl ? "live" : "birth";
 	const agentValues = {
@@ -572,7 +650,7 @@ async function syncTokenRuntimeOverlay(
 		runtimeProvider: "eliza-cloud",
 		agentStatus,
 		lifecycleState,
-		webUiUrl: args.result.webUiUrl ?? args.result.containerUrl ?? null,
+		webUiUrl: args.result.webUiUrl ?? null,
 		bridgeUrl: args.result.containerId ?? null,
 		billingMode: "owner_credits",
 		infraReserveUsd: "5",
@@ -674,10 +752,24 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Exponential ramp from initial to max, doubling each poll (1s → 2s → 4s → cap). */
+export function adaptivePollDelayMs(attempt: number, initialMs: number, maxMs: number): number {
+	if (initialMs <= 0) return Math.max(0, maxMs);
+	const scaled = initialMs * 2 ** (attempt - 1);
+	return Math.min(maxMs, scaled);
+}
+
 function stringArrayField(data: Record<string, unknown>, key: string): string[] {
 	const value = data[key];
 	if (!Array.isArray(value)) return [];
 	return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function stringRecordField(data: Record<string, unknown>, key: string): Record<string, string> | null {
+	const value = recordFromUnknown(data[key]);
+	if (!value) return null;
+	const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string");
+	return entries.length > 0 ? Object.fromEntries(entries) : null;
 }
 
 function tokenParam(value: unknown, key: string): string | null {
@@ -691,12 +783,18 @@ function launchTypeField(data: Record<string, unknown>, key: string): "native" |
 	return null;
 }
 
+function containerArchitectureField(data: Record<string, unknown>, key: string): "arm64" | "x86_64" | null {
+	const value = stringField(data, key);
+	if (value === "arm64" || value === "x86_64") return value;
+	return null;
+}
+
 function isHostedRuntimeRunning(status: string): boolean {
 	return ["running", "ready", "online", "active", "started"].includes(status.toLowerCase());
 }
 
 function assertHostedChatUrlReady(result: ElizaProvisionResult): void {
-	if (result.webUiUrl || result.containerUrl) return;
+	if (result.webUiUrl) return;
 	throw new HostedChatUrlNotReadyError(result.cloudAgentId);
 }
 
@@ -719,8 +817,8 @@ function existingProvisionResult(agentId: string, metadata: unknown): ElizaProvi
 	if (!cloudAgentId) return null;
 	const containerId = stringField(provisioning, "containerId") ?? undefined;
 	const webUiUrl = stringField(provisioning, "webUiUrl") ?? undefined;
-	const containerUrl = webUiUrl ?? stringField(provisioning, "containerUrl") ?? undefined;
-	if (!containerUrl && !webUiUrl) {
+	const containerUrl = stringField(provisioning, "containerUrl") ?? undefined;
+	if (!webUiUrl) {
 		return null;
 	}
 	const walletProvisioning = recordFromUnknown(provisioning.walletProvisioning);
@@ -745,8 +843,7 @@ function partialExistingCloudAgentId(metadata: unknown): string | null {
 	const cloudAgentId = stringField(provisioning, "cloudAgentId") ?? stringField(provisioning, "runtimeAgentId");
 	if (!cloudAgentId) return null;
 	const webUiUrl = stringField(provisioning, "webUiUrl");
-	const containerUrl = webUiUrl ?? stringField(provisioning, "containerUrl");
-	return containerUrl || webUiUrl ? null : cloudAgentId;
+	return webUiUrl ? null : cloudAgentId;
 }
 
 function normalizeProvisionResult(
@@ -762,7 +859,6 @@ function normalizeProvisionResult(
 		stringField(refreshedCloudAgent, "containerId") ?? stringField(cloudAgent, "containerId") ?? undefined;
 	const webUiUrl = stringField(refreshedCloudAgent, "webUiUrl") ?? stringField(cloudAgent, "webUiUrl") ?? undefined;
 	const containerUrl =
-		webUiUrl ??
 		stringField(refreshedCloudAgent, "containerUrl") ??
 		stringField(refreshedCloudAgent, "url") ??
 		stringField(cloudAgent, "containerUrl") ??

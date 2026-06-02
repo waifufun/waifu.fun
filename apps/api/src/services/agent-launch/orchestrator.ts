@@ -98,6 +98,7 @@ export interface AgentLaunchBroadcastInput {
 export interface PersonaStore {
 	writeInitial: (args: {
 		agentId: string;
+		walletAddress: Address;
 		name: string;
 		bio?: string;
 		avatarUrl?: string;
@@ -252,10 +253,12 @@ export class AgentLaunchOrchestrator {
 			try {
 				await this.deps.personaStore.writeInitial({
 					agentId: wallet.agentId,
+					walletAddress: wallet.walletAddress,
 					name: input.name,
 					...(input.description !== undefined ? { bio: input.description } : {}),
 					...(input.imageUrl !== undefined ? { avatarUrl: input.imageUrl } : {}),
 					...(input.persona !== undefined ? { persona: input.persona } : {}),
+					...(treasury !== zeroAddress ? { taxVaultAddress: treasury } : {}),
 				});
 				this.deps.onStep?.("persona.write", { agentId: wallet.agentId });
 			} catch (err) {
@@ -569,10 +572,12 @@ export class AgentLaunchOrchestrator {
 			try {
 				await this.deps.personaStore.writeInitial({
 					agentId: wallet.agentId,
+					walletAddress: wallet.walletAddress,
 					name: input.name,
 					...(input.description !== undefined ? { bio: input.description } : {}),
 					...(input.imageUrl !== undefined ? { avatarUrl: input.imageUrl } : {}),
 					...(input.persona !== undefined ? { persona: input.persona } : {}),
+					...(treasury !== zeroAddress ? { taxVaultAddress: treasury } : {}),
 				});
 				this.deps.onStep?.("persona.write", { agentId: wallet.agentId });
 			} catch (err) {

@@ -32,6 +32,21 @@ export interface ProvisionOptions {
 		thresholdMode?: "strict_gt";
 		adminWallets?: string[];
 	};
+	billing?: {
+		mode: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+		initialReserveUsd?: number;
+	};
+	container?: {
+		imageUri?: string;
+		projectName?: string;
+		port?: number;
+		cpu?: number;
+		memory?: number;
+		desiredCount?: number;
+		architecture?: "arm64" | "x86_64";
+		healthCheckPath?: string;
+		environmentVars?: Record<string, string>;
+	};
 	webhookUrl?: string;
 	webhookSecret?: string;
 	apiKey?: string;

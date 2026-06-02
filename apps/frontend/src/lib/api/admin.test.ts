@@ -3,11 +3,14 @@ import {
 	ADMIN_TOKEN_KEY,
 	type AdminElizaCloudStatus,
 	type AdminElizaCloudTestControlInput,
+	type AdminElizaCloudTestProofResult,
 	type AdminElizaCloudTestResult,
 	clearAdminToken,
 	getAdminToken,
+	requestElizaCloudHostedChatApi,
 	requestElizaCloudOwnerRuntimeControl,
 	requestElizaCloudOwnerRuntimeTest,
+	requestElizaCloudTestProof,
 	requestElizaCloudTokenChatSession,
 	setAdminToken,
 } from "./admin";
@@ -85,6 +88,32 @@ describe("eliza cloud admin api helpers", () => {
 				tokenContractAddress: "0x0000000000000000000000000000000000000004",
 			}),
 		).resolves.toMatchObject({ role: "user", success: true });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("verifies hosted Eliza chat API access with the waifu token", async () => {
+		const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+			const headers = new Headers(init?.headers);
+			expect(url).toBe("https://agent.elizacloud.ai/api/conversations");
+			expect(init?.method).toBe("GET");
+			expect(headers.get("Authorization")).toBe("Bearer jwt");
+			expect(headers.get("Accept")).toBe("application/json");
+			return new Response(JSON.stringify({ conversations: [] }), {
+				headers: { "content-type": "application/json" },
+				status: 200,
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(
+			requestElizaCloudHostedChatApi({
+				chatUrl: "https://agent.elizacloud.ai/chat?waifu_access_token=jwt",
+			}),
+		).resolves.toEqual({
+			ok: true,
+			status: 200,
+			url: "https://agent.elizacloud.ai/api/conversations",
+		});
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 
@@ -201,5 +230,43 @@ describe("eliza cloud admin api helpers", () => {
 		} satisfies AdminElizaCloudStatus;
 
 		expect(status.data?.checks.webhookUrl).toBe(false);
+	});
+
+	it("requests the backend Eliza Cloud proof endpoint with a bonded worker payload", async () => {
+		const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+			const headers = new Headers(init?.headers);
+			expect(url).toBe("/v2/admin/agents/eliza-cloud/test-proof");
+			expect(init?.method).toBe("POST");
+			expect(headers.get("Authorization")).toBe("Bearer admin-token");
+			expect(JSON.parse(String(init?.body))).toMatchObject({
+				agentId: "waifu-proof",
+				source: "agent.bonded",
+				verifyLifecycle: true,
+			});
+			return new Response(
+				JSON.stringify({
+					ok: true,
+					data: {
+						ready: true,
+						dryRun: false,
+						jobId: "proof-job",
+						steps: [{ key: "agent.bonded", state: "passed" }],
+					},
+				} satisfies AdminElizaCloudTestProofResult),
+				{ headers: { "content-type": "application/json" }, status: 200 },
+			);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(
+			requestElizaCloudTestProof("admin-token", {
+				agentId: "waifu-proof",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "0x0000000000000000000000000000000000000009",
+				source: "agent.bonded",
+				verifyLifecycle: true,
+			}),
+		).resolves.toMatchObject({ data: { jobId: "proof-job", ready: true } });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 });
