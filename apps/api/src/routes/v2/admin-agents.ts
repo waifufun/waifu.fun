@@ -687,7 +687,7 @@ app.post("/eliza-cloud/test-proof", async (c) => {
 		steps.push(proofStep("credits", "skipped", "cloud agent id or credit API unavailable"));
 	}
 
-	if (booleanField(body, "verifyLifecycle") && cloudAgentId && client) {
+	if (!dryRun && booleanField(body, "verifyLifecycle") && cloudAgentId && client) {
 		const containerId = runtimeRef.containerId ?? undefined;
 		for (const action of ["webhook-depleted", "webhook-topped-up"] as const) {
 			const event =
@@ -726,6 +726,14 @@ app.post("/eliza-cloud/test-proof", async (c) => {
 			);
 			steps.push(proofStep(action, "passed", "lifecycle webhook dispatch completed"));
 		}
+	} else if (dryRun && booleanField(body, "verifyLifecycle")) {
+		steps.push(
+			proofStep(
+				"lifecycle",
+				"skipped",
+				"verifyLifecycle does not run under dryRun (it dispatches real credits.depleted/topped_up webhooks to the live agent)",
+			),
+		);
 	} else {
 		steps.push(proofStep("lifecycle", "skipped", "set verifyLifecycle=true after runtime exists"));
 	}

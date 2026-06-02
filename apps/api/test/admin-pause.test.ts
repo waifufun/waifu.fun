@@ -838,6 +838,82 @@ describe("v2 admin agent pause controls", () => {
 		);
 	});
 
+	it("test-proof does NOT dispatch lifecycle webhooks under dryRun (verifyLifecycle is gated)", async () => {
+		process.env.ELIZA_CLOUD_BASE_URL = "https://cloud.test";
+		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
+		process.env.ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI = "ecr.test/waifu-agent:latest";
+		process.env.WAIFU_CHAT_ACCESS_JWT_SECRET = "chat_secret";
+		process.env.WAIFU_API_BASE_URL = "https://api.waifu.test";
+		process.env.WEBHOOK_RECEIVER_SECRET = "webhook_secret";
+		process.env.DATABASE_URL = "postgres://unit.test/waifu";
+		const fake = createFakeDb({
+			...freshRow(),
+			agentId: "waifu-proof-lifecycle-dry",
+			elizaCloudAgentId: "cloud-proof-lifecycle",
+			runtimeKind: "eliza-cloud",
+			metadata: {
+				provisioning: {
+					cloudAgentId: "cloud-proof-lifecycle",
+					containerId: "container-proof-lifecycle",
+					webUiUrl: "https://proof-agent.example",
+					status: "running",
+				},
+			},
+		});
+		__setAdminAgentsDbForTest(fake.db as never);
+		const requests: Array<{ method?: string; url: string }> = [];
+		mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+			requests.push({ method: init?.method, url: String(url) });
+			if (String(url).endsWith("/api/v1/agents/cloud-proof-lifecycle/status")) {
+				return Response.json({
+					success: true,
+					data: {
+						cloudAgentId: "cloud-proof-lifecycle",
+						containerId: "container-proof-lifecycle",
+						status: "running",
+						webUiUrl: "https://proof-agent.example",
+					},
+				});
+			}
+			if (String(url).includes("/api/v1/credits/balance")) {
+				return Response.json({ success: true, balance: 4.25 });
+			}
+			throw new Error(`unexpected fetch ${url}`);
+		});
+
+		const res = await request("/eliza-cloud/test-proof", {
+			method: "POST",
+			admin: true,
+			body: JSON.stringify({
+				dryRun: true,
+				verifyLifecycle: true,
+				agentId: "waifu-proof-lifecycle-dry",
+				tokenContractAddress: "0x0000000000000000000000000000000000000004",
+				agentEvmAddress: "0x0000000000000000000000000000000000000009",
+				source: "agent.bonded",
+			}),
+		});
+
+		assert.equal(res.status, 200);
+		const body = await json(res);
+		const steps = body.data?.steps as Array<{ key: string; state: string; detail?: string }>;
+		// Lifecycle webhooks must be skipped under dryRun — otherwise test-proof would
+		// dispatch real credits.depleted/topped_up events (markDormant + pause) to a
+		// live agent, violating the dry-run contract.
+		const lifecycle = steps.find((step) => step.key === "lifecycle");
+		assert.equal(lifecycle?.state, "skipped");
+		assert.match(lifecycle?.detail ?? "", /dryRun/);
+		// Only the read-only status + credits probes should hit the network; a
+		// lifecycle dispatch would trigger an (unexpected) pause/topup fetch.
+		assert.deepEqual(
+			requests.map((request) => [request.method, request.url]),
+			[
+				["GET", "https://cloud.test/api/v1/agents/cloud-proof-lifecycle/status"],
+				["GET", "https://cloud.test/api/v1/credits/balance?fresh=true&agent_id=cloud-proof-lifecycle"],
+			],
+		);
+	});
+
 	it("test-control endpoint pauses, resumes, restarts, and tops up Eliza Cloud test containers", async () => {
 		process.env.ELIZA_CLOUD_BASE_URL = "https://cloud.test";
 		process.env.ELIZA_CLOUD_SERVICE_KEY = "svc_admin_test";
@@ -897,7 +973,11 @@ describe("v2 admin agent pause controls", () => {
 		res = await request("/eliza-cloud/test-control", {
 			method: "POST",
 			admin: true,
-			body: JSON.stringify({ action: "restart", cloudAgentId: "cloud-admin-test", containerId: "container-admin-test" }),
+			body: JSON.stringify({
+				action: "restart",
+				cloudAgentId: "cloud-admin-test",
+				containerId: "container-admin-test",
+			}),
 		});
 		assert.equal(res.status, 200);
 		controlBody = await json(res);
