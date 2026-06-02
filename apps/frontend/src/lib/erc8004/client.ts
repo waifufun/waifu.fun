@@ -140,9 +140,38 @@ export function ipfsToGateway(uri: string | null): string | null {
 	return `https://ipfs.io/ipfs/${path}`;
 }
 
-/** Build the 8004scan.io URL for a given identity. */
+/**
+ * Map a chainId to the chain slug 8004scan.io uses in its agent path.
+ *
+ * Verified against the live explorer (2026-06-02): the canonical agent
+ * profile path is `/agents/<chain>/<tokenId>` (plural "agents", chain
+ * NAME not chainId). `/agent/<chainId>/...` 404s. We derive the slug
+ * from `chainId` and fall back to the record's `chain` label when the
+ * id is unknown, so a future chain still produces a best-effort link.
+ */
+export function scanChainSlug(record: Erc8004IdentityRecord): string {
+	switch (record.chainId) {
+		case 56:
+			return "bsc";
+		case 97:
+			return "bsc-testnet";
+		case 1:
+			return "ethereum";
+		case 8453:
+			return "base";
+		default:
+			return record.chain;
+	}
+}
+
+/**
+ * Build the 8004scan.io agent profile URL for a given identity.
+ *
+ * Canonical format (verified live 2026-06-02):
+ *   https://8004scan.io/agents/<chain>/<tokenId>
+ */
 export function build8004ScanUrl(record: Erc8004IdentityRecord): string {
-	return `https://www.8004scan.io/agent/${record.chainId}/${record.registryAddress.toLowerCase()}/${record.tokenId}`;
+	return `https://8004scan.io/agents/${scanChainSlug(record)}/${encodeURIComponent(record.tokenId)}`;
 }
 
 /** Build the BSCscan tx URL for the registration mint. */

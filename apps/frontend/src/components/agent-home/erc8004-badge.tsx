@@ -14,55 +14,48 @@
  *   - No em-dashes anywhere.
  *
  * Behavior:
- *   - Clicking the badge scrolls to `#provenance` on the same page.
- *     Rationale (recorded in the brief): keeping users inside the
- *     waifu surface and inside the wave-T design grammar beats
- *     bouncing them to 8004scan's UI. The provenance panel has a
- *     "view on 8004scan" button for the power user who wants the
- *     third-party trail.
+ *   - The badge is an third-party link to the agent's 8004scan profile
+ *     (`https://8004scan.io/agents/<chain>/<tokenId>`), opened in a new
+ *     tab with `rel="noopener noreferrer"`. This is the canonical proof
+ *     surface for the on-chain identity. The in-page provenance panel
+ *     still carries the full fact sheet for users who scroll.
  *   - Tooltip renders on hover AND focus (keyboard accessibility).
- *     Mobile users tap to scroll, no hover needed.
+ *     Mobile users tap the link, no hover needed.
  */
 
 "use client";
 
 import { CheckCircle2Icon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
+import { build8004ScanUrl } from "@/lib/erc8004/client";
 import { cn } from "@/lib/utils";
 
 import type { Erc8004IdentityRecord } from "@/lib/erc8004/types";
 
 interface Erc8004BadgeProps {
 	identity: Erc8004IdentityRecord;
-	/** DOM id of the provenance panel to scroll to on click. */
-	targetId?: string;
 	/** Optional className override (sizing context from parent). */
 	className?: string;
 }
 
-export function Erc8004Badge({ identity, targetId = "provenance", className }: Erc8004BadgeProps) {
+export function Erc8004Badge({ identity, className }: Erc8004BadgeProps) {
 	const [open, setOpen] = useState(false);
 
-	const onClick = useCallback(() => {
-		if (typeof document === "undefined") return;
-		const el = document.getElementById(targetId);
-		if (!el) return;
-		el.scrollIntoView({ behavior: "smooth", block: "start" });
-	}, [targetId]);
-
 	const tooltipText = buildTooltip(identity);
+	const scanUrl = build8004ScanUrl(identity);
 
 	return (
 		<span className={cn("relative inline-flex", className)}>
-			<button
-				type="button"
-				onClick={onClick}
+			<a
+				href={scanUrl}
+				target="_blank"
+				rel="noopener noreferrer"
 				onMouseEnter={() => setOpen(true)}
 				onMouseLeave={() => setOpen(false)}
 				onFocus={() => setOpen(true)}
 				onBlur={() => setOpen(false)}
-				aria-label={`verified erc-8004 agent #${identity.tokenId}, view provenance`}
+				aria-label={`verified erc-8004 agent #${identity.tokenId}, view on 8004scan (opens in new tab)`}
 				aria-describedby={`erc8004-tooltip-${identity.tokenId}`}
 				className={cn(
 					// 44px+ tap target. Padding does the work, content stays tight.
@@ -81,7 +74,7 @@ export function Erc8004Badge({ identity, targetId = "provenance", className }: E
 					style={{ color: "var(--accent)" }}
 				/>
 				<span className="hidden sm:inline">verified</span>
-			</button>
+			</a>
 			<Tooltip id={`erc8004-tooltip-${identity.tokenId}`} open={open} text={tooltipText} />
 		</span>
 	);
