@@ -33,13 +33,13 @@ const externalMarketStatuses = new Set(["migrated", "dex", "locked"]);
 type TokenLifecycleHints = IToken & { launchPlatform?: string; origin?: string; pool?: string | null };
 
 const TOKEN_CHAIN_BADGE: Record<number, { label: string; icon: string }> = {
-	56: { label: "BSC", icon: "/chain-icons/bsc.svg" },
+	56: { label: "BSC", icon: "/chain-icons/bnb.svg" },
 	8453: { label: "Base", icon: "/chain-icons/base.svg" },
 	101: { label: "Solana", icon: "/chain-icons/solana.svg" },
 };
 
 const TOKEN_LAUNCHPAD_BADGE: Record<string, { label: string; icon: string }> = {
-	flap: { label: "Flap", icon: "/venue-logos/flap.svg" },
+	flap: { label: "Flap", icon: "/venue-logos/flap.png" },
 	bags: { label: "Bags", icon: "/venue-logos/bags.png" },
 	bankr: { label: "Bankr", icon: "/venue-logos/bankr.svg" },
 };
@@ -433,7 +433,7 @@ function TokenBadge({ label, icon }: { label: string; icon: string }) {
 	return (
 		<span className="inline-flex h-6 items-center gap-1.5 rounded-sm border border-white/10 bg-white/[0.03] px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/55">
 			<span className="relative h-3.5 w-3.5 overflow-hidden rounded-[2px] bg-black">
-				<Image src={icon} alt="" fill sizes="14px" className="object-cover" />
+				<Image src={icon} alt="" fill sizes="14px" className="object-contain" />
 			</span>
 			{label}
 		</span>

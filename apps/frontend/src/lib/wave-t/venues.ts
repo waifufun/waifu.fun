@@ -85,7 +85,7 @@ const VENUES: Record<VenueId, VenueMeta> = {
 		label: "FLAP",
 		color: "#00FF87",
 		accent: "#00FF87",
-		logo: "/venue-logos/flap.svg",
+		logo: "/venue-logos/flap.png",
 	},
 };
 
