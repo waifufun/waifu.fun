@@ -1312,3 +1312,145 @@ test("adaptivePollDelayMs ramps from the initial delay up to the cap", () => {
 	assert.equal(adaptivePollDelayMs(1, 5_000, 5_000), 5_000);
 	assert.equal(adaptivePollDelayMs(3, 5_000, 5_000), 5_000);
 });
+
+function statusPollDb() {
+	const persona = {
+		id: "persona-row-poll",
+		agentId: "waifu-poll-01",
+		name: "Poll Waifu",
+		bio: "status poll resilience",
+		avatarUrl: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Poll Waifu", symbol: "POLL" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const tokenRow = { id: "token-row-poll", agentId: "agent-overlay-poll" };
+	return {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) return Promise.resolve([{ token: tokenRow, agent: null }]);
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return { set: () => ({ where: () => Promise.resolve() }) };
+		},
+		insert() {
+			return { values: () => ({ returning: () => Promise.resolve([{ id: "row-poll" }]) }) };
+		},
+	} as never;
+}
+
+const pollPayload: AgentProvisioningJob = {
+	agentId: "waifu-poll-01",
+	source: "token.migrated",
+	data: {
+		tokenContractAddress: "0x0000000000000000000000000000000000000004",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		chainId: 56,
+		tokenName: "Poll Waifu",
+		tokenTicker: "POLL",
+		launchType: "native",
+	},
+};
+
+test("agent-provisioning worker keeps polling through a transient status blip", async () => {
+	let statusPolls = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		const target = String(url);
+		if (target.endsWith("/api/v1/agents")) {
+			return Response.json({ success: true, data: { cloudAgentId: "cloud-poll-1", status: "pending" } });
+		}
+		if (target.includes("/status")) {
+			statusPolls += 1;
+			if (statusPolls === 1) return new Response("upstream hiccup", { status: 503 });
+			return Response.json({
+				success: true,
+				data: { cloudAgentId: "cloud-poll-1", status: "running", webUiUrl: "https://poll-agent.example" },
+			});
+		}
+		throw new Error(`unexpected fetch ${target}`);
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db: statusPollDb(),
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			const result = await processor({ id: "job-poll-transient", data: pollPayload, attemptsMade: 0 } as never);
+			assert.equal((result as { webUiUrl?: string }).webUiUrl, "https://poll-agent.example");
+		},
+	);
+
+	assert.equal(statusPolls, 2);
+});
+
+test("agent-provisioning worker fails fast when the status endpoint rejects auth", async () => {
+	let statusPolls = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		const target = String(url);
+		if (target.endsWith("/api/v1/agents")) {
+			return Response.json({ success: true, data: { cloudAgentId: "cloud-poll-2", status: "pending" } });
+		}
+		if (target.includes("/status")) {
+			statusPolls += 1;
+			return new Response("forbidden", { status: 401 });
+		}
+		throw new Error(`unexpected fetch ${target}`);
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+			WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS: "18",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db: statusPollDb(),
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			await assert.rejects(
+				() => processor({ id: "job-poll-auth", data: pollPayload, attemptsMade: 0 } as never),
+				/401/,
+			);
+		},
+	);
+
+	// Auth failures are not retried inside the poll loop.
+	assert.equal(statusPolls, 1);
+});

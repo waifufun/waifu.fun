@@ -417,12 +417,22 @@ async function waitForRuntimeStatus(
 				fixedIntervalMs !== null ? fixedIntervalMs : adaptivePollDelayMs(attempt, initialIntervalMs, maxIntervalMs);
 			if (delayMs > 0) await sleep(delayMs);
 		}
-		const status = await requestJson<Record<string, unknown>>(
-			baseUrl,
-			`/api/v1/agents/${encodeURIComponent(cloudAgentId)}/status`,
-			authKey,
-			{ method: "GET" },
-		);
+		let status: Record<string, unknown>;
+		try {
+			status = await requestJson<Record<string, unknown>>(
+				baseUrl,
+				`/api/v1/agents/${encodeURIComponent(cloudAgentId)}/status`,
+				authKey,
+				{ method: "GET" },
+			);
+		} catch (err) {
+			// A just-created runtime is transiently unqueryable (404) and the
+			// status endpoint can blip (timeout / 5xx). Those are expected during
+			// boot, so keep polling. Only auth/permission errors (401/403) mean a
+			// misconfig that more polling can't fix — surface those immediately.
+			if (isTransientStatusError(err)) continue;
+			throw err;
+		}
 		latest = { ...latest, ...status };
 		const publicUrl = stringField(latest, "webUiUrl");
 		const runtimeUrl = publicUrl ?? stringField(latest, "containerUrl") ?? stringField(latest, "url");
@@ -430,6 +440,12 @@ async function waitForRuntimeStatus(
 		if (publicUrl && runtimeUrl && runtimeStatus && isHostedRuntimeRunning(runtimeStatus)) return latest;
 	}
 	return latest;
+}
+
+function isTransientStatusError(err: unknown): boolean {
+	if (err instanceof ElizaCloudRequestTimeoutError) return true;
+	if (err instanceof ElizaCloudRequestError) return err.status === 404 || err.status >= 500;
+	return false;
 }
 
 function normalizeApiPath(baseUrl: string, path: string): string {
