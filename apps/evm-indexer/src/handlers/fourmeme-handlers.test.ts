@@ -11,7 +11,7 @@ import type {
 } from "../lib/fourmeme-events.js";
 import type { IndexerRuntime } from "../lib/runtime.js";
 import { buildLiquidityAddedProvisioningJob, handleLiquidityAddedEvent } from "./fourmeme-liquidity-added.js";
-import { handleTokenCreateEvent } from "./fourmeme-token-create.js";
+import { buildTokenCreateProvisioningJob, handleTokenCreateEvent } from "./fourmeme-token-create.js";
 import { handleTokenPurchaseEvent } from "./fourmeme-token-purchase.js";
 import { handleTokenSaleEvent } from "./fourmeme-token-sale.js";
 import { buildLaunchedToDexProvisioningJob, handleLaunchedToDexEvent } from "./launched-to-dex.js";
@@ -268,6 +268,24 @@ test("TokenCreate writes token, curve state, and token.created webhook", async (
 		true,
 	);
 	assert.deepEqual((emitted[0] as { event: string }).event, "token.created");
+});
+
+test("TokenCreate provisioning job payload launches Eliza Cloud at token launch", () => {
+	assert.deepEqual(buildTokenCreateProvisioningJob("agent-test", tokenCreateEvent()), {
+		agentId: "agent-test",
+		source: "agent.launched",
+		data: {
+			tokenAddress,
+			tokenContractAddress: tokenAddress,
+			chain: "bsc",
+			chainId: 56,
+			tokenName: "Test Waifu",
+			tokenTicker: "TWAI",
+			launchType: "native",
+			txHash: "0x0000000000000000000000000000000000000000000000000000000000000123",
+			blockNumber: "123",
+		},
+	});
 });
 
 test("TokenPurchase writes buy trade, updates token metrics, and emits trade webhook", async () => {

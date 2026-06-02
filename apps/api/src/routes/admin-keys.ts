@@ -124,9 +124,10 @@ export function createAdminKeysRoutes() {
 	 * Revokes a key immediately.
 	 */
 	app.delete("/:keyId", async (c) => {
+		const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 		const keyId = c.req.param("keyId");
-		if (!keyId) {
-			return c.json({ ok: false, error: "INVALID_REQUEST" }, 400);
+		if (!keyId || !UUID_RE.test(keyId)) {
+			return c.json({ ok: false, error: "INVALID_REQUEST", message: "valid keyId (uuid) required" }, 400);
 		}
 
 		const db = requireDrizzle();

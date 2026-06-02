@@ -144,6 +144,17 @@ export function createLaunchV2Routes(
 		// sibling (e.g. /gate), a request for /gate would otherwise reach here and
 		// fail a uuid cast with a 500. Reserved literals must never resolve here.
 		if (id === "gate") return c.notFound();
+		// launches.id is a uuid column; the default getPublicLaunch issues an eq()
+		// against it, so a non-UUID id can never match and would otherwise reach
+		// Postgres and throw an 'invalid input syntax for type uuid' error — a 500
+		// that leaks the raw DB message. Treat a malformed id as not-found. Only on
+		// the default lookup path; an injected getLaunch may accept non-UUID ids.
+		if (
+			!options.getLaunch &&
+			!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)
+		) {
+			return c.json({ error: "launch not found" }, 404);
+		}
 
 		const db = options.db ?? requireDb();
 		if (!db) return c.json({ error: "database unavailable" }, 503);

@@ -55,6 +55,7 @@ const app = new Hono<RequireAgentOwnershipBindings>();
 // V2 agents routes
 
 const VALID_STATUS = new Set(["active", "graduated", "failed", "pending"]);
+const VALID_SORT = new Set(["newest", "volume_24h", "market_cap"]);
 
 const DEFAULT_PROVISION_IMAGE_URL =
 	process.env.DEFAULT_AGENT_IMAGE_URL ??
@@ -759,6 +760,7 @@ app.get("/", maybeRequirePatron, async (c) => {
 	const limitRaw = c.req.query("limit");
 	const offsetRaw = c.req.query("offset");
 	const statusRaw = c.req.query("status");
+	const sortRaw = c.req.query("sort");
 	const includeLegacy = parseIncludeLegacy(c.req.query("includeLegacy"));
 	const ownerRaw = c.req.query("owner");
 	const mine = c.req.query("mine") === "true";
@@ -794,11 +796,16 @@ app.get("/", maybeRequirePatron, async (c) => {
 		status = statusRaw as agentQueries.AgentApiStatus;
 	}
 
+	// Unknown sort values fall back to "newest" (no 400) to stay backward-compatible.
+	const sort: agentQueries.AgentListSort =
+		sortRaw && VALID_SORT.has(sortRaw) ? (sortRaw as agentQueries.AgentListSort) : "newest";
+
 	try {
 		const result = await agentQueries.listAgents(db, {
 			limit,
 			offset,
 			...(status ? { status } : {}),
+			sort,
 			includeLegacy,
 			...(mine && patron ? { ownerStewardUserId: patron.stewardUserId } : {}),
 			...(!mine && patron && ownerRaw ? { ownerStewardUserId: patron.stewardUserId } : {}),

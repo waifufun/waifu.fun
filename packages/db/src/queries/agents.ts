@@ -14,10 +14,13 @@ import { trades } from "../schema/trades.js";
 
 export type AgentApiStatus = "active" | "graduated" | "failed" | "pending";
 
+export type AgentListSort = "newest" | "volume_24h" | "market_cap";
+
 export interface AgentListFilters {
 	limit: number;
 	offset: number;
 	status?: AgentApiStatus | undefined;
+	sort?: AgentListSort | undefined;
 	includeLegacy?: boolean | undefined;
 	ownerAddress?: string | undefined;
 	ownerStewardUserId?: string | undefined;
@@ -304,6 +307,16 @@ export async function listAgents(db: Database, filters: AgentListFilters): Promi
 				? ownerPredicates[0]
 				: sql`(${ownerPredicates[0]} OR ${ownerPredicates[1]})`;
 
+	// market_cap / volume_24h are indexed columns on the joined tokens table
+	// (idx_tokens_status_market / idx_tokens_status_volume). createdAt is the
+	// deterministic tiebreaker. NULLs (unpriced / pending tokens) sink last.
+	const orderByClause =
+		filters.sort === "market_cap"
+			? [sql`${tokens.marketCapUsd} desc nulls last`, desc(agentPersonas.createdAt)]
+			: filters.sort === "volume_24h"
+				? [sql`${tokens.volume24h} desc nulls last`, desc(agentPersonas.createdAt)]
+				: [desc(agentPersonas.createdAt)];
+
 	const baseRows = await db
 		.select({
 			persona: agentPersonas,
@@ -328,7 +341,7 @@ export async function listAgents(db: Database, filters: AgentListFilters): Promi
 				ownerFilter,
 			),
 		)
-		.orderBy(desc(agentPersonas.createdAt));
+		.orderBy(...orderByClause);
 
 	const mapped = baseRows.map((row) =>
 		toSummary({

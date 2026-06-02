@@ -1,4 +1,5 @@
 import { schema } from "@waifufun/db";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 import { and, eq, sql } from "drizzle-orm";
 
 import type { TokenCreateEvent } from "../lib/fourmeme-events.js";
@@ -153,7 +154,7 @@ export async function handleTokenCreateEvent(
 	await upsertAgentWalletToken(runtime, event.data.creator, event.data.token, event.blockTimestamp);
 
 	if (process.env.INDEXER_DISABLE_QUEUE_JOBS !== "1") {
-		const { addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
+		const { addAgentProvisioningJob, addCacheWarmJob, addNotificationJob } = await import("@waifufun/queue");
 
 		await addCacheWarmJob(
 			{
@@ -163,6 +164,19 @@ export async function handleTokenCreateEvent(
 			},
 			{ jobId: `indexer-${eventId}-cache-warm-${event.data.token}` },
 		);
+
+		// Provision the containerized ElizaOS cloud agent as soon as the token
+		// is confirmed live on the bonding curve. Previously the cloud agent was
+		// only spun up at DEX graduation (launched-to-dex / liquidity-added),
+		// which meant a freshly-launched agent had a token but no running runtime.
+		// The agent-provisioning worker is idempotent (it skips personas that
+		// already carry an eliza_cloud_agent_id), so the later graduation enqueue
+		// is a no-op once this one has provisioned.
+		if (agentId && confirmedLaunchId) {
+			await addAgentProvisioningJob(buildTokenCreateProvisioningJob(agentId, event), {
+				jobId: `indexer-${eventId}-agent-provisioning-${agentId}`,
+			});
+		}
 
 		await addNotificationJob(
 			{
@@ -232,5 +246,33 @@ export async function handleTokenCreateEvent(
 		},
 	});
 
-	return { handled: true, enqueuedJobs: ["cache-warm", "notification"] };
+	const enqueuedJobs = ["cache-warm", "notification"];
+	if (agentId && confirmedLaunchId && process.env.INDEXER_DISABLE_QUEUE_JOBS !== "1") {
+		enqueuedJobs.push("agent-provisioning");
+	}
+	return { handled: true, enqueuedJobs };
+}
+
+/**
+ * Build the cloud-agent provisioning job for a freshly-launched four.meme
+ * token. Mirrors the DEX-graduation payload shape (see
+ * `buildLaunchedToDexProvisioningJob`) but is sourced from the create event so
+ * the runtime container boots at launch time rather than at graduation.
+ */
+export function buildTokenCreateProvisioningJob(agentId: string, event: TokenCreateEvent): AgentProvisioningJob {
+	return {
+		agentId,
+		source: "agent.launched",
+		data: {
+			tokenAddress: event.data.token,
+			tokenContractAddress: event.data.token,
+			chain: "bsc",
+			chainId: event.chainId,
+			tokenName: event.data.name,
+			tokenTicker: event.data.symbol,
+			launchType: "native",
+			txHash: event.txHash,
+			blockNumber: event.blockNumber.toString(),
+		},
+	};
 }

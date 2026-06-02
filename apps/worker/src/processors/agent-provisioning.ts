@@ -1,5 +1,5 @@
 import type { Job } from "bullmq";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { isAddress } from "viem";
 
 import { agentPersonaQueries, agentPersonas, agentWallets, agents, tokens } from "@waifufun/db";
@@ -70,6 +70,12 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	const persona = await agentPersonaQueries.getAgentPersonaByAgentId(context.db, payload.agentId);
 	if (!persona) throw new Error(`agent persona not found for ${payload.agentId}`);
 
+	// Idempotency guard (develop). Provisioning is enqueued at token-create AND
+	// again at DEX graduation (launched-to-dex / liquidity-added). If this persona
+	// already has fully-provisioned cloud runtime metadata, the container exists,
+	// so we short-circuit and return the stored result instead of POSTing
+	// /api/v1/agents a second time (which would create a duplicate container +
+	// duplicate billing).
 	const existing = existingProvisionResult(payload.agentId, persona.metadata);
 	if (existing) {
 		context.logger.info(
@@ -197,8 +203,20 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	const containerHealthCheckPath = stringField(payload.data, "containerHealthCheckPath");
 	const containerEnvironmentVars =
 		stringRecordField(payload.data, "containerEnvironmentVars") ?? stringRecordField(payload.data, "containerEnv");
+	// Per-inference burn metering: the launch-time provisioning path (token-create)
+	// also has to inject the inference receiver URL plus the shared webhook secret,
+	// otherwise containers launched here boot without the metering knobs the
+	// plugin-elizacloud bridge reads and emit no inference.spent events. This
+	// mirrors the API ElizaClient.provisionWaifuAgent path so both launch routes
+	// produce metered containers.
+	const inferenceWebhookUrl = defaultElizaCloudInferenceWebhookUrl();
+	const inferenceWebhookSecret = webhookSecret ?? defaultElizaCloudWebhookSecret();
 
 	const containerEnv = {
+		// Sol conflict-resolution (#896): emit BOTH the legacy WAIFU_AGENT_ID and the
+		// renamed ELIZA_BILLING_AGENT_ID to the same value (forward-compatible; the
+		// runtime currently reads neither).
+		WAIFU_AGENT_ID: payload.agentId,
 		ELIZA_BILLING_AGENT_ID: payload.agentId,
 		TOKEN_CONTRACT_ADDRESS: tokenAddress,
 		TOKEN_CHAIN: chain,
@@ -219,12 +237,40 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		...(process.env.WAIFU_CHAT_FRAME_ANCESTORS
 			? { WAIFU_CHAT_FRAME_ANCESTORS: process.env.WAIFU_CHAT_FRAME_ANCESTORS }
 			: {}),
+		// Sol conflict-resolution (#896): keep BOTH develop's WAIFU_* webhook env vars
+		// AND #896's ELIZA_BILLING_* names pointing at the same values.
+		...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
+		...(inferenceWebhookUrl ? { WAIFU_INFERENCE_WEBHOOK_URL: inferenceWebhookUrl } : {}),
+		...(inferenceWebhookSecret ? { WAIFU_WEBHOOK_SECRET: inferenceWebhookSecret } : {}),
 		...(webhookUrl ? { ELIZA_BILLING_WEBHOOK_URL: webhookUrl } : {}),
 		...(webhookSecret ? { ELIZA_BILLING_WEBHOOK_SECRET: webhookSecret } : {}),
 		...modelDefaults,
 		...(containerEnvironmentVars ?? {}),
 		ELIZA_UI_ENABLE: "true",
 	};
+
+	// Atomic claim, taken only after all validation passes and immediately before
+	// the container-creating POST. The duplicate-skip + partial-polling paths above
+	// are serial-queue optimizations, but they are check-then-act and race if the
+	// provisioning worker is ever scaled past one replica (token-create and
+	// graduation jobs can run on different replicas concurrently, both seeing an
+	// empty runtime). The claim is a single conditional UPDATE: only one caller
+	// wins, so at most one /api/v1/agents POST happens per persona regardless of
+	// replica count. A loser either returns the already-provisioned result or
+	// refuses. Claiming here (not earlier) preserves the invariant that no DB write
+	// happens before a valid wallet is resolved.
+	const claimed = await claimProvisioning(context, payload.agentId);
+	if (!claimed) {
+		const refreshed = await agentPersonaQueries.getAgentPersonaByAgentId(context.db, payload.agentId);
+		const refreshedExisting = refreshed ? existingProvisionResult(payload.agentId, refreshed.metadata) : null;
+		if (refreshedExisting) {
+			return refreshedExisting;
+		}
+		// Another in-flight provision holds the claim but has not stored a cloud id
+		// yet. Refuse rather than POST a duplicate; the winning job finishes the
+		// provision and a later enqueue (if any) reconciles.
+		throw new Error(`agent provisioning already in progress for ${payload.agentId}`);
+	}
 
 	let cloudAgent: Record<string, unknown>;
 	try {
@@ -281,9 +327,16 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 			},
 		});
 	} catch (err) {
+		// Eliza Cloud may report a pre-existing agent for this token (409). That is
+		// not a failure: adopt the existing runtime rather than POSTing a duplicate.
 		const existingAgentId =
 			err instanceof ElizaCloudRequestError && err.status === 409 ? stringField(err.body, "existingAgentId") : null;
-		if (!existingAgentId) throw err;
+		if (!existingAgentId) {
+			// Release the atomic claim so a retry (or a later enqueue) can re-attempt
+			// the provision. Best-effort: never mask the original failure.
+			await releaseProvisioningClaim(context, payload.agentId).catch(() => {});
+			throw err;
+		}
 		context.logger.warn(
 			{ agentId: payload.agentId, cloudAgentId: existingAgentId },
 			"Eliza Cloud already has an agent for this token; adopting existing runtime",
@@ -295,7 +348,11 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	}
 	const cloudAgentId =
 		stringField(cloudAgent, "cloudAgentId") ?? stringField(cloudAgent, "agentId") ?? stringField(cloudAgent, "id");
-	if (!cloudAgentId) throw new Error("Eliza Cloud agent response did not include an id");
+	if (!cloudAgentId) {
+		// Release the atomic claim before bailing so a retry can re-attempt.
+		await releaseProvisioningClaim(context, payload.agentId).catch(() => {});
+		throw new Error("Eliza Cloud agent response did not include an id");
+	}
 	const refreshedCloudAgent = await waitForRuntimeStatus(baseUrl, authKey, cloudAgentId, cloudAgent);
 	const result = normalizeProvisionResult(payload.agentId, cloudAgentId, refreshedCloudAgent, cloudAgent);
 
@@ -453,6 +510,78 @@ function normalizeApiPath(baseUrl: string, path: string): string {
 	return path;
 }
 
+/** How long a provisioning claim is considered fresh before another worker may
+ * reclaim it. Bounds the blast radius of a worker that crashes mid-provision
+ * (after claiming but before storing the cloud id or releasing the claim). */
+const PROVISIONING_CLAIM_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * Atomically claim the right to provision this persona.
+ *
+ * A single conditional UPDATE sets `metadata.provisioning.claim` only when no
+ * cloud agent exists yet AND no fresh claim is held. Postgres evaluates the
+ * WHERE under row-level locking, so exactly one concurrent caller's UPDATE
+ * matches and returns a row; all others match zero rows and lose. This makes
+ * the guard correct even if the provisioning worker is scaled past one replica.
+ *
+ * Returns true if this caller won the claim, false otherwise.
+ */
+async function claimProvisioning(context: WorkerContext, agentId: string): Promise<boolean> {
+	const now = new Date();
+	const staleBefore = new Date(now.getTime() - PROVISIONING_CLAIM_TTL_MS).toISOString();
+	const claimedAt = now.toISOString();
+	const rows = await context.db
+		.update(agentPersonas)
+		.set({
+			metadata: sql`
+				jsonb_set(
+					coalesce(${agentPersonas.metadata}, '{}'::jsonb),
+					'{provisioning,claim}',
+					jsonb_build_object('status', 'in_progress', 'claimedAt', ${claimedAt}::text),
+					true
+				)
+			`,
+			updatedAt: now,
+		})
+		.where(
+			and(
+				eq(agentPersonas.agentId, agentId),
+				isNull(agentPersonas.elizaCloudAgentId),
+				or(
+					sql`${agentPersonas.metadata} -> 'provisioning' -> 'claim' ->> 'status' IS DISTINCT FROM 'in_progress'`,
+					sql`coalesce(${agentPersonas.metadata} -> 'provisioning' -> 'claim' ->> 'claimedAt', '') < ${staleBefore}`,
+				),
+			),
+		)
+		.returning({ agentId: agentPersonas.agentId });
+	return rows.length > 0;
+}
+
+/**
+ * Release a provisioning claim so a retry can re-attempt. Best-effort: only
+ * clears the in_progress claim and only when no cloud agent has been stored.
+ */
+async function releaseProvisioningClaim(context: WorkerContext, agentId: string): Promise<void> {
+	await context.db
+		.update(agentPersonas)
+		.set({
+			metadata: sql`
+				case
+					when ${agentPersonas.metadata} ? 'provisioning'
+					then jsonb_set(
+						${agentPersonas.metadata},
+						'{provisioning}',
+						(${agentPersonas.metadata} -> 'provisioning') - 'claim',
+						false
+					)
+					else ${agentPersonas.metadata}
+				end
+			`,
+			updatedAt: new Date(),
+		})
+		.where(and(eq(agentPersonas.agentId, agentId), isNull(agentPersonas.elizaCloudAgentId)));
+}
+
 async function storeProvisioningMetadata(
 	context: WorkerContext,
 	agentId: string,
@@ -574,6 +703,23 @@ function defaultElizaCloudWebhookUrl(): string | undefined {
 	const apiBase = stringEnv("WAIFU_API_BASE_URL") ?? stringEnv("API_ORIGIN") ?? stringEnv("NEXT_PUBLIC_API_URL");
 	if (!apiBase) return undefined;
 	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/credits`;
+}
+
+/**
+ * The per-inference metering webhook the hosted container POSTs `inference.spent`
+ * events to. Distinct from the credits webhook: this is the burn signal that
+ * feeds the burn rollup. Defaults to the same API base with the `/inference`
+ * receiver path; override with ELIZA_CLOUD_INFERENCE_WEBHOOK_URL when the
+ * receiver lives elsewhere. Never reuses the credits URL, so inference events
+ * can never be misclassified as credit events.
+ */
+function defaultElizaCloudInferenceWebhookUrl(): string | undefined {
+	const configured =
+		stringEnv("ELIZA_CLOUD_INFERENCE_WEBHOOK_URL") ?? stringEnv("WAIFU_ELIZA_CLOUD_INFERENCE_WEBHOOK_URL");
+	if (configured) return configured.replace(/\/+$/, "");
+	const apiBase = stringEnv("WAIFU_API_BASE_URL") ?? stringEnv("API_ORIGIN") ?? stringEnv("NEXT_PUBLIC_API_URL");
+	if (!apiBase) return undefined;
+	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/inference`;
 }
 
 function defaultElizaCloudWebhookSecret(): string | undefined {

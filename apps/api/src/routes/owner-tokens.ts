@@ -134,7 +134,20 @@ function getCloudAgentId(row: TokenRuntimeRow): string | null {
 	);
 }
 
+// Sol conflict-resolution (#896): the DISPLAY/hosted-URL returned to the frontend
+// keeps develop's `webUiUrl ?? containerUrl` fallback, so containerUrl-only agents
+// (no webUiUrl yet) still surface a URL. #896's webUiUrl-only check is honored for
+// the LIVE-STATE gate only (see getHostedLiveUrl below).
 function getHostedWebUiUrl(row: TokenRuntimeRow): string | null {
+	const provisioning = getProvisioning(row.persona);
+	return (
+		stringField(provisioning, "webUiUrl") ?? stringField(provisioning, "containerUrl") ?? row.agent?.webUiUrl ?? null
+	);
+}
+
+// Live-state GATE value: webUiUrl-only (no containerUrl fallback), per #896's intent
+// that an agent only flips to "live"/"running" once a real webUiUrl exists.
+function getHostedLiveUrl(row: TokenRuntimeRow): string | null {
 	const provisioning = getProvisioning(row.persona);
 	return stringField(provisioning, "webUiUrl") ?? row.agent?.webUiUrl ?? null;
 }
@@ -179,8 +192,10 @@ function runtimeOverlayFromStatus(
 	suspendedReason: string | null;
 } {
 	const runtimeStatus = status?.status ?? row.agent?.agentStatus ?? row.token.agentStatus ?? "provisioning";
+	// Display URL keeps the containerUrl fallback; the live gate uses webUiUrl-only.
 	const webUiUrl = status?.webUiUrl ?? getHostedWebUiUrl(row);
-	const running = isHostedRuntimeRunning(runtimeStatus) && Boolean(webUiUrl);
+	const liveUrl = status?.webUiUrl ?? getHostedLiveUrl(row);
+	const running = isHostedRuntimeRunning(runtimeStatus) && Boolean(liveUrl);
 	const agentStatus = running
 		? "running"
 		: isHostedRuntimeRunning(runtimeStatus)

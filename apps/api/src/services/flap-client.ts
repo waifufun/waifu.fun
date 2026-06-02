@@ -205,9 +205,9 @@ export function createFlapClient(config: AppConfig): FlapClient {
 			const inputAmount = parseEther(input.amount);
 			const outputAmount = parseEther(quote.outputAmount);
 
-			// Apply slippage to min output
-			const slippageMultiplier = 1 - input.slippageBps / 10_000;
-			const minOutputAmount = BigInt(Math.floor(Number(outputAmount) * slippageMultiplier));
+			// Apply slippage to min output using exact bigint math (float64 loses
+			// precision on 18-decimal wei values, corrupting the on-chain floor).
+			const minOutputAmount = (outputAmount * BigInt(10_000 - input.slippageBps)) / 10_000n;
 
 			// Build swap params
 			const swapParams =

@@ -62,9 +62,11 @@ const upstreamPathFor = (provider) => {
 
 const isFinalizeBody = (value) => {
 	if (!value || typeof value !== "object") return false;
-	if (typeof value.token !== "string") return false;
 	if (value.provider === "email") return typeof value.email === "string";
-	return value.provider === "passkey" || value.provider === "oauth" || value.provider === "twitter";
+	if (value.provider === "passkey") return typeof value.token === "string";
+	if (value.provider === "oauth") return typeof value.token === "string";
+	if (value.provider === "twitter") return typeof value.code === "string";
+	return false;
 };
 
 async function handleFinalize(request, env, host) {

@@ -1,7 +1,11 @@
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 import { getApiToken } from "./api-auth";
 
-const DEFAULT_API_ORIGIN = "http://89.167.63.246";
+// Production waifu-core origin (matches PUBLIC_API_BASE_URL / the documented
+// NEXT_PUBLIC_API_URL in .env.example). Used only as a last-resort fallback
+// when neither NEXT_PUBLIC_API_URL nor API_ORIGIN is set; client-side
+// production normally routes through the same-origin "/api/v1" proxy below.
+const DEFAULT_API_ORIGIN = "https://api.waifu.fun";
 
 const normalizeApiOrigin = (value?: string | null) => {
 	const trimmed = value?.trim();

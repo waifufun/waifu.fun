@@ -210,6 +210,26 @@ export interface ElizaAppCreditVerifyResult {
 	[key: string]: unknown;
 }
 
+export interface ElizaAgentMessageInput {
+	/** Hosted agent id (cloudAgentId) the message is addressed to. */
+	agentId: string;
+	/** Patron's message text. */
+	text: string;
+	/** Stable conversation id so the agent threads replies; one per patron+agent. */
+	sessionId: string;
+	/** Opaque sender label surfaced to the runtime (the patron). */
+	senderId?: string;
+}
+
+export interface ElizaAgentMessageResult {
+	/** Reply text from the agent, when the runtime answered synchronously. */
+	text: string | null;
+	/** The conversation id the reply belongs to. */
+	sessionId: string;
+	/** Raw runtime payload for callers that want more than the text. */
+	raw?: unknown;
+}
+
 // ─── Client ───────────────────────────────────────────────────────
 
 export interface ElizaClientConfig {
@@ -439,6 +459,10 @@ export class ElizaClient {
 		const billing = input.billing ?? { mode: "owner_credits", initialReserveUsd: 5 };
 		const webhookUrl = input.webhookUrl ?? defaultElizaCloudWebhookUrl();
 		const webhookSecret = input.webhookSecret ?? (webhookUrl ? defaultElizaCloudWebhookSecret() : undefined);
+		// Per-inference burn metering: the container needs the inference receiver
+		// URL plus the shared secret so it can sign `inference.spent` webhooks.
+		const inferenceWebhookUrl = defaultElizaCloudInferenceWebhookUrl();
+		const inferenceWebhookSecret = webhookSecret ?? defaultElizaCloudWebhookSecret();
 		const access = {
 			guestMinTokens: input.access?.guestMinTokens ?? 1_000,
 			userMinTokens: input.access?.userMinTokens ?? 100_000,
@@ -449,6 +473,11 @@ export class ElizaClient {
 			throw new ElizaCloudNotConfiguredError("admin wallet must be a valid EVM address");
 		}
 		const environmentVars = {
+			// Sol conflict-resolution (#896): write BOTH the legacy and renamed agent-id
+			// env vars to the same value. develop writes WAIFU_AGENT_ID; #896 renamed it to
+			// ELIZA_BILLING_AGENT_ID. The eliza runtime currently reads neither, so emitting
+			// both is forward-compatible regardless of which the future consumer reads.
+			WAIFU_AGENT_ID: input.agentId,
 			ELIZA_BILLING_AGENT_ID: input.agentId,
 			TOKEN_CONTRACT_ADDRESS: input.tokenContractAddress,
 			TOKEN_CHAIN: input.chain,
@@ -469,6 +498,12 @@ export class ElizaClient {
 			...(process.env.WAIFU_CHAT_FRAME_ANCESTORS
 				? { WAIFU_CHAT_FRAME_ANCESTORS: process.env.WAIFU_CHAT_FRAME_ANCESTORS }
 				: {}),
+			// Sol conflict-resolution (#896): keep BOTH develop's WAIFU_* webhook env vars
+			// AND #896's ELIZA_BILLING_* names pointing at the same values. Forward-compatible
+			// for whichever the container consumer reads.
+			...(webhookUrl ? { WAIFU_WEBHOOK_URL: webhookUrl } : {}),
+			...(inferenceWebhookUrl ? { WAIFU_INFERENCE_WEBHOOK_URL: inferenceWebhookUrl } : {}),
+			...(inferenceWebhookSecret ? { WAIFU_WEBHOOK_SECRET: inferenceWebhookSecret } : {}),
 			...(webhookUrl ? { ELIZA_BILLING_WEBHOOK_URL: webhookUrl } : {}),
 			...(webhookSecret ? { ELIZA_BILLING_WEBHOOK_SECRET: webhookSecret } : {}),
 			...(input.modelDefaults ?? {}),
@@ -686,6 +721,65 @@ export class ElizaClient {
 			asUserId: userId,
 		});
 	}
+
+	/**
+	 * Send a single chat turn to a hosted agent and return its reply.
+	 *
+	 * waifu-core is the gateway: the browser never talks to the container
+	 * directly, so the patron-authed proxy route calls this with the service
+	 * key. The runtime threads replies by `sessionId`, so callers pass a stable
+	 * conversation id (one per patron + agent).
+	 */
+	async sendAgentMessage(input: ElizaAgentMessageInput): Promise<ElizaAgentMessageResult> {
+		const result = await this.request<Record<string, unknown>>(
+			"POST",
+			`/api/v1/agents/${encodeURIComponent(input.agentId)}/message`,
+			{
+				body: {
+					text: input.text,
+					sessionId: input.sessionId,
+					...(input.senderId ? { senderId: input.senderId } : {}),
+					source: "waifu-patron-chat",
+				},
+			},
+		);
+		return {
+			text: extractReplyText(result),
+			sessionId: stringField(result, "sessionId") ?? input.sessionId,
+			raw: result,
+		};
+	}
+}
+
+/**
+ * Pull the reply text out of a runtime message payload. Eliza Cloud has
+ * shipped a couple of response shapes over time (`text`, `message`, a
+ * `messages[]` array, or `{ content: { text } }`), so we read defensively
+ * and fall back to null when nothing usable is present.
+ */
+function extractReplyText(payload: Record<string, unknown>): string | null {
+	const direct = stringField(payload, "text") ?? stringField(payload, "message") ?? stringField(payload, "reply");
+	if (direct) return direct;
+
+	const content = objectField(payload, "content");
+	if (content) {
+		const contentText = stringField(content, "text");
+		if (contentText) return contentText;
+	}
+
+	const messages = payload.messages;
+	if (Array.isArray(messages) && messages.length > 0) {
+		for (let i = messages.length - 1; i >= 0; i--) {
+			const entry = messages[i];
+			if (entry && typeof entry === "object") {
+				const record = entry as Record<string, unknown>;
+				const entryText = stringField(record, "text") ?? stringField(objectField(record, "content") ?? {}, "text");
+				if (entryText) return entryText;
+			}
+		}
+	}
+
+	return null;
 }
 
 export interface ElizaCloudClient {
@@ -707,6 +801,7 @@ export interface ElizaCloudClient {
 	verifyCreditCheckout?(sessionId: string): Promise<ElizaAppCreditVerifyResult>;
 	verifyAppCreditCheckout?(sessionId: string): Promise<ElizaAppCreditVerifyResult>;
 	getAgentRuntimeStatus?(agentId: string): Promise<ElizaAgentRuntimeStatus>;
+	sendAgentMessage?(input: ElizaAgentMessageInput): Promise<ElizaAgentMessageResult>;
 }
 
 // ─── Error classes ────────────────────────────────────────────────
@@ -824,6 +919,23 @@ function defaultElizaCloudWebhookUrl(): string | undefined {
 	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
 	if (!apiBase) return undefined;
 	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/credits`;
+}
+
+/**
+ * The per-inference metering webhook the hosted container POSTs `inference.spent`
+ * events to. Distinct from the credits webhook above: this is the "agent pays
+ * its own way" burn signal that feeds the burn rollup. Defaults to the same API
+ * base with the `/inference` receiver path; override with
+ * ELIZA_CLOUD_INFERENCE_WEBHOOK_URL when the receiver lives elsewhere.
+ */
+function defaultElizaCloudInferenceWebhookUrl(): string | undefined {
+	const configured = nonEmpty(
+		process.env.ELIZA_CLOUD_INFERENCE_WEBHOOK_URL ?? process.env.WAIFU_ELIZA_CLOUD_INFERENCE_WEBHOOK_URL,
+	);
+	if (configured) return configured.replace(/\/+$/, "");
+	const apiBase = nonEmpty(process.env.WAIFU_API_BASE_URL ?? process.env.API_ORIGIN ?? process.env.NEXT_PUBLIC_API_URL);
+	if (!apiBase) return undefined;
+	return `${apiBase.replace(/\/+$/, "")}/v2/webhooks/eliza-cloud/inference`;
 }
 
 function defaultElizaCloudWebhookSecret(): string | undefined {
