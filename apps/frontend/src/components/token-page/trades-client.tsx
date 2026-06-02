@@ -335,9 +335,13 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 	const isMigratedToken = migratedStatuses.has(token.status);
 	const externalMarketUrl = getExternalMarketUrl(token);
 	const hasExternalMarket = Boolean(token.imported || tokenWithPool.pool || (token.curveCompleted && isMigratedToken));
-	const latestTradeDate = parseTradeDate(data[0]?.timestamp);
-	const hasHistoricalRows = data.some((trade) => hasHistoricalContext(trade));
-	const hasExternalRows = data.some((trade) => isExternalTrade(trade));
+	// These derive only from the now-stable `data`, so memoize them on [data]
+	// to finish what the sort memo started — no per-render re-scan on the 3.5s
+	// refetch or on expand/show-all toggles. (isStaleExternalFeed stays
+	// per-render: it reads Date.now() and must reflect the passage of time.)
+	const latestTradeDate = useMemo(() => parseTradeDate(data[0]?.timestamp), [data]);
+	const hasHistoricalRows = useMemo(() => data.some((trade) => hasHistoricalContext(trade)), [data]);
+	const hasExternalRows = useMemo(() => data.some((trade) => isExternalTrade(trade)), [data]);
 	const isStaleExternalFeed = Boolean(
 		hasExternalMarket && latestTradeDate && Date.now() - latestTradeDate.getTime() > staleFeedMs,
 	);
