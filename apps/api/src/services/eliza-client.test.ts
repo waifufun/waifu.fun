@@ -140,6 +140,9 @@ test("provisionWaifuAgent creates a wallet-owned cloud agent with service auth",
 				architecture: "arm64",
 				healthCheckPath: "/api/health",
 				env: {
+					// Sol conflict-resolution (#896): provisioning writes BOTH the legacy
+					// WAIFU_AGENT_ID and the renamed ELIZA_BILLING_AGENT_ID to the same value.
+					WAIFU_AGENT_ID: "waifu-demo-01",
 					ELIZA_BILLING_AGENT_ID: "waifu-demo-01",
 					TOKEN_CONTRACT_ADDRESS: "0x0000000000000000000000000000000000000004",
 					TOKEN_CHAIN: "bsc",
