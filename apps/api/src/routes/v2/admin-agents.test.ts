@@ -53,9 +53,7 @@ function dbWithProvisioningPreflight(options: { personaExists: boolean; walletAd
 									}
 									if (fields && "walletAddress" in fields) {
 										return Promise.resolve(
-											options.walletAddress === undefined
-												? []
-												: [{ walletAddress: options.walletAddress }],
+											options.walletAddress === undefined ? [] : [{ walletAddress: options.walletAddress }],
 										);
 									}
 									return Promise.resolve([]);

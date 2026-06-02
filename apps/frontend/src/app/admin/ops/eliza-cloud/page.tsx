@@ -396,7 +396,11 @@ export default function ElizaCloudOpsPage() {
 						disabled={backendProof.isPending || !form.agentId || !form.tokenContractAddress || !form.agentEvmAddress}
 						className="inline-flex items-center gap-2 rounded-sm border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-neutral-100 hover:bg-white/10 disabled:opacity-50"
 					>
-						{backendProof.isPending ? <LoaderCircle className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+						{backendProof.isPending ? (
+							<LoaderCircle className="size-3 animate-spin" />
+						) : (
+							<RefreshCw className="size-3" />
+						)}
 						api proof
 					</button>
 				</div>
@@ -482,9 +486,7 @@ export default function ElizaCloudOpsPage() {
 								onChange={(event) =>
 									setField(
 										"containerArchitecture",
-										event.target.value === "arm64" || event.target.value === "x86_64"
-											? event.target.value
-											: undefined,
+										event.target.value === "arm64" || event.target.value === "x86_64" ? event.target.value : undefined,
 									)
 								}
 								className="rounded-sm border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-red-400"
@@ -572,8 +574,8 @@ export default function ElizaCloudOpsPage() {
 							</div>
 						) : (
 							<p className="mt-3 text-xs text-neutral-500">
-								runs bonded worker provisioning, hosted runtime checks, controls, lifecycle webhooks, and optional
-								chat or owner checks.
+								runs bonded worker provisioning, hosted runtime checks, controls, lifecycle webhooks, and optional chat
+								or owner checks.
 							</p>
 						)}
 					</Panel>

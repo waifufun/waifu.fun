@@ -363,7 +363,9 @@ test("LiquidityAdded handler enqueues Eliza Cloud provisioning for tracked bonde
 				},
 			},
 		);
-		const agentEvents = (runtime.db as unknown as FakeDb).inserts.filter((insert) => insert.table === schema.agentEvents);
+		const agentEvents = (runtime.db as unknown as FakeDb).inserts.filter(
+			(insert) => insert.table === schema.agentEvents,
+		);
 		assert.deepEqual(
 			agentEvents.map((insert) => (insert.value as { eventType: string }).eventType),
 			["agent.bonded", "agent.graduated"],
