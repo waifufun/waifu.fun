@@ -10,9 +10,9 @@ import {
 } from "../../middleware/patron-auth.js";
 import {
 	type StewardClient,
+	StewardError,
 	type StewardPolicyCaps,
 	type StewardPolicyRule,
-	StewardError,
 } from "../../services/agent-launch/steward.js";
 import agentTradingPolicyRoutes, { __setTradingPolicyStewardForTest } from "./agents-trading-policy.js";
 
