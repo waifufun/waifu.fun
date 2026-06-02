@@ -295,7 +295,14 @@ const getExternalMarketUrl = (token: IToken) => {
 	return `https://www.geckoterminal.com/${geckoChainName}/pools/${tokenWithPool.pool}`;
 };
 export default function TradesClient({ token, initialData }: { token: IToken; initialData: any }) {
-	const nonAnimatedTrades = Array.from(new Set<string>((initialData ?? []).map((trade: ApiTrade) => trade.txHash)));
+	// txHashes present in the SSG snapshot: these rows shouldn't replay the
+	// entry animation. A Set gives O(1) membership in the per-row check below
+	// (was an O(rows × initialData) Array.includes); memoized on the stable
+	// initialData prop so it isn't rebuilt every render/poll.
+	const nonAnimatedTrades = useMemo(
+		() => new Set<string>((initialData ?? []).map((trade: ApiTrade) => trade.txHash)),
+		[initialData],
+	);
 	const query = useQuery({
 		queryKey: ["trades", token.chain, token.chainId, token.contractAddress],
 		queryFn: async () => {
@@ -310,11 +317,19 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 	});
 
 	const rawData = query.data as ApiTrade[] | undefined;
-	const data = [...(rawData ?? [])].sort((left, right) => {
-		const leftTimestamp = parseTradeDate(left.timestamp)?.getTime() ?? 0;
-		const rightTimestamp = parseTradeDate(right.timestamp)?.getTime() ?? 0;
-		return rightTimestamp - leftTimestamp;
-	});
+	// Sort only when the query data actually changes — not on every render
+	// (the component re-renders on a 3.5s refetchInterval and on expand/show-all
+	// toggles). This also makes the visibleTrades memo below effective, since its
+	// `data` dependency is now referentially stable across unrelated renders.
+	const data = useMemo(
+		() =>
+			[...(rawData ?? [])].sort((left, right) => {
+				const leftTimestamp = parseTradeDate(left.timestamp)?.getTime() ?? 0;
+				const rightTimestamp = parseTradeDate(right.timestamp)?.getTime() ?? 0;
+				return rightTimestamp - leftTimestamp;
+			}),
+		[rawData],
+	);
 
 	const tokenWithPool = token as IToken & { pool?: string };
 	const isMigratedToken = migratedStatuses.has(token.status);
@@ -491,7 +506,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 										key={trade.id || `${trade.txHash}-${trade.blockNumber}`}
 										className={cn(
 											isBuy ? "bg-[#00ff87]/[0.015]" : "bg-[#ef4444]/[0.015]",
-											!nonAnimatedTrades.includes(trade.txHash)
+											!nonAnimatedTrades.has(trade.txHash)
 												? "animate-shake animate-once animate-duration-200 animate-ease-linear"
 												: "",
 										)}
