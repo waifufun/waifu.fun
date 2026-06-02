@@ -172,6 +172,10 @@ function TypewriterImpl<T extends ElementType = "span">(
 		return clearDelay;
 	}, [play, onComplete, onChange, text, interval, variance, backspaceFactor, backspace]);
 
+	// Cancel the (possibly-infinite) cursor-blink animation on unmount so it
+	// doesn't keep running / leak a controls handle after the component is gone.
+	useEffect(() => () => cursorBlinkAnimation.current?.cancel(), []);
+
 	return (
 		<Component ref={ref} {...props} aria-label={ariaLabel || text}>
 			<motion.span className={textClassName} style={(textStyle as Record<string, unknown>) ?? {}}>

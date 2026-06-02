@@ -210,6 +210,7 @@ export function PriceChart({
 	useEffect(() => {
 		const intervalMs = candleRangePollMs(range);
 		const id = window.setInterval(() => {
+			if (typeof document !== "undefined" && document.hidden) return;
 			void fetchForRange(range, { background: true });
 		}, intervalMs);
 		return () => window.clearInterval(id);
