@@ -1,6 +1,9 @@
 /**
  * EIP-8004 agent identity NFT registration.
  *
+ * CONVERGENCE: this mirrors @stwd/erc8004 IdentityRegistryClient; swap to
+ * the shared package once it is published (tracked: waifu issue / Steward PR #91).
+ *
  * Every waifu.fun agent should register an EIP-8004 identity NFT BEFORE
  * creating its token on Four.Meme, so the `creator → NFT → AgentIdentifier`
  * chain resolves and Four.Meme's UI tags the token with the (AI) badge.
@@ -50,8 +53,29 @@ export const EIP8004_REGISTRATION_TYPE = "https://eips.ethereum.org/EIPS/eip-800
 
 export const EIP8004_ABI = parseAbi([
 	"function register(string agentURI) returns (uint256 agentId)",
+	"function ownerOf(uint256 tokenId) view returns (address)",
+	"function tokenURI(uint256 tokenId) view returns (string)",
+	"function balanceOf(address owner) view returns (uint256)",
+	"function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
 	"event Registered(uint256 indexed agentId, string agentURI, address indexed owner)",
 ]);
+
+export const IDENTITY_REGISTRY_ABI = EIP8004_ABI;
+
+export interface AgentCard {
+	name: string;
+	description?: string;
+	walletAddress?: string;
+	apiUrl?: string;
+	capabilities?: string[];
+	services?: string[];
+	image?: string;
+	imageUrl?: string;
+	active?: boolean;
+	supportedTrust?: string[];
+	agentURI?: string;
+	tokenId?: string;
+}
 
 export interface Eip8004RegistrationPayload {
 	type: string;
@@ -68,19 +92,18 @@ export interface Eip8004RegistrationPayload {
  * Mirrors the reference script's behaviour exactly — including the
  * `supportedTrust: [""]` placeholder and the default description.
  */
-export function buildAgentURI(opts: {
-	name: string;
-	imageUrl?: string;
-	description?: string;
-}): { agentURI: string; payload: Eip8004RegistrationPayload } {
+export function buildAgentURI(opts: AgentCard): {
+	agentURI: string;
+	payload: Eip8004RegistrationPayload;
+} {
 	const payload: Eip8004RegistrationPayload = {
 		type: EIP8004_REGISTRATION_TYPE,
 		name: opts.name ?? "",
 		description:
 			opts.description && opts.description.trim().length > 0 ? opts.description : "I'm four.meme trading agent",
-		image: opts.imageUrl ?? "",
-		active: true,
-		supportedTrust: [""],
+		image: opts.image ?? opts.imageUrl ?? "",
+		active: opts.active ?? true,
+		supportedTrust: opts.supportedTrust ?? [""],
 	};
 	const json = JSON.stringify(payload);
 	const base64 = Buffer.from(json, "utf8").toString("base64");
@@ -126,6 +149,8 @@ export interface RegisterAgentIdentityOpts {
 	contractAddress?: Address;
 	/** Receipt wait timeout in ms. Default 180_000. */
 	receiptTimeoutMs?: number;
+	/** Optional chain id included in the shared-client-compatible result. */
+	chainId?: number;
 }
 
 export interface RegisterAgentIdentityResult {
@@ -139,6 +164,14 @@ export interface RegisterAgentIdentityResult {
 	payload: Eip8004RegistrationPayload;
 	/** Contract address we registered against. */
 	contractAddress: Address;
+	/** @stwd/erc8004-compatible token id string. */
+	tokenId: string;
+	/** @stwd/erc8004-compatible registry address. */
+	registryAddress: Address;
+	/** @stwd/erc8004-compatible submitted URI alias. */
+	agentCardUri: string;
+	/** Chain id when supplied by the caller. */
+	chainId?: number;
 }
 
 /**
@@ -224,5 +257,9 @@ export async function registerAgentIdentity(opts: RegisterAgentIdentityOpts): Pr
 		agentURI,
 		payload,
 		contractAddress,
+		tokenId: agentId.toString(),
+		registryAddress: contractAddress,
+		agentCardUri: agentURI,
+		...(opts.chainId !== undefined ? { chainId: opts.chainId } : {}),
 	};
 }

@@ -158,6 +158,8 @@ export interface AgentLaunchInput {
 	strictIdentityRegistration?: boolean;
 }
 
+export type IdentityRegistrationStatus = "minted" | "pending_approval" | "skipped" | "failed";
+
 export interface StewardAgentWallet {
 	agentId: string;
 	walletAddress: Address;
@@ -200,6 +202,7 @@ export interface AgentLaunchResult {
 	 * `agentId` is the NFT token id returned by the `Registered` event,
 	 * stringified so the struct serializes cleanly to JSON.
 	 */
+	identityRegistrationStatus: IdentityRegistrationStatus;
 	agentIdentity?: {
 		/** NFT token id (from `Registered` event), stringified. */
 		agentId: string;
