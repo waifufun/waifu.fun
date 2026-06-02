@@ -39,7 +39,7 @@ const TOKEN_CHAIN_BADGE: Record<number, { label: string; icon: string }> = {
 };
 
 const TOKEN_LAUNCHPAD_BADGE: Record<string, { label: string; icon: string }> = {
-	flap: { label: "Flap", icon: "/venue-logos/flap.svg" },
+	flap: { label: "Flap", icon: "/venue-logos/flap.png" },
 	bags: { label: "Bags", icon: "/venue-logos/bags.png" },
 	bankr: { label: "Bankr", icon: "/venue-logos/bankr.svg" },
 };

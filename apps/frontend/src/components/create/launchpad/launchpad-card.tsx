@@ -23,7 +23,7 @@ const CHAIN_LABEL: Record<string, string> = {
 };
 
 const LOGO_SRC: Partial<Record<LaunchpadDescriptor["id"], string>> = {
-	flap: "/venue-logos/flap.svg",
+	flap: "/venue-logos/flap.png",
 	bags: "/venue-logos/bags.png",
 	bankr: "/venue-logos/bankr.svg",
 };
