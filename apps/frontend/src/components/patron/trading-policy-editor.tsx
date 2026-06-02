@@ -525,8 +525,8 @@ export default function TradingPolicyEditor({ agentId }: Props) {
 			</header>
 
 			<p className="border-b border-stroke px-4 py-2.5 font-mono text-[10px] leading-relaxed text-neutral-500 max-w-[68ch]">
-				these guardrails are yours alone. the agent cannot change its own caps or withdraw list. writes are
-				authorized with your owner session.
+				these guardrails are yours alone. the agent cannot change its own caps or withdraw list. writes are authorized
+				with your owner session.
 			</p>
 
 			<div className="grid grid-cols-1">

@@ -5,9 +5,9 @@ import type { RequireAgentOwnershipBindings } from "../../middleware/patron-auth
 import { requireAgentOwnership, requirePatron } from "../../middleware/patron-auth.js";
 import {
 	type StewardClient,
+	StewardError,
 	type StewardPolicyCaps,
 	type StewardPolicyRule,
-	StewardError,
 	createStewardClient,
 } from "../../services/agent-launch/steward.js";
 
