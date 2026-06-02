@@ -150,8 +150,14 @@ app.get("/:agentId/x/oauth/callback", async (c) => {
 	const state = c.req.query("state");
 	if (!code || !state) return c.redirect(frontendAgentUrl(agentId, "x_error=missing_code"));
 
-	const rawState = await redis.get(stateKey(state));
-	await redis.del(stateKey(state));
+	let rawState: string | null;
+	try {
+		rawState = await redis.get(stateKey(state));
+		await redis.del(stateKey(state));
+	} catch (err) {
+		c.get("logger").error({ agentId, error: err }, "agents x oauth callback state lookup failed");
+		return c.redirect(frontendAgentUrl(agentId, "x_error=state_unavailable"));
+	}
 	if (!rawState) return c.redirect(frontendAgentUrl(agentId, "x_error=state_expired"));
 
 	let oauthState: AgentXOAuthState;

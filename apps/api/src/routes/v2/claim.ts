@@ -231,6 +231,10 @@ app.post("/prepare", requireAgentAuth(), async (c) => {
 		return c.json({ error: "invalid JSON body" }, 400);
 	}
 
+	if (!body || typeof body !== "object" || Array.isArray(body)) {
+		return c.json({ error: "invalid JSON body" }, 400);
+	}
+
 	const mismatch = ensureAgentIdMatches(c, body.agentId);
 	if (mismatch) return mismatch;
 
@@ -909,24 +913,28 @@ app.post("/claim/:token/launch", requirePatronAuth(), async (c) => {
 		const agentWalletAddress = walletRow?.walletAddress ?? null;
 		const adminWallets = buildClaimLaunchAdminWallets(persona);
 
-		await emitAgentEvent({
-			agentId: claim.agentId,
-			eventType: "agent.launched",
-			data: {
-				tokenAddress: broadcastResult.tokenAddress,
-				tokenContractAddress: broadcastResult.tokenAddress,
-				tokenName: stringField(recordFromUnknown(claim.prelaunchParams), "name") ?? claim.name,
-				tokenTicker:
-					stringField(recordFromUnknown(claim.prelaunchParams), "symbol") ?? claim.agentId.slice(0, 10).toUpperCase(),
-				walletAddress: agentWalletAddress,
-				primaryWalletAddress: agentWalletAddress,
-				adminWallets,
-				guestMinTokens: 1_000,
-				userMinTokens: 100_000,
-				claimedByXHandle: patronUser.xHandle,
-				txHash: broadcastResult.txHash,
-			},
-		});
+		try {
+			await emitAgentEvent({
+				agentId: claim.agentId,
+				eventType: "agent.launched",
+				data: {
+					tokenAddress: broadcastResult.tokenAddress,
+					tokenContractAddress: broadcastResult.tokenAddress,
+					tokenName: stringField(recordFromUnknown(claim.prelaunchParams), "name") ?? claim.name,
+					tokenTicker:
+						stringField(recordFromUnknown(claim.prelaunchParams), "symbol") ?? claim.agentId.slice(0, 10).toUpperCase(),
+					walletAddress: agentWalletAddress,
+					primaryWalletAddress: agentWalletAddress,
+					adminWallets,
+					guestMinTokens: 1_000,
+					userMinTokens: 100_000,
+					claimedByXHandle: patronUser.xHandle,
+					txHash: broadcastResult.txHash,
+				},
+			});
+		} catch {
+			/* launch already persisted; don't fail the response on event emit */
+		}
 
 		let runtimeProvisioning: unknown = null;
 		let runtimeProvisioningError: string | null = null;
