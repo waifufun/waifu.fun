@@ -79,6 +79,34 @@ export interface StewardPendingApproval {
 
 export type StewardSignTxResult = StewardSignTxBroadcastResult | StewardSignTxRawResult | StewardPendingApproval;
 
+/**
+ * Trading-policy caps as exposed by Steward `/v1/agents/:id/policy`.
+ *
+ * These are the high-level money guardrails the patron controls: spend caps,
+ * leverage ceiling, and the allow-lists of assets + venues the agent may
+ * touch. All fields are optional so a partial PUT only mutates what's sent.
+ */
+export interface StewardPolicyCaps {
+	dailyCap?: number | null;
+	perOrderCap?: number | null;
+	leverageCap?: number | null;
+	allowedAssets?: string[];
+	allowedVenues?: string[];
+	[key: string]: unknown;
+}
+
+/**
+ * A single rule in Steward `/v1/agents/:id/policies`. The withdraw-address
+ * whitelist is modelled as a rule of type `approved-addresses` whose
+ * `addresses` array is the set of destinations funds may leave to.
+ */
+export interface StewardPolicyRule {
+	id?: string;
+	type: string;
+	addresses?: string[];
+	[key: string]: unknown;
+}
+
 const STEWARD_DEFAULT_BASE_URL = "https://eliza.steward.fi";
 
 export class StewardClient {
@@ -127,6 +155,37 @@ export class StewardClient {
 		return this.request<StewardSignTxResult>("POST", `/vault/${encodeURIComponent(agentId)}/sign`, input, {
 			acceptPending: true,
 		});
+	}
+
+	/** Read the agent's trading-policy caps (spend caps, leverage, allow-lists). */
+	async getPolicy(agentId: string): Promise<StewardPolicyCaps> {
+		return this.request<StewardPolicyCaps>("GET", `/v1/agents/${encodeURIComponent(agentId)}/policy`);
+	}
+
+	/** Replace the agent's trading-policy caps. Owner/patron-gated on Steward. */
+	async putPolicy(agentId: string, caps: StewardPolicyCaps): Promise<StewardPolicyCaps> {
+		return this.request<StewardPolicyCaps>("PUT", `/v1/agents/${encodeURIComponent(agentId)}/policy`, caps);
+	}
+
+	/** Read the agent's policy rules (incl. the approved-addresses withdraw whitelist). */
+	async getPolicies(agentId: string): Promise<StewardPolicyRule[]> {
+		const res = await this.request<StewardPolicyRule[] | { policies?: StewardPolicyRule[] }>(
+			"GET",
+			`/v1/agents/${encodeURIComponent(agentId)}/policies`,
+		);
+		if (Array.isArray(res)) return res;
+		return res?.policies ?? [];
+	}
+
+	/** Replace the agent's policy rules. Owner/patron-gated on Steward. */
+	async putPolicies(agentId: string, rules: StewardPolicyRule[]): Promise<StewardPolicyRule[]> {
+		const res = await this.request<StewardPolicyRule[] | { policies?: StewardPolicyRule[] }>(
+			"PUT",
+			`/v1/agents/${encodeURIComponent(agentId)}/policies`,
+			{ policies: rules },
+		);
+		if (Array.isArray(res)) return res;
+		return res?.policies ?? rules;
 	}
 
 	/**
