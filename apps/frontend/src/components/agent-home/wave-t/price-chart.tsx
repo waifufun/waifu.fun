@@ -213,7 +213,16 @@ export function PriceChart({
 			if (typeof document !== "undefined" && document.hidden) return;
 			void fetchForRange(range, { background: true });
 		}, intervalMs);
-		return () => window.clearInterval(id);
+		// Catch up immediately on refocus instead of waiting for the next tick
+		// (which may be up to a minute out), mirroring the other live pollers.
+		const onVisible = () => {
+			if (!document.hidden) void fetchForRange(range, { background: true });
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		return () => {
+			window.clearInterval(id);
+			document.removeEventListener("visibilitychange", onVisible);
+		};
 	}, [range, fetchForRange]);
 
 	// ── chart mount ─────────────────────────────────────────────
