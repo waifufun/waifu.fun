@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 interface GlitchBgProps {
 	glitchColors?: string[];
@@ -24,7 +24,7 @@ export default function GlitchBg({
 	const context = useRef<CanvasRenderingContext2D | null>(null);
 	const lastGlitchTime = useRef(Date.now());
 
-	const chars = Array.from(characters);
+	const chars = useMemo(() => Array.from(characters), [characters]);
 	const fontSize = 14;
 	const charWidth = 9;
 	const charHeight = 18;
@@ -135,6 +135,13 @@ export default function GlitchBg({
 		};
 
 		const animate = () => {
+			// Pause entirely while the tab is hidden. This canvas is mounted globally
+			// (StaticBackground in the root layout), so an always-running RAF loop is a
+			// constant CPU/GPU drain on every page, including backgrounded tabs.
+			if (typeof document !== "undefined" && document.hidden) {
+				animationRef.current = null;
+				return;
+			}
 			const now = Date.now();
 			if (now - lastGlitchTime.current >= glitchSpeed) {
 				update();
@@ -159,9 +166,22 @@ export default function GlitchBg({
 		};
 		window.addEventListener("resize", handleResize);
 
+		const handleVisibility = () => {
+			if (document.hidden) {
+				if (animationRef.current) cancelAnimationFrame(animationRef.current);
+				animationRef.current = null;
+			} else if (animationRef.current === null) {
+				// resume on return; reset the glitch clock so it doesn't burst-update
+				lastGlitchTime.current = Date.now();
+				animate();
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+
 		return () => {
 			if (animationRef.current) cancelAnimationFrame(animationRef.current);
 			window.removeEventListener("resize", handleResize);
+			document.removeEventListener("visibilitychange", handleVisibility);
 		};
 	}, [glitchSpeed, smooth, chars, glitchColors]);
 
