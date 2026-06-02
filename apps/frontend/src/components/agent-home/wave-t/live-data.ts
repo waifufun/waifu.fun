@@ -33,7 +33,7 @@ import { useEffect, useState } from "react";
 
 import type { AgentTrade } from "@/components/agent-home/types";
 import { apiFetch } from "@/lib/api/_fetcher";
-import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
+import type { HyperliquidPosition, HyperliquidPositionsSnapshot } from "@/lib/hooks/use-hyperliquid-positions";
 import { type AgentHoldingsSnapshot, fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { mapAgentOwnTrade, unwrapActivityTrades } from "@/lib/wave-t/agent-trades";
 import { type TwitterStats, fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
@@ -123,30 +123,44 @@ export function useLiveHoldings(
 }
 
 /**
- * Poll the agent's open perp positions from the dedicated
- * `/v2/agents/:address/hyperliquid/positions` endpoint, which serves the
- * live Hyperliquid snapshot (positions already in the `HyperliquidPosition`
- * shape the ActivePositions panel renders). The `/holdings` snapshot does
- * NOT carry `perpsPositions`, so reading from it returned empty. Seeds from
- * the SSG-prefetched list so the first paint has data, then refreshes on
- * the given cadence (30s by default).
+ * Poll the agent's live Hyperliquid account from the dedicated
+ * `/v2/agents/:address/hyperliquid/positions` endpoint. Returns the FULL
+ * snapshot: open positions plus the account-health fields (accountValueUsd,
+ * withdrawableUsd, wallet) so the panel can render a real margin/health
+ * summary instead of summing per-position notional. The `/holdings`
+ * snapshot does NOT carry perp account state, so this is the source of
+ * truth. Seeds from the SSG-prefetched positions so the first paint has
+ * data, then refreshes on the given cadence (30s by default).
  */
 export function useLivePerpPositions(
 	address: string,
 	initialPositions: HyperliquidPosition[],
 	intervalMs = 30_000,
-): HyperliquidPosition[] {
-	const [positions, setPositions] = useState<HyperliquidPosition[]>(initialPositions);
+): HyperliquidPositionsSnapshot {
+	const [snapshot, setSnapshot] = useState<HyperliquidPositionsSnapshot>({
+		wallet: null,
+		accountValueUsd: 0,
+		withdrawableUsd: 0,
+		positions: initialPositions,
+		ts: 0,
+	});
 	usePoller(
 		async () => {
 			const path = `/v2/agents/${encodeURIComponent(address)}/hyperliquid/positions`;
-			const data = await apiFetch<{ positions?: HyperliquidPosition[] }>(path);
-			if (Array.isArray(data?.positions)) setPositions(data.positions);
+			const data = await apiFetch<Partial<HyperliquidPositionsSnapshot>>(path);
+			if (!data) return;
+			setSnapshot({
+				wallet: data.wallet ?? null,
+				accountValueUsd: Number(data.accountValueUsd) || 0,
+				withdrawableUsd: Number(data.withdrawableUsd) || 0,
+				positions: Array.isArray(data.positions) ? data.positions : [],
+				ts: data.ts ?? Date.now(),
+			});
 		},
 		intervalMs,
 		[address],
 	);
-	return positions;
+	return snapshot;
 }
 
 // ── twitter stats ──────────────────────────────────────────────
