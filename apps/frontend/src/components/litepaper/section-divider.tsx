@@ -25,12 +25,19 @@ function GlitchChars() {
 		setChars(generate());
 		intervalRef.current = setInterval(
 			() => {
+				// Decorative re-render: skip while the tab is hidden, refresh on return.
+				if (typeof document !== "undefined" && document.hidden) return;
 				setChars(generate());
 			},
 			2000 + Math.random() * 3000,
 		);
+		const onVisible = () => {
+			if (!document.hidden) setChars(generate());
+		};
+		document.addEventListener("visibilitychange", onVisible);
 		return () => {
 			if (intervalRef.current) clearInterval(intervalRef.current);
+			document.removeEventListener("visibilitychange", onVisible);
 		};
 	}, []);
 

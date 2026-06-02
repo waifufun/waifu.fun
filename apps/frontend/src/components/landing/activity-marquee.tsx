@@ -26,8 +26,20 @@ export default function ActivityMarquee({ trades }: { trades: TradeItem[] }) {
 	// force re-render every 20s so "Xm ago" stays fresh
 	const [, setTick] = useState(0);
 	useEffect(() => {
-		const id = setInterval(() => setTick((t) => t + 1), 20_000);
-		return () => clearInterval(id);
+		// Don't re-render the (duplicated) marquee list every 20s on a hidden tab;
+		// refresh the relative labels on visibilitychange instead.
+		const id = setInterval(() => {
+			if (typeof document !== "undefined" && document.hidden) return;
+			setTick((t) => t + 1);
+		}, 20_000);
+		const onVisible = () => {
+			if (!document.hidden) setTick((t) => t + 1);
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		return () => {
+			clearInterval(id);
+			document.removeEventListener("visibilitychange", onVisible);
+		};
 	}, []);
 
 	if (!trades.length) return null;

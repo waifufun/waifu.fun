@@ -18,12 +18,22 @@ export default function useTimeAgo({ date }: { date: Date | string | number }) {
 		return setTimeAgo(`${diffSecs}s`);
 	}, [date]);
 	useEffect(() => {
+		// One <TimeAgo> is rendered per trade row, so a busy token page spins up
+		// dozens of 1s timers. Skip the tick while the tab is hidden and catch up
+		// on visibilitychange instead of re-rendering every row every second in the
+		// background.
 		const int = setInterval(() => {
+			if (typeof document !== "undefined" && document.hidden) return;
 			formatTime();
 		}, 1000);
+		const onVisible = () => {
+			if (!document.hidden) formatTime();
+		};
+		document.addEventListener("visibilitychange", onVisible);
 
 		return () => {
 			clearInterval(int);
+			document.removeEventListener("visibilitychange", onVisible);
 		};
 	}, [formatTime]);
 
