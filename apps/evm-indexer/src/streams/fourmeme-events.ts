@@ -12,6 +12,7 @@ export interface FourMemeLiveStreamOptions {
 // Default mainnet addresses from `apps/evm-indexer/projects/waifu/FOURMEME_LANDSCAPE.md`
 const DEFAULT_TOKEN_MANAGER_2 = "0x5c952063c7fc8610FFDB798152D69F0B9550762b";
 const DEFAULT_AGENT_IDENTIFIER = "0x09B44A633de9F9EBF6FB9Bdd5b5629d3DD2cef13";
+const DEFAULT_EIP8004_IDENTITY_REGISTRY = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
 function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,8 +21,11 @@ function delay(ms: number): Promise<void> {
 function getFourMemeContractAddresses(): FourMemeContractAddresses {
 	const tokenManager2 = (process.env.FOURMEME_TOKEN_MANAGER_2 ?? DEFAULT_TOKEN_MANAGER_2) as `0x${string}`;
 	const agentIdentifier = (process.env.FOURMEME_AGENT_IDENTIFIER ?? DEFAULT_AGENT_IDENTIFIER) as `0x${string}`;
+	const erc8004IdentityRegistry = (process.env.EIP8004_NFT_ADDRESS ??
+		process.env.EIP8004_IDENTITY_REGISTRY ??
+		DEFAULT_EIP8004_IDENTITY_REGISTRY) as `0x${string}`;
 
-	return { tokenManager2, agentIdentifier };
+	return { tokenManager2, agentIdentifier, erc8004IdentityRegistry };
 }
 
 async function pollFourMemeEventsOnce(
