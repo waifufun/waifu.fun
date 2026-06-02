@@ -114,9 +114,10 @@ export function LiveHero({
 
 /**
  * Live-polling wrapper around <ActivePositions>. Seeds from the SSG
- * perp-position list, then refreshes off the live /holdings snapshot's
- * `perpsPositions[]` (the /hyperliquid/positions endpoint does not exist).
- * The live pulse only renders when at least one perp position is open.
+ * perp-position list, then refreshes off the dedicated
+ * `/v2/agents/:address/hyperliquid/positions` endpoint, which carries the
+ * full account snapshot (positions + account value + withdrawable). The
+ * live pulse only renders when at least one perp position is open.
  */
 export function LiveActivePositions({
 	address,
@@ -127,12 +128,14 @@ export function LiveActivePositions({
 	positions: Position[];
 	initialHyperliquidPositions: HyperliquidPosition[];
 }) {
-	const hyperliquidPositions = useLivePerpPositions(address, initialHyperliquidPositions);
+	const hl = useLivePerpPositions(address, initialHyperliquidPositions);
 	return (
 		<ActivePositions
 			positions={positions}
-			hyperliquidPositions={hyperliquidPositions}
-			live={hyperliquidPositions.length > 0}
+			hyperliquidPositions={hl.positions}
+			hyperliquidAccountValueUsd={hl.accountValueUsd}
+			hyperliquidWithdrawableUsd={hl.withdrawableUsd}
+			live={hl.positions.length > 0}
 		/>
 	);
 }
