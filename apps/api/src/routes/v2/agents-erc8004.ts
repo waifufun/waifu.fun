@@ -2,7 +2,7 @@ import { Hono } from "hono";
 
 import { agentIdentities, agentPersonas, getDatabase } from "@waifufun/db";
 import type { Database } from "@waifufun/db";
-import { buildErc8004RegistrationFile } from "@waifufun/identity";
+import { Erc8004MetadataValidationError, buildErc8004RegistrationFile } from "@waifufun/identity";
 import { and, eq, sql } from "drizzle-orm";
 import { isAddress } from "viem";
 
@@ -84,7 +84,7 @@ app.get("/:address/erc8004.json", async (c) => {
 		// a generic 500 (e.g. a true DB/runtime failure). A missing identity is
 		// already handled above as an honest 404.
 		const message = err instanceof Error ? err.message : String(err);
-		if (/validation|invalid|required|must be/i.test(message)) {
+		if (err instanceof Erc8004MetadataValidationError) {
 			return c.json({ error: "invalid erc-8004 registration metadata", detail: message }, 422);
 		}
 		return c.json({ error: "failed to build erc-8004 registration", detail: message }, 500);
