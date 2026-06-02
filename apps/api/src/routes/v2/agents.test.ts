@@ -442,7 +442,7 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 			revenueLifetimeUsd: "42.5",
 			revenue24hUsd: "2.5",
 			revenue7dUsd: "10.25",
-			metadata: { revenue7dDeltaPct: 12.5 },
+			metadata: { revenue7dDeltaPct: 12.5, settlementMode: "escrow" },
 			createdAt: new Date("2026-05-19T12:00:00Z"),
 			updatedAt: new Date("2026-05-22T12:00:00Z"),
 		},
@@ -473,7 +473,7 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 		const body = (await res.json()) as {
 			ok: boolean;
 			data: {
-				apps: Array<{ id: string; appId: string; revenue7dUsd: number }>;
+				apps: Array<{ id: string; appId: string; revenue7dUsd: number; settlementMode: string }>;
 				totalRevenue7d: number;
 				totalLifetime: number;
 			};
@@ -485,6 +485,8 @@ test("GET /v2/agents/:token/apps returns registry rows and revenue totals", asyn
 			["2", "1"],
 		);
 		assert.equal(body.data.apps[0]?.revenue7dUsd, 10.25);
+		assert.equal(body.data.apps[0]?.settlementMode, "escrow");
+		assert.equal(body.data.apps[1]?.settlementMode, "credits");
 		assert.equal(body.data.totalRevenue7d, 10.25);
 		assert.equal(body.data.totalLifetime, 42.5);
 	} finally {

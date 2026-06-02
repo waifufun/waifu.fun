@@ -10,3 +10,4 @@ export * as agentSafeQueries from "./queries/agent-safes.js";
 export * as platformFeeQueries from "./queries/platform-fees-ledger.js";
 export * as launchpadWaitlistQueries from "./queries/launchpad-waitlist.js";
 export * from "./templates/agent-events.js";
+export * from "./settlement.js";

@@ -28,6 +28,7 @@ export type App = {
 	revenue24hUsd: number;
 	revenue7dUsd: number;
 	revenue7dDeltaPct: number | null;
+	settlementMode: "credits" | "escrow" | "auto";
 	metadata: unknown;
 	createdAt: string;
 	updatedAt: string;
@@ -67,6 +68,10 @@ function toNumber(value: unknown): number {
 	return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function normalizeSettlementMode(value: unknown): "credits" | "escrow" | "auto" {
+	return value === "escrow" || value === "auto" ? value : "credits";
+}
+
 function normalizeApp(raw: unknown): App | null {
 	if (!raw || typeof raw !== "object") return null;
 	const row = raw as Record<string, unknown>;
@@ -90,6 +95,7 @@ function normalizeApp(raw: unknown): App | null {
 		revenue7dUsd: toNumber(row.revenue7dUsd),
 		revenue7dDeltaPct:
 			row.revenue7dDeltaPct === null || row.revenue7dDeltaPct === undefined ? null : toNumber(row.revenue7dDeltaPct),
+		settlementMode: normalizeSettlementMode(row.settlementMode),
 		metadata: row.metadata ?? null,
 		createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
 		updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : "",
