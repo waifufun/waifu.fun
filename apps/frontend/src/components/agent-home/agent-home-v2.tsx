@@ -33,6 +33,7 @@ import type { Erc8004IdentityRecord } from "@/lib/erc8004/types";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import type { AgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
+import { selectServiceApps } from "@/lib/wave-t/app-service";
 import type { App } from "@/lib/wave-t/apps";
 import type { CandleSeries } from "@/lib/wave-t/candles";
 import { daysOperating } from "@/lib/wave-t/github";
@@ -51,6 +52,7 @@ import type { ActivityRowInput } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
 import { BurnRatePanel } from "./wave-t/burn-rate-panel";
 import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
+import { IdentityStrip } from "./wave-t/identity-strip";
 import {
 	LiveActivePositions,
 	LiveActivityFeed,
@@ -59,6 +61,7 @@ import {
 	LivePriceChart,
 } from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
+import { ServicesSection } from "./wave-t/services-section";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { TokenomicsPanel } from "./wave-t/tokenomics-panel";
 import { TopUpPanel } from "./wave-t/topup-panel";
@@ -185,6 +188,12 @@ export default function AgentHomeV2({
 	const hasBurnData = burnItems.length > 0 && typeof monthlyBurnUsd === "number" && monthlyBurnUsd > 0;
 	const hasApps = apps.length > 0;
 
+	// Services: the agent's callable mini-apps, projected from the apps
+	// registry into a per-call service view. Platform-product rows (the
+	// persona-synthesized storefront links) are excluded; only invocable
+	// mini-apps qualify. Empty → the section renders nothing.
+	const services = selectServiceApps(apps);
+
 	return (
 		<main
 			className="relative min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
@@ -214,6 +223,16 @@ export default function AgentHomeV2({
 					/>
 				</div>
 
+				{/* Elevated ERC-8004 identity strip. Renders only when the agent
+				    has an on-chain identity. The ambient badge in the hero scrolls
+				    to the full ProvenancePanel; this strip promotes the key facts
+				    (agent id, owner wallet, 8004scan link) to a scannable row. */}
+				{identity ? (
+					<div className="mt-4">
+						<IdentityStrip identity={identity} />
+					</div>
+				) : null}
+
 				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). */}
 				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
 					<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
@@ -233,6 +252,15 @@ export default function AgentHomeV2({
 						initialHyperliquidPositions={hyperliquidPositions}
 					/>
 				</div>
+
+				{/* Services / mini-apps. The agent as a provider of callable
+				    services, billed per call. Renders nothing when the agent has
+				    registered no invocable mini-apps. */}
+				{services.length > 0 ? (
+					<div className="mt-4" id="services-section">
+						<ServicesSection services={services} />
+					</div>
+				) : null}
 
 				{/* Row 4: pnl chart + apps shipped (unified). The apps panel
 				    handles its own empty state ("no apps yet") so the column
