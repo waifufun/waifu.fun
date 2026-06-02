@@ -15,7 +15,7 @@ const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export const bagsDescriptor: LaunchpadDescriptor = {
 	id: "bags",
-	status: "live",
+	status: "coming-soon",
 	chain: "solana",
 	displayName: "Bags",
 	shortDescription: "Solana launch path through Bags token-launch v2 with explicit creator fee sharing.",

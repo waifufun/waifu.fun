@@ -19,7 +19,7 @@ import { type UploadFlapMetadataInput, type UploadFlapMetadataResult, uploadFlap
 
 import { verifySiweMessage } from "../../lib/auth-service.js";
 import type { AppBindings } from "../../lib/bindings.js";
-import { badRequest, notFound } from "../../lib/errors.js";
+import { ApiError, badRequest, notFound } from "../../lib/errors.js";
 import { respondAccepted, respondOk } from "../../lib/http.js";
 import { issueRequestSiweNonce, validateRequestSiwe } from "../../lib/request-siwe.js";
 import { parseJsonBody } from "../../lib/validation.js";
@@ -598,7 +598,13 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			if (process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS !== undefined) {
 				mineInput.maxIterations = Number(process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS);
 			}
-			const mined = mineVanitySalt(mineInput);
+			let mined: ReturnType<typeof mineVanitySalt>;
+			try {
+				mined = mineVanitySalt(mineInput);
+			} catch (error) {
+				c.get("logger")?.error({ error }, "vanity salt mining failed");
+				throw new ApiError(503, "SALT_MINING_FAILED", "could not derive a launch address, please retry");
+			}
 
 			const input: CreateLaunchInput = {
 				name: body.name,
