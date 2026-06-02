@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type AnimationLevel = 0 | 1 | 2; // 0: Off, 1: Subtle, 2: All On
 
@@ -51,13 +51,14 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		setAnimationLevel(level);
 	}, []);
 
-	return (
-		<AnimationContext.Provider
-			value={{ animationLevel, toggleAnimationLevel, setAnimationLevel: customSetAnimationLevel }}
-		>
-			{children}
-		</AnimationContext.Provider>
+	// Both handlers are useCallback-stable; memoize so consumers only re-render
+	// when animationLevel actually changes.
+	const value = useMemo(
+		() => ({ animationLevel, toggleAnimationLevel, setAnimationLevel: customSetAnimationLevel }),
+		[animationLevel, toggleAnimationLevel, customSetAnimationLevel],
 	);
+
+	return <AnimationContext.Provider value={value}>{children}</AnimationContext.Provider>;
 };
 
 export const useAnimation = () => {
