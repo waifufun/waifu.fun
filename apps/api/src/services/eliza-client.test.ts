@@ -544,6 +544,36 @@ test("client logs and throws typed errors on 5xx", async () => {
 	assert.equal(errors[0]?.status, 503);
 });
 
+test("client surfaces a typed 504 when an Eliza Cloud request times out", async () => {
+	const errors: Record<string, unknown>[] = [];
+	const previous = process.env.WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
+	process.env.WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS = "1500";
+	mock.method(globalThis, "fetch", async () => {
+		throw new DOMException("The operation timed out.", "TimeoutError");
+	});
+
+	const client = createElizaCloudClient({
+		baseUrl: "https://cloud.test",
+		apiKey: "key_123",
+		logger: {
+			error(_message, meta) {
+				if (meta) errors.push(meta);
+			},
+		},
+	});
+
+	try {
+		await assert.rejects(
+			() => client.resumeAgent("waifu-demo-01"),
+			(err) => err instanceof ElizaCloudError && err.status === 504 && /timed out after 1500ms/.test(err.message),
+		);
+		assert.equal(errors[0]?.timeoutMs, 1500);
+	} finally {
+		if (previous === undefined) delete process.env.WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
+		else process.env.WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS = previous;
+	}
+});
+
 test("topUpCredits POSTs agent credit amount in Eliza Cloud dollar units", async () => {
 	const fetchMock = mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
 		assert.equal(String(url), "https://cloud.test/api/v1/credits/checkout");

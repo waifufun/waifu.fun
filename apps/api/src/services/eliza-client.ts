@@ -302,13 +302,24 @@ export class ElizaClient {
 		const fetchOptions: RequestInit = {
 			method,
 			headers,
+			signal: AbortSignal.timeout(elizaCloudRequestTimeoutMs()),
 		};
 
 		if (options?.body !== undefined) {
 			fetchOptions.body = JSON.stringify(options.body);
 		}
 
-		const res = await fetch(url, fetchOptions);
+		let res: Response;
+		try {
+			res = await fetch(url, fetchOptions);
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "TimeoutError") {
+				const message = `eliza-cloud ${method} ${path}: timed out after ${elizaCloudRequestTimeoutMs()}ms`;
+				this.config.logger?.error?.(message, { method, path, timeoutMs: elizaCloudRequestTimeoutMs() });
+				throw new ElizaApiError(504, message, { method, path });
+			}
+			throw err;
+		}
 
 		if (!res.ok) {
 			const text = await res.text().catch(() => "");
@@ -775,6 +786,20 @@ export function resolveElizaCloudApiKey(): string | undefined {
 function nonEmpty(value: string | undefined): string | undefined {
 	const trimmed = value?.trim();
 	return trimmed ? trimmed : undefined;
+}
+
+const DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS = 20_000;
+
+/**
+ * Bound every Eliza Cloud HTTP call so a hung upstream connection can never
+ * stall a request handler (or the single-concurrency provisioning worker)
+ * indefinitely. Tunable via WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS.
+ */
+function elizaCloudRequestTimeoutMs(): number {
+	const raw = process.env.WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS?.trim();
+	if (!raw) return DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
 }
 
 function defaultFrontendUrl(): string {

@@ -320,15 +320,25 @@ async function requestJson<T>(
 		body?: Record<string, unknown>;
 	},
 ): Promise<T> {
-	const response = await fetch(`${baseUrl}${normalizeApiPath(baseUrl, path)}`, {
-		method: options.method ?? "GET",
-		headers: {
-			"content-type": "application/json",
-			"X-API-Key": authKey,
-			"X-Service-Key": authKey,
-		},
-		...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
-	});
+	const method = options.method ?? "GET";
+	let response: Response;
+	try {
+		response = await fetch(`${baseUrl}${normalizeApiPath(baseUrl, path)}`, {
+			method,
+			headers: {
+				"content-type": "application/json",
+				"X-API-Key": authKey,
+				"X-Service-Key": authKey,
+			},
+			signal: AbortSignal.timeout(elizaCloudRequestTimeoutMs()),
+			...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+		});
+	} catch (err) {
+		if (err instanceof DOMException && err.name === "TimeoutError") {
+			throw new ElizaCloudRequestTimeoutError(method, path, elizaCloudRequestTimeoutMs());
+		}
+		throw err;
+	}
 	const text = await response.text().catch(() => "");
 	let json: unknown = null;
 	try {
@@ -363,6 +373,24 @@ class ElizaCloudRequestError extends Error {
 	) {
 		super(`eliza-cloud ${method} ${path}: ${status} ${responseText}`);
 	}
+}
+
+class ElizaCloudRequestTimeoutError extends Error {
+	constructor(
+		readonly method: string,
+		readonly path: string,
+		readonly timeoutMs: number,
+	) {
+		super(`eliza-cloud ${method} ${path}: timed out after ${timeoutMs}ms`);
+		this.name = "ElizaCloudRequestTimeoutError";
+	}
+}
+
+const DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS = 20_000;
+
+function elizaCloudRequestTimeoutMs(): number {
+	const configured = numberEnv("WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS");
+	return configured && configured > 0 ? configured : DEFAULT_ELIZA_CLOUD_REQUEST_TIMEOUT_MS;
 }
 
 async function waitForRuntimeStatus(

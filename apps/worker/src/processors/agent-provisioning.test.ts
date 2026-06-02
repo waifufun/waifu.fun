@@ -1214,3 +1214,89 @@ test("agent-provisioning worker rejects invalid admin wallets before calling Eli
 
 	assert.equal(fetchMock.mock.callCount(), 0);
 });
+
+test("agent-provisioning worker surfaces a clear error when Eliza Cloud times out", async () => {
+	const persona = {
+		id: "persona-row-timeout",
+		agentId: "waifu-timeout-01",
+		name: "Timeout Waifu",
+		bio: "provision timeout test",
+		avatarUrl: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Timeout Waifu", symbol: "TMO" },
+		metadata: {},
+		runtimeKind: "webhook",
+	};
+	const db = {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return { set: () => ({ where: () => Promise.resolve() }) };
+		},
+		insert() {
+			return { values: () => ({ returning: () => Promise.resolve([{ id: "event-row-timeout" }]) }) };
+		},
+	} as never;
+
+	const fetchMock = mock.method(globalThis, "fetch", async () => {
+		throw new DOMException("The operation timed out.", "TimeoutError");
+	});
+
+	await withEnv(
+		{
+			ELIZA_CLOUD_BASE_URL: "https://cloud.test",
+			ELIZA_CLOUD_SERVICE_KEY: "svc_worker",
+			ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+			WAIFU_ELIZA_CLOUD_REQUEST_TIMEOUT_MS: "1234",
+		},
+		async () => {
+			const processor = createAgentProvisioningProcessor({
+				db,
+				logger: console as never,
+				startedAt: new Date("2026-05-27T00:00:00Z"),
+				chainId: 56,
+			});
+			const payload: AgentProvisioningJob = {
+				agentId: "waifu-timeout-01",
+				source: "token.migrated",
+				data: {
+					tokenContractAddress: "0x0000000000000000000000000000000000000004",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					chain: "bsc",
+					chainId: 56,
+					tokenName: "Timeout Waifu",
+					tokenTicker: "TMO",
+					launchType: "native",
+				},
+			};
+			await assert.rejects(
+				() => processor({ id: "job-timeout", data: payload, attemptsMade: 0 } as never),
+				/timed out after 1234ms/,
+			);
+		},
+	);
+
+	assert.equal(fetchMock.mock.callCount(), 1);
+});
