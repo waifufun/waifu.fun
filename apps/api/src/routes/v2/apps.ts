@@ -30,7 +30,7 @@ type AppAuth =
 	| { mode: "steward"; principal: StewardAuthPrincipal }
 	| { mode: "agent-app-key"; principal: { userId: string } };
 
-type ImageGenBody = {
+export type ImageGenBody = {
 	prompt?: unknown;
 	style?: unknown;
 	aspect?: unknown;
@@ -188,7 +188,8 @@ async function settleViaEscrow(_input: EscrowSettlementInput): Promise<never> {
 	// W-2B integration owns chain selection, signing, receipts, and retries.
 	throw new Error("not implemented — see @stwd/erc8183 (W-2B)");
 }
-function normalizePrompt(
+
+export function normalizePrompt(
 	body: ImageGenBody,
 ): { prompt: string; style: string | null; aspect: string } | { error: string } {
 	const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
@@ -198,7 +199,7 @@ function normalizePrompt(
 	return { prompt, style, aspect };
 }
 
-function composePrompt(input: { prompt: string; style: string | null }): string {
+export function composePrompt(input: { prompt: string; style: string | null }): string {
 	if (!input.style) return input.prompt;
 	return `${input.prompt}\n\nStyle: ${input.style}`;
 }
@@ -344,6 +345,18 @@ async function fetchElizaEarnings(elizaCloudAppId: string): Promise<ElizaEarning
 	return await elizaJson<ElizaEarningsResponse>(`/api/v1/apps/${elizaCloudAppId}/earnings?days=30`, apiKey, {
 		method: "GET",
 	});
+}
+
+/**
+ * Recognise an exhausted-credit / payment-required failure from the Eliza
+ * Cloud charge. `elizaJson` throws `Eliza Cloud request failed (402): ...` for
+ * an upstream 402; we also catch common insufficient-balance phrasings so a
+ * non-402 status carrying the same meaning still maps to a 402 for the client.
+ */
+export function isInsufficientCreditsError(err: unknown): boolean {
+	const message = err instanceof Error ? err.message : String(err ?? "");
+	if (/\(402\)/.test(message)) return true;
+	return /insufficient\s+(credits?|balance|funds)|payment\s+required|out\s+of\s+credits/i.test(message);
 }
 
 function imageGenAppUrl(tokenAddress: string): string {
@@ -574,6 +587,8 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 			aspect: normalized.aspect,
 		});
 	} catch (err) {
+		// Release the idempotency reservation so the caller can retry once the
+		// underlying issue (e.g. topped-up credits) is resolved.
 		await db
 			.update(agentApps)
 			.set({
@@ -581,6 +596,20 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 				updatedAt: new Date(),
 			})
 			.where(and(eq(agentApps.agentTokenAddress, tokenAddress), eq(agentApps.appId, "image-gen")));
+		// Eliza Cloud surfaces an exhausted-credit charge as a 402 (or a
+		// payment/insufficient-balance message). Map it to a real 402 so the UI
+		// can show its insufficient-credits recovery path instead of a generic
+		// 500 from the global error handler.
+		if (isInsufficientCreditsError(err)) {
+			return c.json(
+				{
+					ok: false,
+					error: "INSUFFICIENT_CREDITS",
+					message: "Eliza Cloud credits are exhausted for this caller; top up to generate images.",
+				},
+				402,
+			);
+		}
 		throw err;
 	}
 
