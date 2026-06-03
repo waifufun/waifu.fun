@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import { useAccount, useChainId, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { bsc } from "wagmi/chains";
@@ -10,6 +10,7 @@ import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { Button } from "@/components/ui/button";
 import { useClaimState } from "@/hooks/use-post-launch";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
+import { normalizeTxError } from "@/lib/tx-error";
 
 import { formatTokenAmount, vestingProgress } from "./__lib/format";
 
@@ -41,17 +42,26 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 	const { switchChain } = useSwitchChain();
 
 	const claim = useClaimState(vault);
+	const [error, setError] = useState<string | null>(null);
 
-	const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+	const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
 	const receipt = useWaitForTransactionReceipt({ hash: txHash, chainId: bsc.id });
 
 	useEffect(() => {
 		if (receipt.isSuccess) {
+			setError(null);
 			void claim.refetch();
 			onClaimed?.();
 			reset();
 		}
 	}, [receipt.isSuccess, claim, onClaimed, reset]);
+
+	// Surface wallet-rejection / write failure and on-chain revert so a failed
+	// claim isn't silently indistinguishable from one still confirming.
+	useEffect(() => {
+		if (writeError) setError(normalizeTxError(writeError, "claim failed. try again."));
+		else if (receipt.isError) setError(normalizeTxError(receipt.error, "claim reverted on-chain."));
+	}, [writeError, receipt.isError, receipt.error]);
 
 	if (!vault) {
 		return <Card>vault not deployed</Card>;
@@ -93,6 +103,7 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 
 	function onClaim() {
 		if (!vault) return;
+		setError(null);
 		writeContract({
 			address: vault,
 			abi: launchVaultAbi,
@@ -149,6 +160,12 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 								last claim tx <ExternalLink className="w-3 h-3" aria-hidden="true" />
 							</a>
 						</div>
+					) : null}
+
+					{error ? (
+						<p className="mt-3 text-[11px] text-red-400" role="alert">
+							{error}
+						</p>
 					) : null}
 
 					<div className="mt-5">
