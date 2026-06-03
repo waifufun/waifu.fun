@@ -16,7 +16,7 @@ import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { type GithubScope, fetchShipLog, githubScopeFromMetadata } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
-import { fetchHyperliquidPnl, fetchNavHistory, selectPnlBaselineNav, selectPnlSeries } from "@/lib/wave-t/pnl";
+import { fetchHyperliquidPnl, fetchNavHistory } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
@@ -460,11 +460,13 @@ export default async function AgentPage({
 	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
 	const appsP = fetchAppsForAgent(address).catch(() => []);
-	// PnL chart series. Pulled from /v2/agents/:address/nav-history; the
-	// selector computes deltas relative to the first snapshot. Returns []
-	// (→ empty state) when nav-history has fewer than two points. Modular:
-	// any agent with nav snapshots gets a chart, anyone without gets the
-	// honest "no pnl history yet" panel. No mock data.
+	// NAV-history snapshots. Pulled from /v2/agents/:address/nav-history.
+	// USED ONLY for the hero NAV sparkline (`navSeries`). It is NOT fed into
+	// the Trading P&L panel anymore: charting nav[i] - nav[0] folded the
+	// $WAIFU token's NAV swing into "trading pnl" (a deposit looked like
+	// profit, the WAIFU price drop looked like a loss). Trading P&L is now
+	// HL-only via `fetchHyperliquidPnl`. Returns [] on failure → the hero
+	// sparkline simply renders nothing.
 	const navHistoryP = fetchNavHistory(address, "30d", "1h").catch(() => []);
 	// CORRECT trading-pnl source: HL-only, deposit-EXCLUDED. Uses HL's own
 	// pnlHistory (not nav diff), anchors the baseline at first activity, and
@@ -505,9 +507,6 @@ export default async function AgentPage({
 		navHistoryP,
 		hlPnlP,
 	]);
-
-	const pnlSeries = selectPnlSeries(navHistory);
-	const pnlBaselineNav = selectPnlBaselineNav(navHistory);
 
 	// Presence-based gates. Modular for any agent: persona populates these
 	// fields, the page renders. No identity branches.
@@ -578,8 +577,6 @@ export default async function AgentPage({
 			apps={mergedApps}
 			agentSafeBalance={agentSafeBalance}
 			identity={identity}
-			pnlSeries={pnlSeries}
-			pnlBaselineNav={pnlBaselineNav}
 			hlPnl={hlPnl}
 			navSeries={navHistory}
 		/>

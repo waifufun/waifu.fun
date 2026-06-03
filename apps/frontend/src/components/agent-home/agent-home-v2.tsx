@@ -43,7 +43,7 @@ import { computeRunway } from "@/lib/wave-t/runway";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
-import type { HlPnlData, NavHistoryPoint, PnlSeriesPoint } from "@/lib/wave-t/pnl";
+import type { HlPnlData, NavHistoryPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
 import type { AgentData, AgentTrade } from "./types";
@@ -88,24 +88,14 @@ export interface AgentHomeV2Props {
 	daysOperating?: number;
 	agentSafeBalance?: AgentSafeBalance | null;
 	/**
-	 * Pre-computed PnL series for the 30d chart. Derived from nav-history
-	 * at the page boundary via `selectPnlSeries`. Empty array → chart
-	 * renders its honest empty state. No mock fallback, no flat-zero line.
-	 */
-	pnlSeries?: PnlSeriesPoint[];
-	/**
-	 * Optional baseline NAV used by the PnL chart to derive a percentage
-	 * delta vs the opening snapshot. When absent the chart falls back to
-	 * a 0% display while still rendering the signed dollar total.
-	 */
-	pnlBaselineNav?: number | null;
-	/**
 	 * HL-only, deposit-EXCLUDED trading pnl payload from the api's
 	 * /v2/agents/:address/hyperliquid/pnl route (`fetchHyperliquidPnl`).
-	 * This is the CORRECT pnl source: deposit-excluded, baseline-anchored,
-	 * prior-wallet-aggregated, with tax income surfaced separately. When
-	 * present it supersedes the legacy `pnlSeries`/`pnlBaselineNav` nav-diff
-	 * props. Null when the agent has no HL wallet or the fetch failed.
+	 * This is the ONLY source the Trading P&L panel ever renders:
+	 * deposit-excluded, baseline-anchored (starts at 0), prior-wallet-
+	 * aggregated, with tax income surfaced separately. Null when the agent
+	 * has no HL wallet or the fetch failed — the panel then shows its
+	 * honest empty state. The panel NEVER falls back to a nav-diff series
+	 * (that charted the $WAIFU token's NAV swing as if it were pnl).
 	 */
 	hlPnl?: HlPnlData | null;
 	/**
@@ -145,8 +135,6 @@ export default function AgentHomeV2({
 	daysOperating: daysOperatingOverride,
 	agentSafeBalance,
 	identity = null,
-	pnlSeries,
-	pnlBaselineNav = null,
 	hlPnl = null,
 	navSeries = null,
 }: AgentHomeV2Props) {
@@ -278,15 +266,13 @@ export default function AgentHomeV2({
 				    handles its own empty state ("no apps yet") so the column
 				    layout stays stable for every agent. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-					{hlPnl && hlPnl.series.length > 0 ? (
-						// CORRECT path: HL-only, deposit-excluded trading pnl.
-						<PnlChart hlPnl={hlPnl} />
-					) : pnlSeries && pnlSeries.length > 0 ? (
-						// legacy fallback (deposit-naive) until hl payload lands.
-						<PnlChart series={pnlSeries} baselineNav={pnlBaselineNav} />
-					) : (
-						<PnlChart hlPnl={hlPnl ?? null} />
-					)}
+					{/* Trading P&L is HL-ONLY by contract. When the HL payload is
+					    present we chart it (deposit-excluded, baseline-anchored,
+					    starts at 0); otherwise we render the honest empty state
+					    ("no trading history yet"). We deliberately NEVER fall back
+					    to the nav-diff series here: that folded the $WAIFU token's
+					    NAV swing into "Trading P&L", which is not trading pnl. */}
+					<PnlChart hlPnl={hlPnl ?? null} />
 					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
 
