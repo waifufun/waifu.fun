@@ -137,6 +137,14 @@ function WizardInner() {
 			toast.error("connect an evm wallet to confirm launch on-chain");
 			return;
 		}
+		// Guard before signing: startLaunchCreate() silently early-returns when
+		// tierId is missing, which would let the user sign a launch authorization
+		// and then fall through to the "config saved" provision path as if it
+		// launched. Fail loudly instead of silently downgrading the launch.
+		if (!state.launch.tierId) {
+			toast.error("pick a launch tier before confirming.");
+			return;
+		}
 
 		setSigningLaunch(true);
 		try {
@@ -153,7 +161,7 @@ function WizardInner() {
 		} finally {
 			setSigningLaunch(false);
 		}
-	}, [connectedAddress, signMessageAsync, startProvisioning, startLaunchCreate]);
+	}, [connectedAddress, signMessageAsync, startProvisioning, startLaunchCreate, state.launch.tierId]);
 
 	const handleProvisioningDone = useCallback(async () => {
 		let result: ProvisionResult | null = null;
