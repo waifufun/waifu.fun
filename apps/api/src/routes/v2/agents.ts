@@ -36,12 +36,12 @@ import {
 	createStewardClient,
 } from "../../services/agent-launch/index.js";
 import {
-	type ElizaAgentRuntimeStatus,
 	type ElizaCloudClient,
 	type ElizaCloudProvisionResult,
 	type ProvisionWaifuCloudAgentInput,
 	createElizaCloudClient,
 	resolveElizaCloudApiKey,
+	resolveElizaCloudSessionToken,
 } from "../../services/eliza-client.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
 import { buildTreasurySummary } from "../../services/nav/treasury-summary.js";
@@ -50,6 +50,7 @@ import {
 	type ProvisionAdapterConfig,
 	validateProvisionRequest,
 } from "../../services/provision/payload-adapter.js";
+import { handleOffRampConvert } from "./agents/credits-offramp.js";
 
 const app = new Hono<RequireAgentOwnershipBindings>();
 
@@ -556,9 +557,23 @@ export type ResurrectAgentDeps = {
 };
 
 /**
- * Resurrect a dormant agent after a patron credit top-up.
+ * Begin a dormant agent's resurrection by initiating a real credit top-up.
+ *
  * `creditsAmount` is accepted from waifu.fun clients in USD cents; Eliza Cloud
  * checkout receives dollar amounts.
+ *
+ * FOOTGUN FIX (2026-06-03): this endpoint used to optimistically clear
+ * `dormant_at`, resume the container, and flip overlays to running immediately
+ * after calling `topUpCredits`. But `topUpCredits` only creates an Eliza Cloud
+ * STRIPE CHECKOUT SESSION — it does NOT move any credit balance. So the agent
+ * would "resurrect" to $0 credits and immediately re-deplete (wake-to-$0).
+ *
+ * Now this function ONLY initiates the top-up and returns the checkout URL. It
+ * does NOT clear dormancy, resume the container, bump the top-up count, or emit
+ * `agent.resurrected`. The CONFIRMED-PAYMENT signal — Eliza Cloud's
+ * `credits.topped_up` webhook (handleCreditsToppedUp) — remains the SOLE
+ * dormancy-clearer / container-resumer. See BNB-CREDITS-BRIDGE-DESIGN and
+ * /tmp/credits-offramp-findings for the full writeup.
  */
 export async function resurrectAgent(
 	agentId: string,
@@ -570,92 +585,26 @@ export async function resurrectAgent(
 	modelTier: "premium";
 	containerId?: string;
 	checkoutUrl?: string | null;
+	/** True until a confirmed payment (credits.topped_up webhook) actually wakes the agent. */
+	pendingPayment: true;
 }> {
 	const runtimeRefs = await resolveAgentRuntimeRefs(deps.db, agentId);
 	const controlAgentId = runtimeRefs.containerId ?? agentId;
-	// NOTE: `topUpCredits` creates an Eliza Cloud Stripe checkout session; it does
-	// NOT itself move any credit balance. The patron must complete that checkout
-	// for credits to actually land (which fires Eliza Cloud's `credits.topped_up`
-	// webhook). We surface the URL so callers can route the patron to pay.
-	// See BNB-CREDITS-BRIDGE-DESIGN-2026-06-03 for the full footgun writeup.
+	// `topUpCredits` creates an Eliza Cloud checkout session; it does NOT move any
+	// credit balance. The patron must complete payment for credits to land, which
+	// fires Eliza Cloud's `credits.topped_up` webhook -> handleCreditsToppedUp,
+	// the SOLE place that clears dormant_at + resumes the container. We must NOT
+	// pre-clear dormancy here, or the agent wakes to $0 and re-depletes.
 	const checkout = await deps.elizaClient.topUpCredits(controlAgentId, creditsAmount / 100);
 	const checkoutUrl = checkout?.url ?? checkout?.checkoutUrl ?? null;
-	if (runtimeRefs.containerId) {
-		await deps.elizaClient.resumeAgent(runtimeRefs.containerId);
-	}
-	const runtimeStatus =
-		runtimeRefs.containerId && deps.elizaClient.getAgentRuntimeStatus
-			? await deps.elizaClient.getAgentRuntimeStatus(runtimeRefs.containerId).catch(() => null)
-			: null;
-	const overlay = resurrectedRuntimeOverlay(runtimeStatus);
-	const now = new Date();
-	await deps.db
-		.update(agentPersonas)
-		.set({
-			dormantAt: null,
-			brainPausedAt: null,
-			brainPausedReason: null,
-			lastWordsPostedAt: null,
-			modelTier: "premium",
-			creditsTopUpCount: sql`${agentPersonas.creditsTopUpCount} + 1`,
-			updatedAt: now,
-		})
-		.where(eq(agentPersonas.agentId, agentId));
-
-	if (runtimeRefs.overlayAgentId) {
-		await deps.db
-			.update(agents)
-			.set({
-				agentStatus: overlay.agentStatus,
-				lifecycleState: overlay.lifecycleState,
-				...(overlay.webUiUrl !== undefined ? { webUiUrl: overlay.webUiUrl } : {}),
-				...(overlay.containerId !== undefined ? { bridgeUrl: overlay.containerId } : {}),
-				suspendedReason: null,
-				updatedAt: now,
-			})
-			.where(eq(agents.id, runtimeRefs.overlayAgentId));
-	}
-	if (runtimeRefs.tokenId) {
-		await deps.db
-			.update(tokens)
-			.set({ agentStatus: overlay.agentStatus, updatedAt: now })
-			.where(eq(tokens.id, runtimeRefs.tokenId));
-	}
-
-	const emit = deps.emitEvent ?? emitAgentEvent;
-	await emit({
-		agentId,
-		eventType: "agent.resurrected",
-		data: {
-			creditsAmount,
-			modelTier: "premium",
-			resurrectedAt: now.toISOString(),
-			containerId: runtimeRefs.containerId ?? null,
-		},
-	});
 
 	return {
 		agentId,
 		creditsAmount,
 		modelTier: "premium",
+		pendingPayment: true,
 		...(runtimeRefs.containerId ? { containerId: runtimeRefs.containerId } : {}),
 		checkoutUrl,
-	};
-}
-
-function resurrectedRuntimeOverlay(status: ElizaAgentRuntimeStatus | null): {
-	agentStatus: string;
-	lifecycleState: string;
-	webUiUrl?: string | null;
-	containerId?: string | null;
-} {
-	const webUiUrl = status?.webUiUrl ?? null;
-	const running = isHostedRuntimeRunning(status?.status) && Boolean(webUiUrl);
-	return {
-		agentStatus: running ? "running" : "provisioning",
-		lifecycleState: running ? "live" : "birth",
-		...(webUiUrl ? { webUiUrl } : {}),
-		...(status?.containerId ? { containerId: status.containerId } : {}),
 	};
 }
 
@@ -709,6 +658,12 @@ function stringRecordField(data: Record<string, unknown>, key: string): string |
  *
  * Patron top-up endpoint. Body: { creditsAmount: number } where creditsAmount
  * is represented in USD cents in waifu.fun API responses.
+ *
+ * Returns a checkout URL and `pendingPayment: true`. The agent is NOT woken
+ * here — it stays dormant until the payment is CONFIRMED and Eliza Cloud's
+ * `credits.topped_up` webhook clears dormancy (the sole wake path). This avoids
+ * the wake-to-$0 footgun where an unpaid checkout would resurrect an agent with
+ * no credits.
  */
 app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (c) => {
 	const db = requireDb();
@@ -732,11 +687,14 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 	const apiKey = resolveElizaCloudApiKey() ?? "";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "";
 
+	const sessionToken = resolveElizaCloudSessionToken() ?? "";
 	try {
 		const result = await resurrectAgent(agentId, body.creditsAmount, {
 			db,
-			elizaClient: createElizaCloudClient({ baseUrl, apiKey, serviceKey, logger: console }),
+			elizaClient: createElizaCloudClient({ baseUrl, apiKey, serviceKey, sessionToken, logger: console }),
 		});
+		// `ok: true` = the top-up was INITIATED, not that the agent is awake. The
+		// agent stays dormant until the confirmed-payment webhook fires.
 		return c.json({ ok: true, ...result, creditsUnit: "usd_cents" }, 200);
 	} catch (err) {
 		return c.json(
@@ -747,6 +705,30 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 			500,
 		);
 	}
+});
+
+/**
+ * POST /v2/agents/:id/credits-offramp/convert
+ *
+ * Patron-gated BNB->credits conversion. Body: { usd: number, transactionHash:
+ * string } where transactionHash is the on-chain BSC transfer of BNB to the
+ * Eliza Cloud directWallet receive address (get it + the BNB amount from
+ * GET /v2/agents/:address/credits-offramp/quote).
+ *
+ * Runs the REAL directWallet create+confirm when a platform session token is
+ * configured; otherwise returns honest manual instructions (automatable:false).
+ * Credits land in the SHARED platform org pool; the credits.topped_up webhook
+ * clears this agent's dormancy on confirmed payment. Never fakes a mint.
+ */
+app.post("/:id/credits-offramp/convert", requirePatron(), requireAgentOwnership("id"), async (c) => {
+	let body: { usd?: unknown; transactionHash?: unknown };
+	try {
+		body = (await c.req.json()) as { usd?: unknown; transactionHash?: unknown };
+	} catch {
+		return c.json({ ok: false, error: "invalid JSON body" }, 400);
+	}
+	const result = await handleOffRampConvert({ usd: body.usd, transactionHash: body.transactionHash });
+	return c.json(result.body, result.status);
 });
 
 /**
