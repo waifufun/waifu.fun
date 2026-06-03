@@ -8,6 +8,7 @@ import { bsc } from "wagmi/chains";
 
 import { Button } from "@/components/ui/button";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
+import { normalizeTxError } from "@/lib/tx-error";
 
 type Props = {
 	vault: Address;
@@ -62,7 +63,7 @@ export function DepositForm({
 	const remaining = remainingToCapWei ?? 0n;
 	const ceiling = remaining > 0n && remaining < max ? remaining : max;
 
-	const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+	const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
 	const receipt = useWaitForTransactionReceipt({ hash: txHash, chainId: bsc.id });
 
 	useEffect(() => {
@@ -73,6 +74,14 @@ export function DepositForm({
 			reset();
 		}
 	}, [receipt.isSuccess, onCompleted, reset]);
+
+	// Surface wallet-rejection / write failure and on-chain revert, otherwise the
+	// button silently returns to "deposit bnb" and the user can't tell a failed
+	// BNB deposit from one still in flight.
+	useEffect(() => {
+		if (writeError) setError(normalizeTxError(writeError, "deposit failed. try again."));
+		else if (receipt.isError) setError(normalizeTxError(receipt.error, "deposit reverted on-chain."));
+	}, [writeError, receipt.isError, receipt.error]);
 
 	const isLocked = disabled || isPending || receipt.isLoading;
 

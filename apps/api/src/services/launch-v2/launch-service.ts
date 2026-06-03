@@ -39,12 +39,36 @@ import {
 	type CreateLaunchInput,
 	type CreateLaunchResult,
 	type DepositorPosition,
+	type LaunchTierString,
 	type PreviewAllocationInput,
 	type PreviewAllocationResult,
 	TIER_STRING_TO_ENUM,
 	VAULT_STATE_LABELS,
 	type VaultOnchainState,
 } from "./types.js";
+
+/**
+ * Canonical PancakeV3 treasury tick ranges (Wave O.1 LP5), per launch tier.
+ * Uppers are always MAX_TICK_PCS_V3_1PCT (887200); lowers anchor the four LP
+ * tiers up the MC ladder. The tier-95 lowers below are the on-chain-validated
+ * values from the first live launch (token 0x15fc...7777, tx 0xb3edc7c6...).
+ * Other tiers use the same lower ladder as a safe default until per-tier MC
+ * curves are wired; all values satisfy the factory's range checks
+ * (lo < hi, |tick| <= 887200).
+ */
+const MAX_TICK_PCS_V3_1PCT = 887200;
+const TIER_TREASURY_TICK_LOWERS: Record<LaunchTierString, [number, number, number, number]> = {
+	"80": [53600, 62800, 76600, 92000],
+	"90": [53600, 62800, 76600, 92000],
+	"95": [53600, 62800, 76600, 92000],
+	"98": [53600, 62800, 76600, 92000],
+};
+function defaultTreasuryTickLowers(tier: LaunchTierString): [number, number, number, number] {
+	return TIER_TREASURY_TICK_LOWERS[tier] ?? TIER_TREASURY_TICK_LOWERS["95"];
+}
+function defaultTreasuryTickUppers(): [number, number, number, number] {
+	return [MAX_TICK_PCS_V3_1PCT, MAX_TICK_PCS_V3_1PCT, MAX_TICK_PCS_V3_1PCT, MAX_TICK_PCS_V3_1PCT];
+}
 
 export interface LaunchServiceConfig {
 	chainId: number;
@@ -170,6 +194,8 @@ export class LaunchService {
 			agentSafeThreshold: BigInt(input.agentSafeThreshold),
 			platformBps: input.platformBps,
 			patronBps: input.patronBps,
+			treasuryTickLowers: input.treasuryTickLowers ?? defaultTreasuryTickLowers(input.tier),
+			treasuryTickUppers: input.treasuryTickUppers ?? defaultTreasuryTickUppers(),
 		} as const;
 
 		// Simulate first so failures surface a clean error before broadcast.

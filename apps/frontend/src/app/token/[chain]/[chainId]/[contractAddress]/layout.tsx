@@ -38,7 +38,10 @@ export async function generateMetadata({
 	}
 
 	return {
-		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
+		// Static export freezes this HTML at build time (revalidate is a no-op under
+		// output:export), so don't bake the volatile price into the tab title / Google
+		// snippet — it would advertise a stale price forever. Name+ticker+chain are stable.
+		title: `${token.name} (${token.ticker}) on ${token.chain}`,
 		description: `${token.name} token information, price, and market data on waifufun`,
 		openGraph: {
 			title: `${token.name} (${token.ticker})`,

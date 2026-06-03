@@ -812,30 +812,37 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 		// Optionally enrich with on-chain claimable state. If the service is
 		// not configured, we return aggregates with claimable=null.
 		const service = options.launchService ?? options.getService?.() ?? defaultService();
-		const enriched = await Promise.all(
-			aggregates.map(async (agg) => {
-				let claimable: string | null = null;
-				if (service) {
-					try {
-						const pos = await service.readDepositorPosition(
-							row.vaultAddress as `0x${string}`,
-							agg.address as `0x${string}`,
-						);
-						claimable = pos.claimable.toString();
-					} catch {
-						claimable = null;
-					}
+		const enrichOne = async (agg: (typeof aggregates)[number]) => {
+			let claimable: string | null = null;
+			if (service) {
+				try {
+					const pos = await service.readDepositorPosition(
+						row.vaultAddress as `0x${string}`,
+						agg.address as `0x${string}`,
+					);
+					claimable = pos.claimable.toString();
+				} catch {
+					claimable = null;
 				}
-				return {
-					address: agg.address,
-					deposited: agg.netDeposit,
-					grossDeposited: agg.deposited,
-					withdrawn: agg.withdrawn,
-					claimed: agg.claimed,
-					claimable,
-				};
-			}),
-		);
+			}
+			return {
+				address: agg.address,
+				deposited: agg.netDeposit,
+				grossDeposited: agg.deposited,
+				withdrawn: agg.withdrawn,
+				claimed: agg.claimed,
+				claimable,
+			};
+		};
+		// Bound the RPC fan-out: this endpoint is public and `limit` defaults to 1000
+		// (max 5000), so an unbounded Promise.all would fire up to thousands of
+		// concurrent reads at the shared provider per request. Page through in small
+		// concurrent batches instead.
+		const RPC_CONCURRENCY = 12;
+		const enriched: Awaited<ReturnType<typeof enrichOne>>[] = [];
+		for (let i = 0; i < aggregates.length; i += RPC_CONCURRENCY) {
+			enriched.push(...(await Promise.all(aggregates.slice(i, i + RPC_CONCURRENCY).map(enrichOne))));
+		}
 
 		return respondOk(c, { depositors: enriched, count: enriched.length, total, limit, offset });
 	});

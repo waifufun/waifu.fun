@@ -312,13 +312,26 @@ export const retrieveQuote = async ({
 			outputAmount * slippageMultiplier * (mode === "buy" ? 10 ** token.decimals : 10 ** 18),
 		);
 
-		// Estimate price impact (simplified - real calculation would need liquidity depth)
-		const priceImpactPct = "1"; // Conservative estimate, real calc needs pool liquidity
+		// Estimate price impact from pool depth. DexScreener reports total pool
+		// TVL (`liquidity.usd`); for a constant-product pool the input-side reserve
+		// is ~half of that, so impact ≈ tradeUsd / (liquidityUsd / 2). Returned as a
+		// fraction (0.0123 == 1.23%). Left undefined when liquidity is unknown so the
+		// UI shows nothing rather than a fabricated number — the swap itself executes
+		// on PancakeSwap, which applies the real on-chain impact + slippage guard.
+		const liquidityUsd = Number.parseFloat(String(pair?.liquidity?.usd ?? "0"));
+		const tradeUsd = Number.parseFloat(swapUsdValue);
+		const priceImpactPct =
+			liquidityUsd > 0 && tradeUsd > 0
+				? Math.min(tradeUsd / (liquidityUsd / 2), 0.99).toFixed(4)
+				: undefined;
 
 		return {
 			minimumReceived,
 			swapUsdValue,
-			priceImpactPct,
+			// Omit (rather than send undefined) when liquidity is unknown so the UI's
+			// `priceImpactPct ? … : null` guard renders nothing — and to satisfy
+			// exactOptionalPropertyTypes on the optional return field.
+			...(priceImpactPct !== undefined ? { priceImpactPct } : {}),
 			quote: pair,
 		};
 	} catch (error) {

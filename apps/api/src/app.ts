@@ -98,6 +98,13 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger,
 	app.use("/v2/admin/*", limit("admin"));
 	app.use("/v2/launches", limit("launch"));
 	app.use("/v2/launches/*", limit("launch"));
+	// Blanket throttle for the v2 agent namespace (mirrors the v1 `/agents/*`
+	// bucket above): the expensive/unauthenticated subpaths — topup/quote (paid
+	// Li.Fi), hyperliquid positions/pnl (shared egress IP), apps/image-gen invoke
+	// (metered credits) — were unthrottled. Registered BEFORE prepare/claim so
+	// those keep their tighter `launch` policy: Hono stacks all matching
+	// middlewares in order, and the last one wins the advertised X-RateLimit headers.
+	app.use("/v2/agents/*", limit("trade"));
 	app.use("/v2/agents/prepare", limit("launch"));
 	app.use("/v2/agents/claim/*", limit("launch"));
 	app.use("/v2/webhooks/*", limit("webhook"));
