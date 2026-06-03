@@ -46,23 +46,44 @@ export function normalizeHyperliquidHoldings(
 	state: HyperliquidClearinghouseState,
 ): Holding[] {
 	const holdings: Holding[] = [];
-	const margin =
-		numberOrUndefined(state.withdrawable) ??
+	// HL account equity. marginSummary.accountValue is the FULL equity of the
+	// hyperliquid account: free collateral + margin locked into open perps +
+	// unrealized pnl. This is the number the HL UI prints as "account value".
+	//
+	// We previously valued this line at `withdrawable` (free collateral only),
+	// which undercounted the venue badly: an account with $965 free + $699
+	// locked margin + position equity read as ~$965 in NAV instead of ~$1,961,
+	// and every open perp showed up `unpriced`. accountValue already folds the
+	// margin-locked equity AND unrealized pnl into one number, so valuing the
+	// single account line at accountValue (and leaving the per-perp rows
+	// `valueUsd: null` below as DETAIL only) makes NAV correct with NO
+	// double-count. withdrawable is surfaced separately for the health strip.
+	const accountValue =
 		numberOrUndefined(state.marginSummary?.accountValue) ??
 		numberOrUndefined(state.crossMarginSummary?.accountValue) ??
+		numberOrUndefined(state.withdrawable) ??
 		0;
-	if (margin > 0) {
-		holdings.push({
+	const withdrawable = numberOrUndefined(state.withdrawable) ?? null;
+	if (accountValue > 0) {
+		const account: Holding = {
 			...wallet,
 			asset: "USDC",
 			contract: null,
-			balance: margin,
+			balance: accountValue,
 			priceUsd: 1,
-			valueUsd: Number(margin.toFixed(8)),
+			valueUsd: Number(accountValue.toFixed(8)),
 			priced: true,
 			kind: "spot",
 			venue: "hyperliquid",
-		});
+			metadata: {
+				accountValueUsd: accountValue,
+				// Free (withdrawable) collateral, distinct from the locked margin
+				// folded into accountValue. The FE reads this off the account line
+				// to render "withdrawable" without a second endpoint round-trip.
+				withdrawableUsd: withdrawable,
+			},
+		};
+		holdings.push(account);
 	}
 
 	for (const entry of state.assetPositions ?? []) {

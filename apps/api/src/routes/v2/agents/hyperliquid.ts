@@ -23,13 +23,33 @@
  *   }
  */
 
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
-import { agentPersonas, agentWalletRegistry, getDatabase } from "@waifufun/db";
+import { agentPersonas, agentWalletRegistry, feeDistributions, getDatabase } from "@waifufun/db";
+
+import { type HlWindow, buildHlPnl } from "../../../services/hyperliquid/pnl.js";
 
 const app = new Hono();
 const HL_BASE_URL = "https://api.hyperliquid.xyz";
+
+const HL_WINDOWS = new Set<HlWindow>(["day", "week", "month", "allTime"]);
+
+/**
+ * Known PRIOR (abandoned) Hyperliquid wallets, keyed by current token
+ * address. These are not in `agent_wallet_registry` (they were retired
+ * before the registry existed) but still hold real, closed trade history
+ * that must count toward lifetime stats. Add entries as agents rotate
+ * wallets.
+ */
+const PRIOR_HL_WALLETS: Record<string, string[]> = {
+	// sol-the-architect: previous HL wallet (abandoned, +$951 realized)
+	"0x15fc6086064afe50ccf4c70000c55cecb6e17777": ["0x30641cd7c2e0997acbd8789b86ade9b381da048b"],
+};
+
+function priorWalletsFor(tokenAddress: string): string[] {
+	return PRIOR_HL_WALLETS[tokenAddress.toLowerCase()] ?? [];
+}
 
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	const url = process.env.DATABASE_URL;
@@ -80,6 +100,18 @@ async function postInfo<T>(body: unknown): Promise<T | null> {
 	} catch {
 		return null;
 	}
+}
+
+async function resolveAgentTokenAddress(
+	db: NonNullable<ReturnType<typeof requireDb>>,
+	agentId: string,
+): Promise<string | null> {
+	const [persona] = await db
+		.select({ tokenAddress: agentPersonas.tokenAddress })
+		.from(agentPersonas)
+		.where(or(eq(agentPersonas.agentId, agentId), eq(agentPersonas.tokenAddress, agentId.toLowerCase())))
+		.limit(1);
+	return persona?.tokenAddress ?? (agentId.startsWith("0x") ? agentId.toLowerCase() : null);
 }
 
 async function resolveHyperliquidWallet(
@@ -155,6 +187,111 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 		accountValueUsd: accountValue,
 		withdrawableUsd: withdrawable,
 		positions,
+		ts: Date.now(),
+	});
+});
+
+/**
+ * Deposit-EXCLUDED Hyperliquid trading PnL for an agent.
+ *
+ * GET /v2/agents/:agentId/hyperliquid/pnl?window=day|week|month|allTime
+ *
+ * The old chart did `pnl = nav[i] - nav[0]`, folding deposits straight
+ * into pnl (a $2k deposit looked like +$2k profit). This route uses HL's
+ * own `pnlHistory` (deposit-adjusted) for the series + lifetime totals,
+ * anchors the baseline at first real activity, and aggregates any prior
+ * (abandoned) wallets into lifetime stats. Tax income is reported by the
+ * separate /tax-income route and is NEVER summed into trading pnl.
+ *
+ * Response shape:
+ *   {
+ *     wallet, priorWallets, window,
+ *     series: [{ t, pnl }],                       // deposit-excluded, baseline-anchored
+ *     tradingPnl: { realized, unrealized, total, currentWallet, priorWallets },
+ *     accountValue, withdrawable,
+ *     winLoss: { wins, losses } | null,
+ *     taxIncome: { amountWei, source },           // SEPARATE stream, not in tradingPnl
+ *     ts
+ *   }
+ */
+app.get("/:agentId/hyperliquid/pnl", async (c) => {
+	const db = requireDb();
+	if (!db) return c.json({ error: "database unavailable" }, 503);
+	const agentId = c.req.param("agentId");
+
+	const windowParam = (c.req.query("window") ?? "allTime") as HlWindow;
+	const window: HlWindow = HL_WINDOWS.has(windowParam) ? windowParam : "allTime";
+
+	const resolved = await resolveHyperliquidWallet(db, agentId);
+	if (!resolved) {
+		return c.json({
+			wallet: null,
+			priorWallets: [],
+			window,
+			series: [],
+			tradingPnl: { realized: 0, unrealized: 0, total: 0, currentWallet: 0, priorWallets: 0 },
+			accountValue: 0,
+			withdrawable: 0,
+			winLoss: null,
+			taxIncome: { amountWei: "0", source: "fee_distributions.agent_share" },
+			ts: Date.now(),
+		});
+	}
+
+	const priorWallets = priorWalletsFor(resolved.agentTokenAddress);
+
+	const [pnl, taxRow] = await Promise.all([
+		buildHlPnl(resolved.address, priorWallets, window),
+		db
+			.select({ amountWei: sql<string>`COALESCE(SUM(${feeDistributions.agentShare}), 0)::text` })
+			.from(feeDistributions)
+			.where(eq(feeDistributions.agentToken, resolved.agentTokenAddress))
+			.then((rows) => rows[0]),
+	]);
+
+	return c.json({
+		...pnl,
+		// tax income is its OWN stat, never folded into tradingPnl.
+		taxIncome: {
+			amountWei: taxRow?.amountWei ?? "0",
+			source: "fee_distributions.agent_share",
+		},
+	});
+});
+
+/**
+ * Agent tax-stream income (platform fee revenue routed to the agent).
+ *
+ * GET /v2/agents/:agentId/tax-income
+ *
+ * Sum of `fee_distributions.agent_share` (raw wei, numeric(78,0)) for the
+ * agent's token. This is a SEPARATE income stream from trading pnl and
+ * must never be mixed into it. Currently can be $0 (no distributions yet)
+ * but the wiring is correct so it lights up the moment fees flow.
+ */
+app.get("/:agentId/tax-income", async (c) => {
+	const db = requireDb();
+	if (!db) return c.json({ error: "database unavailable" }, 503);
+	const agentId = c.req.param("agentId");
+
+	const tokenAddress = await resolveAgentTokenAddress(db, agentId);
+	if (!tokenAddress) {
+		return c.json({ token: null, amountWei: "0", count: 0, source: "fee_distributions.agent_share", ts: Date.now() });
+	}
+
+	const [row] = await db
+		.select({
+			amountWei: sql<string>`COALESCE(SUM(${feeDistributions.agentShare}), 0)::text`,
+			count: sql<number>`COUNT(*)::int`,
+		})
+		.from(feeDistributions)
+		.where(eq(feeDistributions.agentToken, tokenAddress));
+
+	return c.json({
+		token: tokenAddress,
+		amountWei: row?.amountWei ?? "0",
+		count: row?.count ?? 0,
+		source: "fee_distributions.agent_share",
 		ts: Date.now(),
 	});
 });

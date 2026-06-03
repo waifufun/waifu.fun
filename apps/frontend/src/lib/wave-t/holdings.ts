@@ -33,7 +33,7 @@ export interface ChainHolding {
 	 * and left empty for the legacy single-wallet burner stub. Useful for
 	 * tooltips / drilldowns.
 	 */
-	wallets?: { label: string; role: string; balance: number; valueUsd: number }[];
+	wallets?: HoldingWallet[];
 	/**
 	 * Display label for the chain column when the asset is custodied at a
 	 * venue distinct from the EVM chain it bridges through. Example: USDC
@@ -45,10 +45,60 @@ export interface ChainHolding {
 	displayVenue?: string;
 }
 
+/**
+ * Per-wallet contribution to an aggregated (chain, asset) row. `address`
+ * and `chain` are additive (used by the wallet-ledger cockpit view); the
+ * legacy donut drilldown only reads `label / role / balance / valueUsd`.
+ */
+export interface HoldingWallet {
+	label: string;
+	role: string;
+	balance: number;
+	valueUsd: number;
+	address?: string;
+	chain?: ChainKey;
+}
+
+/**
+ * A single wallet (by on-chain address) rolled across every asset it
+ * holds. Drives the wallet-ledger cockpit: one row per real wallet,
+ * grouped under its role, with its chain + venue context intact.
+ */
+export interface WalletLine {
+	address: string;
+	label: string;
+	role: string;
+	chain: ChainKey;
+	chainName: string;
+	/** Venue when the wallet custodies at a venue distinct from its chain. */
+	venue?: string;
+	valueUsd: number;
+	/** Top assets in this wallet, desc by usd, for an inline composition bar. */
+	assets: { asset: string; valueUsd: number; balance: number }[];
+}
+
+/**
+ * A role bucket (agent-safe, agent-hot, patron, venue-bridge, ...) with
+ * its total value and the wallets that compose it. The cockpit groups
+ * the ledger by role so a viewer reads "where is the money + what's it
+ * doing" top-down.
+ */
+export interface RoleLine {
+	role: string;
+	valueUsd: number;
+	wallets: WalletLine[];
+}
+
 export interface HoldingsSnapshot {
 	holdings: ChainHolding[];
 	navUsd: number;
 	fetchedAt: number;
+	/**
+	 * Per-wallet ledger grouped by role, rebuilt straight from the raw API
+	 * rows. Empty for the legacy single-wallet stub. Additive: existing
+	 * consumers (the donut) ignore it.
+	 */
+	roles?: RoleLine[];
 }
 
 /**
@@ -113,11 +163,13 @@ export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): Holdin
 		// addresses agree on the same bucket.
 		const contractKey = h.contract ? h.contract.toLowerCase() : h.asset;
 		const key = `${chain}:${contractKey}`;
-		const walletEntry = {
+		const walletEntry: HoldingWallet = {
 			label: h.walletLabel || h.walletRole,
 			role: h.walletRole,
 			balance: h.balance,
 			valueUsd: h.valueUsd,
+			...(h.walletAddress ? { address: h.walletAddress } : {}),
+			chain,
 		};
 		const venueKey = (h.venue || "").toLowerCase();
 		const venues = bucketVenues.get(key) ?? new Set<string>();
@@ -163,5 +215,71 @@ export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): Holdin
 		holdings: Array.from(grouped.values()),
 		navUsd: snapshot.navUsd,
 		fetchedAt: snapshot.generatedAt > 0 ? snapshot.generatedAt : Date.now(),
+		roles: rolesLedgerFromApi(snapshot, chainName, chainKeyMap, venueDisplay),
 	};
+}
+
+/**
+ * Build the role-grouped wallet ledger straight from the raw API rows.
+ *
+ * One `WalletLine` per real on-chain wallet (keyed by walletId, falling
+ * back to address), carrying its chain + venue and a per-asset composition
+ * for the inline bar. Wallets are then grouped under their role bucket and
+ * both levels are sorted desc by usd value so the heaviest role + wallet
+ * lead. Only priced spot rows feed the ledger (perps live in the positions
+ * panel); a wallet with only unpriced perps simply does not appear here.
+ */
+function rolesLedgerFromApi(
+	snapshot: AgentHoldingsSnapshot,
+	chainName: Record<string, string>,
+	chainKeyMap: Record<string, ChainKey>,
+	venueDisplay: Record<string, string>,
+): RoleLine[] {
+	const walletMap = new Map<string, WalletLine>();
+	for (const h of holdingsRowsOf(snapshot)) {
+		if (h.valueUsd == null || h.valueUsd <= 0) continue;
+		const chain = chainKeyMap[h.chain.toLowerCase()] ?? "bsc";
+		const walletKey = h.walletId || h.walletAddress || `${h.walletRole}:${chain}`;
+		const venueKey = (h.venue || "").toLowerCase();
+		const venueLabel = venueKey ? venueDisplay[venueKey] : undefined;
+		const existing = walletMap.get(walletKey);
+		if (existing) {
+			existing.valueUsd += h.valueUsd;
+			const asset = existing.assets.find((a) => a.asset === h.asset);
+			if (asset) {
+				asset.valueUsd += h.valueUsd;
+				asset.balance += h.balance;
+			} else {
+				existing.assets.push({ asset: h.asset, valueUsd: h.valueUsd, balance: h.balance });
+			}
+		} else {
+			walletMap.set(walletKey, {
+				address: h.walletAddress || "",
+				label: h.walletLabel || h.walletRole,
+				role: h.walletRole,
+				chain,
+				chainName: chainName[h.chain.toLowerCase()] ?? h.chain.toUpperCase(),
+				...(venueLabel ? { venue: venueLabel } : {}),
+				valueUsd: h.valueUsd,
+				assets: [{ asset: h.asset, valueUsd: h.valueUsd, balance: h.balance }],
+			});
+		}
+	}
+
+	const roleMap = new Map<string, RoleLine>();
+	for (const w of walletMap.values()) {
+		w.assets.sort((a, b) => b.valueUsd - a.valueUsd);
+		const role = roleMap.get(w.role);
+		if (role) {
+			role.valueUsd += w.valueUsd;
+			role.wallets.push(w);
+		} else {
+			roleMap.set(w.role, { role: w.role, valueUsd: w.valueUsd, wallets: [w] });
+		}
+	}
+
+	const roles = Array.from(roleMap.values());
+	for (const r of roles) r.wallets.sort((a, b) => b.valueUsd - a.valueUsd);
+	roles.sort((a, b) => b.valueUsd - a.valueUsd);
+	return roles;
 }

@@ -1,35 +1,39 @@
 /**
- * Active Positions panel (Wave T).
+ * Active Positions panel (Wave T, cockpit redesign 2026-06-02).
  *
  * Two modes:
  *
- *  1. Legacy generic mode: takes a `positions: Position[]` prop sourced from
- *     `lib/positions.ts`. Renders a 5-column asset/venue/size/pnl/% table.
+ *  1. Live Hyperliquid mode (when `hyperliquidPositions` are provided): a
+ *     premium perp surface. account-health is the hero, a four-stat strip
+ *     (account value, effective leverage, withdrawable, unrealized pnl)
+ *     over a live margin-utilization bar. effective leverage = total
+ *     notional / account value, surfaced explicitly because ~5x is the
+ *     risk story a trader reads first. below it, a dense position table:
+ *     asset/side, size, notional, entry, mark (with subtle reprice flash),
+ *     a per-position leverage badge, distance-to-liquidation as a percent
+ *     ("84% away") not just a raw price, and unrealized pnl in green/red.
  *
- *  2. Live Hyperliquid mode: when `hyperliquidPositions` are provided, the
- *     panel renders a premium perp surface: an account-health strip
- *     (account value, margin used, withdrawable, total unrealized pnl) on
- *     top, then a clean position table (asset/side, size, notional, entry,
- *     mark, leverage, liq, unrealized pnl). Data comes from the live
- *     /v2/agents/:address/hyperliquid/positions endpoint. The legacy
- *     generic table still renders below so cross-venue rows (LP, prediction
- *     markets) keep their home.
+ *  2. Legacy generic mode (`positions: Position[]`): the cross-venue rows
+ *     (LP, prediction markets) keep their home in a 5-column table beneath.
  *
- * Em-dash glyph placeholders are banned (.impeccable.md); empty numeric
- * cells use a middot. Copy is lowercase TPOT.
+ * .impeccable.md discipline: DENSE (mono tabular nums, hairlines, tight
+ * padding), LIVE (pulse header, reprice flash on mark change), TPOT
+ * (lowercase, no em-dashes, honest empty states). single green accent;
+ * green/red are the only non-neutral tones and they're THEME_TOKENS.
+ * Em-dash glyph placeholders are banned; empty numeric cells use a middot.
  */
 
 "use client";
 
 import { XIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
 import type { Position } from "@/lib/wave-t/positions";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
-import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
+import { Hairline, Label, Panel, Pulse, TokenIcon, VenueIcon } from "./_primitives";
 
 // Middot used for empty numeric cells.
 const EMPTY_CELL = "·";
@@ -108,73 +112,161 @@ function toneClass(tone: "positive" | "negative" | "neutral"): string {
 }
 
 /**
- * Account-health strip for the live hyperliquid account. Four micro-stats:
- * account value, margin used (sum of per-position margin), withdrawable,
- * and total unrealized pnl. Renders above the position table so the panel
- * reads top-down: how the account is doing, then what's open.
+ * Distance to liquidation as a percent of the current mark. For a long,
+ * liq sits below mark, so distance = (mark - liq) / mark. For a short, liq
+ * sits above mark, so distance = (liq - mark) / mark. Returns null when we
+ * can't compute it (missing mark/liq). Bigger = safer; small = close to
+ * getting liquidated, which is the number a trader scans first.
  */
-function AccountHealthStrip({
+function liqDistancePct(p: HyperliquidPosition): number | null {
+	const mark = p.currentPrice;
+	const liq = p.liquidationPrice;
+	if (mark === null || liq === null || !Number.isFinite(mark) || !Number.isFinite(liq) || mark <= 0) return null;
+	const raw = p.side === "long" ? (mark - liq) / mark : (liq - mark) / mark;
+	return Math.max(0, raw * 100);
+}
+
+/**
+ * Tone for the liq-distance cell. Only flag danger: under 8% away from
+ * liquidation reads red. Everything else stays neutral. We deliberately do
+ * NOT paint "safe" distances green, distance isn't pnl and a green number
+ * here would lie about direction. single-accent discipline.
+ */
+function liqTone(distPct: number | null): "negative" | "neutral" {
+	if (distPct === null) return "neutral";
+	if (distPct < 8) return "negative";
+	return "neutral";
+}
+
+/**
+ * Account-health hero. Four stats over a live margin bar.
+ *
+ * effective leverage (totalNotional / accountValue) is promoted to a
+ * first-class stat: it's the single number that says how aggressive the
+ * book is. ~5x means a 20% adverse move is a wipeout, and a viewer should
+ * see that without doing arithmetic.
+ */
+function AccountHealthHero({
 	accountValueUsd,
 	withdrawableUsd,
 	marginUsedUsd,
+	totalNotionalUsd,
 	totalUnrealizedUsd,
 }: {
 	accountValueUsd: number;
 	withdrawableUsd: number;
 	marginUsedUsd: number;
+	totalNotionalUsd: number;
 	totalUnrealizedUsd: number;
 }) {
 	const pnlTone = toneOfPnl(totalUnrealizedUsd);
-	// Margin utilization: how much of account value is locked as margin.
 	const utilPct = accountValueUsd > 0 ? Math.min(100, (marginUsedUsd / accountValueUsd) * 100) : 0;
+	const effLev = accountValueUsd > 0 ? totalNotionalUsd / accountValueUsd : 0;
+	// Leverage risk tone: >8x reads hot, 3-8x watch, under 3x calm. We only
+	// have one accent, so "hot" = negative, otherwise neutral/accent.
+	const levTone: "negative" | "neutral" = effLev >= 8 ? "negative" : "neutral";
 
-	const cells: Array<{ label: string; value: string; tone?: "positive" | "negative" | "neutral" }> = [
-		{ label: "account value", value: fmtUsd(accountValueUsd) },
-		{ label: "margin used", value: fmtUsd(marginUsedUsd) },
-		{ label: "withdrawable", value: fmtUsd(withdrawableUsd) },
-		{
-			label: "unrealized p&l",
-			value: totalUnrealizedUsd === 0 ? "$0.00" : fmtUsd(totalUnrealizedUsd, { withSign: true }),
-			tone: pnlTone,
-		},
-	];
+	const utilColor = utilPct > 80 ? "var(--negative)" : utilPct > 50 ? "var(--accent-dim)" : "var(--accent)";
 
 	return (
-		<div className="mb-4 rounded-md border border-[var(--border-soft)] bg-white/[0.015] p-3">
-			<div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-				{cells.map((c) => (
-					<div className="flex flex-col gap-1" key={c.label}>
-						<span className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-							{c.label}
-						</span>
-						<span
-							className={cn(
-								"font-mono text-[14px] tabular-nums leading-none",
-								c.tone ? toneClass(c.tone) : "text-[var(--text-primary)]",
-							)}
-						>
-							{c.value}
-						</span>
-					</div>
-				))}
+		<div className="mb-4 rounded-md border border-[var(--border-soft)] bg-white/[0.015] p-3.5">
+			<div className="grid grid-cols-2 gap-x-4 gap-y-3.5 sm:grid-cols-4">
+				<HeroStat label="account value" value={fmtUsd(accountValueUsd)} big />
+				<HeroStat
+					label="effective lev"
+					value={`${effLev.toFixed(1)}x`}
+					tone={levTone === "negative" ? "negative" : "accent"}
+					big
+				/>
+				<HeroStat label="withdrawable" value={fmtUsd(withdrawableUsd)} big />
+				<HeroStat
+					label="unrealized p&l"
+					value={totalUnrealizedUsd === 0 ? "$0.00" : fmtUsd(totalUnrealizedUsd, { withSign: true })}
+					tone={pnlTone}
+					big
+				/>
 			</div>
 
-			{/* Margin utilization bar. Thin, single-accent, no chrome. */}
-			<div className="mt-3 flex items-center gap-2">
-				<span className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">margin</span>
+			{/* Margin utilization bar. Thin, single-accent, honest. */}
+			<div className="mt-3.5 flex items-center gap-2">
+				<span className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+					margin used
+				</span>
 				<div className="relative h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
 					<div
-						className="absolute inset-y-0 left-0 rounded-full"
-						style={{
-							width: `${utilPct}%`,
-							background: utilPct > 80 ? "var(--negative)" : utilPct > 50 ? "var(--accent-dim)" : "var(--accent)",
-							boxShadow: "0 0 8px var(--accent-soft)",
-						}}
+						className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500"
+						style={{ width: `${utilPct}%`, background: utilColor }}
 					/>
 				</div>
-				<span className="font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">{utilPct.toFixed(0)}%</span>
+				<span className="font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
+					{fmtUsdCompact(marginUsedUsd)}
+				</span>
+				<span className="w-9 text-right font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
+					{utilPct.toFixed(0)}%
+				</span>
 			</div>
 		</div>
+	);
+}
+
+function HeroStat({
+	label,
+	value,
+	tone = "neutral",
+	big = false,
+}: {
+	label: string;
+	value: string;
+	tone?: "positive" | "negative" | "neutral" | "accent";
+	big?: boolean;
+}) {
+	const colorCls =
+		tone === "positive"
+			? "text-[var(--positive)]"
+			: tone === "negative"
+				? "text-[var(--negative)]"
+				: tone === "accent"
+					? "text-[var(--accent)]"
+					: "text-[var(--text-primary)]";
+	return (
+		<div className="flex flex-col gap-1">
+			<span className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{label}</span>
+			<span className={cn("font-mono tabular-nums leading-none", big ? "text-[15px]" : "text-[13px]", colorCls)}>
+				{value}
+			</span>
+		</div>
+	);
+}
+
+/**
+ * Mark cell with a subtle reprice flash. When the mark changes between
+ * polls the value briefly tints green (up) or red (down) then settles.
+ * Honors prefers-reduced-motion by simply not flashing.
+ */
+function MarkCell({ value, decimals }: { value: number | null; decimals: number }) {
+	const prev = useRef<number | null>(value);
+	const [flash, setFlash] = useState<"up" | "down" | null>(null);
+
+	useEffect(() => {
+		const prior = prev.current;
+		prev.current = value;
+		if (value === null || prior === null || value === prior) return;
+		setFlash(value > prior ? "up" : "down");
+		const t = setTimeout(() => setFlash(null), 600);
+		return () => clearTimeout(t);
+	}, [value]);
+
+	const flashCls =
+		flash === "up"
+			? "text-[var(--positive)]"
+			: flash === "down"
+				? "text-[var(--negative)]"
+				: "text-[var(--text-primary)]";
+
+	return (
+		<span className={cn("tabular-nums transition-colors duration-500", flashCls)}>
+			{value === null ? EMPTY_CELL : fmtUsd(value, { decimals })}
+		</span>
 	);
 }
 
@@ -188,7 +280,7 @@ function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPositi
 					<th className="pb-2.5 pr-2 text-right font-normal">notional</th>
 					<th className="pb-2.5 pr-2 text-right font-normal">entry</th>
 					<th className="pb-2.5 pr-2 text-right font-normal">mark</th>
-					<th className="pb-2.5 pr-2 text-right font-normal">liq</th>
+					<th className="pb-2.5 pr-2 text-right font-normal">liq dist</th>
 					<th className="pb-2.5 pr-2 text-right font-normal">u-pnl</th>
 					<th className="pb-2.5 text-right font-normal">close</th>
 				</tr>
@@ -197,6 +289,8 @@ function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPositi
 				{positions.map((p) => {
 					const tone = toneOfPnl(p.unrealizedPnlUsd);
 					const sideCls = p.side === "long" ? "text-[var(--positive)]" : "text-[var(--negative)]";
+					const distPct = liqDistancePct(p);
+					const distTone = liqTone(distPct);
 					return (
 						<tr
 							className="border-t border-[var(--border-soft)] text-[var(--text-primary)] transition-colors hover:bg-white/[0.015]"
@@ -225,15 +319,25 @@ function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPositi
 							<td className="py-3 pr-2 text-right tabular-nums text-[var(--text-secondary)]">
 								{p.entryPrice === null ? EMPTY_CELL : fmtUsd(p.entryPrice, { decimals: p.entryPrice >= 1000 ? 1 : 3 })}
 							</td>
-							<td className="py-3 pr-2 text-right tabular-nums">
-								{p.currentPrice === null
-									? EMPTY_CELL
-									: fmtUsd(p.currentPrice, { decimals: p.currentPrice >= 1000 ? 1 : 3 })}
+							<td className="py-3 pr-2 text-right">
+								<MarkCell value={p.currentPrice} decimals={p.currentPrice && p.currentPrice >= 1000 ? 1 : 3} />
 							</td>
-							<td className="py-3 pr-2 text-right tabular-nums text-[var(--negative)]/70">
-								{p.liquidationPrice === null
-									? EMPTY_CELL
-									: fmtUsd(p.liquidationPrice, { decimals: p.liquidationPrice >= 1000 ? 1 : 3 })}
+							{/* distance-to-liquidation. the number a trader reads before
+							    the raw liq price. raw liq is in the tooltip. */}
+							<td className="py-3 pr-2 text-right">
+								{distPct === null ? (
+									<span className="tabular-nums text-[var(--text-tertiary)]">{EMPTY_CELL}</span>
+								) : (
+									<span
+										className={cn(
+											"tabular-nums",
+											distTone === "negative" ? "text-[var(--negative)]" : "text-[var(--text-secondary)]",
+										)}
+										title={p.liquidationPrice !== null ? `liq ${fmtUsd(p.liquidationPrice)}` : undefined}
+									>
+										{distPct.toFixed(0)}%
+									</span>
+								)}
 							</td>
 							<td className={cn("py-3 pr-2 text-right tabular-nums", toneClass(tone))}>
 								<span className="block text-[11px]">{fmtUsd(p.unrealizedPnlUsd, { withSign: true })}</span>
@@ -255,9 +359,10 @@ function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPositi
 }
 
 /**
- * Close-position stub. Wired to a no-op handler today; the control is
- * rendered now so the column reserves its visual space and the intended
- * UX is legible. Wires to the Steward submit-close endpoint later.
+ * Close-position stub. Intentionally styled but disabled: trading actions
+ * are a separate task. Rendered now so the column reserves its visual space
+ * and the intended UX is legible. Wires to the Steward submit-close endpoint
+ * later. NOT wired here on purpose.
  */
 function ClosePositionButton({ coin, side }: { coin: string; side: "long" | "short" }) {
 	return (
@@ -286,17 +391,9 @@ export function ActivePositions({
 	live: livePulse = false,
 }: {
 	positions: Position[];
-	/**
-	 * Open hyperliquid perp positions from the live
-	 * /hyperliquid/positions endpoint. Empty array renders the honest
-	 * "no live positions" state.
-	 */
 	hyperliquidPositions?: HyperliquidPosition[];
-	/** Total account value from the live HL snapshot (margin + free). */
 	hyperliquidAccountValueUsd?: number;
-	/** Withdrawable (free) collateral from the live HL snapshot. */
 	hyperliquidWithdrawableUsd?: number;
-	/** When true, a live pulse renders in the panel header. */
 	live?: boolean;
 }) {
 	const live = useMemo(() => positions.filter((p) => p.status === "live"), [positions]);
@@ -318,13 +415,7 @@ export function ActivePositions({
 				right={
 					livePulse ? (
 						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-							<span className="relative inline-flex h-1.5 w-1.5">
-								<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-60" />
-								<span
-									className="relative inline-flex h-1.5 w-1.5 rounded-full"
-									style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 6px var(--accent)" }}
-								/>
-							</span>
+							<Pulse />
 							live
 						</span>
 					) : !anyRows ? (
@@ -352,10 +443,11 @@ export function ActivePositions({
 							</span>
 						</div>
 
-						<AccountHealthStrip
+						<AccountHealthHero
 							accountValueUsd={hyperliquidAccountValueUsd}
 							withdrawableUsd={hyperliquidWithdrawableUsd}
 							marginUsedUsd={hlMarginUsed}
+							totalNotionalUsd={hlTotalNotional}
 							totalUnrealizedUsd={hlTotalUnrealized}
 						/>
 
@@ -375,11 +467,14 @@ export function ActivePositions({
 				) : null}
 
 				{live.length > 0 ? (
-					<div className={cn(hasHl ? "mt-4 border-t border-[var(--border-soft)] pt-4" : "")}>
+					<div className={cn(hasHl ? "mt-4" : "")}>
 						{hasHl ? (
-							<div className="mb-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-								other venues
-							</div>
+							<>
+								<Hairline className="mb-3" />
+								<div className="mb-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+									other venues
+								</div>
+							</>
 						) : null}
 						<table className="w-full border-collapse font-mono text-[11px]">
 							<thead>
