@@ -32,6 +32,11 @@ import { Label, Panel, Pulse } from "./_primitives";
 interface TopUpPanelProps {
 	agentTokenAddress: string;
 	agentTicker: string;
+	/**
+	 * Source chain to preselect. Defaults to Base. Pass 56 to default to
+	 * BNB Chain (the on-chain funding path Shadow wants as the default).
+	 */
+	defaultChainId?: number;
 }
 
 interface ChainPreset {
@@ -301,13 +306,17 @@ function TokenSelector({
 	);
 }
 
-export function TopUpPanel({ agentTokenAddress, agentTicker }: TopUpPanelProps) {
+export function TopUpPanel({ agentTokenAddress, agentTicker, defaultChainId }: TopUpPanelProps) {
 	const { address, isConnected, chainId } = useAccount();
 	const { switchChainAsync } = useSwitchChain();
 	const { sendTransactionAsync, isPending: signing } = useSendTransaction();
 
-	const [chain, setChain] = useState<ChainPreset>(() => CHAIN_PRESETS[0]!);
-	const [token, setToken] = useState<TokenPreset>(() => CHAIN_PRESETS[0]!.tokens[0]!);
+	const initialChain = useMemo(
+		() => CHAIN_PRESETS.find((c) => c.id === defaultChainId) ?? CHAIN_PRESETS[0]!,
+		[defaultChainId],
+	);
+	const [chain, setChain] = useState<ChainPreset>(() => initialChain);
+	const [token, setToken] = useState<TokenPreset>(() => initialChain.tokens[0]!);
 	const [amount, setAmount] = useState<string>("");
 	const [quote, setQuote] = useState<QuoteResult | null>(null);
 	const [quoteLoading, setQuoteLoading] = useState(false);
