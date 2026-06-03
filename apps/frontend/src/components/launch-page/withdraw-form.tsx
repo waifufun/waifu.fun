@@ -8,6 +8,7 @@ import { bsc } from "wagmi/chains";
 
 import { Button } from "@/components/ui/button";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
+import { normalizeTxError } from "@/lib/tx-error";
 
 type Props = {
 	vault: Address;
@@ -23,7 +24,7 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 
 	const penaltyPct = penaltyBps !== null ? Number(penaltyBps) / 100 : 5;
 
-	const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+	const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
 	const receipt = useWaitForTransactionReceipt({ hash: txHash, chainId: bsc.id });
 
 	useEffect(() => {
@@ -34,6 +35,13 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 			reset();
 		}
 	}, [receipt.isSuccess, onCompleted, reset]);
+
+	// Surface wallet-rejection / write failure and on-chain revert so a failed
+	// withdraw isn't indistinguishable from one still confirming.
+	useEffect(() => {
+		if (writeError) setError(normalizeTxError(writeError, "withdraw failed. try again."));
+		else if (receipt.isError) setError(normalizeTxError(receipt.error, "withdraw reverted on-chain."));
+	}, [writeError, receipt.isError, receipt.error]);
 
 	const isLocked = disabled || isPending || receipt.isLoading;
 
@@ -117,7 +125,11 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 				</p>
 			)}
 
-			{error ? <p className="text-xs text-red-400">{error}</p> : null}
+			{error ? (
+				<p className="text-xs text-red-400" role="alert">
+					{error}
+				</p>
+			) : null}
 
 			<div className="flex flex-col gap-2 sm:flex-row">
 				<Button
