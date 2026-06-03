@@ -310,6 +310,40 @@ export function useAgentChat(agentId?: string) {
 	});
 }
 
+/**
+ * Resurrect a dormant agent by purchasing inference credits.
+ *
+ * Posts to `POST /v2/agents/:id/resurrect` with `creditsAmount` in USD cents.
+ * The API routes that to Eliza Cloud's credit-purchase flow (which returns a
+ * Stripe checkout). IMPORTANT: today this initiates a credit purchase; it is
+ * NOT funded by the agent's on-chain Safe treasury. The BNB->credits bridge
+ * that would let on-chain treasury funding wake the brain is designed but not
+ * yet shipped (see BNB-CREDITS-BRIDGE-DESIGN-2026-06-03). Surface this path
+ * honestly as "add inference credits", distinct from "fund treasury".
+ */
+export type ResurrectResult = {
+	ok?: boolean;
+	agentId?: string;
+	creditsAmount?: number;
+	creditsUnit?: string;
+	modelTier?: string;
+	/** Stripe checkout URL when the credit purchase needs the patron to pay. */
+	checkoutUrl?: string | null;
+	url?: string | null;
+};
+
+export function useResurrectAgent(agentId?: string) {
+	return useMutation<ResurrectResult, ApiError, { creditsAmountCents: number }>({
+		mutationFn: async ({ creditsAmountCents }) => {
+			if (!agentId) throw { status: 0, message: "missing agentId" } as ApiError;
+			return apiFetch<ResurrectResult>(`/v2/agents/${encodeURIComponent(agentId)}/resurrect`, {
+				method: "POST",
+				body: JSON.stringify({ creditsAmount: creditsAmountCents }),
+			});
+		},
+	});
+}
+
 export function formatUsd(value: number | undefined | null): string {
 	if (value == null || Number.isNaN(value)) return "$0";
 	const sign = value < 0 ? "-" : "";

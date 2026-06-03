@@ -5,6 +5,7 @@ import PromptBlock from "@/components/give-skill/prompt-block";
 import ActivityFeed from "@/components/patron/activity-feed";
 import AgentChat from "@/components/patron/agent-chat";
 import AgentHero from "@/components/patron/agent-hero";
+import DormantCreditsPanel from "@/components/patron/dormant-credits-panel";
 import EmergencyControls from "@/components/patron/emergency-controls";
 import LaunchPanel from "@/components/patron/launch-panel";
 import LaunchProgress from "@/components/patron/launch-progress";
@@ -178,6 +179,7 @@ export default function PatronAgentDetailPage({
 			) : (
 				<div className="space-y-6">
 					<AgentHero agent={agent} isLoading={isLoading} />
+					{agent?.status === "dormant" ? <DormantCreditsPanel agent={agent} /> : null}
 					<AgentChat agentId={agentId} agent={agent} isLoading={isLoading} />
 					<RuntimeConnectionPanel agent={agent} isLoading={isLoading} />
 					<XConnectionPanel agentId={agentId} />
