@@ -564,10 +564,22 @@ export async function resurrectAgent(
 	agentId: string,
 	creditsAmount: number,
 	deps: ResurrectAgentDeps,
-): Promise<{ agentId: string; creditsAmount: number; modelTier: "premium"; containerId?: string }> {
+): Promise<{
+	agentId: string;
+	creditsAmount: number;
+	modelTier: "premium";
+	containerId?: string;
+	checkoutUrl?: string | null;
+}> {
 	const runtimeRefs = await resolveAgentRuntimeRefs(deps.db, agentId);
 	const controlAgentId = runtimeRefs.containerId ?? agentId;
-	await deps.elizaClient.topUpCredits(controlAgentId, creditsAmount / 100);
+	// NOTE: `topUpCredits` creates an Eliza Cloud Stripe checkout session; it does
+	// NOT itself move any credit balance. The patron must complete that checkout
+	// for credits to actually land (which fires Eliza Cloud's `credits.topped_up`
+	// webhook). We surface the URL so callers can route the patron to pay.
+	// See BNB-CREDITS-BRIDGE-DESIGN-2026-06-03 for the full footgun writeup.
+	const checkout = await deps.elizaClient.topUpCredits(controlAgentId, creditsAmount / 100);
+	const checkoutUrl = checkout?.url ?? checkout?.checkoutUrl ?? null;
 	if (runtimeRefs.containerId) {
 		await deps.elizaClient.resumeAgent(runtimeRefs.containerId);
 	}
@@ -627,6 +639,7 @@ export async function resurrectAgent(
 		creditsAmount,
 		modelTier: "premium",
 		...(runtimeRefs.containerId ? { containerId: runtimeRefs.containerId } : {}),
+		checkoutUrl,
 	};
 }
 
