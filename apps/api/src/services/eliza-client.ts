@@ -241,15 +241,43 @@ export interface ElizaClientConfig {
 	/** Service-account user ID in eliza-cloud (created lazily). */
 	serviceUserId?: string | undefined;
 	/**
-	 * Platform USER session token (Privy/cookie-equivalent bearer) for the
-	 * Eliza Cloud crypto-payment routes. Those routes are gated by
-	 * `requireAuthWithOrg()` and REJECT the service/API key (verified live: 401
-	 * "Authentication required"). This is the only credential that can create +
-	 * confirm a directWallet BNB->credits payment for the platform org. When
-	 * absent, the crypto off-ramp is not automatable and the service surfaces a
-	 * NOT_AUTOMATABLE error with manual instructions instead of silently failing.
+	 * Platform USER session token for the Eliza Cloud crypto-payment routes.
+	 * Those routes are gated by `requireUserWithOrg()` and REJECT the
+	 * service/API key (verified live: 401 "Authentication required").
+	 *
+	 * IMPORTANT (verified live 2026-06-03): the "session" eliza-cloud accepts on
+	 * these routes is a STEWARD HS256 JWT (Bearer or `steward-token` cookie),
+	 * verified locally with eliza-cloud's `STEWARD_SESSION_SECRET ?? STEWARD_JWT_SECRET`.
+	 * It is NOT a Privy token. waifu-core already holds the SAME `STEWARD_JWT_SECRET`,
+	 * so it can SELF-MINT this token (see `stewardSessionSecret` +
+	 * `platformStewardUserId` below) — no human login, no stored refresh token.
+	 *
+	 * This explicit `sessionToken` remains as an optional override/fallback. When
+	 * it is set it is used verbatim; otherwise the client mints one on demand from
+	 * the Steward secret + platform steward user id. If NEITHER is available, the
+	 * crypto off-ramp is not automatable and callers surface manual instructions
+	 * instead of faking a mint.
 	 */
 	sessionToken?: string | undefined;
+	/**
+	 * Steward HS256 signing secret used to SELF-MINT a platform session JWT for
+	 * the crypto routes (defaults to the same `STEWARD_JWT_SECRET` waifu-core uses
+	 * for patron auth). When present together with `platformStewardUserId`, the
+	 * crypto off-ramp is fully automatable with no third-party token.
+	 */
+	stewardSessionSecret?: string | undefined;
+	/**
+	 * The platform org owner's Steward user id (the `sub`/`userId` claim eliza-cloud
+	 * resolves via `getByStewardId`). For the Sol burner platform org this is
+	 * `wallet:evm:0xc9846a839c4e1d9050dc890a25661ab13224e9ec`.
+	 */
+	platformStewardUserId?: string | undefined;
+	/**
+	 * Optional tenant id claim for the minted session JWT. Left undefined by
+	 * default: eliza-cloud only rejects a MISMATCHED tenant, so omitting it is
+	 * safest (verified live — a tenant-less JWT authenticates).
+	 */
+	platformStewardTenantId?: string | undefined;
 }
 
 /** A single directWallet network option from `GET /api/crypto/status`. */
@@ -310,10 +338,52 @@ export class ElizaClient {
 	private readonly jwtSecret: Uint8Array;
 	private cachedToken: string | null = null;
 	private tokenExpiresAt = 0;
+	/** Cached self-minted platform session JWT (for the crypto off-ramp). */
+	private cachedSessionToken: string | null = null;
+	private sessionTokenExpiresAt = 0;
+	private readonly stewardSessionSecret: Uint8Array | null;
 
 	constructor(private readonly config: ElizaClientConfig) {
 		this.baseUrl = config.baseUrl.replace(/\/+$/, "");
 		this.jwtSecret = new TextEncoder().encode(config.jwtSecret ?? "");
+		this.stewardSessionSecret = config.stewardSessionSecret
+			? new TextEncoder().encode(config.stewardSessionSecret)
+			: null;
+	}
+
+	/**
+	 * Resolve a platform session bearer for the crypto routes.
+	 *
+	 * Precedence:
+	 *   1. An explicit `sessionToken` override (used verbatim).
+	 *   2. A SELF-MINTED Steward HS256 JWT (sub = platformStewardUserId) signed
+	 *      with `stewardSessionSecret`. Cached until ~60s before expiry.
+	 * Returns null when neither path is available (off-ramp not automatable).
+	 */
+	private async resolvePlatformSessionToken(): Promise<string | null> {
+		if (this.config.sessionToken) return this.config.sessionToken;
+		if (!this.stewardSessionSecret || !this.config.platformStewardUserId) return null;
+
+		const now = Math.floor(Date.now() / 1000);
+		if (this.cachedSessionToken && this.sessionTokenExpiresAt - now > 60) {
+			return this.cachedSessionToken;
+		}
+
+		const ttlSeconds = 600;
+		const sub = this.config.platformStewardUserId;
+		const builder = new jose.SignJWT({
+			userId: sub,
+			...(this.config.platformStewardTenantId ? { tenantId: this.config.platformStewardTenantId } : {}),
+		})
+			.setProtectedHeader({ alg: "HS256" })
+			.setSubject(sub)
+			.setIssuedAt(now)
+			.setExpirationTime(now + ttlSeconds);
+		const token = await builder.sign(this.stewardSessionSecret);
+
+		this.cachedSessionToken = token;
+		this.sessionTokenExpiresAt = now + ttlSeconds;
+		return token;
 	}
 
 	/**
@@ -378,12 +448,14 @@ export class ElizaClient {
 
 		if (needsAuth) {
 			if (options?.useSessionToken) {
-				// The crypto off-ramp routes are gated by requireAuthWithOrg(); only a
+				// The crypto off-ramp routes are gated by requireUserWithOrg(); only a
 				// platform USER session token works here (API/service key => 401).
-				if (!this.config.sessionToken) {
+				// That "session" is a Steward HS256 JWT we can self-mint (verified live).
+				const sessionToken = await this.resolvePlatformSessionToken();
+				if (!sessionToken) {
 					throw new ElizaCryptoNotAutomatableError();
 				}
-				headers.authorization = `Bearer ${this.config.sessionToken}`;
+				headers.authorization = `Bearer ${sessionToken}`;
 			} else if (this.config.serviceKey) {
 				headers["X-Service-Key"] = this.config.serviceKey;
 				headers["X-API-Key"] = this.config.serviceKey;
@@ -801,9 +873,14 @@ export class ElizaClient {
 		);
 	}
 
-	/** Whether a platform session token is configured (crypto off-ramp automatable). */
+	/**
+	 * Whether the crypto off-ramp is automatable: either an explicit session
+	 * token override is set, or we can self-mint one from the Steward secret +
+	 * platform steward user id (the default, fully-auto path).
+	 */
 	hasCryptoSession(): boolean {
-		return Boolean(this.config.sessionToken);
+		if (this.config.sessionToken) return true;
+		return Boolean(this.stewardSessionSecret && this.config.platformStewardUserId);
 	}
 
 	async topUpAppCredits(appId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult> {
@@ -991,7 +1068,20 @@ export function getElizaClient(): ElizaClient {
 		}
 
 		const sessionToken = resolveElizaCloudSessionToken();
-		_instance = new ElizaClient({ baseUrl, serviceKey, apiKey, jwtSecret, serviceUserId, sessionToken });
+		const stewardSessionSecret = resolveElizaCloudStewardSecret();
+		const platformStewardUserId = resolveElizaCloudPlatformStewardUserId();
+		const platformStewardTenantId = nonEmpty(process.env.ELIZA_CLOUD_PLATFORM_STEWARD_TENANT_ID);
+		_instance = new ElizaClient({
+			baseUrl,
+			serviceKey,
+			apiKey,
+			jwtSecret,
+			serviceUserId,
+			sessionToken,
+			stewardSessionSecret,
+			platformStewardUserId,
+			platformStewardTenantId,
+		});
 	}
 
 	return _instance;
@@ -1002,6 +1092,9 @@ export function createElizaCloudClient(opts: {
 	apiKey?: string;
 	serviceKey?: string;
 	sessionToken?: string;
+	stewardSessionSecret?: string;
+	platformStewardUserId?: string;
+	platformStewardTenantId?: string;
 	logger: Logger;
 }): ElizaCloudClient {
 	return new ElizaClient({
@@ -1009,13 +1102,41 @@ export function createElizaCloudClient(opts: {
 		apiKey: nonEmpty(opts.apiKey),
 		serviceKey: nonEmpty(opts.serviceKey),
 		sessionToken: nonEmpty(opts.sessionToken),
+		stewardSessionSecret: nonEmpty(opts.stewardSessionSecret),
+		platformStewardUserId: nonEmpty(opts.platformStewardUserId),
+		platformStewardTenantId: nonEmpty(opts.platformStewardTenantId),
 		logger: opts.logger,
 	});
 }
 
-/** Read the platform Eliza Cloud session token (for the crypto off-ramp). */
+/** Read the platform Eliza Cloud session token override (for the crypto off-ramp). */
 export function resolveElizaCloudSessionToken(): string | undefined {
 	return nonEmpty(process.env.ELIZA_CLOUD_SESSION_TOKEN ?? process.env.ELIZA_CLOUD_PLATFORM_SESSION_TOKEN);
+}
+
+/**
+ * Steward HS256 secret used to SELF-MINT the platform session JWT for the crypto
+ * off-ramp. Defaults to the same `STEWARD_JWT_SECRET` waifu-core uses for patron
+ * auth (verified live: eliza-cloud accepts a JWT signed with this secret on its
+ * session-gated crypto routes).
+ */
+export function resolveElizaCloudStewardSecret(): string | undefined {
+	return nonEmpty(
+		process.env.ELIZA_CLOUD_STEWARD_SESSION_SECRET ??
+			process.env.STEWARD_SESSION_SECRET ??
+			process.env.STEWARD_JWT_SECRET,
+	);
+}
+
+/**
+ * The platform org owner's Steward user id (the `sub` claim eliza-cloud resolves
+ * via `getByStewardId`). Defaults to the Sol burner platform org owner.
+ */
+export function resolveElizaCloudPlatformStewardUserId(): string | undefined {
+	return nonEmpty(
+		process.env.ELIZA_CLOUD_PLATFORM_STEWARD_USER_ID ??
+			"wallet:evm:0xc9846a839c4e1d9050dc890a25661ab13224e9ec",
+	);
 }
 
 export function resolveElizaCloudApiKey(): string | undefined {
