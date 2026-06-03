@@ -17,6 +17,7 @@ import TreasuryCard from "@/components/patron/treasury-card";
 import WhatHappensNext from "@/components/patron/what-happens-next";
 import XConnectionPanel from "@/components/patron/x-connection";
 import { useAuthorizeLaunch } from "@/lib/api/launches";
+import { errorText } from "@/lib/api/_fetcher";
 import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
@@ -147,7 +148,7 @@ export default function PatronAgentDetailPage({
 
 			{error ? (
 				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
-					Couldn't load agent. {(error as Error).message}
+					Couldn't load agent. {errorText(error)}
 				</div>
 			) : isLaunchReady ? (
 				<div className="space-y-6 pb-24 md:pb-0">
