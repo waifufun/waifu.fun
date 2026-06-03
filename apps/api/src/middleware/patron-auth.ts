@@ -273,6 +273,17 @@ export function requireAgentOwnership(paramName = "id"): MiddlewareHandler<Requi
 			const byAgentId = await db.select().from(agentPersonas).where(eq(agentPersonas.agentId, agentId)).limit(1);
 			agent = byAgentId[0];
 		}
+		// The patron page routes by TOKEN ADDRESS (e.g. /patron/0x15fc...). Resolve
+		// that too, else the lookup misses, stewardAgentId stays null, and the
+		// trading-policy proxy falls back to the wrong (waifu) tenant -> 404.
+		if (!agent && /^0x[a-fA-F0-9]{40}$/.test(agentId)) {
+			const byToken = await db
+				.select()
+				.from(agentPersonas)
+				.where(eq(agentPersonas.tokenAddress, agentId.toLowerCase()))
+				.limit(1);
+			agent = byToken[0];
+		}
 		if (!agent) {
 			return c.json({ ok: false, error: "NOT_FOUND", message: "agent not found" }, 404);
 		}
@@ -335,6 +346,17 @@ async function resolveAgentForOwnership(db: DbHandle, routeId: string) {
 
 	const byAgentId = await db.select().from(agentPersonas).where(eq(agentPersonas.agentId, routeId)).limit(1);
 	if (byAgentId[0]) return byAgentId[0];
+
+	// Token-address route (/patron/0x...): resolve the persona by token address so
+	// ownership + stewardAgentId resolve for the patron-page surfaces.
+	if (/^0x[a-fA-F0-9]{40}$/.test(routeId)) {
+		const byToken = await db
+			.select()
+			.from(agentPersonas)
+			.where(eq(agentPersonas.tokenAddress, routeId.toLowerCase()))
+			.limit(1);
+		if (byToken[0]) return byToken[0];
+	}
 
 	if (!routeIsUuid) return null;
 
