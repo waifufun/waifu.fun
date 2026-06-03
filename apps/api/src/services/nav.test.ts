@@ -162,7 +162,7 @@ test("EVM ERC20 enumerator handles scanner discovery and 429 manual fallback", a
 	assert.equal(fallback.stale[0]?.reason, "rate-limit");
 });
 
-test("HyperLiquid enumerator parses USDC margin and open perps", async () => {
+test("HyperLiquid enumerator values the account line at full equity, not free collateral", async () => {
 	const wallet = {
 		walletId: "hl1",
 		walletAddress: WALLET,
@@ -174,7 +174,11 @@ test("HyperLiquid enumerator parses USDC margin and open perps", async () => {
 		fetch: async () =>
 			new Response(
 				JSON.stringify({
+					// Free collateral is 12.34 but the account also has margin
+					// locked into the open BTC perp; accountValue (98.76) is the
+					// true equity the NAV line must carry.
 					withdrawable: "12.34",
+					marginSummary: { accountValue: "98.76" },
 					assetPositions: [
 						{
 							position: {
@@ -191,17 +195,20 @@ test("HyperLiquid enumerator parses USDC margin and open perps", async () => {
 			) as any,
 	});
 	assert.equal(result.holdings.length, 2);
-	assert.deepEqual(result.holdings[0], {
-		...wallet,
-		asset: "USDC",
-		contract: null,
-		balance: 12.34,
-		priceUsd: 1,
-		valueUsd: 12.34,
-		priced: true,
-		kind: "spot",
-		venue: "hyperliquid",
-	});
+	// The account line carries full equity (accountValue), NOT withdrawable.
+	const account = result.holdings[0]!;
+	assert.equal(account.asset, "USDC");
+	assert.equal(account.kind, "spot");
+	assert.equal(account.venue, "hyperliquid");
+	assert.equal(account.priced, true);
+	assert.equal(account.balance, 98.76);
+	assert.equal(account.valueUsd, 98.76);
+	// Free collateral is preserved on metadata for the health strip.
+	assert.equal(account.metadata?.withdrawableUsd, 12.34);
+	assert.equal(account.metadata?.accountValueUsd, 98.76);
+	// The perp row stays unpriced (valueUsd: null) so it is DETAIL only and is
+	// not double-counted on top of accountValue.
+	assert.equal(result.holdings[1]?.valueUsd, null);
 	assert.equal(result.holdings[1]?.kind, "perp");
 	assert.equal(result.holdings[1]?.asset, "BTC-USD");
 	assert.equal(result.holdings[1]?.balance, 0.5);
