@@ -3,12 +3,12 @@ import type { Context } from "hono";
 
 import type { RequireAgentOwnershipBindings } from "../../middleware/patron-auth.js";
 import { requireAgentOwnership, requirePatron } from "../../middleware/patron-auth.js";
+import { buildStewardClientForIdentity, resolveStewardIdentity } from "../../services/agent-launch/steward-identity.js";
 import {
 	type StewardClient,
 	StewardError,
 	type StewardPolicyCaps,
 	type StewardPolicyRule,
-	createStewardClient,
 } from "../../services/agent-launch/steward.js";
 
 /**
@@ -41,13 +41,32 @@ export function __setTradingPolicyStewardForTest(client: StewardClient | undefin
 	deps.steward = client;
 }
 
-function getSteward(): StewardClient | null {
-	if (deps.steward) return deps.steward;
-	const baseUrl = process.env.STEWARD_API_URL;
-	const apiKey = process.env.STEWARD_API_KEY;
-	const tenantId = process.env.STEWARD_TENANT_ID ?? "waifu";
-	if (!baseUrl || !apiKey) return null;
-	return createStewardClient({ baseUrl, apiKey, tenantId });
+/**
+ * Resolve the Steward client + the agentId to address for THIS agent.
+ *
+ * Cloud agents (those with `agent_personas.steward_agent_id`) live under a
+ * different Steward tenant (e.g. Sol = `sol-waifu` under `elizacloud`) that the
+ * waifu tenant key cannot reach; for those we mint a cross-tenant HS256 bearer.
+ * Everyone else uses the waifu slug + tenant key (unchanged behaviour).
+ *
+ * Returns the agentId to call Steward with alongside the client, so the route
+ * never sends the raw waifu slug to the wrong tenant.
+ */
+async function getStewardForAgent(
+	c: Context<RequireAgentOwnershipBindings>,
+): Promise<{ client: StewardClient; stewardAgentId: string } | null> {
+	const patronAgent = c.get("patronAgent");
+	const identity = resolveStewardIdentity({
+		waifuSlug: patronAgent.agentId,
+		stewardAgentId: patronAgent.stewardAgentId,
+	});
+	// Test-injected client short-circuits, but we still resolve the right agentId.
+	if (deps.steward) {
+		return { client: deps.steward, stewardAgentId: identity.stewardAgentId };
+	}
+	const client = await buildStewardClientForIdentity(identity);
+	if (!client) return null;
+	return { client, stewardAgentId: identity.stewardAgentId };
 }
 
 /** Map a StewardError onto a clean JSON response without leaking tenant internals. */
@@ -69,11 +88,10 @@ function stewardErrorResponse(c: Context<RequireAgentOwnershipBindings>, err: un
 // ── caps: dailyCap / perOrderCap / leverageCap / allowedAssets / allowedVenues ──
 
 app.get("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), async (c) => {
-	const steward = getSteward();
-	if (!steward) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
-	const agentSlug = c.get("patronAgent").agentId;
+	const resolved = await getStewardForAgent(c);
+	if (!resolved) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
 	try {
-		const policy = await steward.getPolicy(agentSlug);
+		const policy = await resolved.client.getPolicy(resolved.stewardAgentId);
 		return c.json({ ok: true, policy });
 	} catch (err) {
 		// A 404 means "no policy set yet" — return an empty caps object so the
@@ -86,9 +104,8 @@ app.get("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), asy
 });
 
 app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), async (c) => {
-	const steward = getSteward();
-	if (!steward) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
-	const agentSlug = c.get("patronAgent").agentId;
+	const resolved = await getStewardForAgent(c);
+	if (!resolved) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
 
 	let body: unknown;
 	try {
@@ -102,7 +119,7 @@ app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), asy
 
 	const caps = sanitizeCaps(body as Record<string, unknown>);
 	try {
-		const policy = await steward.putPolicy(agentSlug, caps);
+		const policy = await resolved.client.putPolicy(resolved.stewardAgentId, caps);
 		return c.json({ ok: true, policy });
 	} catch (err) {
 		return stewardErrorResponse(c, err);
@@ -112,11 +129,10 @@ app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), asy
 // ── rules: includes the approved-addresses withdraw whitelist ──
 
 app.get("/:id/trading-policies", requirePatron(), requireAgentOwnership("id"), async (c) => {
-	const steward = getSteward();
-	if (!steward) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
-	const agentSlug = c.get("patronAgent").agentId;
+	const resolved = await getStewardForAgent(c);
+	if (!resolved) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
 	try {
-		const policies = await steward.getPolicies(agentSlug);
+		const policies = await resolved.client.getPolicies(resolved.stewardAgentId);
 		return c.json({ ok: true, policies });
 	} catch (err) {
 		if (err instanceof StewardError && err.status === 404) {
@@ -127,9 +143,8 @@ app.get("/:id/trading-policies", requirePatron(), requireAgentOwnership("id"), a
 });
 
 app.put("/:id/trading-policies", requirePatron(), requireAgentOwnership("id"), async (c) => {
-	const steward = getSteward();
-	if (!steward) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
-	const agentSlug = c.get("patronAgent").agentId;
+	const resolved = await getStewardForAgent(c);
+	if (!resolved) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
 
 	let body: unknown;
 	try {
@@ -148,7 +163,7 @@ app.put("/:id/trading-policies", requirePatron(), requireAgentOwnership("id"), a
 	}
 
 	try {
-		const policies = await steward.putPolicies(agentSlug, rules);
+		const policies = await resolved.client.putPolicies(resolved.stewardAgentId, rules);
 		return c.json({ ok: true, policies });
 	} catch (err) {
 		return stewardErrorResponse(c, err);
