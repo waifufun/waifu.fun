@@ -22,9 +22,9 @@ const TYPE_STYLES: Record<string, { dot: string; label: string }> = {
 	error: { dot: "bg-[var(--negative)]", label: "error" },
 };
 
-function styleFor(type: string) {
-	const key = type.toLowerCase();
-	return TYPE_STYLES[key] ?? { dot: "bg-[var(--text-tertiary)]", label: type.toLowerCase() };
+function styleFor(type: string | null | undefined) {
+	const key = (typeof type === "string" ? type : "event").toLowerCase();
+	return TYPE_STYLES[key] ?? { dot: "bg-[var(--text-tertiary)]", label: key };
 }
 
 function formatTime(iso: string | null | undefined): string {
