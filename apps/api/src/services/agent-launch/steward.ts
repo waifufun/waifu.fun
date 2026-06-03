@@ -28,9 +28,19 @@ export class StewardError extends Error {
 export interface StewardConfig {
 	/** Base URL, e.g. "https://eliza.steward.fi" */
 	baseUrl: string;
-	/** Tenant API key (X-Steward-Key). Required for server-to-server calls. */
-	apiKey: string;
-	/** Tenant id (X-Steward-Tenant). Required when the key is tenant-scoped. */
+	/**
+	 * Tenant API key (X-Steward-Key). Required when authenticating server-to-server
+	 * with a tenant-scoped key. Mutually exclusive with `bearerToken`.
+	 */
+	apiKey?: string;
+	/**
+	 * Pre-minted HS256 bearer (Authorization: Bearer). Use this for cross-tenant
+	 * reads/writes where the tenant API key has no access (e.g. a cloud agent whose
+	 * Steward identity lives under tenant `elizacloud`, which the waifu tenant key
+	 * cannot reach). Mutually exclusive with `apiKey`.
+	 */
+	bearerToken?: string;
+	/** Tenant id (X-Steward-Tenant). Required. */
 	tenantId: string;
 	/** Optional fetch impl for tests. Defaults to globalThis.fetch. */
 	fetchImpl?: typeof fetch;
@@ -111,19 +121,21 @@ const STEWARD_DEFAULT_BASE_URL = "https://eliza.steward.fi";
 
 export class StewardClient {
 	private readonly baseUrl: string;
-	private readonly apiKey: string;
+	private readonly apiKey: string | undefined;
+	private readonly bearerToken: string | undefined;
 	private readonly tenantId: string;
 	private readonly fetchImpl: typeof fetch;
 
 	constructor(config: StewardConfig) {
-		if (!config.apiKey) {
-			throw new Error("StewardClient: apiKey required");
+		if (!config.apiKey && !config.bearerToken) {
+			throw new Error("StewardClient: apiKey or bearerToken required");
 		}
 		if (!config.tenantId) {
 			throw new Error("StewardClient: tenantId required");
 		}
 		this.baseUrl = (config.baseUrl || STEWARD_DEFAULT_BASE_URL).replace(/\/+$/, "");
 		this.apiKey = config.apiKey;
+		this.bearerToken = config.bearerToken;
 		this.tenantId = config.tenantId;
 		this.fetchImpl = config.fetchImpl ?? globalThis.fetch.bind(globalThis);
 	}
@@ -262,12 +274,19 @@ export class StewardClient {
 	}
 
 	private buildHeaders(): Record<string, string> {
-		return {
+		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 			Accept: "application/json",
-			"X-Steward-Key": this.apiKey,
 			"X-Steward-Tenant": this.tenantId,
 		};
+		// Prefer the pre-minted bearer (cross-tenant) when present; otherwise fall
+		// back to the tenant-scoped API key.
+		if (this.bearerToken) {
+			headers.Authorization = `Bearer ${this.bearerToken}`;
+		} else if (this.apiKey) {
+			headers["X-Steward-Key"] = this.apiKey;
+		}
+		return headers;
 	}
 
 	private async parseJson(response: Response): Promise<unknown> {

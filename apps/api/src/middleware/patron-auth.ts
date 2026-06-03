@@ -26,6 +26,7 @@ import type { MiddlewareHandler } from "hono";
 import { verifySiweMessage } from "../lib/auth-service.js";
 import type { AppBindings } from "../lib/bindings.js";
 import { type WalletChain, ensurePrimaryPatronWallet, pickPrimaryWallet } from "../lib/patron-wallet.js";
+import { isUuid } from "../lib/validation.js";
 import { type StewardAuthPrincipal, verifyStewardJwt } from "./steward-auth.js";
 
 // Re-export the legacy launch auth surface for back-compat. W9.2 retires the
@@ -56,6 +57,13 @@ export type AgentOwnershipContext = {
 	id: string;
 	/** Stable internal agent slug (`agent_personas.agent_id`). */
 	agentId: string;
+	/**
+	 * The agent's real Steward agentId (`agent_personas.steward_agent_id`), when
+	 * set. Differs from the waifu slug for cloud-provisioned agents (e.g. Sol's
+	 * slug is `sol-the-architect` but her Steward identity is `sol-waifu` under
+	 * tenant `elizacloud`). Steward-facing proxies MUST prefer this over `agentId`.
+	 */
+	stewardAgentId: string | null;
 	ownerStewardUserId: string | null;
 	ownerAddress: string | null;
 };
@@ -246,8 +254,16 @@ export function requireAgentOwnership(paramName = "id"): MiddlewareHandler<Requi
 		}
 
 		const db = getDb();
-		const rows = await db.select().from(agentPersonas).where(eq(agentPersonas.id, agentId)).limit(1);
-		let agent = rows[0];
+		// `agent_personas.id` is a uuid column: querying it with a non-uuid string
+		// (a slug like `sol-the-architect`, or a token address `0x…`) makes Postgres
+		// throw `invalid input syntax for type uuid`, which surfaced as a 500 on the
+		// trading-policy / x / adapter routes. Only hit the uuid column when the
+		// param actually looks like a uuid; otherwise resolve by slug directly.
+		let agent: typeof agentPersonas.$inferSelect | undefined;
+		if (isUuid(agentId)) {
+			const rows = await db.select().from(agentPersonas).where(eq(agentPersonas.id, agentId)).limit(1);
+			agent = rows[0];
+		}
 
 		// Most newer patron routes pass the persona UUID as `:id`, but a few
 		// legacy v2 routes still use the stable agent slug (`agent_personas.agent_id`).
@@ -277,6 +293,7 @@ export function requireAgentOwnership(paramName = "id"): MiddlewareHandler<Requi
 		c.set("patronAgent", {
 			id: agent.id,
 			agentId: agent.agentId,
+			stewardAgentId: agent.stewardAgentId ?? null,
 			ownerStewardUserId,
 			ownerAddress,
 		});
@@ -307,16 +324,25 @@ async function readWalletResolutionBody(c: Parameters<MiddlewareHandler>[0]): Pr
 }
 
 async function resolveAgentForOwnership(db: DbHandle, routeId: string) {
-	const byPersonaId = await db.select().from(agentPersonas).where(eq(agentPersonas.id, routeId)).limit(1);
-	if (byPersonaId[0]) return byPersonaId[0];
+	// Guard the uuid columns: `agent_personas.id` and `launches.id` are uuid, so
+	// querying them with a slug or token address throws at Postgres. Only hit
+	// them when the param is a valid uuid.
+	const routeIsUuid = isUuid(routeId);
+	if (routeIsUuid) {
+		const byPersonaId = await db.select().from(agentPersonas).where(eq(agentPersonas.id, routeId)).limit(1);
+		if (byPersonaId[0]) return byPersonaId[0];
+	}
 
 	const byAgentId = await db.select().from(agentPersonas).where(eq(agentPersonas.agentId, routeId)).limit(1);
 	if (byAgentId[0]) return byAgentId[0];
+
+	if (!routeIsUuid) return null;
 
 	const byLaunch = await db
 		.select({
 			id: agentPersonas.id,
 			agentId: agentPersonas.agentId,
+			stewardAgentId: agentPersonas.stewardAgentId,
 			ownerStewardUserId: agentPersonas.ownerStewardUserId,
 			ownerAddress: agentPersonas.ownerAddress,
 		})
@@ -409,6 +435,7 @@ export function requireWalletOwnership(paramName = "id"): MiddlewareHandler<Wall
 		c.set("patronAgent", {
 			id: agent.id,
 			agentId: agent.agentId,
+			stewardAgentId: (agent as { stewardAgentId?: string | null }).stewardAgentId ?? null,
 			ownerStewardUserId: agent.ownerStewardUserId ?? null,
 			ownerAddress,
 		} as AgentOwnershipContext);
