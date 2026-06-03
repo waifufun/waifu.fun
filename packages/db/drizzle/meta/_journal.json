@@ -288,6 +288,13 @@
       "when": 1780108800000,
       "tag": "0040_vault_reorg_idempotency",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1780531200000,
+      "tag": "0041_credit_offramp_mints",
+      "breakpoints": true
     }
   ]
 }

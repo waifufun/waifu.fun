@@ -26,7 +26,9 @@ import { CreditsOffRamp, type OffRampElizaClient } from "../../../services/credi
 import {
 	createElizaCloudClient,
 	resolveElizaCloudApiKey,
+	resolveElizaCloudPlatformStewardUserId,
 	resolveElizaCloudSessionToken,
+	resolveElizaCloudStewardSecret,
 } from "../../../services/eliza-client.js";
 import { ElizaCryptoNotAutomatableError } from "../../../services/eliza-client.js";
 
@@ -39,7 +41,19 @@ function buildOffRamp(): CreditsOffRamp {
 	const apiKey = resolveElizaCloudApiKey() ?? "";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "";
 	const sessionToken = resolveElizaCloudSessionToken() ?? "";
-	const client = createElizaCloudClient({ baseUrl, apiKey, serviceKey, sessionToken, logger: console });
+	const stewardSessionSecret = resolveElizaCloudStewardSecret() ?? "";
+	const platformStewardUserId = resolveElizaCloudPlatformStewardUserId() ?? "";
+	const platformStewardTenantId = process.env.ELIZA_CLOUD_PLATFORM_STEWARD_TENANT_ID ?? "";
+	const client = createElizaCloudClient({
+		baseUrl,
+		apiKey,
+		serviceKey,
+		sessionToken,
+		stewardSessionSecret,
+		platformStewardUserId,
+		platformStewardTenantId,
+		logger: console,
+	});
 	// The off-ramp only needs the crypto methods; the full client implements them.
 	return new CreditsOffRamp(client as unknown as OffRampElizaClient);
 }
