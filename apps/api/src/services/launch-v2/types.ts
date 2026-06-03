@@ -53,6 +53,13 @@ export interface CreateLaunchInput {
 	vanitySalt: `0x${string}`;
 	predictedTokenAddress: `0x${string}`;
 	noBurn?: boolean;
+	/**
+	 * Wave O.1 LP5 PancakeV3 treasury tick ranges (per LP tier, length 4).
+	 * The deployed LaunchFactory's createLaunch requires these. When omitted
+	 * the launch-service falls back to the canonical tier defaults.
+	 */
+	treasuryTickLowers?: [number, number, number, number];
+	treasuryTickUppers?: [number, number, number, number];
 }
 
 export interface LaunchAddresses {

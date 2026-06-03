@@ -36,6 +36,12 @@ export const launchFactoryAbi = [
 					{ name: "agentSafeThreshold", type: "uint256" },
 					{ name: "platformBps", type: "uint16" },
 					{ name: "patronBps", type: "uint16" },
+					// Wave O.1 LP5: PancakeV3 treasury tick ranges per LP tier. The
+					// deployed factory's createLaunch expects these (selector
+					// 0x3323a9e5). Omitting them sends the wrong calldata and the
+					// launch reverts with `execution reverted: 0x`.
+					{ name: "treasuryTickLowers", type: "int24[4]" },
+					{ name: "treasuryTickUppers", type: "int24[4]" },
 				],
 			},
 		],
