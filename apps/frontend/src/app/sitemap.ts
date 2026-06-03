@@ -1,10 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import {
-	fetchAgentAddressesForStaticExport,
-	fetchAgentTokenRouteParamsForStaticExport,
-	fetchTokenRouteParamsForStaticExport,
-} from "@/lib/static-export-paths";
+import { fetchAgentAddressesForStaticExport, fetchTokenRouteParamsForStaticExport } from "@/lib/static-export-paths";
 
 // This is an async sitemap (it enumerates pages at build time), so under
 // `output: export` it must be forced to static generation.
@@ -48,9 +44,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	}));
 
 	try {
-		const [agents, agentTokens, tokens] = await Promise.all([
+		const [agents, tokens] = await Promise.all([
 			fetchAgentAddressesForStaticExport(),
-			fetchAgentTokenRouteParamsForStaticExport(),
 			fetchTokenRouteParamsForStaticExport(),
 		]);
 
@@ -64,7 +59,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			});
 		}
 
-		for (const { chain, chainId, contractAddress } of [...agentTokens, ...tokens]) {
+		// Only non-BSC/56 token pages are statically pre-rendered; BSC/56 agent
+		// tokens redirect to /agent/<addr> (already emitted above) and have no
+		// static token HTML, so listing /token/bsc/56/<addr> would be a soft-404.
+		for (const { chain, chainId, contractAddress } of tokens) {
 			if (contractAddress.toLowerCase() === ZERO_ADDRESS) continue;
 			entries.push({
 				url: `${SITE_URL}/token/${chain}/${chainId}/${contractAddress}`,
