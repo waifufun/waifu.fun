@@ -154,6 +154,12 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			try {
 				const receipt = await publicClient.waitForTransactionReceipt({
 					hash: transaction.hash as `0x${string}`,
+					// Don't await a dropped tx forever; follow speed-ups/cancellations so a
+					// replaced tx still resolves to its final receipt instead of hanging.
+					timeout: 4 * 60 * 1000,
+					onReplaced: (replacement) => {
+						console.info("swap tx replaced:", replacement.reason);
+					},
 				});
 
 				const success = receipt.status === "success";
@@ -178,6 +184,12 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				);
 			} catch (error) {
 				console.error("Error monitoring transaction:", error);
+				// Don't silently drop a funds-moving tx — surface a failure toast (with the
+				// explorer link) so the user knows it timed out / was dropped and can verify
+				// on-chain rather than assume it confirmed.
+				if (!transaction.toastShown) {
+					showTransactionToast(transaction, false);
+				}
 				setPendingTransactions((prev) => prev.filter((tx) => tx.hash !== transaction.hash));
 			} finally {
 				monitoringRef.current.delete(transaction.hash);
