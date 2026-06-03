@@ -1,34 +1,41 @@
 /**
- * Holdings Allocation panel (Wave T worker B, sophistication pass 2026-05-22).
+ * Holdings cockpit (Wave T worker B, multi-wallet redesign 2026-06-02).
  *
- * Interactive, dense, monochrome composition view of the agent's NAV.
+ * Two surfaces behind one segmented control in the header:
  *
- * Three view modes selectable via a tiny pill row in the header:
- *   - by asset   (default): one row per (chain, contract || asset)
- *   - by chain:  collapse all assets into per-chain totals
- *   - by wallet: surface the per-wallet NAV breakdown when present
+ *   - wallets (default): a role-grouped wallet ledger. one row per real
+ *     on-chain wallet, grouped under its role (agent-safe / agent-hot /
+ *     patron / venue-bridge), each row carrying a chain badge, a venue
+ *     tag when custodied off-chain, a copy-address affordance, a tiny
+ *     single-green composition bar, and its usd value + share of nav.
+ *     this is the "where is the money + what's it doing" view a degen
+ *     scans first. (.impeccable.md: DENSE, hairlines-not-cards, mono nums.)
  *
- * Donut interactions:
- *   - hover a slice: it grows (recharts <Sector activeShape>) and a
- *     custom tooltip surfaces asset / balance / USD value / pct of NAV
- *   - click a slice (in by-asset mode with wallet breakdowns present):
- *     opens an inline drilldown showing the wallet split
+ *   - allocation: the donut. cleaner ring, a real segmented asset/chain/
+ *     wallet toggle, and a legend that carries role/chain context. slices
+ *     are a single-hue green ramp (brand discipline, no second accent).
  *
- * Brand discipline: every slice is a tinted green. No sky, amber, violet,
- * pink, or red. Single accent only.
+ * Live: a pulse dot rides the header (holdings repoll every 10s) and the
+ * nav value tickers on change. honest empty states in wave-t grammar.
+ *
+ * Brand discipline: every tinted swatch is a green at decreasing opacity.
+ * no sky, amber, violet, pink, red. single accent only. no hex outside
+ * THEME_TOKENS.
  */
 
 "use client";
 
-import { type CSSProperties, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Check, Copy } from "lucide-react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector } from "recharts";
 
 import { cn } from "@/lib/utils";
 
-import { formatCompactNum, formatCompactUsd } from "@/lib/wave-t/format";
-import type { ChainHolding, HoldingsSnapshot } from "@/lib/wave-t/holdings";
+import { formatCompactUsd } from "@/lib/wave-t/format";
+import type { ChainHolding, HoldingsSnapshot, RoleLine, WalletLine } from "@/lib/wave-t/holdings";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
-import { Label, Panel, TokenIcon } from "./_primitives";
+import { Hairline, Label, Panel, Pulse, StatPill, TokenIcon } from "./_primitives";
 
 // Monochrome ramp anchored on --accent. Single-hue brand discipline:
 // every slice is a tinted green at decreasing intensities.
@@ -42,7 +49,349 @@ const CHAIN_KEY_TO_TOKEN_CHAIN: Record<string, TokenChain> = {
 	op: "ethereum",
 };
 
+// Short, scannable chain labels for the wallet-ledger badges. CAPS per the
+// copy rule for chain tags ([BNB CHAIN] style); kept to 3-4 glyphs.
+const CHAIN_BADGE: Record<string, string> = {
+	bsc: "BSC",
+	eth: "ETH",
+	arb: "ARB",
+	base: "BASE",
+	op: "OP",
+};
+
+// Human label for each wallet role. The API role strings are stable; this
+// keeps the copy lowercase + tight per the wave-t voice.
+const ROLE_LABEL: Record<string, string> = {
+	"agent-safe": "agent safe",
+	"agent-hot": "agent hot",
+	patron: "patron",
+	"venue-bridge": "venue bridge",
+};
+
+// One-line role descriptors. Tells a viewer what the bucket is *for* without
+// a paragraph. Lowercase, no marketing-ese.
+const ROLE_HINT: Record<string, string> = {
+	"agent-safe": "cold treasury",
+	"agent-hot": "live trading",
+	patron: "sponsor stake",
+	"venue-bridge": "venue collateral",
+};
+
+type Surface = "wallets" | "allocation";
 type ViewMode = "asset" | "chain" | "wallet";
+
+function tintForIndex(i: number): string {
+	const opacity = SLICE_OPACITIES[i] ?? 0.08;
+	return `color-mix(in srgb, var(--accent) ${Math.round(opacity * 100)}%, transparent)`;
+}
+
+function roleLabelOf(role: string): string {
+	return ROLE_LABEL[role] ?? role.replace(/-/g, " ");
+}
+
+// ── ticking nav value (subtle reprice motion) ──────────────────
+
+function useTickFlash(value: number): "up" | "down" | null {
+	const prev = useRef(value);
+	const [dir, setDir] = useState<"up" | "down" | null>(null);
+	useEffect(() => {
+		const prior = prev.current;
+		prev.current = value;
+		// No change: nothing to flash, leave any settled state alone.
+		if (value === prior) return;
+		setDir(value > prior ? "up" : "down");
+		const t = setTimeout(() => setDir(null), 700);
+		return () => clearTimeout(t);
+	}, [value]);
+	return dir;
+}
+
+// ── root ────────────────────────────────────────────────────────
+
+export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot }) {
+	const roles = snapshot.roles ?? [];
+	const hasLedger = roles.length > 0;
+	// Default to the wallets ledger when it carries data; fall back to the
+	// donut for legacy single-wallet snapshots that have no role breakdown.
+	const [surface, setSurface] = useState<Surface>(hasLedger ? "wallets" : "allocation");
+	// Track whether the viewer has manually chosen a surface. The agent page
+	// is static-exported: the SSG seed often has no `roles` yet, so the
+	// initializer above picks "allocation". Once useLiveHoldings polls an
+	// aggregated snapshot the ledger appears, and we promote it to the
+	// default, but only while the viewer has not clicked a tab themselves.
+	const userPicked = useRef(false);
+	const pick = (s: Surface) => {
+		userPicked.current = true;
+		setSurface(s);
+	};
+	useEffect(() => {
+		if (!userPicked.current && hasLedger && surface === "allocation") setSurface("wallets");
+	}, [hasLedger, surface]);
+
+	const flash = useTickFlash(snapshot.navUsd);
+	const reduce = useReducedMotion();
+
+	return (
+		<Panel className="flex h-full flex-col">
+			<Label
+				right={
+					<div className="flex items-center gap-1">
+						{hasLedger ? (
+							<SurfacePill active={surface === "wallets"} label="wallets" onClick={() => pick("wallets")} />
+						) : null}
+						<SurfacePill active={surface === "allocation"} label="allocation" onClick={() => pick("allocation")} />
+					</div>
+				}
+			>
+				<Pulse />
+				<span>treasury</span>
+			</Label>
+
+			{/* NAV headline. The single number every viewer wants first. */}
+			<div className="mb-4 flex items-end justify-between gap-3">
+				<div className="flex flex-col gap-0.5">
+					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">nav</span>
+					<span
+						className={cn(
+							"font-mono text-[22px] leading-none tabular-nums transition-colors duration-500",
+							flash === "up"
+								? "text-[var(--positive)]"
+								: flash === "down"
+									? "text-[var(--negative)]"
+									: "text-[var(--text-primary)]",
+						)}
+					>
+						{formatCompactUsd(snapshot.navUsd)}
+					</span>
+				</div>
+				{hasLedger ? (
+					<div className="flex items-center gap-1.5 pb-0.5">
+						<StatPill>
+							{roles.length} {roles.length === 1 ? "role" : "roles"}
+						</StatPill>
+						<StatPill>{roles.reduce((n, r) => n + r.wallets.length, 0)} wallets</StatPill>
+					</div>
+				) : null}
+			</div>
+
+			<Hairline className="mb-3" />
+
+			<div className="flex-1">
+				<AnimatePresence initial={false} mode="wait">
+					{surface === "wallets" && hasLedger ? (
+						<motion.div
+							key="wallets"
+							initial={reduce ? false : { opacity: 0, y: 4 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
+							transition={{ duration: 0.15 }}
+						>
+							<WalletLedger roles={roles} navUsd={snapshot.navUsd} />
+						</motion.div>
+					) : (
+						<motion.div
+							key="allocation"
+							initial={reduce ? false : { opacity: 0, y: 4 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
+							transition={{ duration: 0.15 }}
+						>
+							<AllocationDonut snapshot={snapshot} />
+						</motion.div>
+					)}
+				</AnimatePresence>
+			</div>
+		</Panel>
+	);
+}
+
+// ── wallet ledger ──────────────────────────────────────────────
+
+function WalletLedger({ roles, navUsd }: { roles: RoleLine[]; navUsd: number }) {
+	return (
+		<ul className="flex flex-col gap-3">
+			{roles.map((role) => (
+				<RoleGroup key={role.role} role={role} navUsd={navUsd} />
+			))}
+		</ul>
+	);
+}
+
+function RoleGroup({ role, navUsd }: { role: RoleLine; navUsd: number }) {
+	const sharePct = navUsd > 0 ? (role.valueUsd / navUsd) * 100 : 0;
+	const hint = ROLE_HINT[role.role];
+	return (
+		<li>
+			{/* Role header: name + what-it's-for hint on the left, total + share
+			    on the right. A hairline ties the wallets visually beneath it. */}
+			<div className="flex items-baseline justify-between gap-2 pb-2">
+				<div className="flex min-w-0 items-baseline gap-2">
+					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+						{roleLabelOf(role.role)}
+					</span>
+					{hint ? (
+						<span className="truncate font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]/70">
+							{hint}
+						</span>
+					) : null}
+				</div>
+				<div className="flex shrink-0 items-baseline gap-2">
+					<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
+						{formatCompactUsd(role.valueUsd)}
+					</span>
+					<span className="w-10 text-right font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
+						{sharePct.toFixed(1)}%
+					</span>
+				</div>
+			</div>
+			<div className="rounded-md border border-[var(--border-soft)] bg-white/[0.012]">
+				{role.wallets.map((w, i) => (
+					<WalletRow
+						key={`${role.role}-${w.address || w.label}-${i}`}
+						wallet={w}
+						navUsd={navUsd}
+						showTopBorder={i > 0}
+					/>
+				))}
+			</div>
+		</li>
+	);
+}
+
+function WalletRow({
+	wallet,
+	navUsd,
+	showTopBorder,
+}: {
+	wallet: WalletLine;
+	navUsd: number;
+	showTopBorder: boolean;
+}) {
+	const sharePct = navUsd > 0 ? (wallet.valueUsd / navUsd) * 100 : 0;
+	const chainTag = CHAIN_BADGE[wallet.chain] ?? wallet.chainName.toUpperCase();
+	const top = wallet.assets[0];
+	const topChain = CHAIN_KEY_TO_TOKEN_CHAIN[wallet.chain] ?? "ethereum";
+
+	return (
+		<div
+			className={cn(
+				"flex flex-col gap-2 px-3 py-2.5 transition-colors hover:bg-white/[0.015]",
+				showTopBorder ? "border-t border-[var(--border-soft)]" : "",
+			)}
+		>
+			<div className="flex items-center justify-between gap-2">
+				<div className="flex min-w-0 items-center gap-2">
+					{/* Lead asset icon so a wallet reads at a glance (WAIFU-heavy
+					    safe vs BNB hot vs USDC bridge). */}
+					{top ? (
+						<TokenIcon address="" chain={topChain} size={16} symbol={top.asset} />
+					) : (
+						<span className="inline-block h-4 w-4 shrink-0 rounded-full bg-white/[0.04]" />
+					)}
+					<span className="truncate font-mono text-[11px] text-[var(--text-primary)]">{wallet.label}</span>
+				</div>
+				<span className="shrink-0 font-mono text-[12px] tabular-nums text-[var(--text-primary)]">
+					{formatCompactUsd(wallet.valueUsd)}
+				</span>
+			</div>
+
+			{/* Composition bar: single-green stacked share of this wallet across
+			    its assets. Pure brand-hue, no second color. */}
+			<CompositionBar assets={wallet.assets} />
+
+			<div className="flex items-center justify-between gap-2">
+				<div className="flex min-w-0 items-center gap-1.5">
+					<ChainBadge tag={chainTag} />
+					{wallet.venue ? (
+						<span className="rounded-sm border border-[var(--accent)]/25 bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[var(--accent)]">
+							{wallet.venue.toLowerCase()}
+						</span>
+					) : null}
+					<AssetSummary assets={wallet.assets} />
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					{wallet.address ? <CopyAddress address={wallet.address} /> : null}
+					<span className="w-9 text-right font-mono text-[9.5px] tabular-nums text-[var(--text-tertiary)]">
+						{sharePct.toFixed(1)}%
+					</span>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function CompositionBar({ assets }: { assets: WalletLine["assets"] }) {
+	const total = assets.reduce((s, a) => s + Math.max(0, a.valueUsd), 0);
+	if (total <= 0) return <div className="h-1 w-full rounded-full bg-white/[0.05]" />;
+	const top = assets.slice(0, 5);
+	return (
+		<div className="flex h-1 w-full gap-px overflow-hidden rounded-full bg-white/[0.04]">
+			{top.map((a, i) => {
+				const pct = (a.valueUsd / total) * 100;
+				return (
+					<span
+						key={a.asset}
+						className="h-full first:rounded-l-full last:rounded-r-full"
+						style={{ width: `${pct}%`, backgroundColor: tintForIndex(i) }}
+						title={`${a.asset} ${formatCompactUsd(a.valueUsd)}`}
+					/>
+				);
+			})}
+		</div>
+	);
+}
+
+function AssetSummary({ assets }: { assets: WalletLine["assets"] }) {
+	if (assets.length === 0) return null;
+	const top = assets.slice(0, 2).map((a) => a.asset.toUpperCase());
+	const rest = assets.length - top.length;
+	return (
+		<span className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+			{top.join(" · ")}
+			{rest > 0 ? ` +${rest}` : ""}
+		</span>
+	);
+}
+
+function ChainBadge({ tag }: { tag: string }) {
+	return (
+		<span className="rounded-sm border border-[var(--border-mid)] bg-white/[0.025] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+			{tag}
+		</span>
+	);
+}
+
+function CopyAddress({ address }: { address: string }) {
+	const [copied, setCopied] = useState(false);
+	useEffect(() => {
+		if (!copied) return;
+		const t = setTimeout(() => setCopied(false), 900);
+		return () => clearTimeout(t);
+	}, [copied]);
+	const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
+	return (
+		<button
+			type="button"
+			onClick={(e) => {
+				e.stopPropagation();
+				navigator.clipboard?.writeText(address).then(
+					() => setCopied(true),
+					() => undefined,
+				);
+			}}
+			title={copied ? "copied" : address}
+			className={cn(
+				"inline-flex items-center gap-1 rounded-sm px-1 py-0.5 font-mono text-[9px] tabular-nums transition-colors",
+				copied ? "text-[var(--accent)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
+			)}
+		>
+			<span>{short}</span>
+			{copied ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5 opacity-60" />}
+		</button>
+	);
+}
+
+// ── allocation donut ───────────────────────────────────────────
 
 type Slice = {
 	key: string;
@@ -53,22 +402,14 @@ type Slice = {
 	pct: number;
 	fill: string;
 	chain: TokenChain;
-	/** Source rows feeding this slice. Used to render the click drilldown. */
 	sources: ChainHolding[];
 };
-
-function tintForIndex(i: number): string {
-	const opacity = SLICE_OPACITIES[i] ?? 0.08;
-	return `color-mix(in srgb, var(--accent) ${Math.round(opacity * 100)}%, transparent)`;
-}
 
 function slicesByAsset(holdings: ChainHolding[], navUsd: number): Slice[] {
 	const live = holdings.filter((h) => h.valueUsd > 0).sort((a, b) => b.valueUsd - a.valueUsd);
 	return live.slice(0, 7).map((h, i) => ({
 		key: `${h.chain}-${h.contract ?? h.asset}`,
 		label: h.asset,
-		// Prefer venue label (e.g. 'hyperliquid') when the asset is custodied
-		// at a venue distinct from the bridge chain. Falls back to chain name.
 		sub: (h.displayVenue ?? h.chainName).toLowerCase(),
 		balance: h.balance,
 		valueUsd: h.valueUsd,
@@ -93,9 +434,6 @@ function slicesByChain(holdings: ChainHolding[], navUsd: number): Slice[] {
 	}
 	const sorted = Array.from(grouped.entries()).sort(([, a], [, b]) => b.valueUsd - a.valueUsd);
 	return sorted.slice(0, 7).map(([chain, group], i) => {
-		// When every row in the chain bucket shares a displayVenue (e.g. all
-		// rows on 'arb' are inside the Hyperliquid clearinghouse), surface the
-		// venue as the label instead of the EVM chain.
 		const venues = new Set(group.rows.map((r) => r.displayVenue).filter(Boolean));
 		const label = venues.size === 1 ? Array.from(venues)[0]!.toLowerCase() : group.chainName.toLowerCase();
 		return {
@@ -113,9 +451,6 @@ function slicesByChain(holdings: ChainHolding[], navUsd: number): Slice[] {
 }
 
 function slicesByWallet(holdings: ChainHolding[], navUsd: number): Slice[] {
-	// Aggregate by wallet role across every (chain, asset) row that
-	// carries a wallets[] breakdown. When wallets are absent (legacy
-	// burner stub), fall back to a single "burner" pseudo-bucket.
 	const buckets = new Map<string, { label: string; valueUsd: number; rows: ChainHolding[] }>();
 	let hasAnyBreakdown = false;
 	for (const h of holdings) {
@@ -135,8 +470,6 @@ function slicesByWallet(holdings: ChainHolding[], navUsd: number): Slice[] {
 		}
 	}
 	if (!hasAnyBreakdown) {
-		// Single-wallet fallback path. Surface one "burner" bucket so the
-		// donut still renders something honest in this mode.
 		const total = holdings.reduce((s, h) => s + Math.max(0, h.valueUsd), 0);
 		if (total <= 0) return [];
 		return [
@@ -184,10 +517,6 @@ type SectorShapeProps = {
 	isActive?: boolean;
 };
 
-// Per-sector renderer. Recharts v3 wires the hovered slice's `isActive`
-// prop here, so the active slice grows outward by 4px and inactive
-// slices render at base radius. Replaces the deprecated activeShape +
-// activeIndex pair from recharts v2.
 function SliceShape(props: SectorShapeProps) {
 	const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, isActive } = props;
 	if (
@@ -213,17 +542,14 @@ function SliceShape(props: SectorShapeProps) {
 	);
 }
 
-export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot }) {
+function AllocationDonut({ snapshot }: { snapshot: HoldingsSnapshot }) {
 	const [mode, setMode] = useState<ViewMode>("asset");
 	const [activeKey, setActiveKey] = useState<string | null>(null);
-	const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
 	const slices = useMemo(() => slicesFor(mode, snapshot.holdings, snapshot.navUsd), [mode, snapshot]);
 	const hasData = slices.length > 0;
 	const activeSlice = activeKey ? (slices.find((s) => s.key === activeKey) ?? null) : null;
-	const expandedSlice = expandedKey ? (slices.find((s) => s.key === expandedKey) ?? null) : null;
 
-	// Recharts wants at least one row; draw a faint ring when empty.
 	const chartData = hasData ? slices.map((s) => ({ name: s.key, value: s.valueUsd })) : [{ name: "empty", value: 1 }];
 
 	const counts = useMemo(() => {
@@ -239,24 +565,29 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 	const hasWalletBreakdown = counts.wallets > 0;
 
 	return (
-		<Panel className="flex h-full flex-col">
-			<Label
-				right={
-					<div className="flex items-center gap-1">
-						<ViewPill active={mode === "asset"} label="asset" onClick={() => setMode("asset")} />
-						<ViewPill active={mode === "chain"} label="chain" onClick={() => setMode("chain")} />
-						{hasWalletBreakdown ? (
-							<ViewPill active={mode === "wallet"} label="wallet" onClick={() => setMode("wallet")} />
-						) : null}
-					</div>
-				}
-			>
-				holdings allocation
-			</Label>
+		<div className="flex flex-col">
+			{/* asset / chain / wallet segmented control */}
+			<div className="mb-4 flex justify-end">
+				<Segmented
+					options={
+						hasWalletBreakdown
+							? [
+									{ key: "asset", label: "asset" },
+									{ key: "chain", label: "chain" },
+									{ key: "wallet", label: "wallet" },
+								]
+							: [
+									{ key: "asset", label: "asset" },
+									{ key: "chain", label: "chain" },
+								]
+					}
+					value={mode}
+					onChange={(k) => setMode(k as ViewMode)}
+				/>
+			</div>
 
-			<div className="flex flex-1 items-start gap-4">
-				{/* Donut + center hover readout */}
-				<div className="relative h-[112px] w-[112px] shrink-0">
+			<div className="flex items-start gap-4">
+				<div className="relative h-[120px] w-[120px] shrink-0">
 					<ResponsiveContainer height="100%" width="100%">
 						<PieChart>
 							<Pie
@@ -265,14 +596,14 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 								data={chartData}
 								dataKey="value"
 								endAngle={-270}
-								innerRadius={38}
+								innerRadius={42}
 								isAnimationActive={false}
 								onMouseEnter={(_, idx) => {
 									const s = slices[idx];
 									if (s) setActiveKey(s.key);
 								}}
 								onMouseLeave={() => setActiveKey(null)}
-								outerRadius={52}
+								outerRadius={56}
 								paddingAngle={hasData && slices.length > 1 ? 1.5 : 0}
 								shape={SliceShape as never}
 								startAngle={90}
@@ -284,40 +615,33 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 							</Pie>
 						</PieChart>
 					</ResponsiveContainer>
-					{/* Center hover readout: when hovering a slice, surface its
-					    percentage. Otherwise show the asset count for the
-					    current mode. */}
 					<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
 						<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
 							{activeSlice ? activeSlice.label.toLowerCase() : mode}
 						</span>
-						<span className="font-mono text-[13px] text-[var(--text-primary)] tabular-nums">
+						<span className="font-mono text-[14px] text-[var(--text-primary)] tabular-nums">
 							{activeSlice ? `${activeSlice.pct.toFixed(1)}%` : countForMode(mode, counts)}
 						</span>
+						{!activeSlice ? (
+							<span className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]/70">
+								{mode === "asset" ? "assets" : mode === "chain" ? "chains" : "wallets"}
+							</span>
+						) : null}
 					</div>
 				</div>
 
-				{/* Legend table */}
 				<ul className="flex min-w-0 flex-1 flex-col">
 					{hasData ? (
-						slices.map((s, i) => {
-							const isExpanded = expandedKey === s.key;
-							const isActive = activeKey === s.key;
-							const expandable = mode === "asset" && s.sources[0]?.wallets && s.sources[0].wallets.length > 1;
-							return (
-								<LegendRow
-									key={s.key}
-									slice={s}
-									showTopBorder={i > 0}
-									isActive={isActive}
-									isExpanded={isExpanded}
-									expandable={!!expandable}
-									onEnter={() => setActiveKey(s.key)}
-									onLeave={() => setActiveKey((cur) => (cur === s.key ? null : cur))}
-									onToggle={() => (expandable ? setExpandedKey((cur) => (cur === s.key ? null : s.key)) : undefined)}
-								/>
-							);
-						})
+						slices.map((s, i) => (
+							<LegendRow
+								key={s.key}
+								slice={s}
+								showTopBorder={i > 0}
+								isActive={activeKey === s.key}
+								onEnter={() => setActiveKey(s.key)}
+								onLeave={() => setActiveKey((cur) => (cur === s.key ? null : cur))}
+							/>
+						))
 					) : (
 						<li className="flex flex-col gap-1">
 							<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -330,66 +654,13 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 					)}
 				</ul>
 			</div>
-
-			{/* Inline drilldown: per-wallet breakdown of the currently
-			    expanded asset. Sits beneath the donut+legend row, hairline-
-			    separated, monospaced. */}
-			{expandedSlice?.sources[0]?.wallets && expandedSlice.sources[0].wallets.length > 1 ? (
-				<div className="mt-3 border-t border-[var(--border-soft)] pt-3">
-					<div className="mb-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-						<span>{expandedSlice.label.toLowerCase()} · per wallet</span>
-						<button
-							className="text-[var(--text-tertiary)] hover:text-[var(--accent)]"
-							onClick={() => setExpandedKey(null)}
-							type="button"
-						>
-							close
-						</button>
-					</div>
-					<ul className="flex flex-col">
-						{expandedSlice.sources[0].wallets.map((w, wi) => {
-							const walletPct = expandedSlice.valueUsd > 0 ? (w.valueUsd / expandedSlice.valueUsd) * 100 : 0;
-							return (
-								<li
-									className={cn(
-										"flex items-center justify-between gap-2 py-1 font-mono text-[11px]",
-										wi > 0 ? "border-t border-[var(--border-soft)]" : "",
-									)}
-									key={`${expandedSlice.key}-${w.role}-${wi}`}
-								>
-									<span className="flex items-center gap-2">
-										<span className="rounded-sm border border-[var(--border-soft)] bg-white/[0.02] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-											{(w.role || w.label).replace(/-/g, " ")}
-										</span>
-										<span className="tabular-nums text-[var(--text-secondary)]">
-											{formatCompactNum(w.balance)} {expandedSlice.label}
-										</span>
-									</span>
-									<span className="flex items-center gap-2">
-										<span className="tabular-nums text-[var(--text-secondary)]">{formatCompactUsd(w.valueUsd)}</span>
-										<span className="w-10 text-right tabular-nums text-[var(--text-tertiary)]">
-											{walletPct.toFixed(1)}%
-										</span>
-									</span>
-								</li>
-							);
-						})}
-					</ul>
-				</div>
-			) : null}
-		</Panel>
+		</div>
 	);
 }
 
-// ── helpers ─────────────────────────────────────────────────────
+// ── shared controls ────────────────────────────────────────────
 
-function countForMode(mode: ViewMode, c: { assets: number; chains: number; wallets: number }): string {
-	if (mode === "chain") return `${c.chains}`;
-	if (mode === "wallet") return `${c.wallets}`;
-	return `${c.assets}`;
-}
-
-function ViewPill({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function SurfacePill({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
 	return (
 		<button
 			type="button"
@@ -406,47 +677,88 @@ function ViewPill({ active, label, onClick }: { active: boolean; label: string; 
 	);
 }
 
+/**
+ * Real segmented control: a single bordered track with a green pill that
+ * slides under the active option (framer-motion layoutId). Replaces the
+ * loose pill row so the asset/chain/wallet toggle reads as one control.
+ */
+function Segmented({
+	options,
+	value,
+	onChange,
+}: {
+	options: { key: string; label: string }[];
+	value: string;
+	onChange: (key: string) => void;
+}) {
+	return (
+		<div className="inline-flex items-center rounded-md border border-[var(--border-soft)] bg-white/[0.015] p-0.5">
+			{options.map((o) => {
+				const active = o.key === value;
+				return (
+					<button
+						key={o.key}
+						type="button"
+						onClick={() => onChange(o.key)}
+						className={cn(
+							"relative rounded-sm px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] transition-colors",
+							active ? "text-[var(--accent)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
+						)}
+					>
+						{active ? (
+							<motion.span
+								layoutId="alloc-segment"
+								className="absolute inset-0 rounded-sm border border-[var(--accent)]/25 bg-[var(--accent-soft)]"
+								transition={{ type: "spring", stiffness: 500, damping: 40 }}
+							/>
+						) : null}
+						<span className="relative">{o.label}</span>
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+function countForMode(mode: ViewMode, c: { assets: number; chains: number; wallets: number }): string {
+	if (mode === "chain") return `${c.chains}`;
+	if (mode === "wallet") return `${c.wallets}`;
+	return `${c.assets}`;
+}
+
 function LegendRow({
 	slice,
 	showTopBorder,
 	isActive,
-	isExpanded,
-	expandable,
 	onEnter,
 	onLeave,
-	onToggle,
 }: {
 	slice: Slice;
 	showTopBorder: boolean;
 	isActive: boolean;
-	isExpanded: boolean;
-	expandable: boolean;
 	onEnter: () => void;
 	onLeave: () => void;
-	onToggle?: () => void;
 }) {
 	const rowStyle: CSSProperties = isActive ? { backgroundColor: "rgba(255,255,255,0.02)" } : {};
-	const content = (
-		<>
+	return (
+		<li
+			className={cn(
+				"flex items-center justify-between gap-2 py-1.5 font-mono text-[11px] transition-colors",
+				showTopBorder ? "border-t border-[var(--border-soft)]" : "",
+			)}
+			onMouseEnter={onEnter}
+			onMouseLeave={onLeave}
+			style={rowStyle}
+		>
 			<span className="flex min-w-0 items-center gap-2">
 				<span
 					aria-hidden
 					className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
 					style={{ backgroundColor: slice.fill }}
 				/>
-				<TokenIcon address={slice.sources[0]?.contract ?? ""} chain={slice.chain} size={12} symbol={slice.label} />
+				<TokenIcon address={slice.sources[0]?.contract ?? ""} chain={slice.chain} size={13} symbol={slice.label} />
 				<span className="truncate text-[var(--text-primary)]">{slice.label}</span>
 				<span className="truncate text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">{slice.sub}</span>
-				{expandable ? (
-					<span
-						className={cn(
-							"font-mono text-[9px] uppercase tracking-[0.16em] transition-colors",
-							isExpanded ? "text-[var(--accent)]" : "text-[var(--text-tertiary)]/70",
-						)}
-					>
-						{isExpanded ? "−" : "+"}
-					</span>
-				) : null}
 			</span>
 			<span className="flex items-center gap-2">
 				<span className="font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
@@ -456,37 +768,6 @@ function LegendRow({
 					{slice.pct.toFixed(1)}%
 				</span>
 			</span>
-		</>
-	);
-
-	if (expandable && onToggle) {
-		return (
-			<li className={showTopBorder ? "border-t border-[var(--border-soft)]" : ""}>
-				<button
-					type="button"
-					onClick={onToggle}
-					onMouseEnter={onEnter}
-					onMouseLeave={onLeave}
-					className="-mx-1 flex w-[calc(100%+0.5rem)] items-center justify-between gap-2 rounded-sm px-1 py-1 font-mono text-[11px] transition-colors"
-					style={rowStyle}
-				>
-					{content}
-				</button>
-			</li>
-		);
-	}
-
-	return (
-		<li
-			className={cn(
-				"flex items-center justify-between gap-2 py-1 font-mono text-[11px] transition-colors",
-				showTopBorder ? "border-t border-[var(--border-soft)]" : "",
-			)}
-			onMouseEnter={onEnter}
-			onMouseLeave={onLeave}
-			style={rowStyle}
-		>
-			{content}
 		</li>
 	);
 }
