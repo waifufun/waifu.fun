@@ -74,18 +74,22 @@ async function requireAgent(db: ReturnType<typeof getDatabase>["db"], id: string
 	return agent ?? null;
 }
 
-app.get("/:id/adapter-policies", requireAdmin, async (c) => {
+// Adapter policies are OWNER-readable (the patron page renders them). The PUT
+// already gates on requirePatron + requireAgentOwnership; the GET previously
+// required an ADMIN bearer, which 401'd the owner. Accept the owner here too.
+// requireAgentOwnership resolves the agent (uuid / slug / token-address) and
+// exposes it on patronAgent, so we query by the resolved stable agentId rather
+// than the raw (possibly token-address) route param.
+app.get("/:id/adapter-policies", requirePatron(), requireAgentOwnership("id"), async (c) => {
 	const db = requireDb();
 	if (!db) return c.json({ ok: false, error: "DATABASE_UNAVAILABLE" }, 503);
 
-	const agentId = c.req.param("id") ?? "";
-	const agent = await requireAgent(db, agentId);
-	if (!agent) return c.json({ ok: false, error: "AGENT_NOT_FOUND" }, 404);
+	const resolvedAgentId = c.get("patronAgent").agentId;
 
 	const policies = await db
 		.select()
 		.from(agentAdapterPolicies)
-		.where(eq(agentAdapterPolicies.agentId, agentId))
+		.where(eq(agentAdapterPolicies.agentId, resolvedAgentId))
 		.orderBy(agentAdapterPolicies.adapterSlug);
 
 	return c.json({ policies: policies.map(serializePolicy) });
@@ -95,9 +99,10 @@ app.put("/:id/adapter-policies", requirePatron(), requireAgentOwnership("id"), a
 	const db = requireDb();
 	if (!db) return c.json({ ok: false, error: "DATABASE_UNAVAILABLE" }, 503);
 
-	const agentId = c.req.param("id") ?? "";
-	const agent = await requireAgent(db, agentId);
-	if (!agent) return c.json({ ok: false, error: "AGENT_NOT_FOUND" }, 404);
+	// Use the agent resolved by requireAgentOwnership (handles uuid / slug /
+	// token-address) rather than the raw route param, so policies key on the
+	// stable agentId and the route works from the token-address patron page.
+	const agentId = c.get("patronAgent").agentId;
 
 	let body: unknown;
 	try {
