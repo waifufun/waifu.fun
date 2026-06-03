@@ -23,6 +23,30 @@ export type ApiError = {
 	details?: unknown;
 };
 
+/**
+ * Safe accessor for an error's human message, for rendering in JSX.
+ *
+ * Defense-in-depth against React #31: even if some error somehow carries a
+ * non-string `.message` (e.g. a raw `{code, message}` API envelope), this
+ * always returns a STRING so it can never be rendered as a raw object child.
+ */
+export function errorText(err: unknown, fallback = "something went wrong"): string {
+	if (err == null) return fallback;
+	if (typeof err === "string") return err || fallback;
+	if (err instanceof Error) return err.message || fallback;
+	if (typeof err === "object") {
+		const msg = (err as { message?: unknown }).message;
+		if (typeof msg === "string" && msg.length > 0) return msg;
+		// message is itself an object (e.g. a {code, message} envelope) or absent.
+		if (msg && typeof msg === "object") {
+			const inner = (msg as { message?: unknown }).message;
+			if (typeof inner === "string" && inner.length > 0) return inner;
+		}
+		return fallback;
+	}
+	return fallback;
+}
+
 export function isApiError(value: unknown): value is ApiError {
 	return (
 		typeof value === "object" &&
@@ -63,6 +87,54 @@ function shouldSetJsonContentType(init: RequestInit, headers: Headers): boolean 
 }
 
 /**
+ * Resolve a parsed error body into a STRING message (+ optional code),
+ * tolerating both error envelope shapes the waifu-core API emits:
+ *
+ *   1. Canonical (apps/api middleware/error-handler.ts toErrorPayload):
+ *      `{ ok:false, error: { code, message, details }, requestId }`
+ *      Here `error` is an OBJECT. When `details` is undefined it serializes to
+ *      exactly `{ code, message }` — which, if rendered raw in JSX, triggers
+ *      React error #31 ("objects are not valid as a React child"). We MUST pull
+ *      the string `message` out of it so `ApiError.message` is never an object.
+ *
+ *   2. Legacy flat: `{ error: "SOME_CODE", message?: string, code?: string }`
+ *      Here `error` is a STRING (an error code/label).
+ *
+ * Always returns a string `message`; never leaks an object into `.message`.
+ */
+export function extractApiError(
+	parsed: Record<string, unknown> | null,
+	statusText: string,
+	status: number,
+): { message: string; code?: string } {
+	const fallback = statusText || `HTTP ${status}`;
+	if (!parsed) return { message: fallback };
+
+	const withCode = (message: string, code: string | undefined): { message: string; code?: string } =>
+		code ? { message, code } : { message };
+
+	const rawError = parsed.error;
+	const topMessage = typeof parsed.message === "string" ? parsed.message : undefined;
+	const topCode = typeof parsed.code === "string" ? parsed.code : undefined;
+
+	// Canonical nested envelope: error is an object { code, message, details }.
+	if (rawError && typeof rawError === "object") {
+		const nested = rawError as Record<string, unknown>;
+		const nestedMessage = typeof nested.message === "string" ? nested.message : undefined;
+		const nestedCode = typeof nested.code === "string" ? nested.code : undefined;
+		return withCode(nestedMessage ?? topMessage ?? fallback, nestedCode ?? topCode);
+	}
+
+	// Legacy flat envelope: error is a string code/label.
+	if (typeof rawError === "string") {
+		return withCode(topMessage ?? rawError ?? fallback, topCode ?? rawError);
+	}
+
+	// No `error` field: fall back to a top-level message/code if present.
+	return withCode(topMessage ?? fallback, topCode);
+}
+
+/**
  * Canonical fetch wrapper for `lib/api/*.ts` modules.
  *
  * @example
@@ -94,21 +166,21 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit = {})
 
 	if (!res.ok) {
 		const text = await res.text().catch(() => "");
-		type ParsedError = { code?: string; error?: string; message?: string };
-		let parsed: ParsedError | null = null;
+		let parsed: Record<string, unknown> | null = null;
 		if (text) {
 			try {
-				parsed = JSON.parse(text) as ParsedError;
+				parsed = JSON.parse(text) as Record<string, unknown>;
 			} catch {
 				// Non-JSON error body (e.g. HTML 404 from a CDN). Keep going,
 				// just don't pretend it's a structured error.
 				parsed = null;
 			}
 		}
+		const { message, code } = extractApiError(parsed, res.statusText, res.status);
 		const err: ApiError = {
 			status: res.status,
-			message: parsed?.error || parsed?.message || res.statusText || `HTTP ${res.status}`,
-			...(parsed?.code ? { code: parsed.code } : {}),
+			message,
+			...(code ? { code } : {}),
 			...(parsed ? { details: parsed } : text ? { details: text.slice(0, 500) } : {}),
 		};
 		throw err;

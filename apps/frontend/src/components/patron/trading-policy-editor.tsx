@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { errorText } from "@/lib/api/_fetcher";
 import {
 	type PolicyRule,
 	type TradingPolicyCaps,
@@ -248,7 +249,7 @@ function CapsPanel({ agentId }: { agentId: string }) {
 				<>
 					{error ? (
 						<p role="alert" className="font-mono text-[11px] text-[var(--negative)]">
-							couldn't load caps. {error.message}
+							couldn't load caps. {errorText(error)}
 						</p>
 					) : null}
 
@@ -423,7 +424,7 @@ function WithdrawWhitelistPanel({ agentId }: { agentId: string }) {
 				<>
 					{error ? (
 						<p role="alert" className="font-mono text-[11px] text-[var(--negative)]">
-							couldn't load the whitelist. {error.message}
+							couldn't load the whitelist. {errorText(error)}
 						</p>
 					) : null}
 

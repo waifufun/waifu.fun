@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { errorText } from "@/lib/api/_fetcher";
 import type { AgentEvent } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +60,7 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 				</ul>
 			) : error ? (
 				<p className="font-mono text-[11px] text-[var(--negative)]" role="alert">
-					couldn't load activity. {error.message}
+					couldn't load activity. {errorText(error)}
 				</p>
 			) : !events || events.length === 0 ? (
 				<p className="font-mono text-[11px] text-neutral-500">no activity yet · onchain feed quiet</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { errorText } from "@/lib/api/_fetcher";
 import { formatRelativeTime, useXConnection } from "@/lib/api/x-connection";
 import { useState } from "react";
 
@@ -82,7 +83,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 				<header className="mb-2">
 					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
-				<p className="text-sm text-red-300">couldn&apos;t load x status. {(status.error as Error).message}</p>
+				<p className="text-sm text-red-300">couldn&apos;t load x status. {errorText(status.error)}</p>
 			</section>
 		);
 	}
