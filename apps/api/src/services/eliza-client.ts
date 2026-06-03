@@ -240,6 +240,69 @@ export interface ElizaClientConfig {
 	logger?: Logger | undefined;
 	/** Service-account user ID in eliza-cloud (created lazily). */
 	serviceUserId?: string | undefined;
+	/**
+	 * Platform USER session token (Privy/cookie-equivalent bearer) for the
+	 * Eliza Cloud crypto-payment routes. Those routes are gated by
+	 * `requireAuthWithOrg()` and REJECT the service/API key (verified live: 401
+	 * "Authentication required"). This is the only credential that can create +
+	 * confirm a directWallet BNB->credits payment for the platform org. When
+	 * absent, the crypto off-ramp is not automatable and the service surfaces a
+	 * NOT_AUTOMATABLE error with manual instructions instead of silently failing.
+	 */
+	sessionToken?: string | undefined;
+}
+
+/** A single directWallet network option from `GET /api/crypto/status`. */
+export interface ElizaCryptoNetwork {
+	network: string;
+	displayName?: string;
+	chainId?: number;
+	tokenSymbol?: string;
+	tokenAddress?: string | null;
+	tokenDecimals?: number;
+	tokens?: Array<{ symbol: string; kind: string; tokenAddress?: string; decimals?: number }>;
+	receiveAddress: string;
+	enabled?: boolean;
+}
+
+export interface ElizaCryptoStatus {
+	enabled: boolean;
+	oxapayEnabled?: boolean;
+	directWallet?: {
+		enabled: boolean;
+		networks: ElizaCryptoNetwork[];
+		promotion?: { code?: string; network?: string; minimumUsd?: number; bonusCredits?: number };
+	};
+	isTestnet?: boolean;
+	[key: string]: unknown;
+}
+
+export interface ElizaCryptoPaymentCreateResult {
+	paymentId: string;
+	trackId?: string;
+	payLink?: string | null;
+	receiveAddress?: string | null;
+	expiresAt?: string;
+	creditsToAdd?: string;
+	[key: string]: unknown;
+}
+
+export interface ElizaCryptoPaymentConfirmResult {
+	status?: string;
+	creditsAdded?: number | string;
+	[key: string]: unknown;
+}
+
+/**
+ * Raised when a credit-mint operation needs a platform session credential that
+ * isn't configured. Callers should surface manual off-ramp instructions rather
+ * than pretend the mint happened.
+ */
+export class ElizaCryptoNotAutomatableError extends Error {
+	constructor(message = "Eliza Cloud crypto off-ramp requires a platform session token (ELIZA_CLOUD_SESSION_TOKEN)") {
+		super(message);
+		this.name = "ElizaCryptoNotAutomatableError";
+	}
 }
 
 export class ElizaClient {
@@ -294,6 +357,12 @@ export class ElizaClient {
 			body?: unknown;
 			authenticated?: boolean;
 			asUserId?: string;
+			/**
+			 * Force the platform USER session token (sessionToken) as the bearer.
+			 * Required for the crypto-payment routes, which reject the service/API
+			 * key. Throws ElizaCryptoNotAutomatableError when no session token is set.
+			 */
+			useSessionToken?: boolean;
 		},
 	): Promise<T> {
 		if (!this.baseUrl) {
@@ -308,7 +377,14 @@ export class ElizaClient {
 		const needsAuth = options?.authenticated !== false;
 
 		if (needsAuth) {
-			if (this.config.serviceKey) {
+			if (options?.useSessionToken) {
+				// The crypto off-ramp routes are gated by requireAuthWithOrg(); only a
+				// platform USER session token works here (API/service key => 401).
+				if (!this.config.sessionToken) {
+					throw new ElizaCryptoNotAutomatableError();
+				}
+				headers.authorization = `Bearer ${this.config.sessionToken}`;
+			} else if (this.config.serviceKey) {
 				headers["X-Service-Key"] = this.config.serviceKey;
 				headers["X-API-Key"] = this.config.serviceKey;
 			} else if (this.config.apiKey) {
@@ -674,6 +750,62 @@ export class ElizaClient {
 		});
 	}
 
+	/**
+	 * Read the live crypto-payment config (directWallet receive addresses per
+	 * network, OxaPay availability, BSC promo). Public-ish: works with the API
+	 * key. This is the source of truth for the BNB receive address.
+	 */
+	async getCryptoStatus(): Promise<ElizaCryptoStatus> {
+		return this.request<ElizaCryptoStatus>("GET", "/api/crypto/status");
+	}
+
+	/**
+	 * Create a directWallet crypto payment (pending invoice) for the platform org.
+	 *
+	 * REQUIRES a platform session token — the route is gated by
+	 * requireAuthWithOrg() and rejects the API/service key (verified live: 401).
+	 * Throws ElizaCryptoNotAutomatableError when no session token is configured so
+	 * callers can fall back to manual off-ramp instructions instead of pretending.
+	 *
+	 * `network` uses Eliza Cloud's network ids (e.g. "BEP20" for BSC). After this
+	 * returns, send the BNB to the receive address, then call confirmCryptoPayment
+	 * with the on-chain tx hash to actually mint credits.
+	 */
+	async createCryptoPayment(input: {
+		amountUsd: number;
+		payCurrency?: string;
+		network?: string;
+		currency?: string;
+	}): Promise<ElizaCryptoPaymentCreateResult> {
+		return this.request<ElizaCryptoPaymentCreateResult>("POST", "/api/crypto/payments", {
+			useSessionToken: true,
+			body: {
+				amount: input.amountUsd,
+				currency: input.currency ?? "USD",
+				payCurrency: input.payCurrency ?? "BNB",
+				...(input.network ? { network: input.network } : {}),
+			},
+		});
+	}
+
+	/**
+	 * Confirm a directWallet crypto payment by its on-chain tx hash. Eliza Cloud
+	 * verifies the tx on-chain and mints credits to the platform org. REQUIRES the
+	 * platform session token (same auth wall as create).
+	 */
+	async confirmCryptoPayment(paymentId: string, transactionHash: string): Promise<ElizaCryptoPaymentConfirmResult> {
+		return this.request<ElizaCryptoPaymentConfirmResult>(
+			"POST",
+			`/api/crypto/payments/${encodeURIComponent(paymentId)}/confirm`,
+			{ useSessionToken: true, body: { transactionHash } },
+		);
+	}
+
+	/** Whether a platform session token is configured (crypto off-ramp automatable). */
+	hasCryptoSession(): boolean {
+		return Boolean(this.config.sessionToken);
+	}
+
 	async topUpAppCredits(appId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult> {
 		return this.request<ElizaCreditCheckoutResult>("POST", "/api/v1/app-credits/checkout", {
 			body: {
@@ -795,6 +927,15 @@ export interface ElizaCloudClient {
 	restartHostedAgent?(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
 	topUpCredits(agentId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult | undefined>;
+	getCryptoStatus?(): Promise<ElizaCryptoStatus>;
+	createCryptoPayment?(input: {
+		amountUsd: number;
+		payCurrency?: string;
+		network?: string;
+		currency?: string;
+	}): Promise<ElizaCryptoPaymentCreateResult>;
+	confirmCryptoPayment?(paymentId: string, transactionHash: string): Promise<ElizaCryptoPaymentConfirmResult>;
+	hasCryptoSession?(): boolean;
 	topUpAppCredits?(appId: string, amountUsd: number): Promise<ElizaCreditCheckoutResult>;
 	getCreditBalance?(agentId?: string): Promise<ElizaAppCreditBalanceResult>;
 	getAppCreditBalance?(appId: string): Promise<ElizaAppCreditBalanceResult>;
@@ -849,7 +990,8 @@ export function getElizaClient(): ElizaClient {
 			);
 		}
 
-		_instance = new ElizaClient({ baseUrl, serviceKey, apiKey, jwtSecret, serviceUserId });
+		const sessionToken = resolveElizaCloudSessionToken();
+		_instance = new ElizaClient({ baseUrl, serviceKey, apiKey, jwtSecret, serviceUserId, sessionToken });
 	}
 
 	return _instance;
@@ -859,14 +1001,21 @@ export function createElizaCloudClient(opts: {
 	baseUrl: string;
 	apiKey?: string;
 	serviceKey?: string;
+	sessionToken?: string;
 	logger: Logger;
 }): ElizaCloudClient {
 	return new ElizaClient({
 		baseUrl: opts.baseUrl.trim().replace(/\/+$/, ""),
 		apiKey: nonEmpty(opts.apiKey),
 		serviceKey: nonEmpty(opts.serviceKey),
+		sessionToken: nonEmpty(opts.sessionToken),
 		logger: opts.logger,
 	});
+}
+
+/** Read the platform Eliza Cloud session token (for the crypto off-ramp). */
+export function resolveElizaCloudSessionToken(): string | undefined {
+	return nonEmpty(process.env.ELIZA_CLOUD_SESSION_TOKEN ?? process.env.ELIZA_CLOUD_PLATFORM_SESSION_TOKEN);
 }
 
 export function resolveElizaCloudApiKey(): string | undefined {
