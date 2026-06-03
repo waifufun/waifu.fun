@@ -194,6 +194,14 @@ export const agentEvents = pgTable(
 		typeIdx: index("idx_agent_events_type").on(table.eventType),
 		createdAtIdx: index("idx_agent_events_created_at").on(table.createdAt.desc()),
 		statusCreatedIdx: index("idx_agent_events_status_created_at").on(table.status, table.createdAt),
+		// Covers the agent-grid "last action" hydration: agent_id IN (...) AND
+		// status='done' ORDER BY created_at DESC (queries/agents.ts hydrateLastActions).
+		// Without this the planner falls back to scanning all 'done' events.
+		agentStatusCreatedIdx: index("idx_agent_events_agent_status_created").on(
+			table.agentId,
+			table.status,
+			table.createdAt.desc(),
+		),
 		sourceEventUniqueIdx: uniqueIndex("agent_events_source_event_id_unique").on(table.source, table.sourceEventId),
 		correlationIdx: index("idx_agent_events_correlation_id").on(table.correlationId),
 		visibilityOccurredIdx: index("idx_agent_events_visibility_occurred_at").on(

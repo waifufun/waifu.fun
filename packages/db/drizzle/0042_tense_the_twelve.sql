@@ -1,0 +1,1 @@
+CREATE INDEX "idx_agent_events_agent_status_created" ON "agent_events" USING btree ("agent_id","status","created_at" DESC NULLS LAST);
