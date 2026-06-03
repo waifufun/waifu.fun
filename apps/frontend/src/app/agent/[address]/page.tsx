@@ -16,7 +16,7 @@ import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { type GithubScope, fetchShipLog, githubScopeFromMetadata } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
-import { fetchNavHistory, selectPnlBaselineNav, selectPnlSeries } from "@/lib/wave-t/pnl";
+import { fetchHyperliquidPnl, fetchNavHistory, selectPnlBaselineNav, selectPnlSeries } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
@@ -466,6 +466,11 @@ export default async function AgentPage({
 	// any agent with nav snapshots gets a chart, anyone without gets the
 	// honest "no pnl history yet" panel. No mock data.
 	const navHistoryP = fetchNavHistory(address, "30d", "1h").catch(() => []);
+	// CORRECT trading-pnl source: HL-only, deposit-EXCLUDED. Uses HL's own
+	// pnlHistory (not nav diff), anchors the baseline at first activity, and
+	// aggregates any prior abandoned wallet. allTime = lifetime view. Null on
+	// failure / no HL wallet → chart falls back to legacy nav series or empty.
+	const hlPnlP = fetchHyperliquidPnl(address, "allTime").catch(() => null);
 	// ERC-8004 identity. Returns null when the agent has no on-chain
 	// identity (the default for most agents). When present, the hero
 	// shows a verified badge and the page renders a provenance panel.
@@ -484,6 +489,7 @@ export default async function AgentPage({
 		apps,
 		identity,
 		navHistory,
+		hlPnl,
 	] = await Promise.all([
 		agentP,
 		tradesP,
@@ -497,6 +503,7 @@ export default async function AgentPage({
 		appsP,
 		identityP,
 		navHistoryP,
+		hlPnlP,
 	]);
 
 	const pnlSeries = selectPnlSeries(navHistory);
@@ -573,6 +580,7 @@ export default async function AgentPage({
 			identity={identity}
 			pnlSeries={pnlSeries}
 			pnlBaselineNav={pnlBaselineNav}
+			hlPnl={hlPnl}
 			navSeries={navHistory}
 		/>
 	);
