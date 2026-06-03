@@ -244,6 +244,41 @@ app.delete("/:agentId/x/disconnect", requirePatron(), requireAgentOwnership("age
 	return c.json({ ok: true });
 });
 
+// Canonical status read for the patron X-connection panel.
+//
+// Mirrors the legacy `GET /:agentId/x` connected-check but uses the Wave 9
+// `requirePatron` + `requireAgentOwnership` middleware pair (same auth as the
+// oauth/start + disconnect mutations, so the panel never sees a 403/404 just
+// because the read used a different auth path). The frontend `useXConnection`
+// hook polls this; it must always 200 with a connected flag (never a scary
+// red error) when the patron owns the agent. Shape:
+//   { connected: boolean, xHandle: string|null, connectedAt: string|null }
+app.get("/:agentId/x/status", requirePatron(), requireAgentOwnership("agentId"), async (c) => {
+	const db = requireDb();
+	if (!db) return c.json({ error: "database unavailable" }, 503);
+
+	const agentId = c.get("patronAgent").agentId;
+
+	const [account] = await db
+		.select({
+			xHandle: agentXAccounts.xHandle,
+			createdAt: agentXAccounts.createdAt,
+		})
+		.from(agentXAccounts)
+		.where(eq(agentXAccounts.agentId, agentId))
+		.limit(1);
+
+	if (!account) {
+		return c.json({ connected: false, xHandle: null, connectedAt: null });
+	}
+
+	return c.json({
+		connected: true,
+		xHandle: account.xHandle,
+		connectedAt: account.createdAt?.toISOString() ?? null,
+	});
+});
+
 app.get("/:agentId/x", requirePatronAuth(), async (c) => {
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
