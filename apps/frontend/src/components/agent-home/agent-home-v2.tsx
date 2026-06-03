@@ -53,7 +53,6 @@ import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
 import { BurnRatePanel } from "./wave-t/burn-rate-panel";
 import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
 import { IdentityStrip } from "./wave-t/identity-strip";
-import { ImageGenPanel } from "./wave-t/image-gen-panel";
 import {
 	LiveActivePositions,
 	LiveActivityFeed,
@@ -264,12 +263,14 @@ export default function AgentHomeV2({
 					/>
 				</div>
 
-				{/* Services / mini-apps. The agent as a provider of callable
-				    services, billed per call. Renders nothing when the agent has
-				    registered no invocable mini-apps. */}
+				{/* Services / mini-apps. The unified catalog: the agent as a
+				    provider of callable services, billed per call. Tapping a live
+				    service expands its invoke surface inline (image-gen is the first;
+				    future apps register their own body). Renders nothing when the
+				    agent has registered no invocable mini-apps. */}
 				{services.length > 0 ? (
 					<div className="mt-4" id="services-section">
-						<ServicesSection services={services} />
+						<ServicesSection services={services} apps={apps} />
 					</div>
 				) : null}
 
@@ -288,13 +289,6 @@ export default function AgentHomeV2({
 					)}
 					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
-
-				{/* Row 4c: image-gen mini-app invoke surface. The panel self-gates
-				    on a live image-gen registry row and owns its own row wrapper, so
-				    it renders nothing (no empty spacer) when absent or when the app
-				    goes stale mid-session. Prompt + aspect + generate, billed
-				    through Eliza Cloud credits. */}
-				<ImageGenPanel agentTokenAddress={agent.tokenAddress} apps={apps} />
 
 				{/* Row 4b: burn rate panel. Only renders when the persona
 				    endpoint returned burn line items + a monthly total.
