@@ -114,17 +114,140 @@ export function usePatronAgents(owner?: string) {
 	});
 }
 
+/**
+ * Map the raw `GET /v2/agents/:token` response (the API's `AgentDetail` from
+ * `@waifufun/db` agent-queries) into the patron-page `AgentDetail` shape.
+ *
+ * The API row and the UI type disagree on several field names + enums, and
+ * casting the raw row straight to `AgentDetail` left load-bearing fields
+ * (`ticker`, `status`, `runtime`) undefined. Symptoms on a freshly-launched
+ * agent's patron page: `agent.ticker` renders as empty, the status pill is
+ * blank, and the runtime panel can't find `cloudAgentId`/`webUiUrl`.
+ *
+ * Field map (raw API → UI):
+ *   symbol                         → ticker
+ *   status graduated|active|pending|failed → active|provisioned (UI enum)
+ *   state.brainPaused/killed       → dormant|killed (override status)
+ *   treasuryUsd|treasuryNavUsd     → treasuryUsd (number, default 0)
+ *   avatarUrl                      → avatar
+ *   twitterHandle                  → xHandle
+ *   agentSafeAddress|treasuryAddress → safeAddress
+ *   elizaCloudAgentId + metadata.provisioning → runtime{...}
+ *
+ * Mirrors the defensive `normalizeAgentEvent` adapter (waifufun#925).
+ */
+export function normalizeAgentDetail(raw: unknown): AgentDetail {
+	if (!raw || typeof raw !== "object") {
+		return {
+			id: "",
+			name: "",
+			ticker: "",
+			treasuryUsd: 0,
+			dailyBurnUsd: 0,
+			runwayDays: 0,
+			status: "provisioned",
+			lastActionAt: null,
+		};
+	}
+	const r = raw as Record<string, unknown>;
+	const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
+	const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+	const rec = (v: unknown): Record<string, unknown> | null =>
+		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+	// Status: prefer the persona control-state (state.brainPaused/killed), then
+	// fold the API curve status enum into the patron-page enum. The UI only
+	// distinguishes provisioned|active|dormant|killed.
+	const state = rec(r.state);
+	const rawStatus = str(r.status);
+	let status: PatronAgentStatus;
+	if (state?.killed === true) status = "killed";
+	else if (state?.brainPaused === true) status = "dormant";
+	else if (rawStatus === "pending") status = "provisioned";
+	else status = "active"; // graduated | active | failed all map to a live dashboard
+
+	// Runtime: synthesize an eliza-cloud runtime detail from the address-keyed
+	// response. The detail endpoint doesn't return a `runtime` object, but the
+	// runtime panel needs cloudAgentId/webUiUrl/status to render. Pull them from
+	// elizaCloudAgentId + metadata.provisioning when present.
+	const metadata = rec(r.metadata);
+	const provisioning = rec(metadata?.provisioning);
+	const cloudAgentId = str(r.elizaCloudAgentId) ?? str(provisioning?.cloudAgentId) ?? str(provisioning?.runtimeAgentId);
+	const webUiUrl = str(provisioning?.webUiUrl);
+	const cloudStatus = str(provisioning?.status);
+	const runtime: AgentRuntimeDetail | null = cloudAgentId
+		? {
+				kind: "eliza-cloud",
+				cloudAgentId,
+				...(cloudStatus ? { cloudStatus } : {}),
+				...(webUiUrl ? { webUiUrl } : {}),
+			}
+		: null;
+
+	return {
+		id: str(r.agentId) ?? str(r.id) ?? str(r.tokenAddress) ?? "",
+		name: str(r.name) ?? "",
+		ticker: str(r.ticker) ?? str(r.symbol) ?? "",
+		avatar: str(r.avatar) ?? str(r.avatarUrl) ?? null,
+		treasuryUsd: num(r.treasuryUsd) ?? num(r.treasuryNavUsd) ?? 0,
+		dailyBurnUsd: num(r.dailyBurnUsd) ?? num(r.monthlyBurnUsd != null ? Number(r.monthlyBurnUsd) / 30 : undefined) ?? 0,
+		runwayDays: num(r.runwayDays) ?? 0,
+		status,
+		lastActionAt: str(r.lastActionAt) ?? null,
+		xHandle: str(r.xHandle) ?? str(r.twitterHandle) ?? null,
+		owner: str(r.owner) ?? str(r.ownerAddress) ?? null,
+		safeAddress: str(r.safeAddress) ?? str(r.agentSafeAddress) ?? str(r.treasuryAddress) ?? null,
+		description: str(r.description) ?? null,
+		bio: str(r.bio) ?? null,
+		tokenAddress: str(r.tokenAddress) ?? null,
+		...(runtime ? { runtimeKind: runtime.kind } : {}),
+		runtime,
+	};
+}
+
 export function useAgentDetail(agentId?: string) {
 	return useQuery<AgentDetail>({
 		queryKey: ["patron-agent", agentId ?? null],
 		enabled: Boolean(agentId),
 		queryFn: async () => {
 			if (!agentId) throw new Error("missing agentId");
-			return apiFetch<AgentDetail>(`/v2/agents/${encodeURIComponent(agentId)}`);
+			const raw = await apiFetch<unknown>(`/v2/agents/${encodeURIComponent(agentId)}`);
+			return normalizeAgentDetail(raw);
 		},
 		refetchInterval: 30_000,
 		retry: 1,
 	});
+}
+
+/**
+ * Normalize a raw event row from `/v2/agents/:id/events` into the
+ * `AgentEvent` shape the UI renders.
+ *
+ * The API row uses different field names than the UI type: `eventType`
+ * (not `type`), `occurredAt`/`createdAt` (not `ts`), and the human text
+ * lives in `data.renderedText` / `data.title` (not `summary`). Casting the
+ * raw row straight to `AgentEvent` left `type`/`ts`/`summary` undefined,
+ * which is how a render that does `event.type.toLowerCase()` (or similar)
+ * could throw. Map every field defensively, coercing to safe strings.
+ */
+function normalizeAgentEvent(raw: unknown): AgentEvent | null {
+	if (!raw || typeof raw !== "object") return null;
+	const r = raw as Record<string, unknown>;
+	const data = (r.data && typeof r.data === "object" ? (r.data as Record<string, unknown>) : {}) ?? {};
+	const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
+
+	const type = str(r.type) ?? str(r.eventType) ?? "event";
+	const ts = str(r.ts) ?? str(r.occurredAt) ?? str(r.createdAt) ?? str(r.processedAt);
+	const summary = str(r.summary) ?? str(data.renderedText) ?? str(data.title);
+	const id = str(r.id) ?? str(r.sourceEventId) ?? `${type}:${ts ?? Math.random().toString(36).slice(2)}`;
+
+	return {
+		id,
+		type,
+		ts: ts ?? "",
+		...(summary ? { summary } : {}),
+		...(r.data && typeof r.data === "object" ? { data: r.data as Record<string, unknown> } : {}),
+	};
 }
 
 export function useAgentEvents(agentId?: string, limit = 30) {
@@ -134,11 +257,12 @@ export function useAgentEvents(agentId?: string, limit = 30) {
 		queryFn: async () => {
 			if (!agentId) return [];
 			const data = await apiFetch<unknown>(`/v2/agents/${encodeURIComponent(agentId)}/events?limit=${limit}`);
-			if (Array.isArray(data)) return data as AgentEvent[];
-			if (data && typeof data === "object" && Array.isArray((data as { events?: unknown }).events)) {
-				return (data as { events: AgentEvent[] }).events;
-			}
-			return [];
+			const rows = Array.isArray(data)
+				? data
+				: data && typeof data === "object" && Array.isArray((data as { events?: unknown }).events)
+					? (data as { events: unknown[] }).events
+					: [];
+			return rows.map(normalizeAgentEvent).filter((e): e is AgentEvent => e !== null);
 		},
 		refetchInterval: 20_000,
 		retry: 1,
