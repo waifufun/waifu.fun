@@ -100,6 +100,11 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger,
 	app.use("/v2/launches/*", limit("launch"));
 	app.use("/v2/agents/prepare", limit("launch"));
 	app.use("/v2/agents/claim/*", limit("launch"));
+	// Blanket throttle for the rest of the v2 agent namespace (mirrors the v1
+	// `/agents/*` bucket above). Without this, expensive/unauthenticated v2 agent
+	// subpaths — topup/quote (paid Li.Fi), hyperliquid positions/pnl (shared
+	// egress IP), apps/image-gen invoke (metered credits) — were unthrottled.
+	app.use("/v2/agents/*", limit("trade"));
 	app.use("/v2/webhooks/*", limit("webhook"));
 	app.use("/v3/agents", limit("v3-agent"));
 	app.use("/v3/agents/*", limit("v3-agent"));
