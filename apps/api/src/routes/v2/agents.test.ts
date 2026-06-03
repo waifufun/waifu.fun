@@ -7,9 +7,12 @@ import { hashKey } from "../../lib/agent-keys.js";
 import { __setAgentAuthDbForTest } from "../../middleware/agent-auth.js";
 import { redeemProvisionInviteCode, resurrectAgent } from "./agents.js";
 
-test("resurrectAgent tops up credits, clears dormant fields, and emits resurrection", async () => {
+test("resurrectAgent initiates a top-up but does NOT clear dormancy (footgun fix: no wake-to-$0)", async () => {
+	// Regression guard for the wake-to-$0 footgun. resurrectAgent must NOT clear
+	// dormant_at, resume the container, or emit agent.resurrected — because
+	// topUpCredits only creates a checkout session (no real grant). Only the
+	// confirmed-payment webhook (handleCreditsToppedUp) may wake the agent.
 	const updates: unknown[] = [];
-	const wheres: unknown[] = [];
 	const toppedUp: unknown[] = [];
 	const resumed: unknown[] = [];
 	const emitted: unknown[] = [];
@@ -44,8 +47,7 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 				set(values: unknown) {
 					updates.push({ table, values });
 					return {
-						where(condition: unknown) {
-							wheres.push(condition);
+						where() {
 							return Promise.resolve();
 						},
 					};
@@ -59,7 +61,7 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 		elizaClient: {
 			async topUpCredits(agentId, amount) {
 				toppedUp.push({ agentId, amount });
-				return undefined;
+				return { url: "https://checkout.example/pay" };
 			},
 			async resumeAgent(agentId) {
 				resumed.push(agentId);
@@ -75,127 +77,16 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 		agentId: "waifu-demo-01",
 		creditsAmount: 2500,
 		modelTier: "premium",
+		pendingPayment: true,
 		containerId: "cloud-waifu-demo-01",
+		checkoutUrl: "https://checkout.example/pay",
 	});
+	// Real top-up was initiated (dollar amount), against the cloud container id.
 	assert.deepEqual(toppedUp, [{ agentId: "cloud-waifu-demo-01", amount: 25 }]);
-	assert.deepEqual(resumed, ["cloud-waifu-demo-01"]);
-	assert.equal(updates.length, 1);
-	const values = (updates[0] as { values: Record<string, unknown> }).values;
-	assert.equal(values.dormantAt, null);
-	assert.equal(values.brainPausedAt, null);
-	assert.equal(values.lastWordsPostedAt, null);
-	assert.equal(values.modelTier, "premium");
-	assert.equal(wheres.length, 1);
-	assert.equal((emitted[0] as { eventType: string }).eventType, "agent.resurrected");
-});
-
-test("resurrectAgent marks overlays live only after resumed runtime exposes hosted URL evidence", async () => {
-	const makeDb = () => {
-		const updates: Record<string, unknown>[] = [];
-		let selectCount = 0;
-		return {
-			updates,
-			db: {
-				select() {
-					selectCount += 1;
-					return {
-						from() {
-							return {
-								leftJoin() {
-									return this;
-								},
-								where() {
-									return {
-										limit() {
-											if (selectCount === 1) {
-												return Promise.resolve([
-													{
-														metadata: {
-															provisioning: {
-																cloudAgentId: "cloud-waifu-demo-01",
-																containerId: "container-before-resume",
-															},
-														},
-														tokenAddress: "0x0000000000000000000000000000000000000004",
-													},
-												]);
-											}
-											return Promise.resolve([
-												{
-													tokenId: "token-row-1",
-													overlayAgentId: "agent-row-1",
-													containerId: "container-before-resume",
-													cloudAgentId: "cloud-waifu-demo-01",
-												},
-											]);
-										},
-									};
-								},
-							};
-						},
-					};
-				},
-				update() {
-					return {
-						set(values: Record<string, unknown>) {
-							updates.push(values);
-							return {
-								where() {
-									return Promise.resolve();
-								},
-							};
-						},
-					};
-				},
-			} as never,
-		};
-	};
-
-	const pending = makeDb();
-	await resurrectAgent("waifu-demo-01", 2500, {
-		db: pending.db,
-		elizaClient: {
-			async topUpCredits() {
-				return undefined;
-			},
-			async resumeAgent() {},
-			async getAgentRuntimeStatus() {
-				return { status: "running", containerId: "container-after-resume" };
-			},
-		},
-		async emitEvent() {
-			return {} as never;
-		},
-	});
-	assert.equal(pending.updates[1]?.agentStatus, "provisioning");
-	assert.equal(pending.updates[1]?.lifecycleState, "birth");
-	assert.equal(pending.updates[1]?.bridgeUrl, "container-after-resume");
-	assert.equal(pending.updates[2]?.agentStatus, "provisioning");
-
-	const live = makeDb();
-	await resurrectAgent("waifu-demo-01", 2500, {
-		db: live.db,
-		elizaClient: {
-			async topUpCredits() {
-				return undefined;
-			},
-			async resumeAgent() {},
-			async getAgentRuntimeStatus() {
-				return {
-					status: "running",
-					containerId: "container-after-resume",
-					webUiUrl: "https://agent-after-resume.example",
-				};
-			},
-		},
-		async emitEvent() {
-			return {} as never;
-		},
-	});
-	assert.equal(live.updates[1]?.agentStatus, "running");
-	assert.equal(live.updates[1]?.lifecycleState, "live");
-	assert.equal(live.updates[1]?.webUiUrl, "https://agent-after-resume.example");
-	assert.equal(live.updates[2]?.agentStatus, "running");
+	// CRITICAL: no resume, no dormancy-clearing DB writes, no resurrection event.
+	assert.deepEqual(resumed, []);
+	assert.equal(updates.length, 0);
+	assert.equal(emitted.length, 0);
 });
 
 import { __setRequirePatronDbForTest, __setRequirePatronStewardParserForTest } from "../../middleware/patron-auth.js";
