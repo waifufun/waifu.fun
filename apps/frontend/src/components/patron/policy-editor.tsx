@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { errorText } from "@/lib/api/_fetcher";
 import {
 	type AdapterPolicy,
 	type AdapterTemplate,
@@ -361,7 +362,7 @@ export default function PolicyEditor({ agentId }: Props) {
 				<LoadingSkeleton />
 			) : error ? (
 				<p role="alert" className="text-sm text-red-400">
-					Couldn't load adapter policies. {error.message}
+					Couldn't load adapter policies. {errorText(error)}
 				</p>
 			) : (
 				<ul className="space-y-2">

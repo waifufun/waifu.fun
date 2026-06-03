@@ -556,14 +556,14 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 	const reservation = await db
 		.update(agentApps)
 		.set({
-			metadata: sql`jsonb_set(coalesce(${agentApps.metadata}, '{}'::jsonb), '{idempotencyKeys}', coalesce(${agentApps.metadata}->'idempotencyKeys', '[]'::jsonb) || jsonb_build_array(${idempotencyKey}), true)`,
+			metadata: sql`jsonb_set(coalesce(${agentApps.metadata}, '{}'::jsonb), '{idempotencyKeys}', coalesce(${agentApps.metadata}->'idempotencyKeys', '[]'::jsonb) || jsonb_build_array(${idempotencyKey}::text), true)`,
 			updatedAt: new Date(),
 		})
 		.where(
 			and(
 				eq(agentApps.agentTokenAddress, tokenAddress),
 				eq(agentApps.appId, "image-gen"),
-				sql`not (coalesce(${agentApps.metadata}->'idempotencyKeys', '[]'::jsonb) ? ${idempotencyKey})`,
+				sql`not (coalesce(${agentApps.metadata}->'idempotencyKeys', '[]'::jsonb) ? ${idempotencyKey}::text)`,
 			),
 		)
 		.returning({ id: agentApps.id });
@@ -592,7 +592,7 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 		await db
 			.update(agentApps)
 			.set({
-				metadata: sql`jsonb_set(coalesce(${agentApps.metadata}, '{}'::jsonb), '{idempotencyKeys}', coalesce(${agentApps.metadata}->'idempotencyKeys', '[]'::jsonb) - ${idempotencyKey}, true)`,
+				metadata: sql`jsonb_set(coalesce(${agentApps.metadata}, '{}'::jsonb), '{idempotencyKeys}', coalesce(${agentApps.metadata}->'idempotencyKeys', '[]'::jsonb) - ${idempotencyKey}::text, true)`,
 				updatedAt: new Date(),
 			})
 			.where(and(eq(agentApps.agentTokenAddress, tokenAddress), eq(agentApps.appId, "image-gen")));
