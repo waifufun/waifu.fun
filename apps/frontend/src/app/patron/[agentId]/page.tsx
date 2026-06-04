@@ -7,6 +7,7 @@ import AgentChat from "@/components/patron/agent-chat";
 import AgentHero from "@/components/patron/agent-hero";
 import DormantCreditsPanel from "@/components/patron/dormant-credits-panel";
 import EmergencyControls from "@/components/patron/emergency-controls";
+import { FundTradingPanel } from "@/components/patron/fund-trading-panel";
 import LaunchPanel from "@/components/patron/launch-panel";
 import LaunchProgress from "@/components/patron/launch-progress";
 import LaunchReadyHero from "@/components/patron/launch-ready-hero";
@@ -189,6 +190,9 @@ export default function PatronAgentDetailPage({
 					</div>
 					<PolicyEditor agentId={agentId} />
 					<TradingPolicyEditor agentId={agentId} />
+					{agent?.tokenAddress ? (
+						<FundTradingPanel agentTokenAddress={agent.tokenAddress} agentTicker={agent.ticker || "agent"} />
+					) : null}
 					<EmergencyControls />
 				</div>
 			)}
