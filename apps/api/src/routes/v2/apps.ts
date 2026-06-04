@@ -14,6 +14,7 @@ import {
 } from "@waifufun/db";
 import { and, eq, sql } from "drizzle-orm";
 
+import { constantTimeEqual } from "../../lib/agent-keys.js";
 import { type StewardAuthPrincipal, verifyStewardJwt } from "../../middleware/steward-auth.js";
 
 const app = new Hono();
@@ -78,7 +79,7 @@ async function authenticate(c: Context): Promise<AppAuth | Response> {
 	if (appsRouteDepsForTest.auth) return appsRouteDepsForTest.auth;
 	const configuredInvokeKey = process.env.WAIFU_APP_INVOKE_KEY?.trim();
 	const presentedInvokeKey = c.req.header("x-waifu-app-invoke-key")?.trim();
-	if (configuredInvokeKey && presentedInvokeKey && presentedInvokeKey === configuredInvokeKey) {
+	if (configuredInvokeKey && presentedInvokeKey && constantTimeEqual(presentedInvokeKey, configuredInvokeKey)) {
 		return { mode: "agent-app-key", principal: { userId: "agent-runtime" } };
 	}
 
