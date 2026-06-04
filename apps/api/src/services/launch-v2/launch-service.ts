@@ -297,7 +297,7 @@ export class LaunchService {
 			this.publicClient.readContract({
 				address: vaultAddress,
 				abi: launchVaultAbi,
-				functionName: "presaleTokens",
+				functionName: "presalerTokenBalance",
 			}),
 		]);
 
@@ -345,7 +345,7 @@ export class LaunchService {
 			this.publicClient.readContract({
 				address: vaultAddress,
 				abi: launchVaultAbi,
-				functionName: "presaleTokens",
+				functionName: "presalerTokenBalance",
 			}),
 			this.publicClient.readContract({
 				address: vaultAddress,
@@ -393,7 +393,7 @@ export class LaunchService {
 			this.publicClient.readContract({
 				address: vaultAddress,
 				abi: launchVaultAbi,
-				functionName: "presaleTokens",
+				functionName: "presalerTokenBalance",
 			}),
 			this.publicClient.readContract({
 				address: vaultAddress,

@@ -137,8 +137,14 @@ export const launchVaultAbi = [
 		outputs: [{ name: "", type: "uint256" }],
 	},
 	{
+		// On-chain storage var is `uint256 public presalerTokenBalance` (LaunchVault.sol),
+		// which auto-generates a `presalerTokenBalance()` getter. The previous ABI name
+		// `presaleTokens` did not exist on-chain and reverted every call — and since these
+		// reads sit in allowFailure:false Promise.all batches, the whole vault read failed
+		// (preview 500s, live state/depositor reads fall back to stale DB). The frontend ABI
+		// was already corrected the same way (lib/launch-vault/abi.ts).
 		type: "function",
-		name: "presaleTokens",
+		name: "presalerTokenBalance",
 		stateMutability: "view",
 		inputs: [],
 		outputs: [{ name: "", type: "uint256" }],
