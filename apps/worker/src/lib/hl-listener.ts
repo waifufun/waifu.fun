@@ -25,9 +25,9 @@
  * touching the FE.
  */
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, or } from "drizzle-orm";
 
-import { agentEvents, agentPersonas, agentWalletRegistry, renderEventData } from "@waifufun/db";
+import { agentEvents, agentPersonas, agentWalletRegistry, renderEventData, tradeRationales } from "@waifufun/db";
 
 import type { WorkerContext } from "./types.js";
 
@@ -41,6 +41,7 @@ const DEFAULT_FUNDING_BACKFILL_WINDOW_MS = 4 * 24 * 60 * 60 * 1000; // 4d, bound
 const MAX_FILLS_BACKFILL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_FUNDING_BACKFILL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const CURSOR_FUTURE_SKEW_MS = 5 * 60 * 1000;
+const TRADE_RATIONALE_LOOKBACK_MS = 30 * 60 * 1000;
 
 export type HyperliquidFill = {
 	coin?: string;
@@ -330,6 +331,109 @@ async function readLastFundingTime(context: WorkerContext, agentTokenAddress: st
 	const time = (row.data as Record<string, unknown>)?.time;
 	if (typeof time === "number" && Number.isFinite(time)) return time;
 	return row.occurredAt?.getTime() ?? null;
+}
+
+type TradeRationaleAction = "open" | "close";
+type TradeRationaleSide = "long" | "short";
+type TradeRationaleMatch = { id: string; reason: string };
+
+function normalizeRationaleCoin(coin: string): string {
+	return coin.trim().toUpperCase();
+}
+
+export function withTradeRationaleReason(
+	data: Record<string, unknown>,
+	rationale: TradeRationaleMatch | null,
+): Record<string, unknown> {
+	if (!rationale) return data;
+	return { ...data, reason: rationale.reason };
+}
+
+export async function findTradeRationale(
+	context: WorkerContext,
+	params: {
+		agentId: string | null;
+		coin: string;
+		action: TradeRationaleAction;
+		side?: TradeRationaleSide | null;
+		now?: Date;
+	},
+): Promise<TradeRationaleMatch | null> {
+	if (!params.agentId) return null;
+	try {
+		const now = params.now ?? new Date();
+		const since = new Date(now.getTime() - TRADE_RATIONALE_LOOKBACK_MS);
+		const normalizedCoin = normalizeRationaleCoin(params.coin);
+		const filters = [
+			eq(tradeRationales.agentId, params.agentId),
+			eq(tradeRationales.coin, normalizedCoin),
+			isNull(tradeRationales.consumedAt),
+			gte(tradeRationales.createdAt, since),
+			or(isNull(tradeRationales.action), eq(tradeRationales.action, params.action)),
+		];
+		if (params.side) filters.push(or(isNull(tradeRationales.side), eq(tradeRationales.side, params.side)));
+		const [row] = await context.db
+			.select({ id: tradeRationales.id, reason: tradeRationales.reason })
+			.from(tradeRationales)
+			.where(and(...filters))
+			.orderBy(desc(tradeRationales.createdAt))
+			.limit(1);
+		return row ?? null;
+	} catch (err) {
+		context.logger.warn(
+			{ err: errorDetails(err), agentId: params.agentId, coin: params.coin, action: params.action },
+			"hl-listener trade rationale lookup failed; emitting without reason",
+		);
+		return null;
+	}
+}
+
+export async function consumeTradeRationale(context: WorkerContext, rationaleId: string): Promise<void> {
+	try {
+		await context.db
+			.update(tradeRationales)
+			.set({ consumedAt: new Date() })
+			.where(and(eq(tradeRationales.id, rationaleId), isNull(tradeRationales.consumedAt)));
+	} catch (err) {
+		context.logger.warn(
+			{ err: errorDetails(err), rationaleId },
+			"hl-listener trade rationale consume failed after event insert",
+		);
+	}
+}
+
+export async function insertEnrichedTradeEvent(
+	context: WorkerContext,
+	params: {
+		agentId: string | null;
+		agentTokenAddress: string;
+		eventType: "trade.open" | "trade.close";
+		legacyType: string;
+		payload: Record<string, unknown>;
+		data: Record<string, unknown>;
+		txHash: string | null;
+		sourceEventId: string;
+		occurredAt?: Date;
+		coin: string;
+		action: TradeRationaleAction;
+		side?: TradeRationaleSide | null;
+	},
+): Promise<boolean> {
+	const rationale = await findTradeRationale(context, {
+		agentId: params.agentId,
+		coin: params.coin,
+		action: params.action,
+		side: params.side,
+	});
+	const payload = withTradeRationaleReason(params.payload, rationale);
+	const data = rationale ? renderEventData(params.eventType, payload) : params.data;
+	const inserted = await insertTradeEvent(context, {
+		...params,
+		payload,
+		data,
+	});
+	if (inserted && rationale) await consumeTradeRationale(context, rationale.id);
+	return inserted;
 }
 
 async function insertTradeEvent(
@@ -627,7 +731,8 @@ async function processPositions(
 				time: fillTime,
 				timestamp: fillTime !== null ? new Date(fillTime).toISOString() : null,
 			};
-			const inserted = await insertTradeEvent(context, {
+			const side = sideFromSzi(after.szi);
+			const inserted = await insertEnrichedTradeEvent(context, {
 				agentId: wallet.agentId,
 				agentTokenAddress: wallet.agentTokenAddress,
 				eventType: "trade.open",
@@ -637,6 +742,9 @@ async function processPositions(
 				txHash: null,
 				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:open:${lifecycleId}`,
 				occurredAt,
+				coin,
+				action: "open",
+				side,
 			});
 			if (inserted) emitted += 1;
 			continue;
@@ -671,7 +779,7 @@ async function processPositions(
 				time: fillTime,
 				timestamp: fillTime !== null ? new Date(fillTime).toISOString() : null,
 			};
-			const inserted = await insertTradeEvent(context, {
+			const inserted = await insertEnrichedTradeEvent(context, {
 				agentId: wallet.agentId,
 				agentTokenAddress: wallet.agentTokenAddress,
 				eventType: "trade.close",
@@ -681,6 +789,9 @@ async function processPositions(
 				txHash: null,
 				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:close:${lifecycleId}`,
 				occurredAt,
+				coin,
+				action: "close",
+				side,
 			});
 			if (inserted) emitted += 1;
 			continue;
