@@ -30,6 +30,7 @@ import {
 } from "@/components/agent-home/wave-t/_primitives";
 import { ElizaCloudIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
+import { isNavigableAppUrl } from "@/lib/wave-t/app-service";
 import type { AppStatus } from "@/lib/wave-t/apps";
 import { fetchAppsDirectory } from "@/lib/wave-t/apps-directory";
 import {
@@ -193,7 +194,9 @@ function AppAction({ app, prominent = false }: { app: DirectoryApp; prominent?: 
 			</span>
 		);
 	}
-	const appUrl = app.appUrl;
+	// Only treat appUrl as a navigable link when it's a real storefront page,
+	// never an API action route (POST-only -> 404 on browser navigation).
+	const appUrl = isNavigableAppUrl(app.appUrl) ? app.appUrl : null;
 	const isExternal = Boolean(appUrl?.startsWith("http"));
 	if (appUrl) {
 		const liveLook = app.status === "live";

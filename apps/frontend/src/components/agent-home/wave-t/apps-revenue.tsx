@@ -9,6 +9,7 @@ import { ArrowUpRight } from "lucide-react";
 import { ElizaCloudIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
+import { isNavigableAppUrl } from "@/lib/wave-t/app-service";
 import type { App } from "@/lib/wave-t/apps";
 import { formatCompactUsd } from "@/lib/wave-t/format";
 import { Label, Panel, Pulse, SectionTitle } from "./_primitives";
@@ -132,7 +133,10 @@ export function AppsShipped({ apps, visibleCount = 4 }: { apps: App[]; visibleCo
 				) : (
 					visible.map((app) => {
 						const meta = appMeta(app);
-						const hasUrl = Boolean(app.appUrl);
+						// Only render appUrl as a navigable link when it's a real
+						// storefront/landing page, never an API action route (those
+						// are POST-only and 404 on browser navigation).
+						const hasUrl = isNavigableAppUrl(app.appUrl);
 						const tagline = meta.tagline ?? app.description ?? null;
 						const isExternal = hasUrl && app.appUrl!.startsWith("http");
 						const RowTag: "a" | "li" = hasUrl ? "a" : "li";
