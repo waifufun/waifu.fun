@@ -26,6 +26,7 @@ import blinkRoutes from "./blinks.js";
 import bundleRoutes from "./bundles.js";
 import claimRoutes from "./claim.js";
 import creditsOffRampTickRoutes from "./internal/credits-offramp-tick.js";
+import tradeRationaleRoutes from "./internal/trade-rationales.js";
 import launchAuthorizeRoutes from "./launches-authorize.js";
 import launchRoutes from "./launches.js";
 import patronRoutes from "./patron-me.js";
@@ -44,6 +45,7 @@ v2.route("/auth/siwe", authSiweRoutes);
 v2.route("/adapters", adapterTemplateRoutes);
 v2.route("/admin/agents", adminAgentRoutes);
 v2.route("/internal/credits-offramp", creditsOffRampTickRoutes);
+v2.route("/internal/trade-rationales", tradeRationaleRoutes);
 v2.route("/bundles", bundleRoutes);
 v2.route("/", appRoutes);
 
