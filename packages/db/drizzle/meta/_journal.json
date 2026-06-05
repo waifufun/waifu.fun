@@ -309,6 +309,13 @@
       "when": 1780677034414,
       "tag": "0043_credit_offramp_mint_asset",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1780679541629,
+      "tag": "0044_quiet_ser_duncan",
+      "breakpoints": true
     }
   ]
 }
