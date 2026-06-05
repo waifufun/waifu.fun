@@ -26,6 +26,8 @@ const contractAddress = "0x00000000000000000000000000000000000000d4" as const;
 process.env.INDEXER_DISABLE_QUEUE_JOBS = "1";
 
 class InsertBuilder {
+	private conflictDoNothing = false;
+
 	constructor(
 		private readonly db: FakeDb,
 		private readonly table: unknown,
@@ -42,11 +44,26 @@ class InsertBuilder {
 	}
 
 	onConflictDoNothing() {
+		this.conflictDoNothing = true;
 		return this;
 	}
 
 	returning() {
 		if (this.table === schema.events) return Promise.resolve([{ id: 1n }]);
+		if (this.table === schema.trades) {
+			const value = this.db.inserts.at(-1)?.value as { txHash?: string; eventId?: bigint } | undefined;
+			const tradeKey = `${value?.txHash ?? ""}:${String(value?.eventId ?? "")}`;
+
+			if (this.conflictDoNothing && this.db.tradeKeys.has(tradeKey)) {
+				return Promise.resolve([]);
+			}
+
+			if (tradeKey !== ":") {
+				this.db.tradeKeys.add(tradeKey);
+			}
+
+			return Promise.resolve([{ id: BigInt(this.db.tradeKeys.size) }]);
+		}
 		if (this.table === schema.agentEvents) {
 			const value = this.db.inserts.at(-1)?.value as Record<string, unknown>;
 			return Promise.resolve([
@@ -132,6 +149,7 @@ class FakeDb {
 	inserts: Array<{ table: unknown; value: unknown }> = [];
 	updates: Array<{ table: unknown; value: unknown }> = [];
 	conflicts: Array<{ table: unknown; input: unknown }> = [];
+	tradeKeys = new Set<string>();
 
 	constructor(
 		readonly knownWallet = true,
@@ -323,6 +341,23 @@ test("TokenPurchase writes buy trade, updates token metrics, and emits trade web
 	assert.deepEqual((emitted[0] as { event: string }).event, "trade.happened");
 });
 
+test("TokenPurchase replay refreshes token state without double-counting trade aggregates", async () => {
+	const { runtime, db } = createRuntime();
+	const event = tokenPurchaseEvent();
+
+	await handleTokenPurchaseEvent(runtime, event);
+	await handleTokenPurchaseEvent(runtime, event);
+
+	const tokenUpdates = db.updates.filter((update) => update.table === schema.tokens);
+	assert.equal(tokenUpdates.length, 2);
+	assert.equal("volume24h" in (tokenUpdates[0]?.value as Record<string, unknown>), true);
+	assert.equal("holderCount" in (tokenUpdates[0]?.value as Record<string, unknown>), true);
+	assert.equal("volume24h" in (tokenUpdates[1]?.value as Record<string, unknown>), false);
+	assert.equal("holderCount" in (tokenUpdates[1]?.value as Record<string, unknown>), false);
+	assert.equal("currentPrice" in (tokenUpdates[1]?.value as Record<string, unknown>), true);
+	assert.equal("reserveAmount" in (tokenUpdates[1]?.value as Record<string, unknown>), true);
+});
+
 test("TokenSale writes sell trade, updates token metrics, and emits trade webhook", async () => {
 	const { runtime, db, emitted } = createRuntime();
 
@@ -335,6 +370,21 @@ test("TokenSale writes sell trade, updates token metrics, and emits trade webhoo
 		true,
 	);
 	assert.deepEqual((emitted[0] as { event: string }).event, "trade.happened");
+});
+
+test("TokenSale replay refreshes token state without double-counting volume", async () => {
+	const { runtime, db } = createRuntime();
+	const event = tokenSaleEvent();
+
+	await handleTokenSaleEvent(runtime, event);
+	await handleTokenSaleEvent(runtime, event);
+
+	const tokenUpdates = db.updates.filter((update) => update.table === schema.tokens);
+	assert.equal(tokenUpdates.length, 2);
+	assert.equal("volume24h" in (tokenUpdates[0]?.value as Record<string, unknown>), true);
+	assert.equal("volume24h" in (tokenUpdates[1]?.value as Record<string, unknown>), false);
+	assert.equal("currentPrice" in (tokenUpdates[1]?.value as Record<string, unknown>), true);
+	assert.equal("reserveAmount" in (tokenUpdates[1]?.value as Record<string, unknown>), true);
 });
 
 test("LiquidityAdded provisioning job payload launches Eliza Cloud for bonded agent token", () => {

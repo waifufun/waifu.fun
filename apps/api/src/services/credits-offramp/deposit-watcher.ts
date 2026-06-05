@@ -166,7 +166,11 @@ export class BscDepositWatcher {
 		});
 	}
 
-	private async fetchNodeRealUsdtInbound(address: string, fromTimestamp: number, toTimestamp: number): Promise<InboundTx[]> {
+	private async fetchNodeRealUsdtInbound(
+		address: string,
+		fromTimestamp: number,
+		toTimestamp: number,
+	): Promise<InboundTx[]> {
 		const url = nodeRealBscUrl();
 		if (!url) throw new Error("NODEREAL_BSC_URL_MISSING");
 		const out: InboundTx[] = [];
