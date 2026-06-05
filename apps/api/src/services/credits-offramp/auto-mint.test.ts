@@ -26,7 +26,9 @@ function statusWithBsc(): ElizaCryptoStatus {
 }
 
 /** Mock Eliza client: records create+confirm calls, automatable by default. */
-function mockEliza(opts: { automatable?: boolean; confirm?: ElizaCryptoPaymentConfirmResult; throwOnConfirm?: boolean } = {}) {
+function mockEliza(
+	opts: { automatable?: boolean; confirm?: ElizaCryptoPaymentConfirmResult; throwOnConfirm?: boolean } = {},
+) {
 	const calls = { create: 0, confirm: 0, confirmedHashes: [] as string[] };
 	const eliza: OffRampElizaClient & { getCreditBalance?: () => Promise<{ balance: number }>; calls: typeof calls } = {
 		calls,

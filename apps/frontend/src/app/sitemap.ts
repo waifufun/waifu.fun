@@ -77,5 +77,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	// De-dupe by url (an agent token can appear in more than one enumerator).
 	const seen = new Set<string>();
-	return entries.filter((e) => (seen.has(e.url) ? false : (seen.add(e.url), true)));
+	return entries.filter((entry) => {
+		if (seen.has(entry.url)) return false;
+		seen.add(entry.url);
+		return true;
+	});
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { evaluateGate, type GateDeps, type OffRampLimitsConfig } from "./limits.js";
+import { type GateDeps, type OffRampLimitsConfig, evaluateGate } from "./limits.js";
 
 function cfg(overrides: Partial<OffRampLimitsConfig> = {}): OffRampLimitsConfig {
 	return {

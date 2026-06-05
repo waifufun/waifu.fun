@@ -7,12 +7,14 @@ import * as inviteQueries from "./queries/invites.js";
 import * as launchQueries from "./queries/launches.js";
 import * as tokenQueries from "./queries/tokens.js";
 import * as waifuQueries from "./queries/waifus.js";
+import { agentPersonas } from "./schema/agent-personas.js";
 import { agentWallets } from "./schema/agent-wallets.js";
 import { agents } from "./schema/agents.js";
 import { tokens } from "./schema/tokens.js";
 
 export interface ActiveAgentRecord {
 	id: string;
+	internalAgentId: string | null;
 	name: string;
 	tokenAddress: string | null;
 	treasuryAddress: string | null;
@@ -100,6 +102,7 @@ async function listActiveAgents(db: Database, limit: number): Promise<ActiveAgen
 	const rows = await db
 		.select({
 			id: agents.id,
+			internalAgentId: agentPersonas.agentId,
 			name: agents.name,
 			tokenAddress: tokens.contractAddress,
 			treasuryAddress: agentWallets.safeAddress,
@@ -107,7 +110,8 @@ async function listActiveAgents(db: Database, limit: number): Promise<ActiveAgen
 		})
 		.from(agents)
 		.leftJoin(tokens, sql`${tokens.id} = ${agents.tokenId}`)
-		.leftJoin(agentWallets, sql`${agentWallets.internalAgentId} = ${agents.id}::text`)
+		.leftJoin(agentWallets, sql`lower(${agentWallets.agentToken}) = lower(${tokens.contractAddress})`)
+		.leftJoin(agentPersonas, sql`${agentPersonas.agentId} = ${agentWallets.internalAgentId}`)
 		.where(and(ne(agents.agentStatus, "killed"), sql`${agents.lifecycleState} is distinct from 'killed'`))
 		.limit(limit);
 
@@ -118,6 +122,7 @@ async function listTopAgentsByTreasury(db: Database, limit: number): Promise<Act
 	const rows = await db
 		.select({
 			id: agents.id,
+			internalAgentId: agentPersonas.agentId,
 			name: agents.name,
 			tokenAddress: tokens.contractAddress,
 			treasuryAddress: agentWallets.safeAddress,
@@ -125,7 +130,8 @@ async function listTopAgentsByTreasury(db: Database, limit: number): Promise<Act
 		})
 		.from(agents)
 		.leftJoin(tokens, sql`${tokens.id} = ${agents.tokenId}`)
-		.leftJoin(agentWallets, sql`${agentWallets.internalAgentId} = ${agents.id}::text`)
+		.leftJoin(agentWallets, sql`lower(${agentWallets.agentToken}) = lower(${tokens.contractAddress})`)
+		.leftJoin(agentPersonas, sql`${agentPersonas.agentId} = ${agentWallets.internalAgentId}`)
 		.where(and(ne(agents.agentStatus, "killed"), sql`${agents.lifecycleState} is distinct from 'killed'`))
 		.orderBy(desc(sql`coalesce(${agents.infraReserveUsd}, '0')::numeric`))
 		.limit(limit);

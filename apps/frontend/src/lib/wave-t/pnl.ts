@@ -148,10 +148,7 @@ function num(value: unknown, fallback = 0): number {
  * @param address Agent token address (0x...)
  * @param window  day | week | month | allTime (default allTime → lifetime).
  */
-export async function fetchHyperliquidPnl(
-	address: string,
-	window: HlPnlWindow = "allTime",
-): Promise<HlPnlData | null> {
+export async function fetchHyperliquidPnl(address: string, window: HlPnlWindow = "allTime"): Promise<HlPnlData | null> {
 	const base = serverApiBase();
 	try {
 		const url = `${base}/v2/agents/${encodeURIComponent(address)}/hyperliquid/pnl?window=${window}`;
