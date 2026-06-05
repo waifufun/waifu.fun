@@ -437,6 +437,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				entryPriceUsd: entryPrice,
 				leverage,
 				...(unrealizedPnl !== 0 ? { pnlUsd: unrealizedPnl } : {}),
+				...(asString(payload.reason, "") ? { reason: asString(payload.reason, "") } : {}),
 				...(text ? { renderedText: text } : {}),
 				...(url ? { url } : {}),
 			};
@@ -516,6 +517,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 				leverage: asNumber(payload.leverage, 0) || null,
 				pnlUsd: asNumber(payload.pnlUsd, asNumber(payload.closedPnl, 0)),
 				pnlPct: pnlPct !== null && Number.isFinite(pnlPct) ? pnlPct : null,
+				...(asString(payload.reason, "") ? { reason: asString(payload.reason, "") } : {}),
 				...(url ? { url } : {}),
 			};
 			return row;
