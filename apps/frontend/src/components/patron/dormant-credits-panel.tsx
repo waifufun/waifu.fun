@@ -60,9 +60,7 @@ export default function DormantCreditsPanel({ agent }: { agent: AgentDetail }) {
 				window.location.assign(url);
 				return;
 			}
-			setNotice(
-				"credit purchase initiated. the agent wakes once the credits land (eliza cloud confirms the top-up).",
-			);
+			setNotice("credit purchase initiated. the agent wakes once the credits land (eliza cloud confirms the top-up).");
 		} catch (err) {
 			setErrorMsg(err instanceof Error ? err.message : "couldn't start the credit purchase. try again.");
 		}
@@ -78,8 +76,8 @@ export default function DormantCreditsPanel({ agent }: { agent: AgentDetail }) {
 					</h2>
 				</div>
 				<p className="mt-2 max-w-[68ch] text-sm leading-relaxed text-neutral-400">
-					the agent ran out of inference credits and paused its brain. there are two separate things you can fund.
-					they are not the same pool today.
+					the agent ran out of inference credits and paused its brain. there are two separate things you can fund. they
+					are not the same pool today.
 				</p>
 			</div>
 
@@ -91,8 +89,7 @@ export default function DormantCreditsPanel({ agent }: { agent: AgentDetail }) {
 						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#00ff87]/70">wakes the agent</span>
 					</div>
 					<p className="mt-2 text-[13px] leading-relaxed text-neutral-300">
-						buys eliza cloud inference credits so the brain can think again. this is what actually resurrects the
-						agent.
+						buys eliza cloud inference credits so the brain can think again. this is what actually resurrects the agent.
 					</p>
 
 					<div className="mt-4 flex flex-wrap gap-2">
@@ -142,15 +139,13 @@ export default function DormantCreditsPanel({ agent }: { agent: AgentDetail }) {
 				<div className="flex flex-col gap-2">
 					<div className="rounded-md border border-stroke-strong bg-[#0a0a0a] px-4 py-3">
 						<div className="flex items-center justify-between">
-							<h3 className="font-mono text-[11px] uppercase tracking-[0.2em] text-neutral-300">
-								fund treasury (bsc)
-							</h3>
+							<h3 className="font-mono text-[11px] uppercase tracking-[0.2em] text-neutral-300">fund treasury (bsc)</h3>
 							<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-neutral-500">trading capital</span>
 						</div>
 						<p className="mt-2 text-[13px] leading-relaxed text-neutral-400">
 							sends on-chain funds into the agent safe (defaults to bnb chain). this is trading capital. it raises
-							treasury value and runway display, but does not add inference credits and does not wake the brain on
-							its own today.
+							treasury value and runway display, but does not add inference credits and does not wake the brain on its
+							own today.
 						</p>
 					</div>
 					{tokenAddress ? (

@@ -16,7 +16,7 @@ export function createAgentRollupProcessor(context: WorkerContext) {
 		let updated = 0;
 		for (const agent of agents) {
 			const treasuryUsd = parseUsd(agent.cachedBalance) ?? 0;
-			const inferenceSpendUsd = await readInferenceSpendUsd(context, agent.id, since);
+			const inferenceSpendUsd = await readInferenceSpendUsd(context, agent.internalAgentId ?? agent.id, since);
 			const dailyBurnUsd = inferenceSpendUsd;
 			const runwayDays = dailyBurnUsd === 0 ? Number.POSITIVE_INFINITY : treasuryUsd / dailyBurnUsd;
 

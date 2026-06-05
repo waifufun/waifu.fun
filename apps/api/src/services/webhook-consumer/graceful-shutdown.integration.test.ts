@@ -137,7 +137,7 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 		},
 	} as never;
 
-	await resurrectAgent("waifu-demo-01", 2500, {
+	const topUp = await resurrectAgent("waifu-demo-01", 2500, {
 		db,
 		elizaClient: elizaStub(cloudCalls),
 		async emitEvent(input) {
@@ -148,17 +148,25 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 
 	assert.deepEqual(
 		emitted.map((event) => event.eventType),
-		["agent.downgraded", "agent.last_words_posted", "agent.dormant", "agent.resurrected"],
+		["agent.downgraded", "agent.last_words_posted", "agent.dormant"],
 	);
-	assert.equal(state.modelTier, "premium");
-	assert.equal(state.dormantAt, null);
-	assert.equal(state.brainPausedAt, null);
-	assert.equal(state.lastWordsPostedAt, null);
+	assert.deepEqual(topUp, {
+		agentId: "waifu-demo-01",
+		creditsAmount: 2500,
+		modelTier: "premium",
+		containerId: "container-1",
+		checkoutUrl: null,
+		pendingPayment: true,
+	});
+	assert.equal(state.modelTier, "standard");
+	assert.ok(state.dormantAt);
+	assert.ok(state.brainPausedAt);
+	assert.ok(state.lastWordsPostedAt);
 	assert.equal(tweets.length, 2);
 	assert.deepEqual(cloudCalls.paused, ["container-1"]);
-	assert.deepEqual(cloudCalls.resumed, ["container-1"]);
+	assert.deepEqual(cloudCalls.resumed, []);
 	// Credits live cloud-side keyed by the cloud runtime id, so top-up targets
 	// the container id (same id pause/resume use), not the waifu agent id.
 	assert.deepEqual(cloudCalls.toppedUp, [{ agentId: "container-1", amount: 25 }]);
-	assert.equal(updates.length, 1);
+	assert.equal(updates.length, 0);
 });

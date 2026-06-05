@@ -120,13 +120,9 @@ export async function fetchWalletLive(
 	fetchImpl: typeof fetch = fetch,
 ): Promise<{ accountValue: number; unrealizedPnl: number; withdrawable: number }> {
 	const state = await postInfo<HlClearinghouse>({ type: "clearinghouseState", user: wallet }, fetchImpl);
-	const accountValue =
-		num(state?.marginSummary?.accountValue) || num(state?.crossMarginSummary?.accountValue) || 0;
+	const accountValue = num(state?.marginSummary?.accountValue) || num(state?.crossMarginSummary?.accountValue) || 0;
 	const withdrawable = num(state?.withdrawable);
-	const unrealizedPnl = (state?.assetPositions ?? []).reduce(
-		(sum, ap) => sum + num(ap?.position?.unrealizedPnl),
-		0,
-	);
+	const unrealizedPnl = (state?.assetPositions ?? []).reduce((sum, ap) => sum + num(ap?.position?.unrealizedPnl), 0);
 	return { accountValue, unrealizedPnl, withdrawable };
 }
 
@@ -193,9 +189,7 @@ export async function buildHlPnl(
 	// current-wallet total trading pnl (deposit-excluded) = last allTime/window pnl point.
 	// for lifetime correctness we always read the allTime tail of the current wallet too.
 	const currentAllTime =
-		window === "allTime"
-			? currentSeriesRaw
-			: await fetchWalletPnlSeries(currentWallet, "allTime", fetchImpl);
+		window === "allTime" ? currentSeriesRaw : await fetchWalletPnlSeries(currentWallet, "allTime", fetchImpl);
 	const currentTotal = currentAllTime.at(-1)?.pnl ?? 0;
 
 	const unrealized = live.unrealizedPnl;

@@ -56,13 +56,9 @@ export default function PatronRouteError({
 				</p>
 				{error.message ? (
 					<div className="mt-4 rounded-sm border border-white/10 bg-black/40 px-3 py-2 text-left">
-						<p className="break-words font-mono text-[11px] leading-relaxed text-[var(--negative)]">
-							{error.message}
-						</p>
+						<p className="break-words font-mono text-[11px] leading-relaxed text-[var(--negative)]">{error.message}</p>
 						{error.digest ? (
-							<p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-								ref {error.digest}
-							</p>
+							<p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">ref {error.digest}</p>
 						) : null}
 					</div>
 				) : null}

@@ -13,7 +13,7 @@ const PATRON_ROW = {
 };
 
 const PERSONA_ROW = {
-	id: "persona-row-1",
+	id: "11111111-1111-4111-8111-111111111111",
 	agentId: "waifu-runtime-1",
 	ownerStewardUserId: "steward-user-1",
 	ownerAddress: "0x0000000000000000000000000000000000000001",
@@ -110,7 +110,7 @@ test("PUT /:id/runtime restarts an Eliza Cloud hosted agent through the service 
 		},
 	});
 
-	const res = await app.request("/persona-row-1/runtime", {
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime`, {
 		method: "PUT",
 		headers: { ...authHeaders(), "content-type": "application/json" },
 		body: JSON.stringify({ action: "restart" }),
@@ -146,7 +146,7 @@ test("PUT /:id/runtime suspends an Eliza Cloud hosted agent through the service 
 		},
 	});
 
-	const res = await app.request("/persona-row-1/runtime", {
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime`, {
 		method: "PUT",
 		headers: { ...authHeaders(), "content-type": "application/json" },
 		body: JSON.stringify({ action: "suspend" }),
@@ -176,7 +176,7 @@ test("PUT /:id/runtime rejects unsupported actions with 400", async () => {
 		},
 	});
 
-	const res = await app.request("/persona-row-1/runtime", {
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime`, {
 		method: "PUT",
 		headers: { ...authHeaders(), "content-type": "application/json" },
 		body: JSON.stringify({ action: "explode" }),
@@ -207,7 +207,7 @@ test("POST /:id/runtime/test returns hosted runtime status and web UI evidence",
 		},
 	});
 
-	const res = await app.request("/persona-row-1/runtime/test", {
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime/test`, {
 		method: "POST",
 		headers: authHeaders(),
 	});
@@ -229,7 +229,7 @@ test("POST /:id/runtime/rotate-key stores only the new runtime key hash", async 
 		getRuntimeState: async () => runtimeState(),
 	});
 
-	const res = await app.request("/persona-row-1/runtime/rotate-key", {
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime/rotate-key`, {
 		method: "POST",
 		headers: authHeaders(),
 	});
@@ -267,7 +267,7 @@ test("PUT /:id/runtime returns 409 before control when no cloud runtime exists",
 		},
 	});
 
-	const res = await app.request("/persona-row-1/runtime", {
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime`, {
 		method: "PUT",
 		headers: { ...authHeaders(), "content-type": "application/json" },
 		body: JSON.stringify({ action: "resume" }),
@@ -286,7 +286,7 @@ test("GET /:id/runtime returns seeded runtime state", async () => {
 	const app = createAgentRuntimeRoutes({
 		db,
 		getRuntimeState: async (_db, agentId) => {
-			assert.equal(agentId, "persona-row-1");
+			assert.equal(agentId, "waifu-runtime-1");
 			return {
 				state: "live",
 				containerId: "eliza-agent-01",
@@ -296,7 +296,7 @@ test("GET /:id/runtime returns seeded runtime state", async () => {
 		},
 	});
 
-	const res = await app.request("/persona-row-1/runtime", { headers: authHeaders() });
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime`, { headers: authHeaders() });
 	assert.equal(res.status, 200);
 	assert.deepEqual(await res.json(), {
 		state: "live",
@@ -307,7 +307,7 @@ test("GET /:id/runtime returns seeded runtime state", async () => {
 });
 
 test("GET /:id/runtime accepts the stable agent slug ownership fallback", async () => {
-	const db = createAuthDb({ missPersonaIdLookup: true });
+	const db = createAuthDb();
 	installAuth(db);
 	const app = createAgentRuntimeRoutes({
 		db,
@@ -338,6 +338,6 @@ test("GET /:id/runtime returns 404 when no runtime state exists", async () => {
 		getRuntimeState: async () => null,
 	});
 
-	const res = await app.request("/persona-row-1/runtime", { headers: authHeaders() });
+	const res = await app.request(`/${PERSONA_ROW.id}/runtime`, { headers: authHeaders() });
 	assert.equal(res.status, 404);
 });

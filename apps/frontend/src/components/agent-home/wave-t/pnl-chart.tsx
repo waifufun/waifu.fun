@@ -264,9 +264,7 @@ export function PnlChart({ hlPnl, series, baselineNav }: PnlChartProps) {
 			{hlPnl && hasData ? (
 				<div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-[var(--border-soft)] pt-2 font-mono text-[10px] tabular-nums sm:grid-cols-4">
 					<div className="flex flex-col gap-0.5">
-						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-							trading pnl
-						</span>
+						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">trading pnl</span>
 						<span
 							className={cn(
 								tone === "positive"
@@ -280,21 +278,15 @@ export function PnlChart({ hlPnl, series, baselineNav }: PnlChartProps) {
 						</span>
 					</div>
 					<div className="flex flex-col gap-0.5">
-						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-							account value
-						</span>
+						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">account value</span>
 						<span className="text-[var(--text-secondary)]">{fmtUsdPlain(hlPnl.accountValue)}</span>
 					</div>
 					<div className="flex flex-col gap-0.5">
-						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-							tax income
-						</span>
+						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">tax income</span>
 						<span className="text-[var(--text-secondary)]">{tax ? tax : "$0.00"}</span>
 					</div>
 					<div className="flex flex-col gap-0.5">
-						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-							win / loss
-						</span>
+						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">win / loss</span>
 						<span className="text-[var(--text-secondary)]">
 							{winLoss ? `${winLoss.wins}w / ${winLoss.losses}l` : "—"}
 						</span>

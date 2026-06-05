@@ -39,7 +39,7 @@ export function createAgentRuntimeRoutes(
 		if (!db) return c.json({ error: "database unavailable" }, 503);
 
 		try {
-			const state = await (options.getRuntimeState ?? getAgentRuntimeState)(db, agentId);
+			const state = await (options.getRuntimeState ?? getAgentRuntimeState)(db, runtimeAgentId(c));
 			if (!state) return c.json({ error: "agent not found" }, 404);
 			return c.json(state);
 		} catch (err) {
@@ -71,7 +71,10 @@ export function createAgentRuntimeRoutes(
 			);
 		}
 
-		const state: AgentRuntimeState | null = await (options.getRuntimeState ?? getAgentRuntimeState)(db, agentId);
+		const state: AgentRuntimeState | null = await (options.getRuntimeState ?? getAgentRuntimeState)(
+			db,
+			runtimeAgentId(c),
+		);
 		if (!state) return c.json({ ok: false, error: "NOT_FOUND", message: "agent not found" }, 404);
 		const cloudAgentId = runtimeControlId(state);
 		if (!cloudAgentId) {
@@ -128,11 +131,13 @@ export function createAgentRuntimeRoutes(
 	});
 
 	app.post("/:id/runtime/test", requirePatron(), requireAgentOwnership("id"), async (c) => {
-		const agentId = c.req.param("id");
 		const db = options.db ?? requireDb();
 		if (!db) return c.json({ ok: false, error: "DATABASE_UNAVAILABLE", message: "database unavailable" }, 503);
 
-		const state: AgentRuntimeState | null = await (options.getRuntimeState ?? getAgentRuntimeState)(db, agentId);
+		const state: AgentRuntimeState | null = await (options.getRuntimeState ?? getAgentRuntimeState)(
+			db,
+			runtimeAgentId(c),
+		);
 		if (!state) return c.json({ ok: false, error: "NOT_FOUND", message: "agent not found" }, 404);
 		const cloudAgentId = runtimeControlId(state);
 		if (!cloudAgentId) {
@@ -185,6 +190,11 @@ export function createAgentRuntimeRoutes(
 	});
 
 	return app;
+}
+
+function runtimeAgentId(c: { get: (key: "patronAgent") => unknown; req: { param: (key: string) => string } }): string {
+	const ownership = c.get("patronAgent") as { agentId?: string | null } | undefined;
+	return ownership?.agentId ?? c.req.param("id");
 }
 
 function runtimeControlId(state: AgentRuntimeState): string | null {

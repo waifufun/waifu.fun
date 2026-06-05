@@ -1134,8 +1134,7 @@ export function resolveElizaCloudStewardSecret(): string | undefined {
  */
 export function resolveElizaCloudPlatformStewardUserId(): string | undefined {
 	return nonEmpty(
-		process.env.ELIZA_CLOUD_PLATFORM_STEWARD_USER_ID ??
-			"wallet:evm:0xc9846a839c4e1d9050dc890a25661ab13224e9ec",
+		process.env.ELIZA_CLOUD_PLATFORM_STEWARD_USER_ID ?? "wallet:evm:0xc9846a839c4e1d9050dc890a25661ab13224e9ec",
 	);
 }
 
