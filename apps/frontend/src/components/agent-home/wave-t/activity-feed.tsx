@@ -143,6 +143,8 @@ export type ActivityRowInput =
 			leverage?: number | null;
 			pnlUsd?: number;
 			pnlPct?: number | null;
+			/** Agent's rationale for opening/closing — surfaced in the feed sub. */
+			reason?: string;
 			renderedText?: string;
 			url?: string;
 	  }
@@ -220,6 +222,13 @@ function categoryOf(row: ActivityRowInput): ActivityCategory {
 // ── Per-row visual variants ──────────────────────────────────────
 
 const NEUTRAL_ICON_CHIP = "border border-[var(--border-soft)] bg-white/[0.02] text-[var(--text-secondary)]";
+
+/** Clip an agent's trade rationale so it fits one feed sub-line. */
+function clipReason(reason: string): string {
+	const trimmed = reason.trim();
+	if (trimmed.length <= 90) return trimmed;
+	return `${trimmed.slice(0, 89).trimEnd()}…`;
+}
 
 function deltaTone(delta: number): { cls: string; sign: string } {
 	if (delta > 0) return { cls: "text-[var(--positive)]", sign: "+" };
@@ -466,6 +475,7 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 					notional > 0 ? formatCompactUsd(notional) : null,
 					row.leverage ? `${row.leverage}x` : null,
 					row.entryPriceUsd ? `entry ${formatCompactUsd(row.entryPriceUsd)}` : null,
+					row.reason ? clipReason(row.reason) : null,
 				]
 					.filter(Boolean)
 					.join(" · ");
@@ -495,6 +505,7 @@ function visualForCompact(row: ActivityRowInput): Visual | null {
 						row.leverage ? `${row.leverage}x` : null,
 						row.entryPriceUsd ? `entry ${formatCompactUsd(row.entryPriceUsd)}` : null,
 						row.venue.toLowerCase(),
+						row.reason ? clipReason(row.reason) : null,
 					]
 						.filter(Boolean)
 						.join(" · ") || `on ${row.venue.toLowerCase()}`;

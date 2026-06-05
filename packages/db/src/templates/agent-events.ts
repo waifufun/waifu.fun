@@ -20,6 +20,17 @@ function str(payload: Record<string, unknown>, ...keys: string[]): string | null
 	return null;
 }
 
+/**
+ * Append the trade rationale to a summary when present, so the activity feed
+ * shows WHY a position was opened/closed (the agent's thesis), not just the
+ * mechanical fill. Clipped so a long rationale can't blow out the feed row.
+ */
+function withReason(summary: string, payload: Record<string, unknown>): string {
+	const reason = str(payload, "reason", "rationale", "thesis", "note");
+	if (!reason) return summary;
+	return `${summary} \u00b7 ${clip(reason, 140)}`;
+}
+
 function num(payload: Record<string, unknown>, ...keys: string[]): number | null {
 	for (const key of keys) {
 		const value = payload[key];
@@ -107,7 +118,10 @@ export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
 		const entry = num(p, "entryPrice", "price");
 		return withDefaults(
 			"trade.open",
-			`opened ${a} ${side} ${usd(notional)} ${lev ? `${lev}x ` : ""}at ${usd(entry)}`.replace(/ {2,}/g, " "),
+			withReason(
+				`opened ${a} ${side} ${usd(notional)} ${lev ? `${lev}x ` : ""}at ${usd(entry)}`.replace(/ {2,}/g, " "),
+				p,
+			),
 			{
 				iconKey: "hyperliquid",
 				accentColor: "positive",
@@ -118,7 +132,10 @@ export const RENDERERS: Partial<Record<AgentEventType, EventRenderer>> = {
 	"trade.close": (p) =>
 		withDefaults(
 			"trade.close",
-			`closed ${asset(p)} ${str(p, "side") ?? "position"} for ${signedUsd(num(p, "pnlUsd", "closedPnl"))}${pct(num(p, "pnlPct"))}`,
+			withReason(
+				`closed ${asset(p)} ${str(p, "side") ?? "position"} for ${signedUsd(num(p, "pnlUsd", "closedPnl"))}${pct(num(p, "pnlPct"))}`,
+				p,
+			),
 			{
 				iconKey: "hyperliquid",
 				accentColor: (num(p, "pnlUsd", "closedPnl") ?? 0) < 0 ? "negative" : "positive",
