@@ -321,9 +321,7 @@ export const retrieveQuote = async ({
 		const liquidityUsd = Number.parseFloat(String(pair?.liquidity?.usd ?? "0"));
 		const tradeUsd = Number.parseFloat(swapUsdValue);
 		const priceImpactPct =
-			liquidityUsd > 0 && tradeUsd > 0
-				? Math.min(tradeUsd / (liquidityUsd / 2), 0.99).toFixed(4)
-				: undefined;
+			liquidityUsd > 0 && tradeUsd > 0 ? Math.min(tradeUsd / (liquidityUsd / 2), 0.99).toFixed(4) : undefined;
 
 		return {
 			minimumReceived,

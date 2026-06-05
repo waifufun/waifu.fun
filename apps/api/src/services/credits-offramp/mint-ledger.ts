@@ -13,8 +13,8 @@
  */
 
 import { schema } from "@waifufun/db";
-import type { Database } from "@waifufun/db/client";
 import type { CreditOfframpMintStatus, NewCreditOfframpMint } from "@waifufun/db";
+import type { Database } from "@waifufun/db/client";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 
 const { creditOfframpMints } = schema;
@@ -31,10 +31,7 @@ export async function sumSpentTodayUsd(db: Database, now: Date = new Date()): Pr
 		.select({ total: sql<string>`COALESCE(SUM(${creditOfframpMints.usdAmount}), 0)` })
 		.from(creditOfframpMints)
 		.where(
-			and(
-				gte(creditOfframpMints.createdAt, dayStart),
-				inArray(creditOfframpMints.status, ["credited", "pending"]),
-			),
+			and(gte(creditOfframpMints.createdAt, dayStart), inArray(creditOfframpMints.status, ["credited", "pending"])),
 		);
 	const total = Number(rows[0]?.total ?? 0);
 	return Number.isFinite(total) ? total : 0;

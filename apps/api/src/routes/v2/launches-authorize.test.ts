@@ -14,10 +14,12 @@ import launchAuthorizeRoutes, { __setLaunchAuthorizeDepsForTest, authorizeLaunch
 const OWNER = "0x1111111111111111111111111111111111111111" as const;
 const OTHER = "0x2222222222222222222222222222222222222222" as const;
 const SAFE = "0x3333333333333333333333333333333333333333" as const;
+const LAUNCH_ID = "22222222-2222-4222-8222-222222222222";
+const PERSONA_ID = "11111111-1111-4111-8111-111111111111";
 
 function baseRow(overrides: Partial<Record<string, unknown>> = {}) {
 	return {
-		id: "launch-1",
+		id: LAUNCH_ID,
 		status: "provisioned",
 		chainId: 56,
 		portalAddress: "0x4444444444444444444444444444444444444444",
@@ -28,12 +30,12 @@ function baseRow(overrides: Partial<Record<string, unknown>> = {}) {
 		tokenImageUrl: "ipfs://image",
 		socials: {},
 		taxRate: 500,
-		agentPersonaId: "persona-uuid",
+		agentPersonaId: PERSONA_ID,
 		agentId: "waifu-test",
 		ownerAddress: OWNER,
 		safeAddress: SAFE,
-		launchId: "launch-1",
-		personaUuid: "persona-uuid",
+		launchId: LAUNCH_ID,
+		personaUuid: PERSONA_ID,
 		personaAgentId: "waifu-test",
 		...overrides,
 	};
@@ -69,7 +71,7 @@ function fakeDb(row: Record<string, unknown> | null, updateSucceeds = true) {
 					return this;
 				},
 				returning() {
-					return updateSucceeds ? [{ id: "launch-1", status: "queued" }] : [];
+					return updateSucceeds ? [{ id: LAUNCH_ID, status: "queued" }] : [];
 				},
 			};
 		},
@@ -134,7 +136,7 @@ function routeDb(opts: { walletBound?: boolean; ownerAddress?: string | null } =
 					return this;
 				},
 				returning() {
-					return [{ id: "launch-1", status: "queued" }];
+					return [{ id: LAUNCH_ID, status: "queued" }];
 				},
 			};
 		},
@@ -176,7 +178,7 @@ describe("POST /v2/launches/:id/authorize", () => {
 		const app = new Hono();
 		app.route("/launches", launchAuthorizeRoutes);
 
-		const res = await app.request("http://unit.test/launches/launch-1/authorize", {
+		const res = await app.request(`http://unit.test/launches/${LAUNCH_ID}/authorize`, {
 			method: "POST",
 			body: JSON.stringify({ firstBuyWei: "0" }),
 			headers: { "content-type": "application/json" },
@@ -196,7 +198,7 @@ describe("POST /v2/launches/:id/authorize", () => {
 
 		const app = new Hono();
 		app.route("/launches", launchAuthorizeRoutes);
-		const res = await app.request("http://unit.test/launches/launch-1/authorize", {
+		const res = await app.request(`http://unit.test/launches/${LAUNCH_ID}/authorize`, {
 			method: "POST",
 			body: JSON.stringify({ address: OWNER, firstBuyWei: "0" }),
 			headers: { authorization: "Bearer steward-token", "content-type": "application/json" },
@@ -216,7 +218,7 @@ describe("POST /v2/launches/:id/authorize", () => {
 
 		const app = new Hono();
 		app.route("/launches", launchAuthorizeRoutes);
-		const res = await app.request("http://unit.test/launches/launch-1/authorize", {
+		const res = await app.request(`http://unit.test/launches/${LAUNCH_ID}/authorize`, {
 			method: "POST",
 			body: JSON.stringify({ address: OWNER, firstBuyWei: "0" }),
 			headers: { authorization: "Bearer steward-token", "content-type": "application/json" },
@@ -242,7 +244,7 @@ describe("POST /v2/launches/:id/authorize", () => {
 
 		const app = new Hono();
 		app.route("/launches", launchAuthorizeRoutes);
-		const res = await app.request("http://unit.test/launches/launch-1/authorize", {
+		const res = await app.request(`http://unit.test/launches/${LAUNCH_ID}/authorize`, {
 			method: "POST",
 			body: JSON.stringify({ siwe: { message: "siwe", signature: "0xsig" }, firstBuyWei: "0" }),
 			headers: { authorization: "Bearer steward-token", "content-type": "application/json" },
@@ -254,14 +256,14 @@ describe("POST /v2/launches/:id/authorize", () => {
 	it("checks the patron wallet against agent_personas.owner_address", async () => {
 		const db = fakeDb(baseRow());
 		const { deps } = noopDeps(db);
-		const res = await authorizeLaunch({ launchId: "launch-1", patronWallet: OTHER, deps });
+		const res = await authorizeLaunch({ launchId: LAUNCH_ID, patronWallet: OTHER, deps });
 		assert.equal(res.status, 403);
 	});
 
 	it("guards provisioned status", async () => {
 		const db = fakeDb(baseRow({ status: "queued" }));
 		const { deps } = noopDeps(db);
-		const res = await authorizeLaunch({ launchId: "launch-1", patronWallet: OWNER, deps });
+		const res = await authorizeLaunch({ launchId: LAUNCH_ID, patronWallet: OWNER, deps });
 		assert.equal(res.status, 409);
 		assert.equal(res.ok, false);
 	});
@@ -270,7 +272,7 @@ describe("POST /v2/launches/:id/authorize", () => {
 		const db = fakeDb(baseRow());
 		const { deps } = noopDeps(db, 9n);
 		const res = await authorizeLaunch({
-			launchId: "launch-1",
+			launchId: LAUNCH_ID,
 			patronWallet: OWNER,
 			firstBuyWei: "10",
 			deps,
@@ -282,7 +284,7 @@ describe("POST /v2/launches/:id/authorize", () => {
 		const db = fakeDb(baseRow());
 		const { deps, enqueued, emitted } = noopDeps(db, 10n);
 		const res = await authorizeLaunch({
-			launchId: "launch-1",
+			launchId: LAUNCH_ID,
 			patronWallet: OWNER,
 			firstBuyWei: "10",
 			deps,
@@ -290,13 +292,13 @@ describe("POST /v2/launches/:id/authorize", () => {
 
 		assert.equal(res.status, 200);
 		assert.deepEqual(res.body, {
-			launchId: "launch-1",
+			launchId: LAUNCH_ID,
 			status: "queued",
 			firstBuyWei: "10",
 			txHashPending: true,
 		});
 		assert.equal(enqueued.length, 1);
-		assert.equal((enqueued[0] as [{ launchId: string }])[0].launchId, "launch-1");
+		assert.equal((enqueued[0] as [{ launchId: string }])[0].launchId, LAUNCH_ID);
 		assert.equal(emitted.length, 1);
 		assert.equal((emitted[0] as { eventType: string }).eventType, "launch.authorized");
 	});
