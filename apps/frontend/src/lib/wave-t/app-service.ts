@@ -162,3 +162,31 @@ export function selectServiceApps(apps: App[]): AppServiceView[] {
 	}
 	return views;
 }
+
+/**
+ * Whether an `appUrl` is safe to render as a navigable storefront/landing
+ * link. `appUrl` is meant to be a marketing/landing page, NOT an API action
+ * route. A few app rows have historically stored their raw invoke endpoint
+ * (e.g. `/v2/agents/:addr/apps/image-gen/invoke`) in `appUrl`; rendering that
+ * as an <a href> navigates the browser to a POST-only route as a GET and
+ * shows the raw "Route not found" JSON. Invocation always goes through the
+ * inline service registry (keyed on appId), never a bare link.
+ *
+ * Returns true only for an absolute http(s) URL that is NOT an API
+ * action route (no `/invoke`, `/register`, or `/api`/`/v2` action path).
+ */
+export function isNavigableAppUrl(appUrl: string | null | undefined): boolean {
+	if (!appUrl) return false;
+	let parsed: URL;
+	try {
+		parsed = new URL(appUrl);
+	} catch {
+		return false; // relative or malformed -> never a safe nav target
+	}
+	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+	const path = parsed.pathname.toLowerCase();
+	// Block known API action routes that are not human-navigable pages.
+	if (/\/(invoke|register|authorize)(\/|$)/.test(path)) return false;
+	if (path.startsWith("/v2/") || path.startsWith("/v1/") || path.startsWith("/api/")) return false;
+	return true;
+}
