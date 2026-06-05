@@ -43,8 +43,9 @@ const HL_WINDOWS = new Set<HlWindow>(["day", "week", "month", "allTime"]);
  * wallets.
  */
 const PRIOR_HL_WALLETS: Record<string, string[]> = {
-	// sol-the-architect: previous HL wallet (abandoned, +$951 realized)
-	"0x15fc6086064afe50ccf4c70000c55cecb6e17777": ["0x30641cd7c2e0997acbd8789b86ade9b381da048b"],
+	// Prior HL wallets are intentionally excluded from the live P&L card so the
+	// chart reflects only the agent's current trading wallet. (sol-the-architect's
+	// abandoned 0x3064... wallet was polluting the baseline with stale history.)
 };
 
 function priorWalletsFor(tokenAddress: string): string[] {

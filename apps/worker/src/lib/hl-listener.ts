@@ -407,7 +407,7 @@ export async function insertEnrichedTradeEvent(
 	params: {
 		agentId: string | null;
 		agentTokenAddress: string;
-		eventType: "trade.open" | "trade.close";
+		eventType: "trade.open" | "trade.close" | "trade.fill";
 		legacyType: string;
 		payload: Record<string, unknown>;
 		data: Record<string, unknown>;
@@ -796,15 +796,52 @@ async function processPositions(
 			if (inserted) emitted += 1;
 			continue;
 		}
-		// Position adjusted: emit as trade.open with adjust marker when
-		// magnitude or side changed materially. Per-fill events already
-		// stream via processFills, so we deliberately keep diff-events
-		// summary-only to avoid double counting.
+		// Position adjusted (same side, size changed): emit a trade.fill "added to
+		// position" / "trimmed position" event so scale-ins and partial scale-outs
+		// show in the activity feed (not just open-from-zero / full close).
 		if (before && after) {
 			const sameSide = before.szi > 0 === after.szi > 0;
 			const sizeDelta = Math.abs(after.szi) - Math.abs(before.szi);
-			if (sameSide && Math.abs(sizeDelta) < 1e-9) continue;
-			// Skip the noisy in-between deltas in this pass.
+			// Ignore dust-level jitter; only emit on a material size change.
+			const priceRef = after.entryPx ?? before.entryPx ?? 0;
+			const notionalDelta = Math.abs(sizeDelta) * priceRef;
+			if (!sameSide || Math.abs(sizeDelta) < 1e-9 || notionalDelta < 50) continue;
+			const increased = Math.abs(after.szi) > Math.abs(before.szi);
+			const recentFill = await readRecentFillForCoin(context, wallet.agentTokenAddress, wallet.address, coin);
+			const lifecycleId = recentFill.tid ?? Date.now();
+			const fillTime = recentFill.time;
+			const occurredAt = fillTime !== null ? new Date(fillTime) : undefined;
+			const side = sideFromSzi(after.szi);
+			const payload = {
+				coin,
+				asset: coin.toLowerCase(),
+				side,
+				dir: increased ? "added" : "trimmed",
+				size: Math.abs(sizeDelta),
+				price: priceRef,
+				entryPrice: after.entryPx,
+				leverage: after.leverage,
+				notionalUsd: notionalDelta,
+				venue: "hyperliquid",
+				time: fillTime,
+				timestamp: fillTime !== null ? new Date(fillTime).toISOString() : null,
+			};
+			const inserted = await insertEnrichedTradeEvent(context, {
+				agentId: wallet.agentId,
+				agentTokenAddress: wallet.agentTokenAddress,
+				eventType: "trade.fill",
+				legacyType: "trade.fill",
+				payload,
+				data: renderEventData("trade.fill", payload),
+				txHash: null,
+				sourceEventId: `hl:${wallet.address.toLowerCase()}:${coin}:adj:${lifecycleId}:${Math.abs(after.szi).toFixed(6)}`,
+				occurredAt,
+				coin,
+				action: "open",
+				side,
+			});
+			if (inserted) emitted += 1;
+			continue;
 		}
 	}
 
