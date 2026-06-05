@@ -19,7 +19,17 @@ const fixtures: Array<[AgentEventType, Record<string, unknown>, string]> = [
 		{ coin: "BTC", side: "long", notionalUsd: 99.72, leverage: 5, entryPrice: 77301 },
 		"opened btc long $99.72 5x at $77,301",
 	],
+	[
+		"trade.open",
+		{ coin: "BTC", side: "long", notionalUsd: 99.72, leverage: 5, entryPrice: 77301, reason: "algo flagged local bottom" },
+		"opened btc long $99.72 5x at $77,301 \u00b7 algo flagged local bottom",
+	],
 	["trade.close", { coin: "ETH", side: "long", pnlUsd: 1.45, pnlPct: 2.3 }, "closed eth long for +$1.45 (+2.30%)"],
+	[
+		"trade.close",
+		{ coin: "ETH", side: "long", pnlUsd: 1.45, pnlPct: 2.3, reason: "took profit at resistance" },
+		"closed eth long for +$1.45 (+2.30%) \u00b7 took profit at resistance",
+	],
 	["trade.fill", { coin: "BNB", side: "buy", size: 0.15, price: 669.65 }, "filled buy 0.15 bnb at $669.65"],
 	["trade.liquidation", { coin: "SOL", side: "long", price: 140 }, "🚨 liquidated sol long at $140.00 (margin call)"],
 	[
