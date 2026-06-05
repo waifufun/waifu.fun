@@ -99,7 +99,9 @@ const defaultDeps: AutoMintDeps = {
 
 export interface AutoMintResultRow {
 	depositTxHash: string;
+	asset: DepositCandidate["asset"];
 	valueBnb: number;
+	valueUsd: number;
 	usd: number | null;
 	outcome: "credited" | "capped" | "killed" | "skipped" | "failed" | "duplicate";
 	reason?: string;
@@ -221,15 +223,21 @@ export class CreditsAutoMinter {
 		// row blocks. Prior refusal/failure rows do NOT — the deposit stays retryable
 		// (the partial unique index is the hard guarantee on the claim below).
 		if (await this.ledger.hasActiveDeposit(depositTxHash)) {
-			return { depositTxHash, valueBnb: candidate.valueBnb, usd: null, outcome: "duplicate" };
+			return this.row(candidate, null, "duplicate");
 		}
 
-		// Price snapshot -> USD value of the full deposit.
-		const bnbPriceUsd = await this.deps.priceUsd();
-		const usd = bnbPriceUsd && bnbPriceUsd > 0 ? Number((candidate.valueBnb * bnbPriceUsd).toFixed(2)) : null;
+		// USD value of the full deposit. USDT is USD-native; BNB keeps the existing
+		// price snapshot semantics.
+		const bnbPriceUsd = candidate.asset === "BNB" ? await this.deps.priceUsd() : null;
+		const usd =
+			candidate.asset === "USDT"
+				? Number(candidate.valueUsd.toFixed(2))
+				: bnbPriceUsd && bnbPriceUsd > 0
+					? Number((candidate.valueBnb * bnbPriceUsd).toFixed(2))
+					: null;
 		if (usd === null) {
 			await this.audit(candidate, receiveAddress, null, bnbPriceUsd, "skipped", "BNB price unavailable");
-			return { depositTxHash, valueBnb: candidate.valueBnb, usd: null, outcome: "skipped", reason: "no price" };
+			return this.row(candidate, null, "skipped", "no price");
 		}
 
 		// Gate: kill-switch + automatable + per-tx + per-day caps.
@@ -241,13 +249,7 @@ export class CreditsAutoMinter {
 
 		if (!decision.allowed) {
 			await this.audit(candidate, receiveAddress, usd, bnbPriceUsd, decision.status, decision.reason);
-			return {
-				depositTxHash,
-				valueBnb: candidate.valueBnb,
-				usd,
-				outcome: decision.status,
-				reason: decision.reason,
-			};
+			return this.row(candidate, usd, decision.status, decision.reason);
 		}
 
 		// Claim a PENDING row first (the partial-unique index makes this atomic:
@@ -256,15 +258,16 @@ export class CreditsAutoMinter {
 		const id = await this.ledger.claimPendingMint({
 			depositTxHash,
 			safeAddress: receiveAddress,
-			depositBnb: candidate.valueBnb,
-			convertBnb: candidate.valueBnb,
+			asset: candidate.asset,
+			depositBnb: candidate.asset === "BNB" ? candidate.valueBnb : null,
+			convertBnb: candidate.asset === "BNB" ? candidate.valueBnb : null,
 			usdAmount: decision.amountUsd,
 			bnbPriceUsd: bnbPriceUsd ?? null,
 			status: "pending",
 		});
 		if (!id) {
 			// Lost the claim race; another tick already holds the active mint slot.
-			return { depositTxHash, valueBnb: candidate.valueBnb, usd, outcome: "duplicate" };
+			return this.row(candidate, usd, "duplicate");
 		}
 
 		// Post-claim daily-cap RECHECK (closes the read-then-write race across
@@ -276,14 +279,18 @@ export class CreditsAutoMinter {
 		if (spentAfterClaim > limits.maxPerDayUsd) {
 			const reason = `daily cap of $${limits.maxPerDayUsd} would be exceeded after concurrent claims (now $${spentAfterClaim.toFixed(2)})`;
 			await this.ledger.markCapped(id, reason);
-			return { depositTxHash, valueBnb: candidate.valueBnb, usd, outcome: "capped", reason };
+			return this.row(candidate, usd, "capped", reason);
 		}
 
 		// Execute the REAL directWallet confirm: the deposit IS the transfer to the
 		// receive address, so we create a payment for the USD value and confirm it
 		// with this deposit's tx hash. Auth = self-minted platform session JWT.
 		try {
-			const result = await this.offRamp.convert({ usd: decision.amountUsd, transactionHash: depositTxHash });
+			const result = await this.offRamp.convert({
+				usd: decision.amountUsd,
+				transactionHash: depositTxHash,
+				payCurrency: candidate.asset === "USDT" ? "USDT" : "BNB",
+			});
 			if (result.automatable === true) {
 				let resultingBalance: string | null = null;
 				try {
@@ -298,32 +305,48 @@ export class CreditsAutoMinter {
 					creditsAdded: result.creditsAdded != null ? String(result.creditsAdded) : null,
 					resultingBalance,
 				});
-				this.deps.logger.info("[offramp-automint] minted credits from BNB deposit", {
+				this.deps.logger.info("[offramp-automint] minted credits from deposit", {
 					depositTxHash,
+					asset: candidate.asset,
 					usd: decision.amountUsd,
 					paymentId: result.paymentId,
 					creditsAdded: result.creditsAdded,
 					resultingBalance,
 				});
-				return {
-					depositTxHash,
-					valueBnb: candidate.valueBnb,
-					usd: decision.amountUsd,
-					outcome: "credited",
+				return this.row(candidate, decision.amountUsd, "credited", undefined, {
 					paymentId: result.paymentId,
 					...(result.creditsAdded != null ? { creditsAdded: result.creditsAdded } : {}),
-				};
+				});
 			}
 			// convert() returned manual instructions (not automatable) — mark failed
 			// so it's retried once auth is configured, with a clear reason.
 			await this.ledger.markFailed(id, result.reason);
-			return { depositTxHash, valueBnb: candidate.valueBnb, usd, outcome: "failed", reason: result.reason };
+			return this.row(candidate, usd, "failed", result.reason);
 		} catch (err) {
 			const reason = err instanceof Error ? err.message : String(err);
 			await this.ledger.markFailed(id, reason);
-			this.deps.logger.error("[offramp-automint] convert failed", { depositTxHash, reason });
-			return { depositTxHash, valueBnb: candidate.valueBnb, usd, outcome: "failed", reason };
+			this.deps.logger.error("[offramp-automint] convert failed", { depositTxHash, asset: candidate.asset, reason });
+			return this.row(candidate, usd, "failed", reason);
 		}
+	}
+
+	private row(
+		candidate: DepositCandidate,
+		usd: number | null,
+		outcome: AutoMintResultRow["outcome"],
+		reason?: string,
+		extra: Partial<Pick<AutoMintResultRow, "paymentId" | "creditsAdded">> = {},
+	): AutoMintResultRow {
+		return {
+			depositTxHash: candidate.depositTxHash.toLowerCase(),
+			asset: candidate.asset,
+			valueBnb: candidate.valueBnb,
+			valueUsd: candidate.valueUsd,
+			usd,
+			outcome,
+			...(reason ? { reason } : {}),
+			...extra,
+		};
 	}
 
 	private async readBalance(): Promise<number | null> {
@@ -348,8 +371,9 @@ export class CreditsAutoMinter {
 		await this.ledger.recordAudit({
 			depositTxHash: candidate.depositTxHash,
 			safeAddress: receiveAddress,
-			depositBnb: candidate.valueBnb,
-			convertBnb: candidate.valueBnb,
+			asset: candidate.asset,
+			depositBnb: candidate.asset === "BNB" ? candidate.valueBnb : null,
+			convertBnb: candidate.asset === "BNB" ? candidate.valueBnb : null,
 			usdAmount: usd ?? 0,
 			bnbPriceUsd,
 			status,

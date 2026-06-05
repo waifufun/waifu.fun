@@ -20,7 +20,26 @@ function statusWithBsc(): ElizaCryptoStatus {
 		enabled: true,
 		directWallet: {
 			enabled: true,
-			networks: [{ network: "bsc", chainId: 56, receiveAddress: BSC_RECEIVE, enabled: true }],
+			networks: [
+				{
+					network: "bsc",
+					chainId: 56,
+					tokenSymbol: "USDT",
+					tokenAddress: "0x55d398326f99059fF775485246999027B3197955",
+					tokenDecimals: 18,
+					tokens: [
+						{ symbol: "BNB", kind: "native", decimals: 18 },
+						{
+							symbol: "USDT",
+							kind: "bep20",
+							tokenAddress: "0x55d398326f99059fF775485246999027B3197955",
+							decimals: 18,
+						},
+					],
+					receiveAddress: BSC_RECEIVE,
+					enabled: true,
+				},
+			],
 		},
 	};
 }
@@ -29,13 +48,14 @@ function statusWithBsc(): ElizaCryptoStatus {
 function mockEliza(
 	opts: { automatable?: boolean; confirm?: ElizaCryptoPaymentConfirmResult; throwOnConfirm?: boolean } = {},
 ) {
-	const calls = { create: 0, confirm: 0, confirmedHashes: [] as string[] };
+	const calls = { create: 0, createInputs: [] as unknown[], confirm: 0, confirmedHashes: [] as string[] };
 	const eliza: OffRampElizaClient & { getCreditBalance?: () => Promise<{ balance: number }>; calls: typeof calls } = {
 		calls,
 		getCryptoStatus: async () => statusWithBsc(),
 		hasCryptoSession: () => opts.automatable ?? true,
-		createCryptoPayment: async (): Promise<ElizaCryptoPaymentCreateResult> => {
+		createCryptoPayment: async (input): Promise<ElizaCryptoPaymentCreateResult> => {
 			calls.create += 1;
+			calls.createInputs.push(input);
 			return { paymentId: `pay-${calls.create}` };
 		},
 		confirmCryptoPayment: async (_id, hash): Promise<ElizaCryptoPaymentConfirmResult> => {
@@ -101,7 +121,27 @@ function memLedger(initialSpentToday = 0) {
 }
 
 function candidate(hash: string, valueBnb: number): DepositCandidate {
-	return { depositTxHash: hash, from: "0xabc", safeAddress: BSC_RECEIVE, valueBnb, timestamp: 1700000000 };
+	return {
+		depositTxHash: hash,
+		from: "0xabc",
+		safeAddress: BSC_RECEIVE,
+		asset: "BNB",
+		valueBnb,
+		valueUsd: 0,
+		timestamp: 1700000000,
+	};
+}
+
+function usdtCandidate(hash: string, valueUsd: number): DepositCandidate {
+	return {
+		depositTxHash: hash,
+		from: "0xabc",
+		safeAddress: BSC_RECEIVE,
+		asset: "USDT",
+		valueBnb: 0,
+		valueUsd,
+		timestamp: 1700000000,
+	};
 }
 
 class StubWatcher extends BscDepositWatcher {
@@ -147,6 +187,35 @@ test("auto-mints a within-cap deposit (create+confirm with the deposit tx hash)"
 	assert.equal(eliza.calls.create, 1);
 	assert.equal(eliza.calls.confirm, 1);
 	assert.deepEqual(eliza.calls.confirmedHashes, [hash]);
+	assert.equal(ledger.statusFor(hash), "credited");
+});
+
+
+test("USDT deposit mints USD-native without fetching BNB price and uses USDT/BEP20", async () => {
+	const eliza = mockEliza();
+	const ledger = memLedger();
+	let priceCalls = 0;
+	const depsNoPrice = {
+		priceUsd: async () => {
+			priceCalls += 1;
+			return null;
+		},
+		now: deps.now,
+		logger: console,
+	};
+	const offRamp = new CreditsOffRamp(eliza, { priceUsd: depsNoPrice.priceUsd, now: () => depsNoPrice.now().getTime() });
+	const hash = `0x${"4".repeat(64)}`;
+	const minter = new CreditsAutoMinter(fakeDb, eliza, depsNoPrice, {
+		offRamp,
+		watcher: new StubWatcher([usdtCandidate(hash, 6)]),
+		ledger,
+	});
+	const s = await minter.tick(limits());
+	assert.equal(s.credited, 1);
+	assert.equal(priceCalls, 0);
+	assert.equal(s.rows[0]?.asset, "USDT");
+	assert.equal(s.rows[0]?.usd, 6);
+	assert.deepEqual(eliza.calls.createInputs[0], { amountUsd: 6, payCurrency: "USDT", network: "BEP20" });
 	assert.equal(ledger.statusFor(hash), "credited");
 });
 

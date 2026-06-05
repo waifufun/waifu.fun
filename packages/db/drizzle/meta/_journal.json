@@ -302,6 +302,13 @@
       "when": 1780525070822,
       "tag": "0042_tense_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1780677034414,
+      "tag": "0043_credit_offramp_mint_asset",
+      "breakpoints": true
     }
   ]
 }

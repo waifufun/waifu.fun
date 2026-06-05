@@ -43,15 +43,17 @@ export const creditOfframpMints = pgTable(
 		depositTxHash: text("deposit_tx_hash").notNull(),
 		/** Agent token address whose Safe received the deposit (lowercased). */
 		agentTokenAddress: text("agent_token_address"),
-		/** The agent Safe (or funding address) that received the BNB (lowercased). */
+		/** The agent Safe (or funding address) that received the deposit (lowercased). */
 		safeAddress: text("safe_address"),
-		/** BNB amount of the originating deposit. */
+		/** Deposit asset that triggered this mint. */
+		asset: text("asset", { enum: ["BNB", "USDT"] }).notNull().default("BNB"),
+		/** BNB amount of the originating deposit, when the asset is native BNB. */
 		depositBnb: numeric("deposit_bnb"),
-		/** BNB amount actually routed to the off-ramp (the creditsShare slice). */
+		/** BNB amount actually routed to the off-ramp (the creditsShare slice), when BNB. */
 		convertBnb: numeric("convert_bnb"),
-		/** USD value of the converted slice at the price snapshot. */
+		/** USD value of the converted slice at the price snapshot, or USDT amount 1:1. */
 		usdAmount: numeric("usd_amount").notNull(),
-		/** BNB->USD price snapshot at conversion time. */
+		/** BNB->USD price snapshot at conversion time; null for USD-native stablecoins. */
 		bnbPriceUsd: numeric("bnb_price_usd"),
 		/** The BNB transfer tx hash sent to the Eliza Cloud receive address (the off-ramp leg). */
 		offrampTxHash: text("offramp_tx_hash"),
@@ -81,7 +83,9 @@ export const creditOfframpMints = pgTable(
 		byDepositTxHash: index("credit_offramp_mints_by_deposit_tx_hash").on(table.depositTxHash),
 		byCreatedAt: index("credit_offramp_mints_by_created_at").on(table.createdAt),
 		byStatus: index("credit_offramp_mints_by_status").on(table.status),
+		byAsset: index("credit_offramp_mints_by_asset").on(table.asset),
 		byAgent: index("credit_offramp_mints_by_agent").on(table.agentTokenAddress),
+		assetCheck: check("credit_offramp_mints_asset_check", sql`${table.asset} IN ('BNB', 'USDT')`),
 		statusCheck: check(
 			"credit_offramp_mints_status_check",
 			sql`${table.status} IN ('pending', 'credited', 'capped', 'killed', 'failed', 'skipped')`,
