@@ -22,6 +22,23 @@ function statusWithBsc(): ElizaCryptoStatus {
 					displayName: "BNB Smart Chain",
 					chainId: 56,
 					tokenSymbol: "USDT",
+					tokenAddress: "0x55d398326f99059fF775485246999027B3197955",
+					tokenDecimals: 18,
+					tokens: [
+						{ symbol: "BNB", kind: "native", decimals: 18 },
+						{
+							symbol: "USDT",
+							kind: "bep20",
+							tokenAddress: "0x55d398326f99059fF775485246999027B3197955",
+							decimals: 18,
+						},
+						{
+							symbol: "U",
+							kind: "bep20",
+							tokenAddress: "0xcE24439F2D9C6a2289F741120FE202248B666666",
+							decimals: 18,
+						},
+					],
 					receiveAddress: BSC_RECEIVE,
 					enabled: true,
 				},
@@ -105,6 +122,50 @@ test("convert runs the real directWallet create+confirm when session + tx hash p
 	}
 	assert.deepEqual(calls.create, { amountUsd: 60, payCurrency: "BNB", network: "BEP20" });
 	assert.deepEqual(calls.confirm, ["pay-xyz", txHash]);
+});
+
+test("convert can create+confirm a USDT/BEP20 payment without a BNB price lookup", async () => {
+	const calls: { create?: unknown; confirm?: [string, string] } = {};
+	let priceCalls = 0;
+	const client = makeClient({
+		hasSession: true,
+		createCryptoPayment: async (input) => {
+			calls.create = input;
+			return { paymentId: "pay-usdt" };
+		},
+		confirmCryptoPayment: async (paymentId, txHash) => {
+			calls.confirm = [paymentId, txHash];
+			return { status: "confirmed", creditsAdded: 25 };
+		},
+	});
+	const offRamp = new CreditsOffRamp(client, {
+		priceUsd: async () => {
+			priceCalls += 1;
+			return null;
+		},
+		now: deps.now,
+	});
+	const txHash = `0x${"d".repeat(64)}`;
+	const result = await offRamp.convert({ usd: 25, transactionHash: txHash, payCurrency: "USDT" });
+	assert.equal(result.automatable, true);
+	if (result.automatable === true) {
+		assert.equal(result.paymentId, "pay-usdt");
+		assert.equal(result.usd, 25);
+		assert.equal(result.bnb, 0);
+		assert.equal(result.bnbPriceUsd, 0);
+	}
+	assert.equal(priceCalls, 0);
+	assert.deepEqual(calls.create, { amountUsd: 25, payCurrency: "USDT", network: "BEP20" });
+	assert.deepEqual(calls.confirm, ["pay-usdt", txHash]);
+});
+
+test("convert rejects non-positive USDT amounts before creating a payment", async () => {
+	const client = makeClient({ hasSession: true });
+	const offRamp = new CreditsOffRamp(client, deps);
+	await assert.rejects(
+		() => offRamp.convert({ usd: 0, transactionHash: `0x${"e".repeat(64)}`, payCurrency: "USDT" }),
+		/usd must be positive/i,
+	);
 });
 
 test("convert rejects a malformed tx hash even with a session", async () => {

@@ -31,6 +31,7 @@ import type {
 	ElizaCryptoStatus,
 } from "../eliza-client.js";
 import { fetchBnbPriceUsd } from "../nav/pricing/coingecko.js";
+import { BSC_USDT_CONTRACT } from "./deposit-watcher.js";
 
 /** Minimal slice of the Eliza Cloud client the off-ramp needs. */
 export interface OffRampElizaClient {
@@ -55,8 +56,9 @@ const defaultDeps: OffRampDeps = {
 	now: () => Date.now(),
 };
 
-/** Eliza Cloud network id for BSC directWallet payments. */
+/** Eliza Cloud network id accepted by createCryptoPayment for BSC/BEP20. */
 export const BSC_NETWORK_ID = "BEP20";
+export const BSC_USDT_PAY_CURRENCY = "USDT";
 /** Eliza Cloud `directWallet.networks[].network` key for BSC. */
 const BSC_DIRECT_WALLET_KEY = "bsc";
 
@@ -135,6 +137,25 @@ function pickBscNetwork(status: ElizaCryptoStatus): ElizaCryptoNetwork | null {
 	const bsc = networks.find((n) => n.network?.toLowerCase() === BSC_DIRECT_WALLET_KEY && n.enabled !== false);
 	if (!bsc || !bsc.receiveAddress) return null;
 	return bsc;
+}
+
+function bscSupportsCanonicalUsdt(bsc: ElizaCryptoNetwork): boolean {
+	const topLevel =
+		bsc.tokenSymbol?.toUpperCase() === BSC_USDT_PAY_CURRENCY &&
+		bsc.tokenAddress?.toLowerCase() === BSC_USDT_CONTRACT &&
+		bsc.tokenDecimals === 18;
+	const tokenList = (bsc.tokens ?? []).some(
+		(token) =>
+			token.symbol?.toUpperCase() === BSC_USDT_PAY_CURRENCY &&
+			token.kind?.toLowerCase() === "bep20" &&
+			token.tokenAddress?.toLowerCase() === BSC_USDT_CONTRACT &&
+			token.decimals === 18,
+	);
+	return topLevel || tokenList;
+}
+
+function isUsdtPayCurrency(value: string | undefined): boolean {
+	return value?.toUpperCase() === BSC_USDT_PAY_CURRENCY;
 }
 
 export class CreditsOffRamp {
@@ -233,10 +254,28 @@ export class CreditsOffRamp {
 		if (!TX_HASH_RE.test(input.transactionHash)) {
 			throw new Error("transactionHash must be a 0x-prefixed 32-byte BSC tx hash");
 		}
-		const quote = await this.quoteUsd(input.usd);
+		if (!Number.isFinite(input.usd) || input.usd <= 0) {
+			throw new Error("usd must be positive");
+		}
+		const payCurrency = input.payCurrency?.toUpperCase() ?? "BNB";
+		const usdt = isUsdtPayCurrency(payCurrency);
+		const target = usdt ? await this.resolveBscTarget() : null;
+		if (usdt && (!target || target.network !== BSC_NETWORK_ID)) {
+			throw new Error("Eliza Cloud BSC USDT directWallet target is unavailable");
+		}
+		if (usdt) {
+			const status = await this.eliza.getCryptoStatus();
+			const bsc = pickBscNetwork(status);
+			if (!bsc || !bscSupportsCanonicalUsdt(bsc)) {
+				throw new Error("Eliza Cloud status does not advertise canonical BSC USDT (BEP20, 18 decimals)");
+			}
+		}
+		const quote = usdt
+			? { usd: roundUsd(input.usd), bnb: 0, bnbPriceUsd: 0 }
+			: await this.quoteUsd(input.usd);
 		const created = await this.eliza.createCryptoPayment({
 			amountUsd: quote.usd,
-			payCurrency: input.payCurrency ?? "BNB",
+			payCurrency: usdt ? BSC_USDT_PAY_CURRENCY : payCurrency,
 			network: BSC_NETWORK_ID,
 		});
 		const confirmed = await this.eliza.confirmCryptoPayment(created.paymentId, input.transactionHash);

@@ -62,6 +62,7 @@ export interface RecordMintInput {
 	depositTxHash: string;
 	agentTokenAddress?: string | null;
 	safeAddress?: string | null;
+	asset?: "BNB" | "USDT" | null;
 	depositBnb?: number | null;
 	convertBnb?: number | null;
 	usdAmount: number;
@@ -75,6 +76,7 @@ function toValues(input: RecordMintInput): NewCreditOfframpMint {
 		depositTxHash: input.depositTxHash.toLowerCase(),
 		agentTokenAddress: input.agentTokenAddress?.toLowerCase() ?? null,
 		safeAddress: input.safeAddress?.toLowerCase() ?? null,
+		asset: input.asset ?? "BNB",
 		depositBnb: input.depositBnb != null ? String(input.depositBnb) : null,
 		convertBnb: input.convertBnb != null ? String(input.convertBnb) : null,
 		usdAmount: String(input.usdAmount),
