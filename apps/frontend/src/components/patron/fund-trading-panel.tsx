@@ -11,16 +11,24 @@
  *   - Hyperliquid credits the SENDER of the final Arbitrum-USDC transfer, so
  *     the funds originate from the patron's wallet, NOT the agent safe.
  *
- * The deposit is up to TWO user-signed transactions (from the backend quote in
- * `lib/api/trading-deposit.ts`):
- *   1. (only if source isn't already Arbitrum USDC) a Li.Fi bridge route ->
+ * The deposit is up to THREE user-signed transactions (from the backend quote
+ * in `lib/api/trading-deposit.ts`):
+ *   1. (only when the source is an ERC-20 the Li.Fi router must pull, i.e.
+ *      `bridgeQuote.approvalAddress` is set) an ERC-20 `approve` of the source
+ *      token to the Li.Fi router on the source chain. Native sources (BNB/ETH)
+ *      and already-Arbitrum-USDC sources skip this.
+ *   2. (only if source isn't already Arbitrum USDC) a Li.Fi bridge route ->
  *      Arbitrum USDC delivered to the patron's own wallet. The patron waits for
- *      the bridge to land, then signs step 2.
- *   2. an ERC-20 transfer of Arbitrum USDC -> the Hyperliquid Arbitrum bridge.
+ *      the bridge to land, then signs step 3.
+ *   3. an ERC-20 transfer of Arbitrum USDC -> the Hyperliquid Arbitrum bridge.
+ *
+ * So an ERC-20 cross-chain source (e.g. the default BSC USDT) is THREE sigs;
+ * a native cross-chain source is TWO; a direct Arbitrum-USDC source is ONE.
+ * The step count is derived from which txs the quote actually requires.
  *
  * No fake/optimistic states: each step reflects a real signed tx + an on-chain
  * receipt (wagmi useWaitForTransactionReceipt). The cross-chain wait between
- * step 1 and step 2 is surfaced honestly — the user comes back and signs the
+ * the bridge and the deposit is surfaced honestly. the user comes back and signs the
  * deposit once their bridged USDC has landed.
  *
  * UI follows the patron-page grammar: Wave T `<Panel>`, mono numbers, lowercase
@@ -31,7 +39,7 @@
 
 import { ArrowRightIcon, CheckCircle2Icon, ChevronDownIcon, ExternalLinkIcon, XCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { parseUnits } from "viem";
+import { encodeFunctionData, erc20Abi, parseUnits } from "viem";
 import { useAccount, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from "wagmi";
 
 import { Label, Panel, Pulse } from "@/components/agent-home/wave-t/_primitives";
@@ -123,18 +131,22 @@ const CHAIN_PRESETS: ChainPreset[] = [
 ];
 
 // Flight state machine. For a direct Arbitrum-USDC source there is no bridge
-// step, so we jump straight to depositing. For a cross-chain source the patron
-// signs the bridge, waits for it to land, then signs the deposit.
+// step, so we jump straight to depositing. For a cross-chain ERC-20 source the
+// patron first signs an approval (so the Li.Fi router can pull the token), then
+// the bridge, waits for it to land, then signs the deposit. Native cross-chain
+// sources skip the approval.
 type FlightState =
 	| { kind: "idle" }
+	// cross-chain ERC-20: approve(router) broadcast, waiting for the allowance tx
+	| { kind: "approving"; approvalTx: string; quote: HyperliquidDepositQuote }
 	// cross-chain: bridge tx broadcast, waiting for it to confirm on the source chain
-	| { kind: "bridging"; bridgeTx: string; quote: HyperliquidDepositQuote }
+	| { kind: "bridging"; bridgeTx: string; approvalTx?: string; quote: HyperliquidDepositQuote }
 	// bridge source tx confirmed; USDC is in flight cross-chain. patron waits, then signs deposit.
-	| { kind: "bridge-landed"; bridgeTx: string; quote: HyperliquidDepositQuote }
+	| { kind: "bridge-landed"; bridgeTx: string; approvalTx?: string; quote: HyperliquidDepositQuote }
 	// deposit (Arbitrum USDC -> HL bridge) broadcast
-	| { kind: "depositing"; depositTx: string; bridgeTx?: string; quote: HyperliquidDepositQuote }
+	| { kind: "depositing"; depositTx: string; bridgeTx?: string; approvalTx?: string; quote: HyperliquidDepositQuote }
 	// deposit confirmed on Arbitrum
-	| { kind: "deposited"; depositTx: string; bridgeTx?: string; quote: HyperliquidDepositQuote }
+	| { kind: "deposited"; depositTx: string; bridgeTx?: string; approvalTx?: string; quote: HyperliquidDepositQuote }
 	| { kind: "failed"; message: string };
 
 function fmtUsdcAtoms(raw: string): string {
@@ -148,6 +160,18 @@ function fmtUsdcAtoms(raw: string): string {
 	} catch {
 		return raw;
 	}
+}
+
+// An approval is required only for cross-chain ERC-20 sources: the Li.Fi router
+// (`bridgeQuote.approvalAddress`) must be allowed to pull the source token
+// before the bridge tx can move it. Native sources (BNB/ETH) and direct
+// Arbitrum-USDC sources need no approval.
+function bridgeApproval(quote: HyperliquidDepositQuote): { spender: string; token: string; amount: string } | null {
+	const bridge = quote.bridgeQuote;
+	if (!bridge) return null;
+	if (!bridge.approvalAddress) return null;
+	if (bridge.fromToken.toLowerCase() === NATIVE_TOKEN.toLowerCase()) return null;
+	return { spender: bridge.approvalAddress, token: bridge.fromToken, amount: bridge.fromAmount };
 }
 
 function fmtSource(raw: string, decimals: number): string {
@@ -323,75 +347,181 @@ export function FundTradingPanel({ agentTokenAddress, agentTicker, defaultChainI
 	// Watch the in-flight tx for a real on-chain receipt. We watch the bridge tx
 	// while bridging and the deposit tx while depositing — no optimistic states.
 	const watchTxHash =
-		flight.kind === "bridging" ? flight.bridgeTx : flight.kind === "depositing" ? flight.depositTx : undefined;
+		flight.kind === "approving"
+			? flight.approvalTx
+			: flight.kind === "bridging"
+				? flight.bridgeTx
+				: flight.kind === "depositing"
+					? flight.depositTx
+					: undefined;
 	const watchChainId =
-		flight.kind === "bridging"
+		flight.kind === "approving"
 			? flight.quote.bridgeQuote?.fromChain
-			: flight.kind === "depositing"
-				? HYPERLIQUID_ARBITRUM_CHAIN_ID
-				: undefined;
+			: flight.kind === "bridging"
+				? flight.quote.bridgeQuote?.fromChain
+				: flight.kind === "depositing"
+					? HYPERLIQUID_ARBITRUM_CHAIN_ID
+					: undefined;
 	const { data: receipt, isError: receiptError } = useWaitForTransactionReceipt(
 		watchTxHash
 			? { hash: watchTxHash as `0x${string}`, ...(watchChainId ? { chainId: watchChainId } : {}) }
 			: { hash: undefined },
 	);
 
+	// Sign the Li.Fi bridge tx (source -> Arbitrum USDC, into the patron wallet).
+	// Carries the approvalTx through the flight when one was signed first.
+	const sendBridge = useCallback(
+		async (q: HyperliquidDepositQuote, approvalTx?: string) => {
+			if (!address) return;
+			const tx = q.bridgeQuote?.transactionRequest;
+			const sourceChainId = q.bridgeQuote?.fromChain ?? chain.id;
+			if (!tx) {
+				setFlight({ kind: "failed", message: "no bridge calldata returned. refresh and retry." });
+				return;
+			}
+			try {
+				if (chainId !== sourceChainId) await switchChainAsync({ chainId: sourceChainId });
+				const hash = await sendTransactionAsync({
+					to: tx.to as `0x${string}`,
+					data: tx.data as `0x${string}`,
+					value: tx.value ? BigInt(tx.value) : 0n,
+					chainId: sourceChainId,
+					...(tx.gasLimit ? { gas: BigInt(tx.gasLimit) } : {}),
+				});
+				setFlight({ kind: "bridging", bridgeTx: hash, ...(approvalTx ? { approvalTx } : {}), quote: q });
+			} catch (err) {
+				setFlight({ kind: "failed", message: err instanceof Error ? err.message : "bridge transaction failed" });
+			}
+		},
+		[address, chainId, chain.id, switchChainAsync, sendTransactionAsync],
+	);
+
+	// Guards the one-shot approval -> bridge auto-advance so it fires exactly once
+	// per approval, after the allowance tx confirms on the source chain.
+	const advancedApprovalRef = useRef<string | null>(null);
+
 	useEffect(() => {
 		if (!receipt) return;
-		setFlight((prev) => {
-			if (prev.kind === "bridging") {
-				// Source-chain bridge tx confirmed. USDC is now in cross-chain flight.
-				return { kind: "bridge-landed", bridgeTx: prev.bridgeTx, quote: prev.quote };
+		// Only act on a receipt that belongs to the step we're CURRENTLY watching.
+		// On a step transition, wagmi briefly still holds the previous tx's receipt
+		// before re-keying to the new hash; matching transactionHash prevents the
+		// new step from being marked done by the prior step's receipt.
+		const confirmedHash = receipt.transactionHash?.toLowerCase();
+		// A mined-but-reverted tx still returns a receipt. Never advance on it --
+		// route it to the failed state so the user retries instead of, e.g.,
+		// bridging without an allowance after a reverted approval.
+		const reverted = receipt.status === "reverted";
+		if (flight.kind === "approving") {
+			if (confirmedHash !== flight.approvalTx.toLowerCase()) return;
+			if (reverted) {
+				setFlight((prev) =>
+					prev.kind === "approving"
+						? { kind: "failed", message: "approval reverted on-chain. check the explorer and retry." }
+						: prev,
+				);
+				return;
 			}
-			if (prev.kind === "depositing") {
-				return {
-					kind: "deposited",
-					depositTx: prev.depositTx,
-					...(prev.bridgeTx ? { bridgeTx: prev.bridgeTx } : {}),
-					quote: prev.quote,
-				};
+			// Approval confirmed -> auto-advance to the bridge tx (one-shot per hash).
+			if (advancedApprovalRef.current === flight.approvalTx) return;
+			advancedApprovalRef.current = flight.approvalTx;
+			void sendBridge(flight.quote, flight.approvalTx);
+			return;
+		}
+		if (flight.kind === "bridging") {
+			if (confirmedHash !== flight.bridgeTx.toLowerCase()) return;
+			if (reverted) {
+				setFlight((prev) =>
+					prev.kind === "bridging"
+						? { kind: "failed", message: "bridge reverted on-chain. check the explorer and retry." }
+						: prev,
+				);
+				return;
 			}
-			return prev;
-		});
-	}, [receipt]);
+			// Source-chain bridge tx confirmed. USDC is now in cross-chain flight.
+			setFlight((prev) =>
+				prev.kind === "bridging"
+					? {
+							kind: "bridge-landed",
+							bridgeTx: prev.bridgeTx,
+							...(prev.approvalTx ? { approvalTx: prev.approvalTx } : {}),
+							quote: prev.quote,
+						}
+					: prev,
+			);
+			return;
+		}
+		if (flight.kind === "depositing") {
+			if (confirmedHash !== flight.depositTx.toLowerCase()) return;
+			if (reverted) {
+				setFlight((prev) =>
+					prev.kind === "depositing"
+						? { kind: "failed", message: "deposit reverted on-chain. check the explorer and retry." }
+						: prev,
+				);
+				return;
+			}
+			setFlight((prev) =>
+				prev.kind === "depositing"
+					? {
+							kind: "deposited",
+							depositTx: prev.depositTx,
+							...(prev.bridgeTx ? { bridgeTx: prev.bridgeTx } : {}),
+							...(prev.approvalTx ? { approvalTx: prev.approvalTx } : {}),
+							quote: prev.quote,
+						}
+					: prev,
+			);
+		}
+	}, [receipt, flight, sendBridge]);
 
 	useEffect(() => {
 		if (!receiptError) return;
 		setFlight((prev) => {
-			if (prev.kind === "bridging" || prev.kind === "depositing") {
-				return { kind: "failed", message: "transaction reverted or could not be confirmed. check the explorer and retry." };
+			if (prev.kind === "approving" || prev.kind === "bridging" || prev.kind === "depositing") {
+				return {
+					kind: "failed",
+					message: "transaction reverted or could not be confirmed. check the explorer and retry.",
+				};
 			}
 			return prev;
 		});
 	}, [receiptError]);
 
-	// Sign the Li.Fi bridge tx (source -> Arbitrum USDC, into the patron wallet).
-	const onBridge = useCallback(async () => {
+	// Sign the ERC-20 approval so the Li.Fi router can pull the source token, then
+	// the approval->bridge advance happens automatically once it confirms.
+	const onApprove = useCallback(async () => {
 		if (!quote || !quote.ok || !address) return;
 		const q = quote.data.quote;
-		const tx = q.bridgeQuote?.transactionRequest;
-		if (!tx) {
-			setFlight({ kind: "failed", message: "no bridge calldata returned. refresh and retry." });
+		const approval = bridgeApproval(q);
+		if (!approval) {
+			// No approval needed (native or direct source): go straight to bridge.
+			await sendBridge(q);
 			return;
 		}
+		const sourceChainId = q.bridgeQuote?.fromChain ?? chain.id;
 		try {
-			if (chainId !== chain.id) await switchChainAsync({ chainId: chain.id });
-			const hash = await sendTransactionAsync({
-				to: tx.to as `0x${string}`,
-				data: tx.data as `0x${string}`,
-				value: tx.value ? BigInt(tx.value) : 0n,
-				chainId: chain.id,
-				...(tx.gasLimit ? { gas: BigInt(tx.gasLimit) } : {}),
+			if (chainId !== sourceChainId) await switchChainAsync({ chainId: sourceChainId });
+			const data = encodeFunctionData({
+				abi: erc20Abi,
+				functionName: "approve",
+				args: [approval.spender as `0x${string}`, BigInt(approval.amount)],
 			});
-			setFlight({ kind: "bridging", bridgeTx: hash, quote: q });
+			advancedApprovalRef.current = null;
+			const hash = await sendTransactionAsync({
+				to: approval.token as `0x${string}`,
+				data,
+				value: 0n,
+				chainId: sourceChainId,
+			});
+			setFlight({ kind: "approving", approvalTx: hash, quote: q });
 		} catch (err) {
-			setFlight({ kind: "failed", message: err instanceof Error ? err.message : "bridge transaction failed" });
+			setFlight({ kind: "failed", message: err instanceof Error ? err.message : "approval transaction failed" });
 		}
-	}, [quote, address, chainId, chain.id, switchChainAsync, sendTransactionAsync]);
+	}, [quote, address, chainId, chain.id, switchChainAsync, sendTransactionAsync, sendBridge]);
 
 	// Sign the final ERC-20 transfer (Arbitrum USDC -> Hyperliquid bridge).
 	const signDeposit = useCallback(
-		async (q: HyperliquidDepositQuote, bridgeTx?: string) => {
+		async (q: HyperliquidDepositQuote, bridgeTx?: string, approvalTx?: string) => {
 			if (!address) return;
 			const dep = q.depositTx;
 			try {
@@ -404,7 +534,13 @@ export function FundTradingPanel({ agentTokenAddress, agentTicker, defaultChainI
 					value: 0n,
 					chainId: HYPERLIQUID_ARBITRUM_CHAIN_ID,
 				});
-				setFlight({ kind: "depositing", depositTx: hash, ...(bridgeTx ? { bridgeTx } : {}), quote: q });
+				setFlight({
+					kind: "depositing",
+					depositTx: hash,
+					...(bridgeTx ? { bridgeTx } : {}),
+					...(approvalTx ? { approvalTx } : {}),
+					quote: q,
+				});
 			} catch (err) {
 				setFlight({ kind: "failed", message: err instanceof Error ? err.message : "deposit transaction failed" });
 			}
@@ -412,17 +548,21 @@ export function FundTradingPanel({ agentTokenAddress, agentTicker, defaultChainI
 		[address, chainId, switchChainAsync, sendTransactionAsync],
 	);
 
-	// Primary action from the idle/quote state: bridge-then-deposit, or deposit
-	// directly when the source is already Arbitrum USDC (single tx).
+	// Primary action from the idle/quote state. Three paths:
+	//   - direct Arbitrum USDC source: sign the deposit only (1 sig).
+	//   - native cross-chain source: bridge then deposit (2 sigs).
+	//   - ERC-20 cross-chain source: approve, then bridge, then deposit (3 sigs).
+	// onApprove no-ops the approval when none is needed and goes straight to the
+	// bridge, so this stays a single entry point.
 	const onSubmit = useCallback(async () => {
 		if (!quote || !quote.ok || !address) return;
 		const q = quote.data.quote;
 		if (q.bridgeQuote === null) {
 			await signDeposit(q);
 		} else {
-			await onBridge();
+			await onApprove();
 		}
-	}, [quote, address, signDeposit, onBridge]);
+	}, [quote, address, signDeposit, onApprove]);
 
 	const onReset = useCallback(() => {
 		setFlight({ kind: "idle" });
@@ -453,9 +593,9 @@ export function FundTradingPanel({ agentTokenAddress, agentTicker, defaultChainI
 
 			{/* Honest custody disclaimer. This is the user's capital, not the safe. */}
 			<div className="mb-3 rounded-md border border-[var(--accent)]/25 bg-[var(--accent-soft)] px-2.5 py-2 font-mono text-[9px] leading-relaxed text-[var(--text-secondary)]">
-				<span className="text-[var(--accent)]">your wallet, your keys.</span> this funds from your wallet, not the
-				agent safe/treasury. hyperliquid credits the sender, so the deposit must come from your wallet. nothing is
-				custodied or auto-executed. you approve every transaction.
+				<span className="text-[var(--accent)]">your wallet, your keys.</span> this funds from your wallet, not the agent
+				safe/treasury. hyperliquid credits the sender, so the deposit must come from your wallet. nothing is custodied
+				or auto-executed. you approve every transaction.
 			</div>
 
 			{!inFlight ? (
@@ -528,7 +668,9 @@ export function FundTradingPanel({ agentTokenAddress, agentTicker, defaultChainI
 								? "confirm in wallet"
 								: quote?.ok && quote.data.quote.bridgeQuote === null
 									? "deposit to hyperliquid"
-									: "bridge + fund hyperliquid"}
+									: quote?.ok && bridgeApproval(quote.data.quote)
+										? "approve + bridge + fund hyperliquid"
+										: "bridge + fund hyperliquid"}
 							<ArrowRightIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
 						</button>
 					) : (
@@ -543,7 +685,7 @@ export function FundTradingPanel({ agentTokenAddress, agentTicker, defaultChainI
 					flight={flight}
 					signing={signing}
 					onSignDeposit={() => {
-						if (flight.kind === "bridge-landed") void signDeposit(flight.quote, flight.bridgeTx);
+						if (flight.kind === "bridge-landed") void signDeposit(flight.quote, flight.bridgeTx, flight.approvalTx);
 					}}
 					onReset={onReset}
 				/>
@@ -597,6 +739,11 @@ function DepositQuoteSummary({
 	const q = quote.data.quote;
 	const bridge = q.bridgeQuote;
 	const isDirect = bridge === null;
+	// Signature count is derived from the txs the quote actually requires:
+	// direct = deposit only (1); native bridge = bridge + deposit (2);
+	// ERC-20 bridge = approve + bridge + deposit (3).
+	const needsApproval = bridgeApproval(q) !== null;
+	const sigCount = isDirect ? 1 : needsApproval ? 3 : 2;
 	return (
 		<dl className="space-y-1.5 rounded-md border border-[var(--border-soft)] bg-black/10 p-3 font-mono text-[10px] text-[var(--text-tertiary)]">
 			<div className="flex items-center justify-between">
@@ -607,7 +754,15 @@ function DepositQuoteSummary({
 			</div>
 			<div className="flex items-center justify-between">
 				<dt>steps</dt>
-				<dd className="tabular-nums text-[var(--text-secondary)]">{isDirect ? "1 signature" : "2 signatures"}</dd>
+				<dd className="tabular-nums text-[var(--text-secondary)]">
+					{sigCount} signature{sigCount === 1 ? "" : "s"}
+					{needsApproval ? (
+						<span className="text-[var(--text-tertiary)]">
+							{" "}
+							(approve {"\u2192"} bridge {"\u2192"} deposit)
+						</span>
+					) : null}
+				</dd>
 			</div>
 			<div className="flex items-center justify-between">
 				<dt>destination</dt>
@@ -664,9 +819,17 @@ function DepositFlightStatus({
 	onSignDeposit: () => void;
 	onReset: () => void;
 }) {
-	const hasBridge = flight.kind !== "idle" && flight.kind !== "failed" && flight.quote.bridgeQuote !== null;
+	const inFlightQuote = flight.kind !== "idle" && flight.kind !== "failed" ? flight.quote : null;
+	const hasBridge = inFlightQuote !== null && inFlightQuote.bridgeQuote !== null;
+	const hasApproval = inFlightQuote !== null && bridgeApproval(inFlightQuote) !== null;
 
 	const steps = useMemo(() => {
+		const approvalReached =
+			flight.kind === "approving" ||
+			flight.kind === "bridging" ||
+			flight.kind === "bridge-landed" ||
+			flight.kind === "depositing" ||
+			flight.kind === "deposited";
 		const bridgeReached =
 			flight.kind === "bridging" ||
 			flight.kind === "bridge-landed" ||
@@ -681,26 +844,40 @@ function DepositFlightStatus({
 			];
 		}
 		return [
+			...(hasApproval ? [{ key: "approve", label: "approve", reached: approvalReached }] : []),
 			{ key: "bridge", label: "bridge", reached: bridgeReached },
 			{ key: "land", label: "land", reached: flight.kind === "bridge-landed" || depositSigned },
 			{ key: "deposit", label: "deposit", reached: depositSigned },
 			{ key: "credited", label: "credited", reached: depositDone },
 		];
-	}, [flight, hasBridge]);
+	}, [flight, hasBridge, hasApproval]);
 
-	const bridgeTx = flight.kind !== "idle" && flight.kind !== "failed" ? ("bridgeTx" in flight ? flight.bridgeTx : undefined) : undefined;
+	const approvalTx =
+		flight.kind !== "idle" && flight.kind !== "failed"
+			? "approvalTx" in flight
+				? flight.approvalTx
+				: undefined
+			: undefined;
+	const bridgeTx =
+		flight.kind !== "idle" && flight.kind !== "failed"
+			? "bridgeTx" in flight
+				? flight.bridgeTx
+				: undefined
+			: undefined;
 	const depositTx = flight.kind === "depositing" || flight.kind === "deposited" ? flight.depositTx : undefined;
 
 	const statusLine =
-		flight.kind === "bridging"
-			? "bridging, confirming on source chain"
-			: flight.kind === "bridge-landed"
-				? "bridge sent. waiting for usdc on arbitrum"
-				: flight.kind === "depositing"
-					? "depositing to hyperliquid"
-					: flight.kind === "deposited"
-						? "deposited to hyperliquid"
-						: "failed";
+		flight.kind === "approving"
+			? "approving li.fi router on source chain"
+			: flight.kind === "bridging"
+				? "bridging, confirming on source chain"
+				: flight.kind === "bridge-landed"
+					? "bridge sent. waiting for usdc on arbitrum"
+					: flight.kind === "depositing"
+						? "depositing to hyperliquid"
+						: flight.kind === "deposited"
+							? "deposited to hyperliquid"
+							: "failed";
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -770,6 +947,17 @@ function DepositFlightStatus({
 			) : null}
 
 			<div className="flex flex-col gap-1">
+				{approvalTx ? (
+					<a
+						className="inline-flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent)]"
+						href={chain.explorer + approvalTx}
+						rel="noopener noreferrer"
+						target="_blank"
+					>
+						view approval tx
+						<ExternalLinkIcon className="h-3 w-3" strokeWidth={1.5} />
+					</a>
+				) : null}
 				{bridgeTx ? (
 					<a
 						className="inline-flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent)]"
