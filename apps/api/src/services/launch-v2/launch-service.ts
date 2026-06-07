@@ -410,7 +410,7 @@ export class LaunchService {
 	}
 
 	private buildPresaleUrl(tokenAddress: Address): string {
-		const base = this.config.presaleUrlBase ?? "https://www.waifu.fun/launches";
+		const base = this.config.presaleUrlBase ?? "https://www.waifu.fun/launch";
 		return `${base.replace(/\/+$/, "")}/${tokenAddress.toLowerCase()}`;
 	}
 }
