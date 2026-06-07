@@ -841,7 +841,6 @@ async function processPositions(
 				side,
 			});
 			if (inserted) emitted += 1;
-			continue;
 		}
 	}
 

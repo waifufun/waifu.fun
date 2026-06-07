@@ -46,7 +46,9 @@ export const creditOfframpMints = pgTable(
 		/** The agent Safe (or funding address) that received the deposit (lowercased). */
 		safeAddress: text("safe_address"),
 		/** Deposit asset that triggered this mint. */
-		asset: text("asset", { enum: ["BNB", "USDT"] }).notNull().default("BNB"),
+		asset: text("asset", { enum: ["BNB", "USDT"] })
+			.notNull()
+			.default("BNB"),
 		/** BNB amount of the originating deposit, when the asset is native BNB. */
 		depositBnb: numeric("deposit_bnb"),
 		/** BNB amount actually routed to the off-ramp (the creditsShare slice), when BNB. */

@@ -190,7 +190,6 @@ test("auto-mints a within-cap deposit (create+confirm with the deposit tx hash)"
 	assert.equal(ledger.statusFor(hash), "credited");
 });
 
-
 test("USDT deposit mints USD-native without fetching BNB price and uses USDT/BEP20", async () => {
 	const eliza = mockEliza();
 	const ledger = memLedger();

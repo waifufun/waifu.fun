@@ -21,7 +21,14 @@ const fixtures: Array<[AgentEventType, Record<string, unknown>, string]> = [
 	],
 	[
 		"trade.open",
-		{ coin: "BTC", side: "long", notionalUsd: 99.72, leverage: 5, entryPrice: 77301, reason: "algo flagged local bottom" },
+		{
+			coin: "BTC",
+			side: "long",
+			notionalUsd: 99.72,
+			leverage: 5,
+			entryPrice: 77301,
+			reason: "algo flagged local bottom",
+		},
 		"opened btc long $99.72 5x at $77,301 \u00b7 algo flagged local bottom",
 	],
 	["trade.close", { coin: "ETH", side: "long", pnlUsd: 1.45, pnlPct: 2.3 }, "closed eth long for +$1.45 (+2.30%)"],

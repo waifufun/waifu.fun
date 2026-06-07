@@ -67,7 +67,7 @@ export async function handleTokenSaleEvent(
 			throw new Error(`failed to persist TokenSale event ${eventId}`);
 		}
 
-		await tx
+		const insertedTrades = await tx
 			.insert(schema.trades)
 			.values({
 				eventId: eventRecord.id,
@@ -83,13 +83,16 @@ export async function handleTokenSaleEvent(
 				blockNumber: event.blockNumber,
 				blockTimestamp: event.blockTimestamp,
 			})
-			.onConflictDoNothing();
+			.onConflictDoNothing()
+			.returning({ id: schema.trades.id });
+
+		const isFreshTrade = insertedTrades.length > 0;
 
 		await tx
 			.update(schema.tokens)
 			.set({
 				currentPrice: event.data.price,
-				volume24h: sql`${schema.tokens.volume24h} + ${event.data.cost}::numeric`,
+				...(isFreshTrade ? { volume24h: sql`${schema.tokens.volume24h} + ${event.data.cost}::numeric` } : {}),
 				reserveAmount: event.data.funds,
 				virtualReserves: event.data.offers,
 				lastTradeAt: event.blockTimestamp,
