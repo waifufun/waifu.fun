@@ -12,7 +12,7 @@ import {
 	__setRequirePatronStewardParserForTest,
 } from "../../middleware/patron-auth.js";
 import type { LaunchService } from "../../services/launch-v2/launch-service.js";
-import { createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
+import { buildAutoProvisionOnLaunchPayload, createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
 
 function wrapWithErrorHandler(router: ReturnType<typeof createAgentLaunchRoutes>): Hono<AppBindings> {
 	const app = new Hono<AppBindings>();
@@ -73,6 +73,42 @@ afterEach(() => {
 	__setRequirePatronDbForTest(undefined);
 	__setRequirePatronStewardParserForTest(undefined);
 	clearRequestSiweNoncesForTest();
+});
+
+test("buildAutoProvisionOnLaunchPayload creates deterministic launched-agent provisioning job", () => {
+	const built = buildAutoProvisionOnLaunchPayload({
+		launchId: SAMPLE_ID,
+		tokenAddress: TOKEN.toUpperCase(),
+		agentSafeAddress: "0x000000000000000000000000000000000000eeee",
+		creator: CREATOR.toUpperCase(),
+		name: "Demo Agent",
+		symbol: "DEMO",
+		tier: 80,
+		chainId: 56,
+		txHash: "0xfeed",
+	});
+
+	assert.equal(built.agentId, "waifu-demo-00000000");
+	assert.equal(built.jobId, `launch:${SAMPLE_ID}:agent-provisioning`);
+	assert.equal(built.payload.source, "agent.launched");
+	assert.equal(built.payload.agentId, built.agentId);
+	assert.deepEqual(built.payload.data, {
+		launchId: SAMPLE_ID,
+		tokenAddress: TOKEN,
+		tokenContractAddress: TOKEN,
+		chain: "bsc",
+		chainId: 56,
+		tokenName: "Demo Agent",
+		tokenTicker: "DEMO",
+		launchType: "native",
+		launchTxHash: "0xfeed",
+		creator: CREATOR,
+		adminWallets: [CREATOR],
+		agentSafeAddress: "0x000000000000000000000000000000000000eeee",
+		agentWalletAddress: "0x000000000000000000000000000000000000eeee",
+		primaryWalletAddress: "0x000000000000000000000000000000000000eeee",
+		walletKeyRef: "safe:0x000000000000000000000000000000000000eeee",
+	});
 });
 
 function makeRow(overrides: Record<string, unknown> = {}) {

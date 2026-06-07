@@ -13,9 +13,11 @@ import { Hono } from "hono";
 import type { Address } from "viem";
 import { z } from "zod";
 
-import { getDatabase } from "@waifufun/db";
+import { agentPersonas, agentWallets, getDatabase } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 import { type UploadFlapMetadataInput, type UploadFlapMetadataResult, uploadFlapMetadata } from "@waifufun/flap";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
+import { sql } from "drizzle-orm";
 
 import { verifySiweMessage } from "../../lib/auth-service.js";
 import type { AppBindings } from "../../lib/bindings.js";
@@ -212,6 +214,7 @@ export interface AgentLaunchRoutesOptions {
 	getDb?: () => Database | null;
 	getService?: () => LaunchService | null;
 	siweVerifier?: typeof verifySiweMessage;
+	enqueueAgentProvisioningJob?: (payload: AgentProvisioningJob, options: { jobId: string }) => Promise<unknown>;
 	// Injectable FLAP metadata uploader. Defaults to the @waifufun/flap package
 	// adapter (which POSTs to funcs.flap.sh). Overridden in tests so we never
 	// touch the real FLAP host.
@@ -222,6 +225,165 @@ function defaultDb(): Database | null {
 	const url = process.env.DATABASE_URL;
 	if (!url) return null;
 	return getDatabase(url).db;
+}
+
+export interface AutoProvisionOnLaunchInput {
+	launchId: string;
+	tokenAddress: string;
+	agentSafeAddress: string | null;
+	creator: string;
+	name: string;
+	symbol: string;
+	tier: number;
+	chainId?: number;
+	txHash: string | null;
+	metadata?: Record<string, unknown> | null;
+}
+
+export function isAutoProvisionOnLaunchEnabled(): boolean {
+	const value = process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH?.trim().toLowerCase();
+	return value === "true" || value === "1" || value === "yes";
+}
+
+function agentSlugPart(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 32);
+}
+
+function imageUrlFromMetadata(metadata: Record<string, unknown> | null | undefined): string | null {
+	const value = metadata?.imageUrl ?? metadata?.image ?? metadata?.avatarUrl;
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function descriptionFromMetadata(metadata: Record<string, unknown> | null | undefined): string | null {
+	const value = metadata?.description ?? metadata?.bio;
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+export function buildAutoProvisionOnLaunchPayload(input: AutoProvisionOnLaunchInput): {
+	agentId: string;
+	jobId: string;
+	payload: AgentProvisioningJob;
+} {
+	const tokenAddress = input.tokenAddress.toLowerCase();
+	const creator = input.creator.toLowerCase();
+	const symbol = agentSlugPart(input.symbol) || "agent";
+	const agentId = `waifu-${symbol}-${tokenAddress.slice(2, 10)}`;
+	const chainId = input.chainId ?? Number(process.env.BSC_CHAIN_ID ?? process.env.CHAIN_ID ?? 56);
+	return {
+		agentId,
+		jobId: `launch:${input.launchId}:agent-provisioning`,
+		payload: {
+			agentId,
+			source: "agent.launched",
+			data: {
+				launchId: input.launchId,
+				tokenAddress,
+				tokenContractAddress: tokenAddress,
+				chain: "bsc",
+				chainId,
+				tokenName: input.name,
+				tokenTicker: input.symbol.toUpperCase(),
+				launchType: "native",
+				launchTxHash: input.txHash,
+				creator,
+				adminWallets: [creator],
+				...(input.agentSafeAddress
+					? {
+							agentSafeAddress: input.agentSafeAddress.toLowerCase(),
+							agentWalletAddress: input.agentSafeAddress.toLowerCase(),
+							primaryWalletAddress: input.agentSafeAddress.toLowerCase(),
+							walletKeyRef: `safe:${input.agentSafeAddress.toLowerCase()}`,
+						}
+					: {}),
+			},
+		},
+	};
+}
+
+async function ensureLaunchPersonaAndProvisioningJob(
+	db: Database,
+	input: AutoProvisionOnLaunchInput,
+	enqueue: (payload: AgentProvisioningJob, options: { jobId: string }) => Promise<unknown>,
+): Promise<{ agentId: string; jobId: string }> {
+	const built = buildAutoProvisionOnLaunchPayload(input);
+	const now = new Date();
+	const tokenAddress = input.tokenAddress.toLowerCase();
+	const creator = input.creator.toLowerCase();
+	const safeAddress = input.agentSafeAddress?.toLowerCase() ?? null;
+	const metadata = input.metadata ?? {};
+	const provisioningMetadata = {
+		...(metadata && typeof metadata === "object" ? metadata : {}),
+		launchSource: "launch-factory",
+		autoProvisionOnLaunch: true,
+		launch: {
+			id: input.launchId,
+			tier: input.tier,
+			txHash: input.txHash,
+			agentSafeAddress: safeAddress,
+		},
+	};
+
+	await db
+		.insert(agentPersonas)
+		.values({
+			agentId: built.agentId,
+			tokenAddress,
+			ownerAddress: creator,
+			name: input.name,
+			bio: descriptionFromMetadata(input.metadata),
+			avatarUrl: imageUrlFromMetadata(input.metadata),
+			metadata: provisioningMetadata,
+			agentLaunchStatus: "launched",
+			launchedAt: now,
+			launchTxHash: input.txHash,
+			chain: "bsc",
+			runtimeKind: "eliza-cloud",
+		})
+		.onConflictDoUpdate({
+			target: agentPersonas.agentId,
+			set: {
+				tokenAddress,
+				ownerAddress: creator,
+				name: input.name,
+				bio: descriptionFromMetadata(input.metadata),
+				avatarUrl: imageUrlFromMetadata(input.metadata),
+				metadata: sql`coalesce(${agentPersonas.metadata}, '{}'::jsonb) || ${JSON.stringify(provisioningMetadata)}::jsonb`,
+				agentLaunchStatus: "launched",
+				launchedAt: now,
+				launchTxHash: input.txHash,
+				chain: "bsc",
+				runtimeKind: "eliza-cloud",
+				updatedAt: now,
+			},
+		});
+
+	await db
+		.insert(agentWallets)
+		.values({
+			agentToken: tokenAddress,
+			walletAddress: safeAddress ?? creator,
+			safeAddress,
+			internalAgentId: built.agentId,
+			launchTxHash: input.txHash,
+			metadata: { source: "launch-factory", autoProvisionOnLaunch: true, launchId: input.launchId },
+		})
+		.onConflictDoUpdate({
+			target: agentWallets.agentToken,
+			set: {
+				walletAddress: safeAddress ?? creator,
+				safeAddress,
+				internalAgentId: built.agentId,
+				launchTxHash: input.txHash,
+				updatedAt: now,
+			},
+		});
+
+	await enqueue(built.payload, { jobId: built.jobId });
+	return { agentId: built.agentId, jobId: built.jobId };
 }
 
 const LAUNCH_SIWE_PURPOSE = "launch:create";
@@ -662,6 +824,36 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				createBlockNumber: onchain.blockNumber,
 			});
 
+			let autoProvision: { agentId: string; jobId: string } | null = null;
+			if (isAutoProvisionOnLaunchEnabled()) {
+				try {
+					const enqueue =
+						options.enqueueAgentProvisioningJob ??
+						(async (payload: AgentProvisioningJob, jobOptions: { jobId: string }) => {
+							const { addAgentProvisioningJob } = await import("@waifufun/queue");
+							return addAgentProvisioningJob(payload, jobOptions);
+						});
+					autoProvision = await ensureLaunchPersonaAndProvisioningJob(
+						db,
+						{
+							launchId: row.id,
+							tokenAddress: row.tokenAddress,
+							agentSafeAddress: row.agentSafeAddress,
+							creator: row.creator,
+							name: body.name,
+							symbol: body.symbol,
+							tier: Number(tier),
+							chainId: Number(process.env.BSC_CHAIN_ID ?? process.env.CHAIN_ID ?? 56),
+							txHash: row.createTxHash,
+							metadata,
+						},
+						enqueue,
+					);
+				} catch (error) {
+					c.get("logger")?.error({ error, launchId: row.id }, "auto-provision-on-launch failed");
+				}
+			}
+
 			return respondAccepted(c, {
 				id: row.id,
 				status: "created",
@@ -680,6 +872,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				treasuryReserve: onchain.treasuryReserve,
 				presaleUrl: onchain.presaleUrl,
 				txHash: onchain.txHash,
+				autoProvision,
 			});
 		},
 	);
