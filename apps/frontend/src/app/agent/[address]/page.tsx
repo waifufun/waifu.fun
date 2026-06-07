@@ -23,6 +23,24 @@ import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+// NOTE on freshness: this route is built under `output: "export"` (see
+// next.config.ts — the whole app is a static export deployed to Cloudflare
+// Pages via `wrangler pages deploy out`). Under a static export every page
+// is prerendered ONCE at `next build` and there is NO server runtime at
+// request time, so `export const dynamic = "force-dynamic"` and
+// `export const revalidate = N` are NO-OPS here (Next even errors when you
+// pair `dynamic` with `output: export`). Adding them would not make the
+// Trading P&L chart fresh — the data would still be the build-time snapshot.
+//
+// The only way to serve live data with this architecture is to seed the
+// SSG snapshot for the first paint and then poll the live API on the
+// client. Every data panel on this page already does exactly that via the
+// Live* wrappers in components/agent-home/wave-t/live-wrappers.tsx. The
+// Trading P&L chart now does too: <LivePnlChart> seeds from the SSG `hlPnl`
+// prop and polls /v2/agents/:address/hyperliquid/pnl every 60s, so a user
+// sees fresh trading numbers within ~60s of load (and of the latest fill),
+// regardless of how stale the prerendered HTML is. See useLiveHlPnl in
+// live-data.ts for the cadence + abort/visibility handling.
 export async function generateStaticParams() {
 	const { isStaticExport, fetchAgentAddressesForStaticExport } = await import("@/lib/static-export-paths");
 	if (!isStaticExport()) return [];

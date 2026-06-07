@@ -140,10 +140,54 @@ function num(value: unknown, fallback = 0): number {
 }
 
 /**
+ * Parse a raw `/hyperliquid/pnl` JSON body into the typed `HlPnlData`
+ * shape. Shared by the server fetcher (`fetchHyperliquidPnl`) and the
+ * client poll (`fetchHyperliquidPnlClient`) so both produce IDENTICAL
+ * data — keeping the parse in one place is how we avoid the client poll
+ * silently diverging from the SSG seed (same lesson as `mapAgentOwnTrade`).
+ */
+export function parseHlPnl(json: Record<string, unknown>, fallbackWindow: HlPnlWindow): HlPnlData {
+	const rawSeries = Array.isArray(json.series) ? (json.series as Array<{ t: unknown; pnl: unknown }>) : [];
+	const series: PnlSeriesPoint[] = rawSeries
+		.map((p) => ({ t: num(p.t), pnl: num(p.pnl) }))
+		.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.pnl));
+	const tp = (json.tradingPnl ?? {}) as Record<string, unknown>;
+	const tax = (json.taxIncome ?? {}) as Record<string, unknown>;
+	const wl = json.winLoss as { wins?: unknown; losses?: unknown } | null | undefined;
+	return {
+		wallet: typeof json.wallet === "string" ? json.wallet : null,
+		priorWallets: Array.isArray(json.priorWallets) ? (json.priorWallets as string[]) : [],
+		window: (typeof json.window === "string" ? json.window : fallbackWindow) as HlPnlWindow,
+		series,
+		tradingPnl: {
+			realized: num(tp.realized),
+			unrealized: num(tp.unrealized),
+			total: num(tp.total),
+			currentWallet: num(tp.currentWallet),
+			priorWallets: num(tp.priorWallets),
+		},
+		accountValue: num(json.accountValue),
+		withdrawable: num(json.withdrawable),
+		winLoss: wl ? { wins: num(wl.wins), losses: num(wl.losses) } : null,
+		taxIncome: {
+			amountWei: typeof tax.amountWei === "string" ? tax.amountWei : "0",
+			source: typeof tax.source === "string" ? tax.source : "fee_distributions.agent_share",
+		},
+	};
+}
+
+/**
  * Fetch the CORRECT (HL-only, deposit-excluded) trading PnL for an agent.
  *
  * Calls /v2/agents/:address/hyperliquid/pnl. Returns `null` on any failure
  * so the chart renders its honest empty state rather than a fake line.
+ *
+ * SERVER-SIDE (SSG/SSR) fetcher: uses the server API base and Next's
+ * `revalidate` hint. NOTE: under `output: "export"` the whole agent page
+ * is statically prerendered at build time, so this only ever runs ONCE
+ * (at `next build`) and the result is frozen into the HTML. The live
+ * value comes from the client poll (`fetchHyperliquidPnlClient`) wired
+ * up by `useLiveHlPnl` — see live-data.ts.
  *
  * @param address Agent token address (0x...)
  * @param window  day | week | month | allTime (default allTime → lifetime).
@@ -155,33 +199,46 @@ export async function fetchHyperliquidPnl(address: string, window: HlPnlWindow =
 		const res = await fetch(url, { next: { revalidate: 60 } });
 		if (!res.ok) return null;
 		const json = (await res.json()) as Record<string, unknown>;
-		const rawSeries = Array.isArray(json.series) ? (json.series as Array<{ t: unknown; pnl: unknown }>) : [];
-		const series: PnlSeriesPoint[] = rawSeries
-			.map((p) => ({ t: num(p.t), pnl: num(p.pnl) }))
-			.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.pnl));
-		const tp = (json.tradingPnl ?? {}) as Record<string, unknown>;
-		const tax = (json.taxIncome ?? {}) as Record<string, unknown>;
-		const wl = json.winLoss as { wins?: unknown; losses?: unknown } | null | undefined;
-		return {
-			wallet: typeof json.wallet === "string" ? json.wallet : null,
-			priorWallets: Array.isArray(json.priorWallets) ? (json.priorWallets as string[]) : [],
-			window: (typeof json.window === "string" ? json.window : window) as HlPnlWindow,
-			series,
-			tradingPnl: {
-				realized: num(tp.realized),
-				unrealized: num(tp.unrealized),
-				total: num(tp.total),
-				currentWallet: num(tp.currentWallet),
-				priorWallets: num(tp.priorWallets),
-			},
-			accountValue: num(json.accountValue),
-			withdrawable: num(json.withdrawable),
-			winLoss: wl ? { wins: num(wl.wins), losses: num(wl.losses) } : null,
-			taxIncome: {
-				amountWei: typeof tax.amountWei === "string" ? tax.amountWei : "0",
-				source: typeof tax.source === "string" ? tax.source : "fee_distributions.agent_share",
-			},
-		};
+		return parseHlPnl(json, window);
+	} catch {
+		return null;
+	}
+}
+
+function clientApiBase(): string {
+	const configured = (process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_WAIFU_API_BASE)?.trim();
+	if (configured?.startsWith("http://") || configured?.startsWith("https://")) {
+		return configured.replace(/\/+$/, "");
+	}
+	return "https://api.waifu.fun";
+}
+
+/**
+ * CLIENT-SIDE fetcher for the HL trading-pnl payload.
+ *
+ * The agent page is a static export (`output: "export"`), so the
+ * server fetch above is frozen at build time. This variant runs in the
+ * browser with `cache: "no-store"` so the Trading P&L panel walks
+ * forward to live data shortly after the page hydrates. Returns `null`
+ * on any failure (caller keeps showing the last good value).
+ *
+ * @param address Agent token address (0x...)
+ * @param window  day | week | month | allTime (default allTime → lifetime).
+ * @param signal  Optional AbortSignal so a fast unmount cancels the request.
+ */
+export async function fetchHyperliquidPnlClient(
+	address: string,
+	window: HlPnlWindow = "allTime",
+	signal?: AbortSignal,
+): Promise<HlPnlData | null> {
+	if (!address) return null;
+	const base = clientApiBase();
+	try {
+		const url = `${base}/v2/agents/${encodeURIComponent(address)}/hyperliquid/pnl?window=${window}`;
+		const res = await fetch(url, { cache: "no-store", ...(signal ? { signal } : {}) });
+		if (!res.ok) return null;
+		const json = (await res.json()) as Record<string, unknown>;
+		return parseHlPnl(json, window);
 	} catch {
 		return null;
 	}
