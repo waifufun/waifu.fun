@@ -10,7 +10,7 @@
 		"compile": "hardhat compile",
 		"deploy": "hardhat run scripts/deploy/deploy-wave-h.js",
 		"deploy:local": "hardhat run scripts/deploy/deploy-wave-h-local.js --network localhost",
-		"test": "hardhat test",
+		"test": "node scripts/run-hardhat-tests.cjs",
 		"test:local": "hardhat test --network localhost",
 		"clean": "hardhat clean",
 		"lint": "biome check scripts test hardhat.config.js package.json",
