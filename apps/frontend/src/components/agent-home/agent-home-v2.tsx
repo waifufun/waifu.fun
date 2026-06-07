@@ -58,9 +58,9 @@ import {
 	LiveActivityFeed,
 	LiveHero,
 	LiveHoldingsAllocation,
+	LivePnlChart,
 	LivePriceChart,
 } from "./wave-t/live-wrappers";
-import { PnlChart } from "./wave-t/pnl-chart";
 import { ServicesSection } from "./wave-t/services-section";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { TokenomicsPanel } from "./wave-t/tokenomics-panel";
@@ -271,8 +271,13 @@ export default function AgentHomeV2({
 					    starts at 0); otherwise we render the honest empty state
 					    ("no trading history yet"). We deliberately NEVER fall back
 					    to the nav-diff series here: that folded the $WAIFU token's
-					    NAV swing into "Trading P&L", which is not trading pnl. */}
-					<PnlChart hlPnl={hlPnl ?? null} />
+					    NAV swing into "Trading P&L", which is not trading pnl.
+
+					    Wrapped in LivePnlChart so the panel walks forward to live
+					    data: the page is a static export, so the SSG hlPnl prop is
+					    frozen at build time. The wrapper seeds from it then polls
+					    /hyperliquid/pnl every 60s. */}
+					<LivePnlChart address={agent.tokenAddress} initialHlPnl={hlPnl ?? null} />
 					<AppsShipped apps={apps} visibleCount={4} />
 				</div>
 

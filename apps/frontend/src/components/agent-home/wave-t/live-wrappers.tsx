@@ -27,7 +27,7 @@ import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 import type { CandleSeries } from "@/lib/wave-t/candles";
 import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
-import type { NavHistoryPoint } from "@/lib/wave-t/pnl";
+import type { HlPnlData, NavHistoryPoint } from "@/lib/wave-t/pnl";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
@@ -39,12 +39,14 @@ import { HeroV2 } from "./hero-v2";
 import { HoldingsAllocation } from "./holdings-allocation";
 import {
 	useLiveAgentTrades,
+	useLiveHlPnl,
 	useLiveHoldings,
 	useLivePerpPositions,
 	useLiveTokenMetrics,
 	useLiveTweets,
 	useLiveTwitterStats,
 } from "./live-data";
+import { PnlChart } from "./pnl-chart";
 import { PriceChart } from "./price-chart";
 
 // ── Hero ───────────────────────────────────────────────────────
@@ -141,6 +143,28 @@ export function LiveActivePositions({
 }
 
 // ── Holdings allocation ────────────────────────────────────────
+
+/**
+ * Live-polling wrapper around <PnlChart>.
+ *
+ * The agent page is a static export, so the SSG `hlPnl` prop is frozen at
+ * build time — that is why the Trading P&L chart "never updated" and kept
+ * showing the numbers from the last deploy. This wrapper seeds from that
+ * SSG payload so the first paint is instant, then polls
+ * `/v2/agents/:address/hyperliquid/pnl` every 60s and feeds the freshest
+ * payload into the chart. A failed poll keeps the last good value, so the
+ * chart never flickers back to the empty state on a transient blip.
+ */
+export function LivePnlChart({
+	address,
+	initialHlPnl,
+}: {
+	address: string;
+	initialHlPnl: HlPnlData | null;
+}) {
+	const hlPnl = useLiveHlPnl(address, initialHlPnl);
+	return <PnlChart hlPnl={hlPnl} />;
+}
 
 export function LiveHoldingsAllocation({
 	address,
