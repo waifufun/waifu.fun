@@ -38,6 +38,7 @@ import { type AgentHoldingsSnapshot, fetchAgentHoldingsSnapshot } from "@/lib/wa
 import { mapAgentOwnTrade, unwrapActivityTrades } from "@/lib/wave-t/agent-trades";
 import { type TwitterStats, fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
+import { type HlPnlData, type HlPnlWindow, fetchHyperliquidPnlClient } from "@/lib/wave-t/pnl";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { type Tweet, fetchTweetsForAgent } from "@/lib/wave-t/voice";
 
@@ -172,6 +173,46 @@ export function useLivePerpPositions(
 }
 
 // ── twitter stats ──────────────────────────────────────────────
+
+/**
+ * Poll the agent's HL trading-pnl payload (the Trading P&L panel source)
+ * from `/v2/agents/:address/hyperliquid/pnl`.
+ *
+ * WHY THIS EXISTS: the agent page is a static export (`output: "export"`),
+ * so the server `fetchHyperliquidPnl` in `app/agent/[address]/page.tsx`
+ * runs ONCE at `next build` and freezes its result into the HTML. Without
+ * this hook the chart shows whatever the trading numbers were at the last
+ * deploy and "never updates" — exactly the stale-snapshot bug this hook
+ * fixes. The 60s cadence mirrors the API's own `revalidate: 60` window.
+ *
+ * Defensive like the rest of live-data: a failed/empty poll keeps the
+ * previous good value (no flicker, no wiping the chart), the fetch is
+ * abortable on unmount, and we skip while the tab is hidden.
+ *
+ * @param address  Agent token address (0x...)
+ * @param initial  SSG-prefetched payload (may be null for non-HL agents).
+ * @param window   day | week | month | allTime (default allTime).
+ */
+export function useLiveHlPnl(
+	address: string,
+	initial: HlPnlData | null,
+	window: HlPnlWindow = "allTime",
+	intervalMs = 60_000,
+): HlPnlData | null {
+	const [pnl, setPnl] = useState<HlPnlData | null>(initial);
+	usePoller(
+		async (signal) => {
+			if (!address) return;
+			const next = await fetchHyperliquidPnlClient(address, window, signal);
+			// Only replace state on a real payload. A null (404 / network blip)
+			// keeps the last good chart rather than collapsing to the empty state.
+			if (next) setPnl(next);
+		},
+		intervalMs,
+		[address, window],
+	);
+	return pnl;
+}
 
 export function useLiveTwitterStats(
 	address: string,
