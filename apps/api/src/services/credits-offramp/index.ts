@@ -270,9 +270,7 @@ export class CreditsOffRamp {
 				throw new Error("Eliza Cloud status does not advertise canonical BSC USDT (BEP20, 18 decimals)");
 			}
 		}
-		const quote = usdt
-			? { usd: roundUsd(input.usd), bnb: 0, bnbPriceUsd: 0 }
-			: await this.quoteUsd(input.usd);
+		const quote = usdt ? { usd: roundUsd(input.usd), bnb: 0, bnbPriceUsd: 0 } : await this.quoteUsd(input.usd);
 		const created = await this.eliza.createCryptoPayment({
 			amountUsd: quote.usd,
 			payCurrency: usdt ? BSC_USDT_PAY_CURRENCY : payCurrency,

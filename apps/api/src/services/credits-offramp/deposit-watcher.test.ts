@@ -108,15 +108,14 @@ test("detectDeposits returns canonical BSC USDT transfers from NodeReal as USD-n
 		assert.equal(deposits[0]?.asset, "USDT");
 		assert.equal(deposits[0]?.valueUsd, 10);
 		assert.equal(deposits[0]?.valueBnb, 0);
-		assert.deepEqual((requestBody as { params: Array<{ category: string[]; addressType: string }> }).params[0]?.category, [
-			"20",
-		]);
+		assert.deepEqual(
+			(requestBody as { params: Array<{ category: string[]; addressType: string }> }).params[0]?.category,
+			["20"],
+		);
 		assert.equal((requestBody as { params: Array<{ addressType: string }> }).params[0]?.addressType, "to");
 		assert.equal((requestBody as { params: Array<{ pageKey?: string }> }).params[0]?.pageKey, undefined);
 	});
 });
-
-
 
 test("detectDeposits paginates NodeReal before filtering to canonical USDT", async () => {
 	await withNodeReal(async () => {
@@ -173,35 +172,38 @@ test("detectDeposits paginates NodeReal before filtering to canonical USDT", asy
 });
 
 test("detectDeposits merges NodeReal USDT with BNB fallback deposits", async () => {
-	await withEnv({ ALCHEMY_BSC_URL: "https://bsc-mainnet.nodereal.io/v1/test", ANKR_API_KEY: "test-ankr-key" }, async () => {
-		const watcher = new BscDepositWatcher({
-			fetchImpl: (async (url: string | URL | Request) => {
-				if (String(url).includes("nodereal")) {
-					return nodeRealResponse([
-						{
-							hash: "0xusdt",
-							to: SAFE,
-							from: OTHER,
-							contractAddress: BSC_USDT_CONTRACT,
-							value: "0x8ac7230489e80000",
-							decimal: "18",
-							blockTimeStamp: NOW_S - 60,
-						},
+	await withEnv(
+		{ ALCHEMY_BSC_URL: "https://bsc-mainnet.nodereal.io/v1/test", ANKR_API_KEY: "test-ankr-key" },
+		async () => {
+			const watcher = new BscDepositWatcher({
+				fetchImpl: (async (url: string | URL | Request) => {
+					if (String(url).includes("nodereal")) {
+						return nodeRealResponse([
+							{
+								hash: "0xusdt",
+								to: SAFE,
+								from: OTHER,
+								contractAddress: BSC_USDT_CONTRACT,
+								value: "0x8ac7230489e80000",
+								decimal: "18",
+								blockTimeStamp: NOW_S - 60,
+							},
+						]);
+					}
+					return ankrResponse([
+						{ hash: "0xbnb", to: SAFE, from: OTHER, value: "1000000000000000000", timestamp: NOW_S - 60 },
 					]);
-				}
-				return ankrResponse([
-					{ hash: "0xbnb", to: SAFE, from: OTHER, value: "1000000000000000000", timestamp: NOW_S - 60 },
-				]);
-			}) as unknown as typeof fetch,
-			now: () => NOW_MS,
-			logger: console,
-		});
-		const deposits = await watcher.detectDeposits({ safeAddress: SAFE, lookbackSeconds: 3600 });
-		assert.deepEqual(
-			deposits.map((deposit) => deposit.asset),
-			["USDT", "BNB"],
-		);
-	});
+				}) as unknown as typeof fetch,
+				now: () => NOW_MS,
+				logger: console,
+			});
+			const deposits = await watcher.detectDeposits({ safeAddress: SAFE, lookbackSeconds: 3600 });
+			assert.deepEqual(
+				deposits.map((deposit) => deposit.asset),
+				["USDT", "BNB"],
+			);
+		},
+	);
 });
 
 test("detectDeposits rejects spam BEP20 tokens from NodeReal", async () => {

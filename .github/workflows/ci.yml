@@ -153,13 +153,15 @@ jobs:
         # were never running in CI. FORK_BSC required so integration
         # tests fail loudly instead of silently skipping (V3 audit C-2).
         env:
-          FORK_BSC: "true"
+          # Forked PRs cannot access repository secrets, so only require the
+          # BSC fork suite when the archive RPC secret is actually available.
+          FORK_BSC: ${{ secrets.ALCHEMY_BSC_URL != '' && 'true' || 'false' }}
           FORK_BSC_URL: ${{ secrets.ALCHEMY_BSC_URL }}
           # Wave M+N validated against this block (M5 verbose fork run + Nubs sim).
           # Bump quarterly to stay within Alchemy cache window; FLAP Portal evolves
           # state-side and old pinned blocks can trigger VanityAddressRequirementNotMet.
           FORK_BSC_BLOCK: "99073955"
-          REQUIRE_BSC_FORK: "true"
+          REQUIRE_BSC_FORK: ${{ secrets.ALCHEMY_BSC_URL != '' && 'true' || 'false' }}
         run: >-
           bunx turbo run test build
           --filter='@waifufun/api...'

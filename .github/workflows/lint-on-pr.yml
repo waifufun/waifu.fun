@@ -27,7 +27,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: true
 
       - name: Setup Bun
@@ -47,6 +48,7 @@ jobs:
         run: bun run lint
 
       - name: Commit and push if there are changes
+        if: github.event.pull_request.head.repo.full_name == github.repository
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
