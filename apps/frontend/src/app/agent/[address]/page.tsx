@@ -21,7 +21,8 @@ import { fetchPositions } from "@/lib/wave-t/positions";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+
+import { PrelaunchResolver } from "./prelaunch-resolver";
 
 export async function generateStaticParams() {
 	const { isStaticExport, fetchAgentAddressesForStaticExport } = await import("@/lib/static-export-paths");
@@ -541,9 +542,18 @@ export default async function AgentPage({
 	const agentSafeBalance = await fetchAgentSafeBalance(launch?.agentSafe ?? null);
 
 	if (!agent) {
-		// The persona endpoint is now the source of truth. If the row is
-		// missing the agent does not exist as far as the page is concerned.
-		notFound();
+		// No graduated agent row (and no legacy token fallback). The token may
+		// still be a freshly-launched v3 token that hasn't graduated yet: those
+		// have a row at /v2/launches/by-token/:token but nothing at
+		// /v2/agents/:address. Rather than 404 immediately, hand off to a
+		// client resolver that looks up the launch row at runtime and redirects
+		// to the canonical /launch/[id] presale surface when one exists (and
+		// renders the calm not-found state otherwise). This must run on the
+		// client because the app builds with `output: "export"` and a fresh
+		// launch is never pre-rendered, so a server-side redirect/notFound here
+		// can't see runtime addresses. See prelaunch-resolver.tsx for the
+		// full lifecycle rationale.
+		return <PrelaunchResolver address={address} />;
 	}
 
 	const tokenWithAgentMetrics: TokenMetrics = {
