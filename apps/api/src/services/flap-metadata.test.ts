@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { FLAP_IPFS_GATEWAY_URL } from "@waifufun/flap";
+
 import { FlapMetadataError, validateFlapMetadataCid } from "./flap-metadata.js";
 
 test("validateFlapMetadataCid fetches and validates required metadata fields", async () => {
@@ -18,6 +20,30 @@ test("validateFlapMetadataCid fetches and validates required metadata fields", a
 	assert.equal(result.cid, "bafybeigdyrztvalidcid123456789");
 	assert.equal(result.metadata.symbol, "WF");
 	assert.equal(calls[0], "https://funcs.flap.sh/api/bafybeigdyrztvalidcid123456789");
+});
+
+test("validateFlapMetadataCid defaults to the package IPFS gateway, not funcs.flap.sh", async () => {
+	const previous = process.env.FLAP_FUNCS_GATEWAY_URL;
+	delete process.env.FLAP_FUNCS_GATEWAY_URL;
+	const calls: string[] = [];
+	try {
+		await validateFlapMetadataCid("bafybeigdyrztvalidcid123456789", {
+			fetchImpl: (async (url: string) => {
+				calls.push(url);
+				return new Response(
+					JSON.stringify({ name: "Waifu", symbol: "WF", description: "desc", image: "ipfs://image" }),
+					{
+						status: 200,
+						headers: { "content-type": "application/json" },
+					},
+				);
+			}) as typeof fetch,
+		});
+	} finally {
+		if (previous === undefined) delete process.env.FLAP_FUNCS_GATEWAY_URL;
+		else process.env.FLAP_FUNCS_GATEWAY_URL = previous;
+	}
+	assert.equal(calls[0], `${FLAP_IPFS_GATEWAY_URL}/bafybeigdyrztvalidcid123456789`);
 });
 
 test("validateFlapMetadataCid rejects incomplete metadata", async () => {

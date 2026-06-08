@@ -1,5 +1,6 @@
 import { schema } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
+import { FLAP_IPFS_GATEWAY_URL } from "@waifufun/flap";
 import { eq } from "drizzle-orm";
 
 export interface FlapMetadata {
@@ -40,7 +41,7 @@ export async function validateFlapMetadataCid(
 	const gatewayBaseUrl = (
 		options.gatewayBaseUrl ??
 		process.env.FLAP_FUNCS_GATEWAY_URL ??
-		"https://funcs.flap.sh/api"
+		FLAP_IPFS_GATEWAY_URL
 	).replace(/\/$/, "");
 	const fetchImpl = options.fetchImpl ?? fetch;
 	const response = await fetchImpl(`${gatewayBaseUrl}/${encodeURIComponent(normalized)}`, {
