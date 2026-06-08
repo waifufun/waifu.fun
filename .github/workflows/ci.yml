@@ -60,6 +60,7 @@ jobs:
               - 'apps/mcp/**'
               - 'apps/nav-snapshotter/**'
               - 'apps/sol-indexer/**'
+              - 'apps/tier-cron/**'
               - 'apps/worker/**'
               - 'packages/agent-actions/**'
               - 'packages/agent-runtime/**'
@@ -148,7 +149,8 @@ jobs:
       - name: Test and build API area
         # The api-area paths-filter triggers on apps/api, apps/worker,
         # apps/brain, apps/bundle-bot, apps/mcp, apps/sol-indexer,
-        # apps/evm-indexer, apps/launch-indexer, apps/nav-snapshotter
+        # apps/evm-indexer, apps/launch-indexer, apps/nav-snapshotter,
+        # apps/tier-cron
         # plus packages/db, packages/agent-actions, packages/launchpad.
         # Every one of those needs to be in this filter so a breakage
         # anywhere api-flavored fails CI.
@@ -176,6 +178,7 @@ jobs:
           --filter='@waifufun/evm-indexer...'
           --filter='@waifufun/launch-indexer...'
           --filter='@waifufun/nav-snapshotter...'
+          --filter='@waifufun/tier-cron...'
           --filter='@waifufun/agent-actions...'
           --filter='@waifufun/db...'
           --filter='@waifufun/launchpad...'

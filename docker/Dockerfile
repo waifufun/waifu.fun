@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# Waifu-core images: build stage `runner` with SERVICE_NAME=api|worker|evm-indexer|brain.
+# Waifu-core images: build stage `runner` with SERVICE_NAME=api|worker|evm-indexer|launch-indexer|bundle-bot|nav-snapshotter|tier-cron|brain.
 # Dev compose mounts the repo and uses stage `base` as the Bun toolchain shell.
 
 FROM oven/bun:1-alpine AS base
@@ -36,6 +36,7 @@ RUN bunx turbo run build \
 	--filter=@waifufun/launch-indexer \
 	--filter=@waifufun/bundle-bot \
 	--filter=@waifufun/nav-snapshotter \
+	--filter=@waifufun/tier-cron \
 	--filter=@waifufun/brain \
 	--filter=@waifufun/mcp \
 	--filter=@waifufun/agent-actions
