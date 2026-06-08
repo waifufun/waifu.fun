@@ -60,6 +60,22 @@ export const openApiSpec = {
 						enum: ["pending", "active", "graduated", "failed"],
 						example: "active",
 					},
+					treasuryUsd: {
+						type: ["number", "null"],
+						example: 9180,
+					},
+					monthlyBurnUsd: {
+						type: ["number", "null"],
+						example: 900,
+					},
+					dailyBurnUsd: {
+						type: ["number", "null"],
+						example: 30,
+					},
+					runwayDays: {
+						type: ["number", "null"],
+						example: 306,
+					},
 					agentPageUrl: {
 						type: "string",
 						format: "uri",

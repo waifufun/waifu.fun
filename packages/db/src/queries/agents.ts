@@ -91,6 +91,9 @@ export interface AgentSummary {
 	 * remainder via a lightweight safe-BNB × price read (see waifufun#744).
 	 */
 	treasuryUsd: number | null;
+	monthlyBurnUsd: number | null;
+	dailyBurnUsd: number | null;
+	runwayDays: number | null;
 	createdAt: string;
 }
 
@@ -187,6 +190,12 @@ function finiteNumberOrNull(value: string | number | null | undefined): number |
 	return Number.isFinite(parsed) ? parsed : null;
 }
 
+export function computeRunwayDays(treasuryUsd: number | null, monthlyBurnUsd: number | null): number | null {
+	if (treasuryUsd === null || treasuryUsd <= 0) return null;
+	if (monthlyBurnUsd === null || monthlyBurnUsd <= 0) return null;
+	return Math.max(0, Math.floor((treasuryUsd / monthlyBurnUsd) * 30));
+}
+
 function toSummary(row: JoinRow): AgentSummary {
 	const persona = row.persona;
 	const wallet = row.wallet;
@@ -198,6 +207,7 @@ function toSummary(row: JoinRow): AgentSummary {
 
 	const treasuryAddress = wallet?.safeAddress ?? null;
 	const walletAddress = wallet?.walletAddress ?? "";
+	const monthlyBurnUsd = finiteNumberOrNull(persona.monthlyBurnUsd);
 
 	const curveSummary: AgentCurveSummary | null = curve
 		? {
@@ -248,6 +258,9 @@ function toSummary(row: JoinRow): AgentSummary {
 		treasuryNavUsd: null,
 		agentSafeAddress: null,
 		treasuryUsd: null,
+		monthlyBurnUsd,
+		dailyBurnUsd: monthlyBurnUsd !== null ? monthlyBurnUsd / 30 : null,
+		runwayDays: null,
 		createdAt: persona.createdAt.toISOString(),
 	};
 }
@@ -488,7 +501,13 @@ async function hydrateTreasuryNav<T extends AgentSummary>(db: Database, items: T
 		// `treasuryUsd` is the field list consumers read; seed it from the NAV
 		// snapshot when we have one. The API layer fills the rest (graduated
 		// agents whose safe isn't in the NAV wallet registry yet). See #744.
-		return { ...item, treasuryNavUsd, treasuryUsd: treasuryNavUsd };
+		return {
+			...item,
+			treasuryNavUsd,
+			treasuryUsd: treasuryNavUsd,
+			dailyBurnUsd: item.monthlyBurnUsd !== null ? item.monthlyBurnUsd / 30 : null,
+			runwayDays: computeRunwayDays(treasuryNavUsd, item.monthlyBurnUsd),
+		};
 	});
 }
 

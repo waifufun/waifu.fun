@@ -825,7 +825,10 @@ app.get("/", maybeRequirePatron, async (c) => {
 					if (!agent.agentSafeAddress) continue;
 					if (agent.treasuryUsd !== null && agent.treasuryUsd > 0) continue;
 					const usd = summary.treasuryUsdByAddress.get(agent.agentSafeAddress.toLowerCase());
-					if (usd !== undefined) agent.treasuryUsd = usd;
+					if (usd !== undefined) {
+						agent.treasuryUsd = usd;
+						agent.runwayDays = agentQueries.computeRunwayDays(usd, agent.monthlyBurnUsd);
+					}
 				}
 			}
 		} catch {
