@@ -511,6 +511,8 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				result = await upload({
 					image: imageBlob,
 					metadata: {
+						name: parsedFields.data.name,
+						symbol: parsedFields.data.symbol,
 						// The on-chain creator is set by the launch-create call; the IPFS
 						// metadata record's `creator` field is informational only, so we
 						// leave it as the zero address here (agents don't send a creator to

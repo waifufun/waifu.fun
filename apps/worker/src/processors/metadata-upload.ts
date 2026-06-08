@@ -67,6 +67,8 @@ export function createMetadataUploadProcessor(context: WorkerContext) {
 
 			// Build metadata record for Flap
 			const metadata = {
+				name: payload.metadata.name,
+				symbol: payload.metadata.symbol,
 				creator: payload.creatorAddress as `0x${string}`,
 				description: payload.metadata.description,
 				website: payload.metadata.website?.trim() || null,
