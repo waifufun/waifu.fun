@@ -54,8 +54,11 @@ jobs:
             api:
               - 'apps/api/**'
               - 'apps/brain/**'
+              - 'apps/bundle-bot/**'
               - 'apps/evm-indexer/**'
+              - 'apps/launch-indexer/**'
               - 'apps/mcp/**'
+              - 'apps/nav-snapshotter/**'
               - 'apps/sol-indexer/**'
               - 'apps/worker/**'
               - 'packages/agent-actions/**'
@@ -144,11 +147,11 @@ jobs:
 
       - name: Test and build API area
         # The api-area paths-filter triggers on apps/api, apps/worker,
-        # apps/brain, apps/mcp, apps/sol-indexer, apps/evm-indexer plus
-        # packages/db, packages/agent-actions, packages/launchpad. Every
-        # one of those needs to be in this filter so a breakage anywhere
-        # api-flavored fails CI. Round 1 codex caught worker / brain /
-        # mcp / sol-indexer were missing.
+        # apps/brain, apps/bundle-bot, apps/mcp, apps/sol-indexer,
+        # apps/evm-indexer, apps/launch-indexer, apps/nav-snapshotter
+        # plus packages/db, packages/agent-actions, packages/launchpad.
+        # Every one of those needs to be in this filter so a breakage
+        # anywhere api-flavored fails CI.
         # contracts-evm added 2026-05-08 (V3 audit C-1): contract tests
         # were never running in CI. FORK_BSC required so integration
         # tests fail loudly instead of silently skipping (V3 audit C-2).
@@ -167,9 +170,12 @@ jobs:
           --filter='@waifufun/api...'
           --filter='@waifufun/worker...'
           --filter='@waifufun/brain...'
+          --filter='@waifufun/bundle-bot...'
           --filter='@waifufun/mcp...'
           --filter='@waifufun/sol-indexer...'
           --filter='@waifufun/evm-indexer...'
+          --filter='@waifufun/launch-indexer...'
+          --filter='@waifufun/nav-snapshotter...'
           --filter='@waifufun/agent-actions...'
           --filter='@waifufun/db...'
           --filter='@waifufun/launchpad...'

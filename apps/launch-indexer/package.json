@@ -12,7 +12,7 @@
 		"dev": "tsx watch src/index.ts",
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test": "tsx --test --test-reporter=spec --test-concurrency=1 $(find src -name '*.test.ts')",
+		"test": "tsx --test --test-reporter=spec --test-concurrency=1 \"src/**/*.test.ts\"",
 		"lint": "biome check src package.json tsconfig.json",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
