@@ -7,6 +7,7 @@ import { listAgents } from "./agents.js";
 function createListAgentsDb(): Database {
 	const agentToken = "0x00000000000000000000000000000000000000aa";
 	const safeAddress = "0x00000000000000000000000000000000000000bb";
+	const monthlyBurnUsd = "900";
 	const db = {
 		select(fields: Record<string, unknown>) {
 			const keys = new Set(Object.keys(fields));
@@ -51,6 +52,7 @@ function createListAgentsDb(): Database {
 									tokenAddress: agentToken.toUpperCase(),
 									preset: null,
 									twitterHandle: null,
+									monthlyBurnUsd,
 									metadata: null,
 									brainPausedAt: null,
 									withdrawalsPausedAt: null,
@@ -101,4 +103,7 @@ test("listAgents hydrates safe address and latest NAV into summary fields", asyn
 	assert.equal(result.agents[0]?.agentSafeAddress, "0x00000000000000000000000000000000000000bb");
 	assert.equal(result.agents[0]?.treasuryNavUsd, 4567.89);
 	assert.equal(result.agents[0]?.treasuryUsd, 4567.89);
+	assert.equal(result.agents[0]?.monthlyBurnUsd, 900);
+	assert.equal(result.agents[0]?.dailyBurnUsd, 30);
+	assert.equal(result.agents[0]?.runwayDays, 152);
 });
