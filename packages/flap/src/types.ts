@@ -206,6 +206,8 @@ export interface FlapTokenStateV7 extends FlapTokenStateV7Raw {
 }
 
 export interface FlapMetadataRecord {
+	name: string;
+	symbol: string;
 	buy: string | null;
 	creator: Address;
 	description: string;

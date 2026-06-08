@@ -79,6 +79,8 @@ const toUploadBlob = async (input: FlapMetadataUploadImageInput | Blob): Promise
 };
 
 export const buildFlapMetadataRecord = (input: FlapMetadataRecord): FlapMetadataRecord => ({
+	name: input.name.trim(),
+	symbol: input.symbol.trim(),
 	buy: normalizeMetadataField(input.buy),
 	creator: input.creator,
 	description: input.description,

@@ -465,8 +465,11 @@ test("POST /upload-metadata returns flapMetaCid on success (skill.md shape)", as
 	assert.equal(res.status, 200, JSON.stringify(body));
 	assert.equal(body.ok, true);
 	assert.equal(body.data.flapMetaCid, "QmFakeCid123");
-	// symbol is uppercased; description forwarded into the metadata record.
+	// name/symbol/description are forwarded into the Flap metadata record so the
+	// returned CID can pass validateFlapMetadataCid during POST /v2/launches.
 	assert.ok(received);
+	assert.equal((received as UploadFlapMetadataInput).metadata.name, "Demo Agent");
+	assert.equal((received as UploadFlapMetadataInput).metadata.symbol, "DEMO");
 	assert.equal((received as UploadFlapMetadataInput).metadata.description, "a friendly agent token");
 
 	__setAgentOrPatronDbForTest(undefined);
