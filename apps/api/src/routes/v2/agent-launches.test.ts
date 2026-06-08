@@ -310,6 +310,35 @@ test("POST /nonce works with an agent api key (Wave J)", async () => {
 	__setAgentOrPatronDbForTest(undefined);
 });
 
+test("POST / rejects TIER_TEST unless explicitly enabled", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+	const previous = process.env.WAIFU_ENABLE_TEST_TIER;
+	delete process.env.WAIFU_ENABLE_TEST_TIER;
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		launchService: {
+			async createLaunchOnchain() {
+				throw new Error("should not be called while TIER_TEST is disabled");
+			},
+		} as unknown as LaunchService,
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/", {
+		method: "POST",
+		headers: { authorization: `Bearer ${VALID_AGK}`, "content-type": "application/json" },
+		body: JSON.stringify(createBody({ tier: "test" })),
+	});
+	const body = (await res.json()) as { error?: { code?: string } };
+	assert.equal(res.status, 400, JSON.stringify(body));
+	assert.equal(body.error?.code, "TEST_TIER_DISABLED");
+
+	if (previous === undefined) delete process.env.WAIFU_ENABLE_TEST_TIER;
+	else process.env.WAIFU_ENABLE_TEST_TIER = previous;
+	__setAgentOrPatronDbForTest(undefined);
+});
+
 test("POST / accepts an agent api key + valid SIWE (Wave J)", async () => {
 	__setAgentOrPatronDbForTest(agentAuthDb());
 

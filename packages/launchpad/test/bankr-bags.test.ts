@@ -88,4 +88,12 @@ test("shared launch mechanism mirrors the current Flap tier economics", () => {
 		vestingEnabled: true,
 		supplyBps: { presale: 4000, lp: 2000, treasuryReserve: 1000, burn: 3000 },
 	});
+	assert.deepEqual(getWaifuLaunchMechanismSnapshot("test", 300), {
+		tier: "test",
+		presaleCapWei: "17340000000000000000",
+		curveFillWei: "16840000000000000000",
+		postGraduationLpWei: "500000000000000000",
+		vestingEnabled: false,
+		supplyBps: { presale: 4000, lp: 2000, treasuryReserve: 1000, burn: 3000 },
+	});
 });

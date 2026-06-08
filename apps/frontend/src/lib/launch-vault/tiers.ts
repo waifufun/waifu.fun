@@ -4,7 +4,7 @@
  *
  * Keep in sync with packages/contracts-evm/contracts/LaunchFactory.sol.
  */
-export type LaunchTier = "TIER_80" | "TIER_90" | "TIER_95" | "TIER_98";
+export type LaunchTier = "TIER_80" | "TIER_90" | "TIER_95" | "TIER_98" | "TIER_TEST";
 
 export type LaunchTierInfo = {
 	id: LaunchTier;
@@ -72,6 +72,18 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 		presaler2xMultiple: "presalers open at 10x cost basis",
 		vestingEnabled: true,
 	},
+	TIER_TEST: {
+		id: "TIER_TEST",
+		label: "TEST",
+		bundlePct: 97,
+		presaleCapBnb: 17.34,
+		v2BuyBnb: 0.5,
+		circulatingSupplyM: 500,
+		openCircMcUsdHint: "smoke-test tier",
+		openFdvUsdHint: "smoke-test tier",
+		presaler2xMultiple: "smoke-test terms",
+		vestingEnabled: false,
+	},
 };
 
 export function tierFromString(value: string | null | undefined): LaunchTierInfo | null {
@@ -84,6 +96,7 @@ export function tierFromString(value: string | null | undefined): LaunchTierInfo
 		BASED: "TIER_90",
 		WAGMI: "TIER_95",
 		GIGACHAD: "TIER_98",
+		TEST: "TIER_TEST",
 	};
 	if (upper in byLabel) return LAUNCH_TIERS[byLabel[upper]!];
 	// allow "tier_90", "90", "tier90"
@@ -102,6 +115,7 @@ export function tierFromString(value: string | null | undefined): LaunchTierInfo
 export function tierFromCapWei(capWei: bigint | null | undefined): LaunchTierInfo {
 	if (!capWei || capWei === 0n) return LAUNCH_TIERS.TIER_90;
 	const ETHER = 10n ** 18n;
+	if (capWei === 17_340_000_000_000_000_000n) return LAUNCH_TIERS.TIER_TEST;
 	const bnb = Number(capWei / ETHER);
 	if (bnb <= 16) return LAUNCH_TIERS.TIER_80;
 	if (bnb <= 32) return LAUNCH_TIERS.TIER_90;

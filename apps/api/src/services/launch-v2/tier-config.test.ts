@@ -16,6 +16,18 @@ test("getLaunchTierConfigSnapshot returns curve-only tier 80 regardless of buy t
 	assert.deepEqual(getLaunchTierConfigSnapshot("80", 1000), TIER_80_SNAPSHOT);
 });
 
+test("getLaunchTierConfigSnapshot mirrors hardcoded on-chain TIER_TEST budget", () => {
+	const expected = {
+		presaleCap: "17340000000000000000",
+		quoteAmt: "16840000000000000000",
+		v2BuyBnb: "500000000000000000",
+		vestingEnabled: false,
+	};
+	assert.deepEqual(getLaunchTierConfigSnapshot("test"), expected);
+	assert.deepEqual(getLaunchTierConfigSnapshot("test", 0), expected);
+	assert.deepEqual(getLaunchTierConfigSnapshot("test", 1000), expected);
+});
+
 test("getLaunchTierConfigSnapshot computes tier 90 at 3 percent buy tax", () => {
 	assert.deepEqual(getLaunchTierConfigSnapshot("90", 300), {
 		presaleCap: "32000000000000000000",

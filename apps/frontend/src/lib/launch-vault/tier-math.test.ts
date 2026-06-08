@@ -82,8 +82,18 @@ describe("tierBudget", () => {
 		expect(b.vestingEnabled).toBe(true);
 	});
 
+	test("TIER_TEST mirrors the hardcoded smoke-test budget", () => {
+		for (const bps of [0, 300, 1000]) {
+			const b = tierBudget("TIER_TEST", bps);
+			expect(b.presaleCapWei).toBe(17_340_000_000_000_000_000n);
+			expect(b.quoteAmtWei).toBe(16_840_000_000_000_000_000n);
+			expect(b.v2BuyBnbWei).toBe(500_000_000_000_000_000n);
+			expect(b.vestingEnabled).toBe(false);
+		}
+	});
+
 	test("invariant: presaleCap == quoteAmt + v2BuyBnb across all (tier, tax) pairs", () => {
-		for (const tier of ["TIER_80", "TIER_90", "TIER_95", "TIER_98"]) {
+		for (const tier of ["TIER_80", "TIER_90", "TIER_95", "TIER_98", "TIER_TEST"]) {
 			for (const bps of [0, 100, 300, 500, 700, 1000]) {
 				const b = tierBudget(tier, bps);
 				expect(b.quoteAmtWei + b.v2BuyBnbWei).toBe(b.presaleCapWei);

@@ -1,4 +1,4 @@
-export type WaifuLaunchTier = "80" | "90" | "95" | "98";
+export type WaifuLaunchTier = "80" | "90" | "95" | "98" | "test";
 
 export interface WaifuLaunchMechanismSnapshot {
 	tier: WaifuLaunchTier;
@@ -34,6 +34,16 @@ export function getWaifuLaunchMechanismSnapshot(tier: WaifuLaunchTier, buyTaxBps
 			presaleCapWei: "16000000000000000000",
 			curveFillWei: "16000000000000000000",
 			postGraduationLpWei: "0",
+			vestingEnabled: false,
+			supplyBps,
+		};
+	}
+	if (tier === "test") {
+		return {
+			tier,
+			presaleCapWei: "17340000000000000000",
+			curveFillWei: "16840000000000000000",
+			postGraduationLpWei: "500000000000000000",
 			vestingEnabled: false,
 			supplyBps,
 		};

@@ -34,6 +34,14 @@ export function getLaunchTierConfigSnapshot(tier: LaunchTierString, buyTaxBps = 
 			vestingEnabled: false,
 		};
 	}
+	if (tier === "test") {
+		return {
+			presaleCap: "17340000000000000000",
+			quoteAmt: "16840000000000000000",
+			v2BuyBnb: "500000000000000000",
+			vestingEnabled: false,
+		};
+	}
 
 	let presaleCapWei: bigint;
 	if (tier === "90") presaleCapWei = 32_000_000_000_000_000_000n;

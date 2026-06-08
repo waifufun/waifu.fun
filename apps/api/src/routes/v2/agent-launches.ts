@@ -43,7 +43,29 @@ const addressSchema = z
 	.regex(addressRegex, "Expected a 20-byte EVM address")
 	.transform((v) => v.toLowerCase() as `0x${string}`);
 
-const tierSchema = z.enum(["80", "90", "95", "98"]);
+const tierSchema = z.enum(["80", "90", "95", "98", "test"]);
+
+function isTruthyEnv(value: string | undefined): boolean {
+	return value === "1" || value?.toLowerCase() === "true" || value?.toLowerCase() === "yes";
+}
+
+function assertTestTierAllowed(creator: `0x${string}`) {
+	if (!isTruthyEnv(process.env.WAIFU_ENABLE_TEST_TIER)) {
+		throw badRequest("TEST_TIER_DISABLED", "TIER_TEST is disabled. Set WAIFU_ENABLE_TEST_TIER=1 to enable it.");
+	}
+
+	const allowlist = (process.env.WAIFU_TEST_TIER_CREATORS ?? "")
+		.split(",")
+		.map((entry) => entry.trim().toLowerCase())
+		.filter(Boolean);
+	if (allowlist.length > 0 && !allowlist.includes(creator.toLowerCase())) {
+		throw badRequest("TEST_TIER_CREATOR_NOT_ALLOWED", "creator is not allowed to use TIER_TEST");
+	}
+}
+
+function storedTierValue(tier: LaunchTierString): number {
+	return tier === "test" ? 4 : Number(tier);
+}
 
 const siweProofSchema = z.object({
 	message: z.string().min(1),
@@ -195,7 +217,7 @@ const listQuerySchema = z.object({
 	tier: z.coerce
 		.number()
 		.int()
-		.refine((n) => [80, 90, 95, 98].includes(n))
+		.refine((n) => [4, 80, 90, 95, 98].includes(n))
 		.optional(),
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 	offset: z.coerce.number().int().min(0).default(0),
@@ -553,6 +575,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 		}) as never,
 		async (c) => {
 			const body = await parseJsonBody(c, createLaunchBodySchema);
+			if (body.tier === "test") assertTestTierAllowed(body.creator);
 			const patron = (c as unknown as { get(key: "patron"): { id: string } }).get("patron");
 			const siweError = await validateRequestSiwe({
 				patronId: patron.id,
@@ -570,7 +593,6 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			const closeTs = body.closeTimestamp ?? Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 			const tier = body.tier as LaunchTierString;
 			const creator = body.creator as Address;
-
 			const flapMetaCid = body.flapMetaCid ?? body.flap_meta_cid;
 			let metadataUri = body.metadataURI ?? "";
 			let metadata: Record<string, unknown> = { name: body.name, symbol: body.symbol };
@@ -645,7 +667,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				agentSafeOwners: input.agentSafeOwners,
 				agentSafeThreshold: input.agentSafeThreshold,
 				creator: input.creator,
-				tier: Number(tier),
+				tier: storedTierValue(tier),
 				presaleCap: tierConfig.presaleCap,
 				v2BuyBnb: tierConfig.v2BuyBnb,
 				vestingEnabled: tierConfig.vestingEnabled,

@@ -21,7 +21,10 @@ describe("tier market-cap formatting", () => {
 	it("maps cap and tier strings to canonical tier metadata", () => {
 		expect(tierFromString("tier 95")?.id).toBe("TIER_95");
 		expect(tierFromString("TIER_98")?.presaleCapBnb).toBe(160);
+		expect(tierFromString("TIER_TEST")?.presaleCapBnb).toBe(17.34);
+		expect(tierFromString("test")?.id).toBe("TIER_TEST");
 		expect(tierFromCapWei(64n * 10n ** 18n).id).toBe("TIER_95");
+		expect(tierFromCapWei(17_340_000_000_000_000_000n).id).toBe("TIER_TEST");
 		expect(getTier(90)?.circulatingSupplyM).toBe(400);
 	});
 });
