@@ -4,7 +4,15 @@ import test from "node:test";
 import type { Database } from "../client.js";
 import { listAgents } from "./agents.js";
 
-function createListAgentsDb(): Database {
+type ControlFlags = {
+	brainPausedAt: Date | null;
+	withdrawalsPausedAt: Date | null;
+	killedAt: Date | null;
+};
+
+function createListAgentsDb(
+	control: ControlFlags = { brainPausedAt: null, withdrawalsPausedAt: null, killedAt: null },
+): Database {
 	const agentToken = "0x00000000000000000000000000000000000000aa";
 	const safeAddress = "0x00000000000000000000000000000000000000bb";
 	const monthlyBurnUsd = "900";
@@ -54,9 +62,9 @@ function createListAgentsDb(): Database {
 									twitterHandle: null,
 									monthlyBurnUsd,
 									metadata: null,
-									brainPausedAt: null,
-									withdrawalsPausedAt: null,
-									killedAt: null,
+									brainPausedAt: control.brainPausedAt,
+									withdrawalsPausedAt: control.withdrawalsPausedAt,
+									killedAt: control.killedAt,
 									createdAt: new Date("2026-05-30T12:00:00.000Z"),
 								},
 								wallet: {
@@ -106,4 +114,37 @@ test("listAgents hydrates safe address and latest NAV into summary fields", asyn
 	assert.equal(result.agents[0]?.monthlyBurnUsd, 900);
 	assert.equal(result.agents[0]?.dailyBurnUsd, 30);
 	assert.equal(result.agents[0]?.runwayDays, 152);
+});
+
+test("toSummary surfaces control state: active agent reports no pause/kill", async () => {
+	const result = await listAgents(createListAgentsDb(), { limit: 20, offset: 0 });
+	const state = result.agents[0]?.state;
+	assert.ok(state, "summary must include a state object so the patron UI can show pause/resume");
+	assert.equal(state?.brainPaused, false);
+	assert.equal(state?.withdrawalsPaused, false);
+	assert.equal(state?.killed, false);
+	assert.equal(state?.killedAt, null);
+});
+
+test("toSummary surfaces control state: paused agent reports brain + withdrawals paused", async () => {
+	const pausedAt = new Date("2026-06-01T00:00:00.000Z");
+	const result = await listAgents(
+		createListAgentsDb({ brainPausedAt: pausedAt, withdrawalsPausedAt: pausedAt, killedAt: null }),
+		{ limit: 20, offset: 0 },
+	);
+	const state = result.agents[0]?.state;
+	assert.equal(state?.brainPaused, true);
+	assert.equal(state?.withdrawalsPaused, true);
+	assert.equal(state?.killed, false);
+});
+
+test("toSummary surfaces control state: killed agent reports killed + killedAt iso", async () => {
+	const killedAt = new Date("2026-06-02T00:00:00.000Z");
+	const result = await listAgents(
+		createListAgentsDb({ brainPausedAt: killedAt, withdrawalsPausedAt: killedAt, killedAt }),
+		{ limit: 20, offset: 0 },
+	);
+	const state = result.agents[0]?.state;
+	assert.equal(state?.killed, true);
+	assert.equal(state?.killedAt, killedAt.toISOString());
 });

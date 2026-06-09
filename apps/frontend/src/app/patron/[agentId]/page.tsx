@@ -193,7 +193,7 @@ export default function PatronAgentDetailPage({
 					{agent?.tokenAddress ? (
 						<FundTradingPanel agentTokenAddress={agent.tokenAddress} agentTicker={agent.ticker || "agent"} />
 					) : null}
-					<EmergencyControls />
+					<EmergencyControls agentId={agentId} controlState={agent?.controlState} />
 				</div>
 			)}
 		</main>

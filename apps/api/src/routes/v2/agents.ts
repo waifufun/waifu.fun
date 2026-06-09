@@ -108,6 +108,7 @@ type AgentsRouteDepsForTest = {
 	createAgentKey: typeof createKey | undefined;
 	elizaCloudClient: Pick<ElizaCloudClient, "provisionWaifuAgent"> | undefined;
 	getAgentByTokenAddress: typeof agentQueries.getAgentByTokenAddress | undefined;
+	emitAgentEvent: typeof emitAgentEvent | undefined;
 };
 
 const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
@@ -116,6 +117,7 @@ const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
 	createAgentKey: undefined,
 	elizaCloudClient: undefined,
 	getAgentByTokenAddress: undefined,
+	emitAgentEvent: undefined,
 };
 
 export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
@@ -124,6 +126,25 @@ export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest
 	agentsRouteDepsForTest.createAgentKey = deps.createAgentKey;
 	agentsRouteDepsForTest.elizaCloudClient = deps.elizaCloudClient;
 	agentsRouteDepsForTest.getAgentByTokenAddress = deps.getAgentByTokenAddress;
+	agentsRouteDepsForTest.emitAgentEvent = deps.emitAgentEvent;
+}
+
+// Control-route event emitter. Best-effort by design: pause/kill/resume commit
+// the control-state DB mutation FIRST, then emit a lifecycle event. The event
+// is a downstream notification, not part of the mutation's success contract, so
+// a failure here must NOT turn a committed state change into a 500 (which would
+// make the patron UI show "couldn't pause/resume" for an agent that actually
+// was paused/resumed). We swallow + log emission errors instead of throwing.
+// Overridable in tests so route tests don't reach the real events service.
+async function emitControlEvent(...args: Parameters<typeof emitAgentEvent>): Promise<void> {
+	try {
+		await (agentsRouteDepsForTest.emitAgentEvent ?? emitAgentEvent)(...args);
+	} catch (err) {
+		console.error(
+			`[agents] failed to emit control event ${args[0]?.eventType ?? "unknown"} for ${args[0]?.agentId ?? "unknown"}:`,
+			err instanceof Error ? err.message : err,
+		);
+	}
 }
 
 function slugifyAgentId(name: string): string {
@@ -948,7 +969,7 @@ app.post("/:id/pause", requirePatron(), requireAgentOwnership("id"), async (c) =
 			killedReason: agentPersonas.killedReason,
 		});
 
-	await emitAgentEvent({ agentId, eventType: "agent.paused", data: { scope: "full", reason } });
+	await emitControlEvent({ agentId, eventType: "agent.paused", data: { scope: "full", reason } });
 	return c.json({ ok: true, data: serializeControlState(state ?? agent) });
 });
 
@@ -988,7 +1009,57 @@ app.post("/:id/kill", requirePatron(), requireAgentOwnership("id"), async (c) =>
 			killedReason: agentPersonas.killedReason,
 		});
 
-	await emitAgentEvent({ agentId, eventType: "agent.killed", data: { reason } });
+	await emitControlEvent({ agentId, eventType: "agent.killed", data: { reason } });
+	return c.json({ ok: true, data: serializeControlState(state ?? existing) });
+});
+
+/**
+ * POST /v2/agents/:id/resume
+ *
+ * Patron-scoped break-glass RESUME. Clears the brain + withdrawals pause that
+ * `POST /:id/pause` sets (the patron pause is always "full" scope, so resume is
+ * symmetrically full-scope). A killed agent is permanently dead: resume is a
+ * no-op safety wall (409) so the UI never implies a kill can be undone here.
+ * Mirrors the admin `resumeScopes("full")` path but gated by
+ * requirePatron + requireAgentOwnership instead of the admin token.
+ */
+app.post("/:id/resume", requirePatron(), requireAgentOwnership("id"), async (c) => {
+	const db = requireDb();
+	if (!db) return c.json({ ok: false, error: "DATABASE_UNAVAILABLE" }, 503);
+	const agentId = c.get("patronAgent").agentId;
+	const existing = await readControlState(db, agentId);
+	if (!existing) {
+		return c.json({ ok: false, error: "AGENT_NOT_FOUND", message: `agent ${agentId} not found` }, 404);
+	}
+	if (existing.killedAt) {
+		return c.json(
+			{ ok: false, error: "AGENT_KILLED", message: `agent ${agentId} is permanently killed and cannot be resumed` },
+			409,
+		);
+	}
+
+	const now = new Date();
+	const [state] = await db
+		.update(agentPersonas)
+		.set({
+			brainPausedAt: null,
+			brainPausedReason: null,
+			withdrawalsPausedAt: null,
+			withdrawalsPausedReason: null,
+			updatedAt: now,
+		})
+		.where(eq(agentPersonas.agentId, agentId))
+		.returning({
+			agentId: agentPersonas.agentId,
+			brainPausedAt: agentPersonas.brainPausedAt,
+			brainPausedReason: agentPersonas.brainPausedReason,
+			withdrawalsPausedAt: agentPersonas.withdrawalsPausedAt,
+			withdrawalsPausedReason: agentPersonas.withdrawalsPausedReason,
+			killedAt: agentPersonas.killedAt,
+			killedReason: agentPersonas.killedReason,
+		});
+
+	await emitControlEvent({ agentId, eventType: "agent.resumed", data: { scope: "full" } });
 	return c.json({ ok: true, data: serializeControlState(state ?? existing) });
 });
 
