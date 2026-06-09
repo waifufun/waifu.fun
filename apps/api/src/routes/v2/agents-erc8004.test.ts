@@ -47,6 +47,14 @@ const identity = {
 	updatedAt: new Date("2026-05-24T00:00:00.000Z"),
 };
 
+const otherIdentity = {
+	...identity,
+	id: "f5763003-0b5c-4a70-b73c-6f2db8a6b002",
+	agentAddress: "0x000000000000000000000000000000000000dEaD",
+	agentIdOnchain: "123457",
+	uriHttps: "https://api.waifu.fun/v2/agents/0x000000000000000000000000000000000000dEaD/erc8004.json",
+};
+
 const persona = {
 	agentId: "waifu-sol",
 	tokenAddress: SOL_TOKEN_ADDRESS,
@@ -58,6 +66,12 @@ const persona = {
 	ownerAddress: "0xCF3104986C4ef45326A918A9F7F80DE57953Fc21",
 	launchedAt: new Date("2026-05-24T00:00:00.000Z"),
 	createdAt: new Date("2026-05-24T00:00:00.000Z"),
+};
+
+const otherPersona = {
+	...persona,
+	agentId: "waifu-test",
+	tokenAddress: otherIdentity.agentAddress,
 };
 
 const wallet = {
@@ -86,7 +100,18 @@ describe("GET /:address/identity", () => {
 			txHash: identity.registrationTx,
 			blockNumber: null,
 			registeredAt: "2026-05-24T00:00:00.000Z",
+			firstWaifuAgent: true,
 		});
+	});
+
+	it("does not mark non-Sol identity records as the first waifu agent", async () => {
+		__setErc8004RouteDepsForTest({
+			db: createMockDb({ identity: otherIdentity, persona: otherPersona, wallet }) as never,
+		});
+		const res = await app.request(`/${otherIdentity.agentAddress}/identity`);
+		assert.equal(res.status, 200);
+		const body = (await res.json()) as { data: Record<string, unknown> };
+		assert.equal("firstWaifuAgent" in body.data, false);
 	});
 
 	it("returns 404 for agents without an identity row", async () => {

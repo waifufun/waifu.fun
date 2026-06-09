@@ -37,6 +37,11 @@ describe("isErc8004IdentityRecord", () => {
 		expect(isErc8004IdentityRecord(FIXTURE)).toBe(true);
 	});
 
+	it("accepts the optional first-waifu-agent marker when boolean", () => {
+		expect(isErc8004IdentityRecord({ ...FIXTURE, firstWaifuAgent: true })).toBe(true);
+		expect(isErc8004IdentityRecord({ ...FIXTURE, firstWaifuAgent: false })).toBe(true);
+	});
+
 	it("rejects null/undefined/non-objects", () => {
 		expect(isErc8004IdentityRecord(null)).toBe(false);
 		expect(isErc8004IdentityRecord(undefined)).toBe(false);
@@ -52,6 +57,10 @@ describe("isErc8004IdentityRecord", () => {
 
 	it("rejects records with wrong standard label", () => {
 		expect(isErc8004IdentityRecord({ ...FIXTURE, standard: "erc-8183" })).toBe(false);
+	});
+
+	it("rejects records with a malformed first-waifu-agent marker", () => {
+		expect(isErc8004IdentityRecord({ ...FIXTURE, firstWaifuAgent: "true" })).toBe(false);
 	});
 
 	it("accepts null blockNumber + null metadata mirrors", () => {

@@ -46,7 +46,7 @@ export interface Erc8004IdentityRecord {
 	blockNumber: string | null;
 	/** ISO-8601 timestamp of the registration. */
 	registeredAt: string;
-	/** Subjective ordering hint: lowest waifu tokenId is "first". */
+	/** Waifu.fun provenance hint for the canonical first registered waifu agent. */
 	firstWaifuAgent?: boolean;
 }
 

@@ -2,7 +2,11 @@ import { Hono } from "hono";
 
 import { agentIdentities, agentPersonas, agentWallets, getDatabase } from "@waifufun/db";
 import type { AgentIdentityRow, Database } from "@waifufun/db";
-import { Erc8004MetadataValidationError, buildErc8004RegistrationFile } from "@waifufun/identity";
+import {
+	Erc8004MetadataValidationError,
+	buildErc8004RegistrationFile,
+	isFirstWaifuAgentAddress,
+} from "@waifufun/identity";
 import { and, eq, or, sql } from "drizzle-orm";
 import { getAddress, isAddress } from "viem";
 
@@ -117,6 +121,7 @@ app.get("/:address/identity", async (c) => {
 		if (!ownerWalletAddress || !isAddress(ownerWalletAddress)) {
 			return c.json({ error: "ERC-8004 identity owner wallet not found" }, 404);
 		}
+		const firstWaifuAgent = isFirstWaifuAgentAddress(identity.agentAddress);
 
 		return c.json(
 			{
@@ -133,6 +138,7 @@ app.get("/:address/identity", async (c) => {
 					txHash: identity.registrationTx ?? "",
 					blockNumber: null,
 					registeredAt: isoDate(identity.registeredAt ?? identity.createdAt),
+					...(firstWaifuAgent ? { firstWaifuAgent } : {}),
 				},
 			},
 			200,
