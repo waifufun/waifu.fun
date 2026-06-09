@@ -48,6 +48,16 @@ describe("calibratedQuoteAmtWei", () => {
 });
 
 describe("tierBudget", () => {
+	test("TIER_TEST is cheap curve-only regardless of tax", () => {
+		for (const bps of [0, 300, 1000]) {
+			const b = tierBudget("TIER_TEST", bps);
+			expect(b.presaleCapWei).toBe(100_000_000_000_000_000n);
+			expect(b.quoteAmtWei).toBe(100_000_000_000_000_000n);
+			expect(b.v2BuyBnbWei).toBe(0n);
+			expect(b.vestingEnabled).toBe(false);
+		}
+	});
+
 	test("TIER_80 is curve-only regardless of tax", () => {
 		for (const bps of [0, 300, 500, 1000]) {
 			const b = tierBudget("TIER_80", bps);

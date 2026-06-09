@@ -26,6 +26,16 @@ function calibratedQuoteAmt(buyTaxBps: number): bigint {
 }
 
 export function getLaunchTierConfigSnapshot(tier: LaunchTierString, buyTaxBps = 300): LaunchTierConfigSnapshot {
+	if (BigInt(buyTaxBps) > 1000n) throw new Error(`Invalid tax bps: ${buyTaxBps}`);
+	if (tier === "test") {
+		return {
+			presaleCap: "100000000000000000",
+			quoteAmt: "100000000000000000",
+			v2BuyBnb: "0",
+			vestingEnabled: false,
+		};
+	}
+
 	if (tier === "80") {
 		return {
 			presaleCap: "16000000000000000000",

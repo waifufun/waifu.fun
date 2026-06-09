@@ -62,6 +62,7 @@ const TIER_TREASURY_TICK_LOWERS: Record<LaunchTierString, [number, number, numbe
 	"90": [53600, 62800, 76600, 92000],
 	"95": [53600, 62800, 76600, 92000],
 	"98": [53600, 62800, 76600, 92000],
+	test: [2000, 6000, 10000, 14000],
 };
 function defaultTreasuryTickLowers(tier: LaunchTierString): [number, number, number, number] {
 	return TIER_TREASURY_TICK_LOWERS[tier] ?? TIER_TREASURY_TICK_LOWERS["95"];
