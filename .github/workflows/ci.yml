@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.filter.outputs.api }}
+      contracts: ${{ steps.filter.outputs.contracts }}
       frontend: ${{ steps.filter.outputs.frontend }}
       shared: ${{ steps.filter.outputs.shared }}
     steps:
@@ -74,6 +75,8 @@ jobs:
               - 'packages/rpc/**'
               - 'packages/s3-uploader/**'
               - 'packages/sync/**'
+            contracts:
+              - 'packages/contracts-evm/**'
             frontend:
               - 'apps/frontend/**'
             shared:
@@ -113,7 +116,7 @@ jobs:
         # foundry installed those tests fail with `spawn anvil ENOENT`.
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.3.6
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -140,7 +143,7 @@ jobs:
         # foundry installed those tests fail with `spawn anvil ENOENT`.
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.3.6
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -152,19 +155,12 @@ jobs:
         # plus packages/db, packages/agent-actions, packages/launchpad.
         # Every one of those needs to be in this filter so a breakage
         # anywhere api-flavored fails CI.
-        # contracts-evm added 2026-05-08 (V3 audit C-1): contract tests
-        # were never running in CI. FORK_BSC required so integration
-        # tests fail loudly instead of silently skipping (V3 audit C-2).
+        # contracts-evm stays in this blocking API-area run, but only for
+        # local/non-fork tests. Real BSC fork coverage is isolated below so
+        # archive RPC quota/429s cannot false-red unrelated backend PRs.
         env:
-          # Forked PRs cannot access repository secrets, so only require the
-          # BSC fork suite when the archive RPC secret is actually available.
-          FORK_BSC: ${{ secrets.ALCHEMY_BSC_URL != '' && 'true' || 'false' }}
-          FORK_BSC_URL: ${{ secrets.ALCHEMY_BSC_URL }}
-          # Wave M+N validated against this block (M5 verbose fork run + Nubs sim).
-          # Bump quarterly to stay within Alchemy cache window; FLAP Portal evolves
-          # state-side and old pinned blocks can trigger VanityAddressRequirementNotMet.
-          FORK_BSC_BLOCK: "99073955"
-          REQUIRE_BSC_FORK: ${{ secrets.ALCHEMY_BSC_URL != '' && 'true' || 'false' }}
+          FORK_BSC: "false"
+          REQUIRE_BSC_FORK: "false"
         run: >-
           bunx turbo run test build
           --filter='@waifufun/api...'
@@ -180,6 +176,44 @@ jobs:
           --filter='@waifufun/db...'
           --filter='@waifufun/launchpad...'
           --filter='@waifufun/contracts-evm...'
+
+  contracts-fork:
+    name: Contracts BSC Fork Integration (advisory)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shared == 'true'
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      - name: Setup Foundry
+        # several packages spawn `anvil` to mock BSC fork tests; without
+        # foundry installed those tests fail with `spawn anvil ENOENT`.
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: BSC fork integration tests
+        # Prefer BSC_FORK_RPC_URL (set this to the NodeReal/paid archive RPC)
+        # and fall back to the legacy Alchemy secret until it is provisioned.
+        env:
+          FORK_BSC: ${{ (secrets.BSC_FORK_RPC_URL != '' || secrets.ALCHEMY_BSC_URL != '') && 'true' || 'false' }}
+          FORK_BSC_URL: ${{ secrets.BSC_FORK_RPC_URL || secrets.ALCHEMY_BSC_URL }}
+          # Wave M+N validated against this block (M5 verbose fork run + Nubs sim).
+          # Bump quarterly to stay within provider cache windows; FLAP Portal evolves
+          # state-side and old pinned blocks can trigger VanityAddressRequirementNotMet.
+          FORK_BSC_BLOCK: "99073955"
+          REQUIRE_BSC_FORK: ${{ (secrets.BSC_FORK_RPC_URL != '' || secrets.ALCHEMY_BSC_URL != '') && 'true' || 'false' }}
+        run: bun run --filter @waifufun/contracts-evm test
 
   frontend:
     name: Frontend Test & Build
@@ -200,7 +234,7 @@ jobs:
         # foundry installed those tests fail with `spawn anvil ENOENT`.
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.3.6
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
