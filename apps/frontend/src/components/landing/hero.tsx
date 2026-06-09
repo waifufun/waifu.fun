@@ -183,17 +183,17 @@ export default function Hero() {
 					</RevealLine>
 				</div>
 
-				{/* Subtitle: lead with the permissionless-cloud default */}
+				{/* Subtitle: one tight line, lead with the idea not the feature list */}
 				<motion.p
 					className="mt-8 text-lg text-[#a1a1aa] max-w-xl leading-relaxed"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
 				>
-					{t("hero.subtitleLead")} <span className="text-[#71717a]">{t("hero.subtitleBody")}</span>
+					<span className="text-[#d4d4d8]">{t("hero.subtitleLead")}</span> {t("hero.subtitleBody")}
 				</motion.p>
 
-				{/* CTAs: primary = permissionless launch, secondary = curated/BYO */}
+				{/* CTAs: primary = launch, secondary = browse */}
 				<motion.div
 					className="mt-8 flex flex-col sm:flex-row items-center gap-3"
 					initial={{ opacity: 0, y: 16 }}
@@ -208,7 +208,7 @@ export default function Hero() {
 					</MagneticButton>
 				</motion.div>
 
-				{/* Secondary, clearly-labeled curated / bring-your-own lane */}
+				{/* One muted secondary line: invite-only + bring-your-own, collapsed */}
 				<motion.div
 					className="mt-4"
 					initial={{ opacity: 0 }}
@@ -222,16 +222,6 @@ export default function Hero() {
 						{t("hero.curatedLane")} →
 					</a>
 				</motion.div>
-
-				{/* Invite-only line */}
-				<motion.p
-					className="mt-4 text-[10px] font-mono uppercase tracking-[0.2em] text-[#52525b]"
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ duration: 0.6, delay: 0.9 }}
-				>
-					{t("hero.inviteOnly")}
-				</motion.p>
 
 				{/* Partner rail */}
 				<motion.div
