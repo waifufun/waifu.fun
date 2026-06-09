@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 /**
@@ -62,6 +62,18 @@ export type AgentRuntimeDetail = {
 	eventsPullEndpoint?: string | null;
 };
 
+/**
+ * Patron-facing break-glass control state, surfaced verbatim from the API
+ * `state` object (`@waifufun/db` AgentPublicState). The EmergencyControls
+ * panel reads these to decide pause-vs-resume and to lock out a killed agent.
+ */
+export type AgentControlState = {
+	brainPaused: boolean;
+	withdrawalsPaused: boolean;
+	killed: boolean;
+	killedAt: string | null;
+};
+
 export type AgentDetail = PatronAgent & {
 	description?: string | null;
 	bio?: string | null;
@@ -73,6 +85,8 @@ export type AgentDetail = PatronAgent & {
 	tokenAddress?: string | null;
 	runtimeKind?: AgentRuntimeKind;
 	runtime?: AgentRuntimeDetail | null;
+	/** Raw control state from the API; defaults to all-false when absent. */
+	controlState?: AgentControlState | undefined;
 };
 
 export type AgentAdapter = {
@@ -202,6 +216,12 @@ export function normalizeAgentDetail(raw: unknown): AgentDetail {
 		tokenAddress: str(r.tokenAddress) ?? null,
 		...(runtime ? { runtimeKind: runtime.kind } : {}),
 		runtime,
+		controlState: {
+			brainPaused: state?.brainPaused === true,
+			withdrawalsPaused: state?.withdrawalsPaused === true,
+			killed: state?.killed === true,
+			killedAt: str(state?.killedAt) ?? null,
+		},
 	};
 }
 
@@ -342,6 +362,68 @@ export function useResurrectAgent(agentId?: string) {
 			});
 		},
 	});
+}
+
+/**
+ * Patron break-glass emergency controls. Each maps 1:1 to a patron-scoped,
+ * ownership-gated mutation on the v2 API:
+ *
+ *   pause  → POST /v2/agents/:id/pause   (halts brain + freezes withdrawals)
+ *   resume → POST /v2/agents/:id/resume  (clears the pause above)
+ *   kill   → POST /v2/agents/:id/kill    (permanent, irreversible)
+ *
+ * Auth is the standard apiFetch path (Steward bearer + wf_session cookie).
+ * On success we invalidate the agent-detail + events queries so the UI
+ * reflects the new control state and the new lifecycle event immediately.
+ *
+ * NOTE: there is deliberately no "freeze withdrawals only" hook. The API has
+ * no patron-scoped withdrawals-only route — `/pause` always pauses both brain
+ * AND withdrawals. The EmergencyControls UI reflects this honestly rather than
+ * faking a partial control.
+ */
+export type AgentControlResult = {
+	ok: boolean;
+	data?: {
+		brainPaused: boolean;
+		withdrawalsPaused: boolean;
+		killed: boolean;
+		killedAt: string | null;
+	};
+};
+
+export type AgentControlAction = "pause" | "resume" | "kill";
+
+type AgentControlVars = { reason?: string } | undefined;
+
+function useAgentControlMutation(action: AgentControlAction, agentId?: string) {
+	const qc = useQueryClient();
+	return useMutation<AgentControlResult, ApiError, AgentControlVars>({
+		mutationFn: async (vars) => {
+			if (!agentId) throw { status: 0, message: "missing agentId" } as ApiError;
+			const reason = vars?.reason;
+			return apiFetch<AgentControlResult>(`/v2/agents/${encodeURIComponent(agentId)}/${action}`, {
+				method: "POST",
+				body: JSON.stringify(reason ? { reason } : {}),
+			});
+		},
+		onSuccess: () => {
+			if (!agentId) return;
+			void qc.invalidateQueries({ queryKey: ["patron-agent", agentId] });
+			void qc.invalidateQueries({ queryKey: ["patron-agent-events", agentId] });
+		},
+	});
+}
+
+export function usePauseAgent(agentId?: string) {
+	return useAgentControlMutation("pause", agentId);
+}
+
+export function useResumeAgent(agentId?: string) {
+	return useAgentControlMutation("resume", agentId);
+}
+
+export function useKillAgent(agentId?: string) {
+	return useAgentControlMutation("kill", agentId);
 }
 
 export function formatUsd(value: number | undefined | null): string {
