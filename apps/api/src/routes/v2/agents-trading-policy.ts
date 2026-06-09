@@ -117,9 +117,12 @@ app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), asy
 		return c.json({ ok: false, error: "INVALID_BODY", message: "caps object required" }, 400);
 	}
 
-	const caps = sanitizeCaps(body as Record<string, unknown>);
+	const parsed = sanitizeCaps(body as Record<string, unknown>);
+	if (!parsed.ok) {
+		return c.json({ ok: false, error: "INVALID_CAP", message: parsed.message }, 400);
+	}
 	try {
-		const policy = await resolved.client.putPolicy(resolved.stewardAgentId, caps);
+		const policy = await resolved.client.putPolicy(resolved.stewardAgentId, parsed.caps);
 		return c.json({ ok: true, policy });
 	} catch (err) {
 		return stewardErrorResponse(c, err);
@@ -172,12 +175,25 @@ app.put("/:id/trading-policies", requirePatron(), requireAgentOwnership("id"), a
 
 // ── input sanitisation ──
 
-function toFiniteNumberOrNull(value: unknown): number | null | undefined {
-	if (value === undefined) return undefined;
-	if (value === null) return null;
-	const n = typeof value === "number" ? value : Number(value);
-	if (!Number.isFinite(n) || n < 0) return undefined;
-	return n;
+function parseCap(
+	input: Record<string, unknown>,
+	key: "dailyCap" | "perOrderCap" | "leverageCap",
+): { ok: true; value: number | null | undefined } | { ok: false; message: string } {
+	const value = input[key];
+	if (value === undefined) return { ok: true, value: undefined };
+	if (value === null) return { ok: true, value: null };
+	if (typeof value !== "number" && typeof value !== "string") {
+		return { ok: false, message: `${key} must be a non-negative number or null` };
+	}
+	const trimmed = typeof value === "string" ? value.trim() : value;
+	if (trimmed === "") {
+		return { ok: false, message: `${key} must be a non-negative number or null` };
+	}
+	const n = typeof trimmed === "number" ? trimmed : Number(trimmed);
+	if (!Number.isFinite(n) || n < 0) {
+		return { ok: false, message: `${key} must be a non-negative number or null` };
+	}
+	return { ok: true, value: n };
 }
 
 function toStringArray(value: unknown): string[] | undefined {
@@ -189,19 +205,24 @@ function toStringArray(value: unknown): string[] | undefined {
 	return out;
 }
 
-function sanitizeCaps(input: Record<string, unknown>): StewardPolicyCaps {
+function sanitizeCaps(
+	input: Record<string, unknown>,
+): { ok: true; caps: StewardPolicyCaps } | { ok: false; message: string } {
 	const caps: StewardPolicyCaps = {};
-	const daily = toFiniteNumberOrNull(input.dailyCap);
-	if (daily !== undefined) caps.dailyCap = daily;
-	const perOrder = toFiniteNumberOrNull(input.perOrderCap);
-	if (perOrder !== undefined) caps.perOrderCap = perOrder;
-	const leverage = toFiniteNumberOrNull(input.leverageCap);
-	if (leverage !== undefined) caps.leverageCap = leverage;
+	const daily = parseCap(input, "dailyCap");
+	if (!daily.ok) return daily;
+	if (daily.value !== undefined) caps.dailyCap = daily.value;
+	const perOrder = parseCap(input, "perOrderCap");
+	if (!perOrder.ok) return perOrder;
+	if (perOrder.value !== undefined) caps.perOrderCap = perOrder.value;
+	const leverage = parseCap(input, "leverageCap");
+	if (!leverage.ok) return leverage;
+	if (leverage.value !== undefined) caps.leverageCap = leverage.value;
 	const assets = toStringArray(input.allowedAssets);
 	if (assets !== undefined) caps.allowedAssets = assets;
 	const venues = toStringArray(input.allowedVenues);
 	if (venues !== undefined) caps.allowedVenues = venues;
-	return caps;
+	return { ok: true, caps };
 }
 
 function sanitizeRules(input: unknown[]): StewardPolicyRule[] | null {
