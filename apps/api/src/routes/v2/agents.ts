@@ -316,8 +316,11 @@ function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifu
 }
 
 function defaultHostedModelSettings(): Record<string, string> {
+	// Flip all hosted waifu model tiers with WAIFU_ELIZA_DEFAULT_MODEL.
+	// BitRouter-verified interim default: anthropic/claude-haiku-4.5.
+	// Frontier-open targets to re-test once routed: moonshotai/kimi-k2.6, z-ai/glm-5.1, deepseek/deepseek-v4-pro.
 	const model =
-		process.env.WAIFU_ELIZA_DEFAULT_MODEL ?? process.env.ELIZAOS_CLOUD_DEFAULT_MODEL ?? "openai/gpt-oss-120b";
+		process.env.WAIFU_ELIZA_DEFAULT_MODEL ?? process.env.ELIZAOS_CLOUD_DEFAULT_MODEL ?? "anthropic/claude-haiku-4.5";
 	return {
 		ELIZAOS_CLOUD_NANO_MODEL: model,
 		ELIZAOS_CLOUD_SMALL_MODEL: model,
