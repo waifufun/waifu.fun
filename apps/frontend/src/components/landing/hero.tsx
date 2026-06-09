@@ -183,29 +183,44 @@ export default function Hero() {
 					</RevealLine>
 				</div>
 
-				{/* Subtitle */}
+				{/* Subtitle: lead with the permissionless-cloud default */}
 				<motion.p
-					className="mt-8 text-lg text-[#71717a] max-w-md leading-relaxed"
+					className="mt-8 text-lg text-[#a1a1aa] max-w-xl leading-relaxed"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
 				>
-					{t("hero.notChatbots")} <span className="text-[#a1a1aa]">{t("hero.economicActors")}</span>
+					{t("hero.subtitleLead")} <span className="text-[#71717a]">{t("hero.subtitleBody")}</span>
 				</motion.p>
 
-				{/* CTAs */}
+				{/* CTAs: primary = permissionless launch, secondary = curated/BYO */}
 				<motion.div
 					className="mt-8 flex flex-col sm:flex-row items-center gap-3"
 					initial={{ opacity: 0, y: 16 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.75, ease: EASE }}
 				>
-					<MagneticButton href="/give-skill" variant="primary">
-						{t("hero.giveSkill")}
+					<MagneticButton href="/create/wizard" variant="primary">
+						{t("hero.launchAgent")}
 					</MagneticButton>
 					<MagneticButton href="/agents" variant="ghost">
 						{t("hero.browseAgents")}
 					</MagneticButton>
+				</motion.div>
+
+				{/* Secondary, clearly-labeled curated / bring-your-own lane */}
+				<motion.div
+					className="mt-4"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 0.6, delay: 0.85 }}
+				>
+					<a
+						href="/give-skill"
+						className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#52525b] hover:text-[#a1a1aa] transition-colors duration-200"
+					>
+						{t("hero.curatedLane")} →
+					</a>
 				</motion.div>
 
 				{/* Invite-only line */}
