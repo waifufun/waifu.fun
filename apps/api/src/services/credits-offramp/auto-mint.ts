@@ -25,7 +25,7 @@
  *   - Global kill-switch: CREDITS_OFFRAMP_AUTO_ENABLED must be true + no pause file.
  *   - Per-tx cap (MAX_AUTO_CREDITS_USD_PER_TX) and per-day cap
  *     (MAX_AUTO_CREDITS_USD_PER_DAY), tracked via the credit_offramp_mints ledger.
- *   - Idempotency: unique index on deposit_tx_hash + ON CONFLICT DO NOTHING.
+ *   - Idempotency: active unique index on deposit_tx_hash + ON CONFLICT DO NOTHING.
  *   - Every decision (minted, capped, killed, skipped, failed) is audited.
  */
 
@@ -53,11 +53,11 @@ import {
  */
 export interface MintLedger {
 	sumSpentTodayUsd(now: Date): Promise<number>;
-	/** True only if an in-flight (pending) or successful (credited) row exists. */
+	/** True if an in-flight, successful, or ambiguous provider-attempted row exists. */
 	hasActiveDeposit(depositTxHash: string): Promise<boolean>;
 	/** Claim the active-mint slot (partial-unique pending row). Null if lost. */
 	claimPendingMint(input: RecordMintInput): Promise<string | null>;
-	/** Append a non-blocking refusal/failure audit row (retry-eligible). */
+	/** Append a non-blocking pre-provider refusal audit row (retry-eligible). */
 	recordAudit(input: RecordMintInput): Promise<void>;
 	markCredited(
 		id: string,
@@ -219,9 +219,9 @@ export class CreditsAutoMinter {
 	): Promise<AutoMintResultRow> {
 		const depositTxHash = candidate.depositTxHash.toLowerCase();
 
-		// Idempotency precheck: only an in-flight (pending) or successful (credited)
-		// row blocks. Prior refusal/failure rows do NOT — the deposit stays retryable
-		// (the partial unique index is the hard guarantee on the claim below).
+		// Idempotency precheck: provider-attempted rows block. Prior pre-provider
+		// refusal rows do NOT, so killed/capped/skipped deposits stay retryable.
+		// The partial unique index is the hard guarantee on the claim below.
 		if (await this.ledger.hasActiveDeposit(depositTxHash)) {
 			return this.row(candidate, null, "duplicate");
 		}
@@ -318,8 +318,9 @@ export class CreditsAutoMinter {
 					...(result.creditsAdded != null ? { creditsAdded: result.creditsAdded } : {}),
 				});
 			}
-			// convert() returned manual instructions (not automatable) — mark failed
-			// so it's retried once auth is configured, with a clear reason.
+			// This should be unreachable because the automatable gate runs before
+			// claim. If it happens after claim, keep the idempotency slot instead of
+			// risking an automatic replay with a fresh payment id.
 			await this.ledger.markFailed(id, result.reason);
 			return this.row(candidate, usd, "failed", result.reason);
 		} catch (err) {

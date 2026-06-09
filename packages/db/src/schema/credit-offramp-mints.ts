@@ -4,11 +4,11 @@
  * Every auto-mint attempt (detected BSC deposit -> directWallet create+confirm ->
  * Eliza Cloud org credits) writes a row here. The table is the single source of
  * truth for:
- *   - IDEMPOTENCY: a unique constraint on `deposit_tx_hash` guarantees a given
- *     on-chain deposit can never double-mint, even across watcher restarts /
- *     concurrent ticks.
+ *   - IDEMPOTENCY: a unique constraint on active `deposit_tx_hash` rows
+ *     guarantees a given on-chain deposit can never double-mint, even across
+ *     watcher restarts / concurrent ticks / ambiguous provider failures.
  *   - DAILY SPEND CAP: the watcher sums `usd_amount` for rows in the current UTC
- *     day with a credited/pending status to enforce MAX_AUTO_CREDITS_USD_PER_DAY.
+ *     day with a credited/pending/failed status to enforce MAX_AUTO_CREDITS_USD_PER_DAY.
  *   - AUDIT: amount, tx hashes, resulting balance, and terminal status for every
  *     auto-mint, plus the rows that were `capped` (refused for exceeding a limit)
  *     so the decision is legible after the fact.
@@ -73,15 +73,15 @@ export const creditOfframpMints = pgTable(
 		confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
 	},
 	(table) => ({
-		// Idempotency: at most ONE in-flight (pending) or successful (credited) row
-		// per originating deposit, hard-enforced by a PARTIAL unique index. Refusal /
-		// failure rows (capped/killed/skipped/failed) are intentionally NOT covered,
-		// so a deposit that was paused by the kill-switch, skipped on a transient
-		// price outage, or failed mid-convert can be RETRIED on a later tick without
-		// being mistaken for a completed mint. (See 0041 migration for the WHERE.)
+		// Idempotency: at most ONE provider-attempted row per originating deposit,
+		// hard-enforced by a PARTIAL unique index. `failed` remains covered because
+		// create+confirm may have reached Eliza Cloud before the local error was
+		// observed; retrying with a fresh payment id can double-credit the shared
+		// org pool. Pre-provider refusals (capped/killed/skipped) stay outside the
+		// index so they can be retried when limits/configuration change.
 		uniqueActiveDeposit: uniqueIndex("credit_offramp_mints_active_deposit_unique")
 			.on(table.depositTxHash)
-			.where(sql`${table.status} IN ('pending', 'credited')`),
+			.where(sql`${table.status} IN ('pending', 'credited', 'failed')`),
 		byDepositTxHash: index("credit_offramp_mints_by_deposit_tx_hash").on(table.depositTxHash),
 		byCreatedAt: index("credit_offramp_mints_by_created_at").on(table.createdAt),
 		byStatus: index("credit_offramp_mints_by_status").on(table.status),

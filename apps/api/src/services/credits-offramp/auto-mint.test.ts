@@ -71,15 +71,16 @@ function mockEliza(
 
 /**
  * In-memory ledger modelling the PARTIAL unique index: at most one
- * pending/credited row per deposit hash, but refusal/failure rows may coexist
- * (so a deposit stays retryable). Rows are a list keyed by id.
+ * pending/credited/failed row per deposit hash, while pre-provider refusal rows
+ * may coexist so a deposit stays retryable until a provider attempt is made.
  */
 function memLedger(initialSpentToday = 0) {
 	const rows = new Map<string, { id: string; txHash: string; status: string; usd: number }>();
 	let n = 0;
 	const activeFor = (hash: string) =>
 		[...rows.values()].find(
-			(r) => r.txHash === hash.toLowerCase() && (r.status === "pending" || r.status === "credited"),
+			(r) =>
+				r.txHash === hash.toLowerCase() && (r.status === "pending" || r.status === "credited" || r.status === "failed"),
 		);
 	const statusFor = (hash: string): string | undefined =>
 		[...rows.values()].filter((r) => r.txHash === hash.toLowerCase()).at(-1)?.status;
@@ -89,7 +90,8 @@ function memLedger(initialSpentToday = 0) {
 		statusFor,
 		sumSpentTodayUsd: async () => {
 			let total = initialSpentToday;
-			for (const r of rows.values()) if (r.status === "credited" || r.status === "pending") total += r.usd;
+			for (const r of rows.values())
+				if (r.status === "credited" || r.status === "pending" || r.status === "failed") total += r.usd;
 			return total;
 		},
 		hasActiveDeposit: async (hash) => Boolean(activeFor(hash)),
@@ -274,7 +276,7 @@ test("not automatable -> skipped, no mint", async () => {
 	assert.equal(eliza.calls.create, 0);
 });
 
-test("confirm failure -> marked failed, audited (retryable)", async () => {
+test("confirm failure -> marked failed and keeps the idempotency claim", async () => {
 	const eliza = mockEliza({ throwOnConfirm: true });
 	const ledger = memLedger();
 	const hash = `0x${"1".repeat(64)}`;
@@ -285,19 +287,40 @@ test("confirm failure -> marked failed, audited (retryable)", async () => {
 	assert.equal(ledger.statusFor(hash), "failed");
 });
 
-test("retryable: a failed deposit is re-attempted on a later tick (not stuck as duplicate)", async () => {
+test("idempotency: a failed provider attempt is not re-attempted with a fresh payment", async () => {
 	const ledger = memLedger();
 	const hash = `0x${"7".repeat(64)}`;
-	// First tick: confirm throws -> failed (retryable).
+	// First tick: create+confirm was attempted and confirm threw. The provider may
+	// still have accepted the tx before the local response was lost.
 	const elizaFail = mockEliza({ throwOnConfirm: true });
 	await build(elizaFail, ledger, [candidate(hash, 0.01)]).tick(limits());
 	assert.equal(ledger.statusFor(hash), "failed");
-	// Second tick with a healthy client: the failed deposit is retried + minted.
+	// Second tick with a healthy client: the same deposit is treated as already
+	// provider-attempted instead of minting against a fresh payment id.
 	const elizaOk = mockEliza();
 	const s = await build(elizaOk, ledger, [candidate(hash, 0.01)]).tick(limits());
-	assert.equal(s.credited, 1);
-	assert.equal(elizaOk.calls.create, 1);
-	assert.equal(ledger.statusFor(hash), "credited");
+	assert.equal(s.duplicate, 1);
+	assert.equal(s.credited, 0);
+	assert.equal(elizaOk.calls.create, 0);
+	assert.equal(ledger.statusFor(hash), "failed");
+});
+
+test("daily cap counts failed provider attempts as reserved spend", async () => {
+	const ledger = memLedger();
+	const failedHash = `0x${"a".repeat(64)}`;
+	const nextHash = `0x${"b".repeat(64)}`;
+
+	await build(mockEliza({ throwOnConfirm: true }), ledger, [candidate(failedHash, 0.01)]).tick(
+		limits({ maxPerDayUsd: 10 }),
+	);
+	assert.equal(ledger.statusFor(failedHash), "failed");
+
+	const elizaOk = mockEliza();
+	const s = await build(elizaOk, ledger, [candidate(nextHash, 0.01)]).tick(limits({ maxPerDayUsd: 10 }));
+	assert.equal(s.capped, 1);
+	assert.equal(s.credited, 0);
+	assert.equal(elizaOk.calls.create, 0);
+	assert.equal(ledger.statusFor(nextHash), "capped");
 });
 
 test("retryable: a kill-switched deposit mints once the switch is re-enabled", async () => {
