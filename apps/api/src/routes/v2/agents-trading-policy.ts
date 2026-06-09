@@ -103,10 +103,38 @@ app.get("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), asy
 	}
 });
 
-app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), async (c) => {
-	const resolved = await getStewardForAgent(c);
-	if (!resolved) return c.json({ ok: false, error: "STEWARD_NOT_CONFIGURED" }, 503);
+/** Result of the shared trading-policy update handler (status + JSON body). */
+export type TradingPolicyHandlerResult = { status: number; body: unknown };
 
+/**
+ * Core trading-policy update handler, factored out of the PUT route closure so
+ * BOTH the bespoke PUT /:id/trading-policy route AND the generic capability
+ * action dispatcher can delegate to the SAME Steward-proxy logic. Body must be
+ * an already-parsed caps object. This is a `server_job`-class action today
+ * (forwards to Steward), so the generic dispatcher only reaches it once that
+ * mode is enabled — the bespoke route stays the live path.
+ */
+export async function runTradingPolicyUpdate(
+	c: Context<RequireAgentOwnershipBindings>,
+	body: Record<string, unknown>,
+): Promise<TradingPolicyHandlerResult> {
+	const resolved = await getStewardForAgent(c);
+	if (!resolved) return { status: 503, body: { ok: false, error: "STEWARD_NOT_CONFIGURED" } };
+
+	const parsed = sanitizeCaps(body);
+	if (!parsed.ok) {
+		return { status: 400, body: { ok: false, error: "INVALID_CAP", message: parsed.message } };
+	}
+	try {
+		const policy = await resolved.client.putPolicy(resolved.stewardAgentId, parsed.caps);
+		return { status: 200, body: { ok: true, policy } };
+	} catch (err) {
+		const res = stewardErrorResponse(c, err);
+		return { status: res.status, body: await res.json() };
+	}
+}
+
+app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), async (c) => {
 	let body: unknown;
 	try {
 		body = await c.req.json();
@@ -117,16 +145,8 @@ app.put("/:id/trading-policy", requirePatron(), requireAgentOwnership("id"), asy
 		return c.json({ ok: false, error: "INVALID_BODY", message: "caps object required" }, 400);
 	}
 
-	const parsed = sanitizeCaps(body as Record<string, unknown>);
-	if (!parsed.ok) {
-		return c.json({ ok: false, error: "INVALID_CAP", message: parsed.message }, 400);
-	}
-	try {
-		const policy = await resolved.client.putPolicy(resolved.stewardAgentId, parsed.caps);
-		return c.json({ ok: true, policy });
-	} catch (err) {
-		return stewardErrorResponse(c, err);
-	}
+	const result = await runTradingPolicyUpdate(c, body as Record<string, unknown>);
+	return c.json(result.body as Record<string, unknown>, result.status as 200);
 });
 
 // ── rules: includes the approved-addresses withdraw whitelist ──
