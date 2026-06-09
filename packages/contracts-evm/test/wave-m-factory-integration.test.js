@@ -20,16 +20,18 @@ const SAFE_ABI = [
 	"function isModuleEnabled(address module) view returns (bool)",
 ];
 
+const DEFAULT_ALLOWED_TARGET = "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997";
+
 const ROLES_ABI = [
 	"function memberOf(address module,bytes32 role) view returns (bool)",
 	"function scopedFunction(bytes32 role,address target,bytes4 selector) view returns (bool)",
 	"function assignRoles(address module,bytes32[] roleKeys,bool[] memberOf)",
-	"function scopeFunction(bytes32 roleKey,address targetAddress,bytes4 functionSig,uint8[] options,bytes conditions,uint8 executionOptions)",
+	"function scopeFunction(bytes32 roleKey,address targetAddress,bytes4 functionSig,(uint8 parent,uint8 paramType,uint8 operator,bytes compValue)[] conditions,uint8 executionOptions)",
 	"function execTransactionWithRole(address to,uint256 value,bytes data,uint8 operation,bytes32 role,bool shouldRevert) returns (bool)",
 	"error NotAllowed()",
 ];
 
-const CLAIM_REWARDS_SELECTOR = "0x372500ab";
+const CLAIM_REWARDS_SELECTOR = "0xc6a5026a";
 const WITHDRAW_FUNDS_SELECTOR = "0xb60d4288";
 const SENTINEL_MODULES = "0x0000000000000000000000000000000000000001";
 
@@ -91,13 +93,20 @@ async function deployStack() {
 	const RolesFactoryCF = await ethers.getContractFactory("MockRolesModuleFactory");
 	const rolesFactory = await RolesFactoryCF.deploy();
 	const ActionTargetCF = await ethers.getContractFactory("MockAgentActionTarget");
-	const actionTarget = await ActionTargetCF.deploy();
+	const actionTargetImpl = await ActionTargetCF.deploy();
+	await ethers.provider.send("hardhat_setCode", [
+		DEFAULT_ALLOWED_TARGET,
+		await ethers.provider.getCode(await actionTargetImpl.getAddress()),
+	]);
+	const actionTarget = await ethers.getContractAt("MockAgentActionTarget", DEFAULT_ALLOWED_TARGET);
+	await ethers.provider.send("hardhat_setStorageAt", [DEFAULT_ALLOWED_TARGET, "0x0", "0x" + "00".repeat(32)]);
+	await ethers.provider.send("hardhat_setStorageAt", [DEFAULT_ALLOWED_TARGET, "0x1", "0x" + "00".repeat(32)]);
 	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeZodiacDeployer");
 	const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
 		await safeSingleton.getAddress(),
 		await safeProxyFactory.getAddress(),
 		await rolesFactory.getAddress(),
-		await actionTarget.getAddress(),
+		DEFAULT_ALLOWED_TARGET,
 	);
 
 	// Platform receiver doubles as platformCommissionReceiver immutable.
@@ -248,10 +257,9 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 				rolesInterface.encodeFunctionData("assignRoles", [ctx.bundleBot.address, [agentRole], [true]]),
 				rolesInterface.encodeFunctionData("scopeFunction", [
 					agentRole,
-					await ctx.actionTarget.getAddress(),
+					DEFAULT_ALLOWED_TARGET,
 					CLAIM_REWARDS_SELECTOR,
-					[1],
-					"0x",
+					[],
 					0,
 				]),
 			];
@@ -273,18 +281,18 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 			const rolesRead = new ethers.Contract(rolesAddress, ROLES_ABI, ethers.provider);
 			expect(await rolesRead.memberOf(ctx.bundleBot.address, agentRole)).to.equal(true);
 			expect(
-				await rolesRead.scopedFunction(agentRole, await ctx.actionTarget.getAddress(), CLAIM_REWARDS_SELECTOR),
+				await rolesRead.scopedFunction(agentRole, DEFAULT_ALLOWED_TARGET, CLAIM_REWARDS_SELECTOR),
 			).to.equal(true);
 			expect(
-				await rolesRead.scopedFunction(agentRole, await ctx.actionTarget.getAddress(), WITHDRAW_FUNDS_SELECTOR),
+				await rolesRead.scopedFunction(agentRole, DEFAULT_ALLOWED_TARGET, WITHDRAW_FUNDS_SELECTOR),
 			).to.equal(false);
 
 			const rolesAsAgent = new ethers.Contract(rolesAddress, ROLES_ABI, ctx.bundleBot);
 			await expect(
 				rolesAsAgent.execTransactionWithRole(
-					await ctx.actionTarget.getAddress(),
+					DEFAULT_ALLOWED_TARGET,
 					0,
-					ctx.actionTarget.interface.encodeFunctionData("claimRewards"),
+					CLAIM_REWARDS_SELECTOR,
 					0,
 					agentRole,
 					true,
@@ -294,7 +302,7 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 
 			await expect(
 				rolesAsAgent.execTransactionWithRole(
-					await ctx.actionTarget.getAddress(),
+					DEFAULT_ALLOWED_TARGET,
 					0,
 					ctx.actionTarget.interface.encodeFunctionData("withdrawFunds"),
 					0,

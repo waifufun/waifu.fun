@@ -125,11 +125,6 @@ export function buildZodiacRolesV2Config(input: BuildZodiacRolesV2ConfigInput): 
 			...permission.allowanceCalls,
 			encodeFunctionData({
 				abi: ZODIAC_ROLES_V2_ABI,
-				functionName: "scopeTarget",
-				args: [roleKey, permission.target],
-			}),
-			encodeFunctionData({
-				abi: ZODIAC_ROLES_V2_ABI,
 				functionName: "scopeFunction",
 				args: [
 					roleKey,
@@ -171,17 +166,17 @@ function collectPermissions(
 			for (const permission of action.permissions) {
 				if (policy === "default" && (permission.tier ?? "default") !== "default") continue;
 				for (const selector of permission.selectors) {
-					out.push(
-						encodePermission(
-							spec.slug,
-							actionName,
-							permission,
-							selector,
-							executionOptions,
-							roleKey,
-							nativeValueConditionChecker,
-						),
+					const encoded = encodePermission(
+						spec.slug,
+						actionName,
+						permission,
+						selector,
+						executionOptions,
+						roleKey,
+						nativeValueConditionChecker,
 					);
+					if (policy === "default" && encoded.executionOptions !== ZodiacRolesV2ExecutionOptions.None) continue;
+					out.push(encoded);
 				}
 			}
 		}

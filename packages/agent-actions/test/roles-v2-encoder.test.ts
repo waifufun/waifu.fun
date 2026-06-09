@@ -25,16 +25,16 @@ describe("Zodiac Roles v2 encoder", () => {
 			module: MODULE,
 		});
 
-		expect(config.calls.length).toBe(25);
+		expect(config.calls.length).toBe(12);
 		expect(config.permissions[0]).toMatchObject({
 			adapterSlug: "pancakeswap-v3",
 			actionName: "quote",
 			selector: "0xc6a5026a",
 		});
-		expect(config.permissions).toHaveLength(12);
+		expect(config.permissions).toHaveLength(11);
 		expect(
 			config.permissions.some((permission) => permission.executionOptions === ZodiacRolesV2ExecutionOptions.Send),
-		).toBe(true);
+		).toBe(false);
 		expect(config.permissions.find((permission) => permission.selector === "0xc6a5026a")?.executionOptions).toBe(
 			ZodiacRolesV2ExecutionOptions.None,
 		);
@@ -43,11 +43,7 @@ describe("Zodiac Roles v2 encoder", () => {
 		expect(assign.functionName).toBe("assignRoles");
 		expect(assign.args).toEqual([AGENT, [ROLE_KEY], [true]]);
 
-		const firstScopeTarget = decodeFunctionData({ abi: ZODIAC_ROLES_V2_ABI, data: config.calls[1] });
-		expect(firstScopeTarget.functionName).toBe("scopeTarget");
-		expect(firstScopeTarget.args[0]).toBe(ROLE_KEY);
-
-		const firstScopeFunction = decodeFunctionData({ abi: ZODIAC_ROLES_V2_ABI, data: config.calls[2] });
+		const firstScopeFunction = decodeFunctionData({ abi: ZODIAC_ROLES_V2_ABI, data: config.calls[1] });
 		expect(firstScopeFunction.functionName).toBe("scopeFunction");
 		expect(firstScopeFunction.args[2]).toBe("0xc6a5026a");
 		expect(firstScopeFunction.args[3]).toEqual([]);
@@ -137,6 +133,7 @@ describe("Zodiac Roles v2 encoder value caps", () => {
 			roleKey: ROLE_KEY,
 			agent: AGENT,
 			module: MODULE,
+			policy: "all",
 			nativeValueConditionChecker: NATIVE_VALUE_CHECKER,
 		});
 		expect(config.permissions[0].conditions).toHaveLength(3);
@@ -207,6 +204,7 @@ describe("Zodiac Roles v2 encoder value caps", () => {
 			roleKey: ROLE_KEY,
 			agent: AGENT,
 			module: MODULE,
+			policy: "all",
 			nativeValueConditionChecker: NATIVE_VALUE_CHECKER,
 		});
 

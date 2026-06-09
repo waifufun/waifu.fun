@@ -266,7 +266,12 @@ contract LaunchFactory is ReentrancyGuard {
         uint256 rolesSaltNonce =
             uint256(keccak256(abi.encode("AGENT_SAFE_ROLES", config.creator, config.vanitySalt)));
         (address agentSafe, ) = AGENT_SAFE_DEPLOYER.deployAgentSafeWithRoles(
-            config.agentSafeOwners, config.agentSafeThreshold, saltNonce, rolesSaltNonce, config.roleConfigCalls
+            config.agentSafeOwners,
+            config.agentSafeThreshold,
+            saltNonce,
+            rolesSaltNonce,
+            config.agentEoa,
+            config.roleConfigCalls
         );
 
         // deploy TaxSplitter (immutable 3-way: platform / patron / agent)

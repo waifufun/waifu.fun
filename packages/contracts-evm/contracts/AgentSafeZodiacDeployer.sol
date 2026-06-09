@@ -77,11 +77,12 @@ contract AgentSafeZodiacDeployer {
         uint256 threshold,
         uint256 safeSaltNonce,
         uint256 rolesSaltNonce,
+        address agentEoa,
         bytes[] calldata roleConfigCalls
     ) external returns (address safeAddress, address rolesModifier) {
         _validate(owners, threshold);
 
-        bytes memory safeInitializer = _encodeSafeSetup(owners, threshold, rolesSaltNonce, roleConfigCalls);
+        bytes memory safeInitializer = _encodeSafeSetup(owners, threshold, rolesSaltNonce, agentEoa, roleConfigCalls);
         address predictedSafe = _predictSafe(safeInitializer, safeSaltNonce);
         rolesModifier = _predictRolesModifier(predictedSafe, rolesSaltNonce);
 
@@ -106,10 +107,11 @@ contract AgentSafeZodiacDeployer {
         uint256 threshold,
         uint256 safeSaltNonce,
         uint256 rolesSaltNonce,
+        address agentEoa,
         bytes[] calldata roleConfigCalls
     ) external view returns (address safeAddress, address rolesModifier) {
         _validate(owners, threshold);
-        bytes memory safeInitializer = _encodeSafeSetup(owners, threshold, rolesSaltNonce, roleConfigCalls);
+        bytes memory safeInitializer = _encodeSafeSetup(owners, threshold, rolesSaltNonce, agentEoa, roleConfigCalls);
         safeAddress = _predictSafe(safeInitializer, safeSaltNonce);
         rolesModifier = _predictRolesModifier(safeAddress, rolesSaltNonce);
     }
@@ -123,6 +125,7 @@ contract AgentSafeZodiacDeployer {
         address[] memory owners,
         uint256 threshold,
         uint256 rolesSaltNonce,
+        address agentEoa,
         bytes[] calldata roleConfigCalls
     ) internal view returns (bytes memory) {
         return abi.encodeWithSignature(
@@ -135,6 +138,7 @@ contract AgentSafeZodiacDeployer {
                 rolesFactory,
                 rolesMastercopy,
                 rolesSaltNonce,
+                agentEoa,
                 roleConfigCalls
             ),
             address(0),
