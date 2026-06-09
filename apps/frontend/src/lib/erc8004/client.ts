@@ -53,7 +53,8 @@ export function isErc8004IdentityRecord(value: unknown): value is Erc8004Identit
 		typeof r.ownerWalletAddress === "string" &&
 		typeof r.txHash === "string" &&
 		(r.blockNumber === null || typeof r.blockNumber === "string") &&
-		typeof r.registeredAt === "string"
+		typeof r.registeredAt === "string" &&
+		(r.firstWaifuAgent === undefined || typeof r.firstWaifuAgent === "boolean")
 	);
 }
 
