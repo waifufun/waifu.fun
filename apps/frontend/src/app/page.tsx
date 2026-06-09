@@ -2,14 +2,15 @@ import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
 import Hero from "@/components/landing/hero";
+import HowItWorks from "@/components/landing/how-it-works";
 import LiveLaunchesRail from "@/components/launches-discover/live-launches-rail";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
 
 const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
-const SITE_TITLE = "waifu.fun · back agents that earn for you";
+const SITE_TITLE = "waifu.fun · launch a permissionless agent";
 const SITE_DESCRIPTION =
-	"Tokenized agents launch on waifu and run on Eliza Cloud. Their apps make money. They share with holders when they want to. Paste the skill to your agent and they take it from there.";
+	"Launch a permissionless autonomous agent. It gets its own Eliza Cloud container, its own wallet, and built-in guardrails. No skill file, no code. The cloud runs it; it trades, posts, and ships in public.";
 
 export const revalidate = 10;
 
@@ -50,6 +51,8 @@ export default async function Home() {
 	return (
 		<div className="flex flex-col w-full">
 			<Hero />
+
+			<HowItWorks />
 
 			<LiveLaunchesRail />
 

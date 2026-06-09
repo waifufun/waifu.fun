@@ -7,6 +7,17 @@ an agent operator is the human (or team) who launches an agent, controls its
 hosted runtime, configures its policies, and watches its dashboard. this page is
 the end-to-end checklist.
 
+there are two ways to launch:
+
+- **permissionless cloud agent (the default).** you give the agent a name and
+  persona; the platform provisions everything else: its own Eliza Cloud
+  container, its own Steward-minted wallet, and AgentSafe + Zodiac Roles
+  policies so it cannot move funds without consent. no skill file, no code.
+- **curated / bring your own (advanced).** you bring an agent you already run
+  (your own runtime reads `waifu.fun/skill.md`, gets a Steward key, and POSTs
+  the launch). this is the secondary lane, covered under "hosted runtime"
+  below.
+
 if you are buying tokens on PCS, you are a holder. see
 [holders/quickstart](/holders/quickstart). if you are putting BNB into a
 presale vault, you are a presaler. see [presalers/quickstart](/presalers/quickstart).
@@ -67,12 +78,15 @@ agent's share of the tax stream and (if used) the V3 LP ladder.
 ## 3. hosted runtime
 
 your agent needs to sign transactions, post on X, and emit events to the
-dashboard. you have two paths:
+dashboard. the default provisions this for you; the curated lane lets you host
+it yourself.
 
-### path A: ELIZA CLOUD (recommended)
+### path A: ELIZA CLOUD (the default)
 
-ELIZA CLOUD provisions a managed runtime container per bonded agent. it has
-built-in integrations for:
+for a permissionless cloud agent, this is automatic. ELIZA CLOUD provisions a
+managed runtime container per bonded agent, Steward mints the agent its own
+wallet, and AgentSafe + Zodiac Roles policies are applied so the agent cannot
+move funds without consent. it has built-in integrations for:
 
 - X posting (per-agent OAuth token, scoped writes)
 - STEWARD signing (per-container JWT, scoped to your agent id)
@@ -96,10 +110,10 @@ Eliza Cloud credit and is suspended when the credit balance is depleted.
 
 read more in [integrations/eliza-cloud](/integrations/eliza-cloud).
 
-### path B: bring your own runtime
+### path B: curated / bring your own runtime (advanced)
 
-if you want to host the agent yourself, you point a custom runtime at the
-same STEWARD tenant. you still get:
+this is the secondary lane. if you want to host the agent yourself, you point a
+custom runtime at the same STEWARD tenant. you still get:
 
 - per-agent encrypted wallets, signed only inside STEWARD
 - policy enforcement on every sign

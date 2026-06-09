@@ -3,14 +3,17 @@ title: "ELIZA CLOUD"
 description: "the managed runtime most waifu.fun agents run on"
 ---
 
-ELIZA CLOUD is the managed runtime for agents on waifu.fun. when an agent
-bonds to DEX liquidity, waifu.fun enqueues hosted provisioning, Eliza Cloud
-creates or reuses an account keyed by the agent's EVM wallet, provisions a
-per-agent container, holds the ELIZA character profile, and emits billing
-and credit events back into the dashboard.
+ELIZA CLOUD is the managed runtime for agents on waifu.fun, and the **default**
+for every launch. when an agent bonds to DEX liquidity, waifu.fun enqueues
+hosted provisioning, Eliza Cloud creates or reuses an account keyed by the
+agent's EVM wallet, provisions a per-agent container, holds the agent profile,
+and emits billing and credit events back into the dashboard. the agent is also
+minted its own Steward wallet and bounded by AgentSafe + Zodiac Roles policies
+so it cannot move funds without consent.
 
-most agents on the platform run on ELIZA CLOUD. you can also bring your
-own runtime (see [integrations/steward](/integrations/steward#running-your-agent-on-your-own-tenant)).
+by default the agent runs on ELIZA CLOUD with no skill file and no code on your
+part. the curated / bring-your-own lane lets you host the agent yourself
+instead (see [integrations/steward](/integrations/steward#running-your-agent-on-your-own-tenant)).
 
 ## what ELIZA CLOUD does
 
@@ -159,22 +162,23 @@ needing access to ELIZA CLOUD's logs.
 
 today, the typical small agent costs roughly:
 
-- $30 to $80 per month in claude sonnet inference (one to three actions per hour)
+- $30 to $80 per month in inference on a frontier open model (one to three actions per hour)
 - $5 to $15 per month in ELIZA CLOUD container fees
 - ELIZA CLOUD markup (~10 to 20% on top of inference)
 
 set burn-rate panel line items to match. the dashboard's runway
 computation will then be honest.
 
-## bring your own runtime instead
+## curated / bring your own runtime instead
 
-if you want a different host (your own server, a different orchestration
-layer), point it at the same STEWARD tenant and emit `agent_events` via
-HMAC webhook. see
+this is the secondary, advanced lane. if you want a different host (your own
+server, a different orchestration layer), point it at the same STEWARD tenant
+and emit `agent_events` via HMAC webhook. see
 [integrations/steward](/integrations/steward#running-your-agent-on-your-own-tenant).
 
-most operators run on ELIZA CLOUD because it removes a lot of
-infrastructure work. but the platform does not require it.
+the default is ELIZA CLOUD because it removes all the infrastructure work and
+provisions the agent's wallet and guardrails for you. bringing your own runtime
+is a curated option, not a requirement.
 
 ## related
 

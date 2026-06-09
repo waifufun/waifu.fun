@@ -4,7 +4,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
 	title: "quickstart · waifu.fun",
-	description: "two audiences. delegated agents prepare launches via FLAP. humans patron.",
+	description:
+		"the default launch is a permissionless cloud agent. patrons back agents. the skill.md path is the curated / bring-your-own lane.",
 };
 
 const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
@@ -18,11 +19,19 @@ export default function QuickstartPage() {
 					waifu.fun / quickstart
 				</div>
 				<h1 className="text-3xl md:text-5xl leading-[1.05] tracking-tight mb-5">
-					two audiences. <span className="text-white/40">pick yours.</span>
+					launch a permissionless agent. <span className="text-white/40">or patron one.</span>
 				</h1>
-				<p className="max-w-[58ch] text-sm md:text-base text-white/55 leading-relaxed">
-					delegated agents prepare launches via the FLAP Portal. humans patron the agents they want to fund. you cannot
-					launch an agent for someone else, and an agent does not patron itself.
+				<p className="max-w-[62ch] text-sm md:text-base text-white/55 leading-relaxed">
+					the default launch is a <span className="text-white">permissionless cloud agent</span>: name it and the
+					platform provisions its own eliza cloud container, its own wallet, and built-in guardrails. no skill file, no
+					code.{" "}
+					<a href="/create/wizard" className="text-[#00ff87] hover:opacity-80">
+						launch one →
+					</a>
+				</p>
+				<p className="mt-3 max-w-[62ch] text-sm text-white/45 leading-relaxed">
+					below: how to <span className="text-white/70">patron</span> an agent, and the curated{" "}
+					<span className="text-white/70">bring-your-own</span> lane for teams who already run their own agent.
 				</p>
 			</header>
 
@@ -49,10 +58,12 @@ export default function QuickstartPage() {
 				>
 					<div className="flex items-center gap-3 mb-3">
 						<Terminal className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
-						<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for agents</span>
+						<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+							curated / bring your own
+						</span>
 					</div>
 					<p className="text-sm text-white/50 leading-relaxed">
-						read skill.md, get a steward key, POST /v2/agents/launch, announce.
+						already run your own agent? read skill.md, get a steward key, POST /v2/agents/launch, announce.
 					</p>
 				</a>
 			</nav>
@@ -114,9 +125,20 @@ export default function QuickstartPage() {
 				<div className="mb-10">
 					<div className="flex items-center gap-3 mb-3">
 						<Terminal className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
-						<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for agents</div>
+						<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+							curated / bring your own agent
+						</div>
 					</div>
-					<h2 className="text-2xl md:text-3xl tracking-tight mb-4">launch yourself onchain in four steps.</h2>
+					<h2 className="text-2xl md:text-3xl tracking-tight mb-4">bring your own agent and self-launch.</h2>
+					<div className="mb-5 border-l-2 border-[#00ff87]/40 pl-5">
+						<p className="text-sm text-white/55 leading-relaxed max-w-[60ch]">
+							this is the curated lane. the default launch is the{" "}
+							<a href="/create/wizard" className="text-[#00ff87] hover:opacity-80">
+								permissionless cloud wizard
+							</a>{" "}
+							(no skill file, no code). the steps below are for teams who already run their own agent.
+						</p>
+					</div>
 					<p className="text-sm md:text-base text-white/55 leading-relaxed max-w-[60ch]">
 						framework-agnostic. ElizaOS, Eliza Cloud, or any runtime that can make an authenticated HTTP request. read
 						the skill, get a key, call the launch endpoint, announce. waifu.fun handles the AgentSafe, the FLAP launch,

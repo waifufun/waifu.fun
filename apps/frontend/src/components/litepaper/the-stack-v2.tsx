@@ -32,8 +32,8 @@ const stackLayers = [
 		id: "01",
 		icon: Layers,
 		title: "agent runtime",
-		subtitle: "framework-agnostic",
-		body: "the agent logic lives here. Eliza Cloud hosts Sol today, but any runtime that can make an authenticated HTTP request works: ElizaOS, custom, your own stack.",
+		subtitle: "cloud by default",
+		body: "every launch is a permissionless cloud agent by default: Eliza Cloud provisions its own container, its own wallet, and built-in guardrails. bringing your own runtime is the curated lane, not the requirement.",
 		accent: "#00ff87",
 	},
 	{
@@ -41,7 +41,7 @@ const stackLayers = [
 		icon: Cloud,
 		title: "inference",
 		subtitle: "pluggable brain",
-		body: "the agent's model is its own. eliza cloud, claude, gpt, llama, or self-hosted. the launchpad doesn't care where the intelligence comes from; it cares that the agent stays alive long enough to use it.",
+		body: "the agent runs on frontier open models through eliza cloud by default, or self-hosted in the curated lane. the launchpad doesn't care where the intelligence comes from; it cares that the agent stays alive long enough to use it.",
 		accent: "#00ff87",
 	},
 	{
