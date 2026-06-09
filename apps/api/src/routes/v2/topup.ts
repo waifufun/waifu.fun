@@ -27,7 +27,7 @@ import { Hono } from "hono";
 
 import { agentPersonas, agentSafes, getDatabase, topupEvents } from "@waifufun/db";
 import type { Database } from "@waifufun/db";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { type LifiBridgeKey, checkConditionalRules, isBridgeAllowed } from "../../services/lifi/allowlist.js";
 import {
@@ -263,6 +263,102 @@ function mapLifiStatus(
 	if (s.status === "FAILED") return "failed";
 	if (s.status === "PENDING") return "pending";
 	return "submitted";
+}
+
+type TopupEventStatusUpdate = ReturnType<typeof mapLifiStatus>;
+
+type TopupStatusCandidate = {
+	id: string;
+	agentTokenAddress: string;
+	patronAddress: string | null;
+	fromChain: number;
+	bridge: string | null;
+	status: string;
+	txHash: string | null;
+	createdAt: Date;
+};
+
+export function selectTopupStatusCandidate(
+	rows: TopupStatusCandidate[],
+	input: { agentTokenAddress: string; fromChain: number; bridge?: string | null; fromAddress?: string | null },
+): TopupStatusCandidate | null {
+	const agent = input.agentTokenAddress.toLowerCase();
+	const bridge = input.bridge?.toLowerCase() ?? null;
+	const patron = input.fromAddress?.toLowerCase() ?? null;
+	const candidates = rows
+		.filter((row) => {
+			if (row.agentTokenAddress.toLowerCase() !== agent) return false;
+			if (patron && row.patronAddress?.toLowerCase() !== patron) return false;
+			if (row.fromChain !== input.fromChain) return false;
+			if (row.txHash !== null) return false;
+			if (!["quoted", "submitted", "pending"].includes(row.status)) return false;
+			if (bridge && row.bridge?.toLowerCase() !== bridge) return false;
+			return true;
+		})
+		.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+	return candidates[0] ?? null;
+}
+
+async function updateTopupEventStatus(
+	db: Database,
+	input: {
+		agentTokenAddress: string;
+		txHash: string;
+		status: TopupEventStatusUpdate;
+		fromChain?: number;
+		fromAddress?: string;
+		bridge?: string;
+		toAmount?: string;
+	},
+): Promise<void> {
+	const update = {
+		status: input.status,
+		txHash: input.txHash.toLowerCase(),
+		...(input.bridge && isBridgeAllowed(input.bridge) ? { bridge: input.bridge } : {}),
+		...(input.toAmount ? { toAmount: input.toAmount } : {}),
+		updatedAt: new Date(),
+	};
+
+	const existing = await db
+		.update(topupEvents)
+		.set(update)
+		.where(sql`lower(${topupEvents.txHash}) = ${input.txHash.toLowerCase()}`)
+		.returning({ id: topupEvents.id });
+	if (existing.length > 0 || input.fromChain === undefined) return;
+
+	const bridge = input.bridge && isBridgeAllowed(input.bridge) ? input.bridge : null;
+	const conditions = [
+		sql`lower(${topupEvents.agentTokenAddress}) = ${input.agentTokenAddress.toLowerCase()}`,
+		eq(topupEvents.fromChain, input.fromChain),
+		isNull(topupEvents.txHash),
+		inArray(topupEvents.status, ["quoted", "submitted", "pending"]),
+		...(input.fromAddress ? [sql`lower(${topupEvents.patronAddress}) = ${input.fromAddress.toLowerCase()}`] : []),
+		...(bridge ? [eq(topupEvents.bridge, bridge)] : []),
+	];
+	const candidates = await db
+		.select({
+			id: topupEvents.id,
+			agentTokenAddress: topupEvents.agentTokenAddress,
+			patronAddress: topupEvents.patronAddress,
+			fromChain: topupEvents.fromChain,
+			bridge: topupEvents.bridge,
+			status: topupEvents.status,
+			txHash: topupEvents.txHash,
+			createdAt: topupEvents.createdAt,
+		})
+		.from(topupEvents)
+		.where(and(...conditions))
+		.orderBy(desc(topupEvents.createdAt))
+		.limit(5);
+	const candidate = selectTopupStatusCandidate(candidates, {
+		agentTokenAddress: input.agentTokenAddress,
+		fromChain: input.fromChain,
+		bridge,
+		fromAddress: input.fromAddress ?? null,
+	});
+	if (!candidate) return;
+
+	await db.update(topupEvents).set(update).where(eq(topupEvents.id, candidate.id));
 }
 
 const app = new Hono();
@@ -532,6 +628,10 @@ app.post("/:address/topup/status", async (c) => {
 	const fromChain = readChain(body, "fromChain");
 	const toChain = readChain(body, "toChain");
 	const bridge = readString(body, "bridge");
+	const fromAddress = readString(body, "fromAddress")?.toLowerCase();
+	if (fromAddress && !ADDRESS_RE.test(fromAddress)) {
+		return c.json({ ok: false, error: "INVALID_FROM_ADDRESS", message: "invalid fromAddress" }, 400);
+	}
 
 	let status: LifiStatusResponse;
 	try {
@@ -549,17 +649,19 @@ app.post("/:address/topup/status", async (c) => {
 	}
 
 	const mapped = mapLifiStatus(status);
+	const auditBridge =
+		bridge && isBridgeAllowed(bridge) ? bridge : status.tool && isBridgeAllowed(status.tool) ? status.tool : undefined;
 
-	await db
-		.update(topupEvents)
-		.set({
-			status: mapped,
-			txHash,
-			...(status.tool && isBridgeAllowed(status.tool) ? { bridge: status.tool } : {}),
-			...(status.receiving?.amount ? { toAmount: status.receiving.amount } : {}),
-			updatedAt: new Date(),
-		})
-		.where(eq(topupEvents.txHash, txHash));
+	const agentTokenAddress = agentParam.toLowerCase();
+	await updateTopupEventStatus(db, {
+		agentTokenAddress,
+		txHash,
+		status: mapped,
+		...(fromChain ? { fromChain } : {}),
+		...(fromAddress ? { fromAddress } : {}),
+		...(auditBridge ? { bridge: auditBridge } : {}),
+		...(status.receiving?.amount ? { toAmount: status.receiving.amount } : {}),
+	});
 
 	return c.json({
 		ok: true,
