@@ -51,7 +51,7 @@ app.use("*", async (c, next) => {
 function buildElizaClient(): OffRampElizaClient & {
 	getCreditBalance?: (agentId?: string) => Promise<{ balance: number }>;
 } {
-	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 	const client = createElizaCloudClient({
 		baseUrl,
 		apiKey: resolveElizaCloudApiKey() ?? "",

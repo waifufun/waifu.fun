@@ -176,7 +176,26 @@ describe("trading-policy proxy", () => {
 		assert.deepEqual(json.policy, {});
 	});
 
-	it("sanitizes caps on PUT (drops negatives, keeps valid)", async () => {
+	it("sanitizes valid caps on PUT and preserves explicit clears", async () => {
+		const stub: StewardStub = {};
+		__setRequirePatronDbForTest(fakePatronAuthDb(OWNED_PERSONA));
+		__setRequirePatronStewardParserForTest(ownerParser());
+		__setTradingPolicyStewardForTest(fakeSteward(stub));
+		const app = makeApp();
+		const res = await req(app, "PUT", "trading-policy", {
+			dailyCap: 250,
+			perOrderCap: null,
+			leverageCap: 2,
+			allowedAssets: ["BTC", "", "ETH"],
+			allowedVenues: ["pancake"],
+		});
+		assert.equal(res.status, 200);
+		assert.equal(stub.lastPutCaps?.dailyCap, 250);
+		assert.equal(stub.lastPutCaps?.perOrderCap, null);
+		assert.deepEqual(stub.lastPutCaps?.allowedAssets, ["BTC", "ETH"]);
+	});
+
+	it("rejects malformed caps before calling Steward", async () => {
 		const stub: StewardStub = {};
 		__setRequirePatronDbForTest(fakePatronAuthDb(OWNED_PERSONA));
 		__setRequirePatronStewardParserForTest(ownerParser());
@@ -185,15 +204,17 @@ describe("trading-policy proxy", () => {
 		const res = await req(app, "PUT", "trading-policy", {
 			dailyCap: 250,
 			perOrderCap: -5,
-			leverageCap: 2,
-			allowedAssets: ["BTC", "", "ETH"],
-			allowedVenues: ["pancake"],
 		});
-		assert.equal(res.status, 200);
-		assert.equal(stub.lastPutCaps?.dailyCap, 250);
-		// negative per-order cap is dropped entirely
-		assert.equal(stub.lastPutCaps?.perOrderCap, undefined);
-		assert.deepEqual(stub.lastPutCaps?.allowedAssets, ["BTC", "ETH"]);
+		assert.equal(res.status, 400);
+		const json = (await res.json()) as { ok: boolean; error: string; message: string };
+		assert.equal(json.ok, false);
+		assert.equal(json.error, "INVALID_CAP");
+		assert.match(json.message, /perOrderCap/);
+		assert.equal(stub.lastPutCaps, undefined);
+
+		const nonNumeric = await req(app, "PUT", "trading-policy", { leverageCap: "abc" });
+		assert.equal(nonNumeric.status, 400);
+		assert.equal(stub.lastPutCaps, undefined);
 	});
 
 	it("saves the withdraw whitelist rule on PUT /trading-policies", async () => {

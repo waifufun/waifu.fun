@@ -18,6 +18,10 @@
 		"./adapters/pancakeswap-v3": {
 			"types": "./dist/adapters/pancakeswap-v3/index.d.ts",
 			"import": "./dist/adapters/pancakeswap-v3/index.js"
+		},
+		"./capability": {
+			"types": "./dist/capability/index.d.ts",
+			"import": "./dist/capability/index.js"
 		}
 	},
 	"files": ["src", "dist"],

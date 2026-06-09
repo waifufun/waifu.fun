@@ -3,12 +3,12 @@
  * (`credit_offramp_mints`). Thin wrappers over Drizzle so the orchestrator and
  * tests share one shape.
  *
- *  - `sumSpentTodayUsd`  -> daily-cap accounting (sum of credited+pending USD in
- *                           the current UTC day).
- *  - `hasDeposit`        -> fast idempotency precheck (the DB unique index is the
+ *  - `sumSpentTodayUsd`  -> daily-cap accounting (sum of credited+pending+failed
+ *                           USD in the current UTC day).
+ *  - `hasActiveDeposit`  -> fast idempotency precheck (the DB unique index is the
  *                           hard guarantee; this just avoids a wasted convert).
- *  - `recordMint`        -> idempotent insert (ON CONFLICT DO NOTHING on the
- *                           deposit tx hash). Returns whether a row was created.
+ *  - `claimPendingMint`  -> idempotent insert (ON CONFLICT DO NOTHING on the
+ *                           active deposit tx hash). Returns the claimed row id.
  *  - `markCredited` / `markFailed` -> terminal status updates after convert.
  */
 
@@ -24,25 +24,29 @@ export function startOfUtcDay(now: Date = new Date()): Date {
 	return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
 }
 
-/** Sum USD auto-minted (credited or still-pending) in the current UTC day. */
+/** Sum USD already committed or ambiguously provider-attempted in the current UTC day. */
 export async function sumSpentTodayUsd(db: Database, now: Date = new Date()): Promise<number> {
 	const dayStart = startOfUtcDay(now);
 	const rows = await db
 		.select({ total: sql<string>`COALESCE(SUM(${creditOfframpMints.usdAmount}), 0)` })
 		.from(creditOfframpMints)
 		.where(
-			and(gte(creditOfframpMints.createdAt, dayStart), inArray(creditOfframpMints.status, ["credited", "pending"])),
+			and(
+				gte(creditOfframpMints.createdAt, dayStart),
+				inArray(creditOfframpMints.status, ["credited", "pending", "failed"]),
+			),
 		);
 	const total = Number(rows[0]?.total ?? 0);
 	return Number.isFinite(total) ? total : 0;
 }
 
 /**
- * True if this deposit already has an IN-FLIGHT (pending) or SUCCESSFUL
- * (credited) mint row — the only states that should block re-processing. Refusal
- * / failure rows (capped/killed/skipped/failed) are deliberately NOT blocking so
- * a kill-switched, transiently-skipped, or failed deposit can be retried on a
- * later tick. Mirrors the partial unique index.
+ * True if this deposit already has an in-flight, successful, or ambiguous
+ * provider-attempted mint row. Failed rows remain blocking because a failed local
+ * confirm can still mean Eliza Cloud accepted the tx before the response was
+ * lost. Pre-provider refusal rows (capped/killed/skipped) are deliberately NOT
+ * blocking so a kill-switched, capped, or transiently-skipped deposit can be
+ * retried later. Mirrors the partial unique index.
  */
 export async function hasActiveDeposit(db: Database, depositTxHash: string): Promise<boolean> {
 	const rows = await db
@@ -51,7 +55,7 @@ export async function hasActiveDeposit(db: Database, depositTxHash: string): Pro
 		.where(
 			and(
 				eq(creditOfframpMints.depositTxHash, depositTxHash.toLowerCase()),
-				inArray(creditOfframpMints.status, ["pending", "credited"]),
+				inArray(creditOfframpMints.status, ["pending", "credited", "failed"]),
 			),
 		)
 		.limit(1);
@@ -88,9 +92,10 @@ function toValues(input: RecordMintInput): NewCreditOfframpMint {
 
 /**
  * Claim a deposit for minting by inserting a `pending` row. The PARTIAL unique
- * index (status IN pending/credited) + ON CONFLICT DO NOTHING guarantees only
- * ONE in-flight/successful mint per deposit, even under concurrent ticks, while
- * still allowing prior refusal/failure rows for the same deposit to coexist.
+ * index (status IN pending/credited/failed) + ON CONFLICT DO NOTHING guarantees
+ * only ONE provider-attempted mint per deposit, even under concurrent ticks,
+ * while still allowing prior pre-provider refusal rows for the same deposit to
+ * coexist.
  * Returns the row id, or null when another tick already holds the active claim.
  */
 export async function claimPendingMint(db: Database, input: RecordMintInput): Promise<string | null> {
@@ -100,17 +105,17 @@ export async function claimPendingMint(db: Database, input: RecordMintInput): Pr
 		.onConflictDoNothing({
 			target: creditOfframpMints.depositTxHash,
 			// Matches the PARTIAL unique index predicate so the conflict arbiter is the
-			// active-deposit index (pending/credited), not the whole-column.
-			where: inArray(creditOfframpMints.status, ["pending", "credited"]),
+			// active-deposit index (pending/credited/failed), not the whole-column.
+			where: inArray(creditOfframpMints.status, ["pending", "credited", "failed"]),
 		})
 		.returning({ id: creditOfframpMints.id });
 	return inserted[0]?.id ?? null;
 }
 
 /**
- * Append a non-blocking audit row for a refusal/failure decision
- * (capped/killed/skipped/failed). These do NOT claim the active-mint slot, so
- * the deposit remains eligible for a future retry.
+ * Append a non-blocking audit row for a pre-provider refusal decision
+ * (capped/killed/skipped). These do NOT claim the active-mint slot, so the
+ * deposit remains eligible for a future retry.
  */
 export async function recordAudit(db: Database, input: RecordMintInput): Promise<void> {
 	await db.insert(creditOfframpMints).values(toValues(input));
@@ -141,7 +146,7 @@ export async function markCredited(
 		.where(eq(creditOfframpMints.id, id));
 }
 
-/** Mark a pending mint as failed (retryable) with a reason. */
+/** Mark a pending mint as failed with a reason; failed rows keep the idempotency claim. */
 export async function markFailed(db: Database, id: string, reason: string): Promise<void> {
 	await db
 		.update(creditOfframpMints)

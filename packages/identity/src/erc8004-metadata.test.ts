@@ -9,6 +9,7 @@ import {
 	SOL_TOKEN_ADDRESS,
 	buildErc8004RegistrationFile,
 	buildSolErc8004RegistrationFile,
+	isFirstWaifuAgentAddress,
 	validateErc8004RegistrationFile,
 } from "./erc8004-metadata.js";
 
@@ -25,6 +26,12 @@ describe("ERC-8004 metadata renderer", () => {
 		assert.ok(
 			file.services.some((service) => service.type === "a2a" && service.endpoint === SOL_ELIZA_RUNTIME_ENDPOINT),
 		);
+	});
+
+	it("identifies the first waifu agent address case-insensitively", () => {
+		assert.equal(isFirstWaifuAgentAddress(SOL_TOKEN_ADDRESS.toLowerCase()), true);
+		assert.equal(isFirstWaifuAgentAddress(SOL_TOKEN_ADDRESS.toUpperCase()), true);
+		assert.equal(isFirstWaifuAgentAddress("0x000000000000000000000000000000000000dEaD"), false);
 	});
 
 	it("throws when required fields are missing", () => {

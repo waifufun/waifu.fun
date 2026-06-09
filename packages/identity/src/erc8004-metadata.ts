@@ -12,6 +12,10 @@ export const SOL_AGENT_SAFE_ADDRESS = "0x440e903C5BB2C78dE33d839613316D95Ca2009E
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 const DATA_JSON_RE = /^data:application\/(json|[^;,]+\+json)(;charset=[^;,]+)?(;base64)?,/i;
 
+export function isFirstWaifuAgentAddress(address: string): boolean {
+	return address.toLowerCase() === SOL_TOKEN_ADDRESS.toLowerCase();
+}
+
 export type Erc8004Service = {
 	type: string;
 	endpoint: string;

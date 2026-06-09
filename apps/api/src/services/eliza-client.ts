@@ -1055,7 +1055,7 @@ let _instance: ElizaClient | null = null;
 
 export function getElizaClient(): ElizaClient {
 	if (!_instance) {
-		const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+		const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 		const serviceKey = nonEmpty(process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY);
 		const apiKey = resolveElizaCloudApiKey();
 		const jwtSecret = process.env.ELIZA_JWT_SECRET;

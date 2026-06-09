@@ -82,7 +82,7 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 			const elizaCloud =
 				options.elizaCloud ??
 				createElizaCloudClient({
-					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
+					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
 					apiKey: resolveElizaCloudApiKey() ?? "",
 					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
@@ -279,7 +279,7 @@ async function receiveDirectAgentEvent(
 			const elizaCloud =
 				options.elizaCloud ??
 				createElizaCloudClient({
-					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
+					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
 					apiKey: resolveElizaCloudApiKey() ?? "",
 					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
