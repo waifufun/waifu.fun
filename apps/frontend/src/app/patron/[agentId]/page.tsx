@@ -5,6 +5,7 @@ import PromptBlock from "@/components/give-skill/prompt-block";
 import ActivityFeed from "@/components/patron/activity-feed";
 import AgentChat from "@/components/patron/agent-chat";
 import AgentHero from "@/components/patron/agent-hero";
+import { CapabilityPanels } from "@/components/patron/capability/capability-panels";
 import DormantCreditsPanel from "@/components/patron/dormant-credits-panel";
 import EmergencyControls from "@/components/patron/emergency-controls";
 import { FundTradingPanel } from "@/components/patron/fund-trading-panel";
@@ -193,6 +194,11 @@ export default function PatronAgentDetailPage({
 					{agent?.tokenAddress ? (
 						<FundTradingPanel agentTokenAddress={agent.tokenAddress} agentTicker={agent.ticker || "agent"} />
 					) : null}
+					{/* Schema-driven capability registry (#998). Renders HL through the
+					generic panel on real live data, and planned capabilities as locked
+					roadmap cards with zero bespoke code. Lives alongside the bespoke
+					panels above until they're retired post-review. */}
+					<CapabilityPanels agentId={agentId} />
 					<EmergencyControls agentId={agentId} controlState={agent?.controlState} />
 				</div>
 			)}
