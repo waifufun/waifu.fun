@@ -13,14 +13,14 @@ import {LaunchFactory} from "../contracts/LaunchFactory.sol";
 import {LaunchTier} from "../contracts/LaunchTier.sol";
 import {RouterDeployer} from "../contracts/RouterDeployer.sol";
 import {AgentSafeDeployer} from "../contracts/AgentSafeDeployer.sol";
-import {TreasuryLP4Deployer} from "../contracts/TreasuryLP4Deployer.sol";
+import {TreasuryLP5Deployer} from "../contracts/TreasuryLP5Deployer.sol";
 import {MockSafeSingleton, MockSafeProxyFactory} from "../contracts/mocks/SafeMocks.sol";
 
 contract EchidnaWaveMFactory {
     LaunchFactory internal factory;
     RouterDeployer internal routerDep;
     AgentSafeDeployer internal safeDep;
-    TreasuryLP4Deployer internal treasuryDep;
+    TreasuryLP5Deployer internal treasuryDep;
 
     address internal constant WBNB = address(0x0010);
     address internal constant PCS_FACTORY = address(0x0020);
@@ -31,7 +31,6 @@ contract EchidnaWaveMFactory {
     address internal constant PLATFORM_COMMISSION_RECEIVER = address(0x0070);
     address internal constant PCS_V3_NPM = address(0x0080);
     address internal constant PCS_V3_FACTORY = address(0x0090);
-    address internal constant BNB_USD_FEED = address(0x00A0);
     bytes32 internal constant INIT_CODE_HASH = bytes32(uint256(0xCAFE));
     address internal constant ALICE = address(0x100);
 
@@ -40,7 +39,7 @@ contract EchidnaWaveMFactory {
         MockSafeProxyFactory pf = new MockSafeProxyFactory();
         routerDep = new RouterDeployer();
         safeDep = new AgentSafeDeployer(address(sing), address(pf));
-        treasuryDep = new TreasuryLP4Deployer();
+        treasuryDep = new TreasuryLP5Deployer();
         factory = new LaunchFactory(
             WBNB,
             PCS_FACTORY,
@@ -54,8 +53,7 @@ contract EchidnaWaveMFactory {
             address(safeDep),
             address(treasuryDep),
             PCS_V3_NPM,
-            PCS_V3_FACTORY,
-            BNB_USD_FEED
+            PCS_V3_FACTORY
         );
     }
 
@@ -103,10 +101,9 @@ contract EchidnaWaveMFactory {
             && factory.TIP_RECEIVER() == TIP_RECEIVER
             && address(factory.ROUTER_DEPLOYER()) == address(routerDep)
             && address(factory.AGENT_SAFE_DEPLOYER()) == address(safeDep)
-            && address(factory.TREASURY_LP4_DEPLOYER()) == address(treasuryDep)
+            && address(factory.TREASURY_LP5_DEPLOYER()) == address(treasuryDep)
             && factory.PCS_V3_NPM() == PCS_V3_NPM
-            && factory.PCS_V3_FACTORY() == PCS_V3_FACTORY
-            && factory.BNB_USD_FEED() == BNB_USD_FEED;
+            && factory.PCS_V3_FACTORY() == PCS_V3_FACTORY;
     }
 
     /// Owner is always set (never address(0)).
@@ -143,16 +140,20 @@ contract EchidnaWaveMFactory {
         return sum < 10_000;
     }
 
-    /// Tier MC ladders are strictly monotonic non-decreasing across the
-    /// four positions for any tier. Production tiers are strictly
-    /// increasing; we accept >= to keep the property robust to future
-    /// flat ladders without breaking the smoke-test tier.
-    function echidna_tier_mc_monotonic() public view returns (bool) {
-        for (uint8 t = 0; t < 5; t++) {
-            uint256[4] memory mc = factory.tierMcTargets(LaunchTier(t));
-            for (uint256 j = 1; j < 4; j++) {
-                if (mc[j] < mc[j - 1]) return false;
-            }
+    /// Production tier presale caps are strictly monotonic as tiers
+    /// increase. TIER_TEST is smoke-test-only and intentionally smaller.
+    function echidna_production_tier_caps_monotonic() public view returns (bool) {
+        LaunchTier[4] memory tiers = [
+            LaunchTier.TIER_80,
+            LaunchTier.TIER_90,
+            LaunchTier.TIER_95,
+            LaunchTier.TIER_98
+        ];
+        uint256 prev;
+        for (uint8 t = 0; t < tiers.length; t++) {
+            (uint256 cap,,,) = factory.tierBudget(tiers[t], 300);
+            if (cap <= prev) return false;
+            prev = cap;
         }
         return true;
     }
