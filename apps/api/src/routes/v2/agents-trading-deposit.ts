@@ -64,6 +64,84 @@ function readString(body: Record<string, unknown>, ...keys: string[]): string | 
 	return null;
 }
 
+/** Result of the shared deposit-quote handler (status + JSON body). */
+export type DepositQuoteHandlerResult = { status: number; body: unknown };
+
+/**
+ * Core deposit-quote handler, factored out of the route closure so BOTH the
+ * bespoke POST /:id/trading/deposit-quote route AND the generic capability
+ * action dispatcher can delegate to the SAME logic. It is pure w.r.t. Hono
+ * routing: it takes the already-authenticated Context (for patron/agent vars)
+ * plus the parsed body, and returns a status + JSON body. It performs NO
+ * server-side signing — it returns an unsigned tx the patron's own wallet signs.
+ */
+export async function runHyperliquidDepositQuote(
+	c: Context<RequireAgentOwnershipBindings>,
+	obj: Record<string, unknown>,
+): Promise<DepositQuoteHandlerResult> {
+	const fromChain = readNumber(obj, "fromChain", "fromChainId");
+	const fromToken = readString(obj, "fromToken", "fromTokenAddress");
+	const fromAmount = readString(obj, "amount", "fromAmount");
+	const fromAddress = readString(obj, "fromAddress", "wallet", "walletAddress", "patronAddress");
+
+	if (!fromChain || !fromToken || !fromAmount || !fromAddress) {
+		return {
+			status: 400,
+			body: {
+				ok: false,
+				error: "MISSING_PARAMS",
+				message: "fromChain, fromToken, amount, and fromAddress are required",
+			},
+		};
+	}
+	if (!ALLOWED_SOURCE_CHAINS.has(fromChain)) {
+		return { status: 400, body: { ok: false, error: "CHAIN_NOT_SUPPORTED", message: "source chain not in allowlist" } };
+	}
+	if (!patronOwnsFundingWallet(c, fromAddress)) {
+		return {
+			status: 403,
+			body: {
+				ok: false,
+				error: "FUNDING_WALLET_MISMATCH",
+				message: "fromAddress must match the authenticated patron or agent owner wallet",
+			},
+		};
+	}
+
+	try {
+		const quote = await buildHyperliquidDepositQuote(
+			{ fromChain, fromToken, fromAmount, fromAddress },
+			{ lifi: resolveLifi() },
+		);
+		const agent = c.get("patronAgent");
+		return {
+			status: 200,
+			body: {
+				ok: true,
+				data: {
+					agent: { id: agent.id, agentId: agent.agentId, stewardAgentId: agent.stewardAgentId },
+					quote,
+				},
+			},
+		};
+	} catch (err) {
+		if (err instanceof HyperliquidDepositQuoteError) {
+			return { status: err.status, body: { ok: false, error: err.code, message: err.message } };
+		}
+		if (err instanceof LifiClientError) {
+			const status = err.status >= 400 && err.status < 600 ? err.status : 502;
+			return {
+				status,
+				body: { ok: false, error: err.code, message: err.message, upstreamStatus: err.status },
+			};
+		}
+		return {
+			status: 502,
+			body: { ok: false, error: "DEPOSIT_QUOTE_FAILED", message: err instanceof Error ? err.message : String(err) },
+		};
+	}
+}
+
 function patronOwnsFundingWallet(c: Context<RequireAgentOwnershipBindings>, fromAddress: string): boolean {
 	const patron = c.get("patron");
 	const agent = c.get("patronAgent");
@@ -86,62 +164,8 @@ app.post("/:id/trading/deposit-quote", requirePatron(), requireAgentOwnership("i
 	if (!body || typeof body !== "object" || Array.isArray(body)) {
 		return c.json({ ok: false, error: "INVALID_BODY", message: "body object required" }, 400);
 	}
-	const obj = body as Record<string, unknown>;
-	const fromChain = readNumber(obj, "fromChain", "fromChainId");
-	const fromToken = readString(obj, "fromToken", "fromTokenAddress");
-	const fromAmount = readString(obj, "amount", "fromAmount");
-	const fromAddress = readString(obj, "fromAddress", "wallet", "walletAddress", "patronAddress");
-
-	if (!fromChain || !fromToken || !fromAmount || !fromAddress) {
-		return c.json(
-			{
-				ok: false,
-				error: "MISSING_PARAMS",
-				message: "fromChain, fromToken, amount, and fromAddress are required",
-			},
-			400,
-		);
-	}
-	if (!ALLOWED_SOURCE_CHAINS.has(fromChain)) {
-		return c.json({ ok: false, error: "CHAIN_NOT_SUPPORTED", message: "source chain not in allowlist" }, 400);
-	}
-	if (!patronOwnsFundingWallet(c, fromAddress)) {
-		return c.json(
-			{
-				ok: false,
-				error: "FUNDING_WALLET_MISMATCH",
-				message: "fromAddress must match the authenticated patron or agent owner wallet",
-			},
-			403,
-		);
-	}
-
-	try {
-		const quote = await buildHyperliquidDepositQuote(
-			{ fromChain, fromToken, fromAmount, fromAddress },
-			{ lifi: resolveLifi() },
-		);
-		const agent = c.get("patronAgent");
-		return c.json({
-			ok: true,
-			data: {
-				agent: { id: agent.id, agentId: agent.agentId, stewardAgentId: agent.stewardAgentId },
-				quote,
-			},
-		});
-	} catch (err) {
-		if (err instanceof HyperliquidDepositQuoteError) {
-			return c.json({ ok: false, error: err.code, message: err.message }, err.status as 400);
-		}
-		if (err instanceof LifiClientError) {
-			const status = err.status >= 400 && err.status < 600 ? err.status : 502;
-			return c.json({ ok: false, error: err.code, message: err.message, upstreamStatus: err.status }, status as 400);
-		}
-		return c.json(
-			{ ok: false, error: "DEPOSIT_QUOTE_FAILED", message: err instanceof Error ? err.message : String(err) },
-			502,
-		);
-	}
+	const result = await runHyperliquidDepositQuote(c, body as Record<string, unknown>);
+	return c.json(result.body as Record<string, unknown>, result.status as 200);
 });
 
 export default app;
