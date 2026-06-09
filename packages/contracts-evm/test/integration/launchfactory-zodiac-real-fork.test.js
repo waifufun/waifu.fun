@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 const SAFE_SINGLETON_BSC = "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762";
 const SAFE_PROXY_FACTORY_BSC = "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67";
 const TIER_80 = 0;
-const CLAIM_REWARDS_SELECTOR = "0x372500ab";
+const CLAIM_REWARDS_SELECTOR = "0xc6a5026a";
 const WITHDRAW_FUNDS_SELECTOR = "0xb60d4288";
 const SENTINEL_MODULES = "0x0000000000000000000000000000000000000001";
 
@@ -13,11 +13,13 @@ const SAFE_ABI = [
 	"function isModuleEnabled(address module) view returns (bool)",
 ];
 
+const DEFAULT_ALLOWED_TARGET = "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997";
+
 const ROLES_ABI = [
 	"function memberOf(address module,bytes32 role) view returns (bool)",
 	"function scopedFunction(bytes32 role,address target,bytes4 selector) view returns (bool)",
 	"function assignRoles(address module,bytes32[] roleKeys,bool[] memberOf)",
-	"function scopeFunction(bytes32 roleKey,address targetAddress,bytes4 functionSig,uint8[] options,bytes conditions,uint8 executionOptions)",
+	"function scopeFunction(bytes32 roleKey,address targetAddress,bytes4 functionSig,(uint8 parent,uint8 paramType,uint8 operator,bytes compValue)[] conditions,uint8 executionOptions)",
 	"function execTransactionWithRole(address to,uint256 value,bytes data,uint8 operation,bytes32 role,bool shouldRevert) returns (bool)",
 	"error NotAllowed()",
 ];
@@ -73,14 +75,21 @@ describeFork("LaunchFactory + AgentSafeZodiacDeployer :: BSC fork", () => {
 		const RolesFactory = await ethers.getContractFactory("MockRolesModuleFactory");
 		const rolesFactory = await RolesFactory.deploy();
 		const ActionTarget = await ethers.getContractFactory("MockAgentActionTarget");
-		const actionTarget = await ActionTarget.deploy();
+		const actionTargetImpl = await ActionTarget.deploy();
+		await ethers.provider.send("hardhat_setCode", [
+			DEFAULT_ALLOWED_TARGET,
+			await ethers.provider.getCode(await actionTargetImpl.getAddress()),
+		]);
+		const actionTarget = await ethers.getContractAt("MockAgentActionTarget", DEFAULT_ALLOWED_TARGET);
+	await ethers.provider.send("hardhat_setStorageAt", [DEFAULT_ALLOWED_TARGET, "0x0", "0x" + "00".repeat(32)]);
+	await ethers.provider.send("hardhat_setStorageAt", [DEFAULT_ALLOWED_TARGET, "0x1", "0x" + "00".repeat(32)]);
 
 		const ZodiacDeployer = await ethers.getContractFactory("AgentSafeZodiacDeployer");
 		const zodiacDeployer = await ZodiacDeployer.connect(deployer).deploy(
 			SAFE_SINGLETON_BSC,
 			SAFE_PROXY_FACTORY_BSC,
 			await rolesFactory.getAddress(),
-			await actionTarget.getAddress(),
+			DEFAULT_ALLOWED_TARGET,
 		);
 
 		const Factory = await ethers.getContractFactory("LaunchFactory");
@@ -106,10 +115,9 @@ describeFork("LaunchFactory + AgentSafeZodiacDeployer :: BSC fork", () => {
 			rolesInterface.encodeFunctionData("assignRoles", [agent.address, [role], [true]]),
 			rolesInterface.encodeFunctionData("scopeFunction", [
 				role,
-				await actionTarget.getAddress(),
+				DEFAULT_ALLOWED_TARGET,
 				CLAIM_REWARDS_SELECTOR,
-				[1],
-				"0x",
+				[],
 				0,
 			]),
 		];
@@ -159,14 +167,14 @@ describeFork("LaunchFactory + AgentSafeZodiacDeployer :: BSC fork", () => {
 
 		const roles = new ethers.Contract(modules[0], ROLES_ABI, agent);
 		expect(await roles.memberOf(agent.address, role)).to.equal(true);
-		expect(await roles.scopedFunction(role, await actionTarget.getAddress(), CLAIM_REWARDS_SELECTOR)).to.equal(true);
-		expect(await roles.scopedFunction(role, await actionTarget.getAddress(), WITHDRAW_FUNDS_SELECTOR)).to.equal(false);
+		expect(await roles.scopedFunction(role, DEFAULT_ALLOWED_TARGET, CLAIM_REWARDS_SELECTOR)).to.equal(true);
+		expect(await roles.scopedFunction(role, DEFAULT_ALLOWED_TARGET, WITHDRAW_FUNDS_SELECTOR)).to.equal(false);
 
 		await expect(
 			roles.execTransactionWithRole(
-				await actionTarget.getAddress(),
+				DEFAULT_ALLOWED_TARGET,
 				0,
-				actionTarget.interface.encodeFunctionData("claimRewards"),
+				CLAIM_REWARDS_SELECTOR,
 				0,
 				role,
 				true,
@@ -176,7 +184,7 @@ describeFork("LaunchFactory + AgentSafeZodiacDeployer :: BSC fork", () => {
 
 		await expect(
 			roles.execTransactionWithRole(
-				await actionTarget.getAddress(),
+				DEFAULT_ALLOWED_TARGET,
 				0,
 				actionTarget.interface.encodeFunctionData("withdrawFunds"),
 				0,

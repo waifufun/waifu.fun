@@ -40,12 +40,18 @@ contract MockRolesModifier {
         }
     }
 
+    struct ConditionFlat {
+        uint8 parent;
+        uint8 paramType;
+        uint8 operator;
+        bytes compValue;
+    }
+
     function scopeFunction(
         bytes32 roleKey,
         address targetAddress,
         bytes4 functionSig,
-        uint8[] calldata,
-        bytes calldata,
+        ConditionFlat[] calldata,
         uint8
     ) external onlyOwner {
         scopedFunction[roleKey][targetAddress][functionSig] = true;
@@ -111,6 +117,14 @@ contract MockRolesModuleFactory {
 contract MockAgentActionTarget {
     uint256 public allowedCalls;
     uint256 public gatedCalls;
+
+    fallback() external payable {
+        unchecked {
+            ++allowedCalls;
+        }
+    }
+
+    receive() external payable {}
 
     function claimRewards() external {
         unchecked {
