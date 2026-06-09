@@ -1,6 +1,8 @@
 # @waifufun/agent-actions
 
-`@waifufun/agent-actions` defines the shared adapter contract for Waifu agents that execute on-chain actions. Adapters describe what they can do, which permissions they need, and how the runtime should call them. The package intentionally contains no production protocol adapters yet; `example-noop` is only a reference stub for tests and implementers.
+`@waifufun/agent-actions` defines the shared adapter contract for Waifu agents that execute on-chain actions. Adapters describe what they can do, which permissions they need, and how the runtime should call them. Production adapters now exist for **PancakeSwap v3** and **Venus** (BSC); `example-noop` remains a reference stub.
+
+The package also defines the **capability descriptor** contract (`src/capability/`) — the schema-driven, JSON-safe shape the Patron UI renders against to auto-build cards + action forms per capability. See [Capabilities](#capabilities) below.
 
 ## What an adapter provides
 
@@ -88,6 +90,22 @@ export const swapAdapter: AdapterImpl<typeof swapSpec> = {
 
 registerAdapter(swapAdapter);
 ```
+
+## Capabilities
+
+A **capability** is a self-describing agent power (Hyperliquid perps, Venus lending, a future tax-funded arb vault). Where an adapter is the *execution + Zodiac-permission* layer, a capability descriptor is the *discovery + UI* layer. The two relate as:
+
+- Adapter-backed capabilities (PancakeSwap v3, Venus) are **synthesized from the spec** via `capabilityFromAdapterSpec(spec)`. No hand-authoring.
+- Bespoke capabilities (Hyperliquid today) are **hand-authored descriptors** (`hyperliquidPerpsDescriptor(ctx)`) that wrap existing routes as their data/execution backend — nothing is ripped out.
+- Future capabilities (Polymarket, tax-arb-vault) ship as **planned stub descriptors** first: status `locked`, no execution endpoints. A new venue = add a descriptor (+ later an adapter), nothing else.
+
+Descriptors are pure values: JSON-serializable, no functions, no bigint (gas estimates are stringified). The contract lives in `src/capability/types.ts`:
+
+- `CapabilityDescriptor` — slug, name, category, maturity, per-agent `status`, chains, wallets, requirements, data providers, and action descriptors.
+- `CapabilityActionDescriptor` — slug, `mode` (`read` | `prepare_tx` | `client_signed` | `agent_signed` | `server_job`), `requiresConsent`, a schema-driven `inputs` form, and an `endpoint` (null for planned).
+- `AgentCapabilitiesResponse` — the envelope returned by `GET /v2/agents/:id/capabilities`.
+
+Execution (a generic `POST .../capabilities/:cap/actions/:action` route) and Zodiac-module attachment to live Safes are **intentionally deferred**. This package + the read endpoint are the scaffold those plug into.
 
 ## Integration points
 
