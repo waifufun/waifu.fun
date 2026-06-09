@@ -81,6 +81,12 @@ export interface BuildZodiacRolesV2ConfigInput {
 	policy?: "default" | "all";
 	/** Optional override. By default, native-value permissions use Send and all other calls use None. */
 	executionOptions?: ZodiacRolesV2ExecutionOptions;
+	/**
+	 * Custom checker for native per-transaction value ceilings.
+	 * Roles v2 has no built-in `context.value <= cap` condition, so positive
+	 * maxValuePerTx policies need an ICustomCondition checker.
+	 */
+	nativeValueConditionChecker?: Address;
 }
 
 export interface ZodiacRolesV2Config {
@@ -92,8 +98,8 @@ export interface ZodiacRolesV2Config {
 }
 
 const DAY_SECONDS = 24 * 60 * 60;
-const PER_TX_ALLOWANCE_PERIOD_SECONDS = 1;
 const UINT128_MAX = (1n << 128n) - 1n;
+const UINT96_MAX = (1n << 96n) - 1n;
 
 export function buildZodiacRolesV2Config(input: BuildZodiacRolesV2ConfigInput): ZodiacRolesV2Config {
 	const roleKey = assertBytes32(input.roleKey, "roleKey");
@@ -102,9 +108,13 @@ export function buildZodiacRolesV2Config(input: BuildZodiacRolesV2ConfigInput): 
 	const policy = input.policy ?? "default";
 	const executionOptions = input.executionOptions;
 
-	const permissions = collectPermissions(input.adapters, policy, executionOptions, roleKey).sort(
-		compareEncodedPermission,
-	);
+	const permissions = collectPermissions(
+		input.adapters,
+		policy,
+		executionOptions,
+		roleKey,
+		input.nativeValueConditionChecker,
+	).sort(compareEncodedPermission);
 	const calls = [
 		encodeFunctionData({
 			abi: ZODIAC_ROLES_V2_ABI,
@@ -149,6 +159,7 @@ function collectPermissions(
 	policy: "default" | "all",
 	executionOptions: ZodiacRolesV2ExecutionOptions | undefined,
 	roleKey: Hex,
+	nativeValueConditionChecker: Address | undefined,
 ): ZodiacRolesV2EncodedPermission[] {
 	const out: ZodiacRolesV2EncodedPermission[] = [];
 	for (const adapterLike of adapters) {
@@ -160,7 +171,17 @@ function collectPermissions(
 			for (const permission of action.permissions) {
 				if (policy === "default" && (permission.tier ?? "default") !== "default") continue;
 				for (const selector of permission.selectors) {
-					out.push(encodePermission(spec.slug, actionName, permission, selector, executionOptions, roleKey));
+					out.push(
+						encodePermission(
+							spec.slug,
+							actionName,
+							permission,
+							selector,
+							executionOptions,
+							roleKey,
+							nativeValueConditionChecker,
+						),
+					);
 				}
 			}
 		}
@@ -175,6 +196,7 @@ function encodePermission(
 	selector: Hex,
 	executionOptions: ZodiacRolesV2ExecutionOptions | undefined,
 	roleKey: Hex,
+	nativeValueConditionChecker: Address | undefined,
 ): ZodiacRolesV2EncodedPermission {
 	const { allowanceCalls, conditions } = encodeValueCapConditions(
 		adapterSlug,
@@ -182,6 +204,7 @@ function encodePermission(
 		permission,
 		selector,
 		roleKey,
+		nativeValueConditionChecker,
 	);
 	return {
 		adapterSlug,
@@ -201,17 +224,19 @@ function encodeValueCapConditions(
 	permission: AdapterPermission,
 	selector: Hex,
 	roleKey: Hex,
+	nativeValueConditionChecker: Address | undefined,
 ): { allowanceCalls: Hex[]; conditions: ZodiacRolesV2ConditionFlat[] } {
 	const allowanceCalls: Hex[] = [];
 	const conditions: ZodiacRolesV2ConditionFlat[] = [];
-	const addEtherAllowance = (kind: "per-tx" | "per-day", cap: bigint, period: number) => {
+	const addEtherAllowance = (kind: "per-tx" | "per-day", cap: bigint, refill: bigint, period: number) => {
 		assertUint128(cap, `${kind} cap`);
+		assertUint128(refill, `${kind} refill`);
 		const key = allowanceKey(roleKey, adapterSlug, actionName, permission.target, selector, kind);
 		allowanceCalls.push(
 			encodeFunctionData({
 				abi: ZODIAC_ROLES_V2_ABI,
 				functionName: "setAllowance",
-				args: [key, cap, cap, period === 0 ? 0n : cap, BigInt(period), 0n],
+				args: [key, cap, cap, refill, BigInt(period), 0n],
 			}),
 		);
 		conditions.push({
@@ -223,11 +248,10 @@ function encodeValueCapConditions(
 	};
 
 	if (permission.maxValuePerTx !== undefined) {
-		// Zodiac Roles v2 exposes native-value limits through refillable EtherWithinAllowance keys.
-		// Use the smallest supported non-zero period so this is not accidentally a lifetime allowance.
-		addEtherAllowance("per-tx", permission.maxValuePerTx, PER_TX_ALLOWANCE_PERIOD_SECONDS);
+		conditions.push(nativeValueLessThanOrEqualCondition(permission.maxValuePerTx, nativeValueConditionChecker));
 	}
-	if (permission.maxValuePerDay !== undefined) addEtherAllowance("per-day", permission.maxValuePerDay, DAY_SECONDS);
+	if (permission.maxValuePerDay !== undefined)
+		addEtherAllowance("per-day", permission.maxValuePerDay, permission.maxValuePerDay, DAY_SECONDS);
 	if (conditions.length > 1) {
 		return {
 			allowanceCalls,
@@ -243,6 +267,21 @@ function encodeValueCapConditions(
 		};
 	}
 	return { allowanceCalls, conditions };
+}
+
+function nativeValueLessThanOrEqualCondition(cap: bigint, checker: Address | undefined): ZodiacRolesV2ConditionFlat {
+	assertUint96(cap, "per-tx cap");
+	if (!checker) {
+		throw new Error("nativeValueConditionChecker is required for maxValuePerTx");
+	}
+	const checkerAddress = getAddress(checker).slice(2).toLowerCase();
+	const capExtra = cap.toString(16).padStart(24, "0");
+	return {
+		parent: 0,
+		paramType: ZodiacRolesV2ParameterType.None,
+		operator: ZodiacRolesV2Operator.Custom,
+		compValue: `0x${checkerAddress}${capExtra}` as Hex,
+	};
 }
 
 function allowanceKey(
@@ -282,6 +321,10 @@ function assertBytes32(value: Hex, label: string): Hex {
 
 function assertUint128(value: bigint, label: string): void {
 	if (value < 0n || value > UINT128_MAX) throw new Error(`${label} exceeds uint128`);
+}
+
+function assertUint96(value: bigint, label: string): void {
+	if (value < 0n || value > UINT96_MAX) throw new Error(`${label} exceeds uint96`);
 }
 
 function inferExecutionOptions(permission: AdapterPermission, selector: Hex): ZodiacRolesV2ExecutionOptions {

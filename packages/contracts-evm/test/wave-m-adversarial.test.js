@@ -74,10 +74,16 @@ async function deployStack() {
 	const safeSingleton = await SafeSingletonCF.deploy();
 	const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
 	const safeProxyFactory = await SafeProxyFactoryCF.deploy();
-	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+	const RolesFactoryCF = await ethers.getContractFactory("MockRolesModuleFactory");
+	const rolesFactory = await RolesFactoryCF.deploy();
+	const RolesMastercopyCF = await ethers.getContractFactory("MockAgentActionTarget");
+	const rolesMastercopy = await RolesMastercopyCF.deploy();
+	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeZodiacDeployer");
 	const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
 		await safeSingleton.getAddress(),
 		await safeProxyFactory.getAddress(),
+		await rolesFactory.getAddress(),
+		await rolesMastercopy.getAddress(),
 	);
 
 	const platformReceiver = creator.address;
@@ -149,6 +155,8 @@ function buildConfig(ctx, overrides = {}) {
 				agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
 				platformBps: overrides.platformBps ?? 1000,
 				patronBps: overrides.patronBps ?? 2500,
+				agentEoa: overrides.agentEoa ?? ethers.ZeroAddress,
+				roleConfigCalls: overrides.roleConfigCalls ?? [],
 				treasuryTickLowers: overrides.treasuryTickLowers ?? [2000, 6000, 10000, 14000],
 				treasuryTickUppers: overrides.treasuryTickUppers ?? [4000, 8000, 12000, 16000],
 			};

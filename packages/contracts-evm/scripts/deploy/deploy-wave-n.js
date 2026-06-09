@@ -300,6 +300,8 @@ async function main() {
 		safeAddressBook: {
 			singleton: book.SAFE_SINGLETON,
 			proxyFactory: book.SAFE_PROXY_FACTORY,
+			rolesFactory: book.ZODIAC_ROLES_FACTORY,
+			rolesMastercopy: book.ZODIAC_ROLES_MASTERCOPY,
 		},
 		platformCommissionReceiver,
 	};

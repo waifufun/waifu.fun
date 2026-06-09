@@ -210,6 +210,8 @@ function buildConfig(args) {
 		patron: args.patron,
 		agentSafeOwners: args.agentSafeOwners,
 		agentSafeThreshold: args.agentSafeThreshold,
+		agentEoa: ethers.ZeroAddress,
+		roleConfigCalls: [],
 		platformBps: args.platformBps,
 		patronBps: args.patronBps,
 		// Wave N1 LP tick ladder (must be multiples of PCS V3 1% tickSpacing 200)

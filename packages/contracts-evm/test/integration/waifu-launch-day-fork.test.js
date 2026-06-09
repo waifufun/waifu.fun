@@ -191,6 +191,8 @@ function buildWaifuConfig(args) {
 		patron: args.patron,
 		agentSafeOwners: args.agentSafeOwners,
 		agentSafeThreshold: args.agentSafeThreshold,
+		agentEoa: ethers.ZeroAddress,
+		roleConfigCalls: [],
 		platformBps: args.platformBps ?? 1000, // 10%
 		patronBps: args.patronBps ?? 2500, // 25%
 		// WAGMI tick ladder ($10M/$25M/$100M/$1B from a ~$47k launch FDV).

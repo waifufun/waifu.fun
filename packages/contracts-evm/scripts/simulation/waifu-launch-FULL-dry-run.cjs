@@ -509,6 +509,8 @@ async function main() {
 			agentSafeThreshold: 1,
 			platformBps: WAIFU.platformBps,
 			patronBps: WAIFU.patronBps,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: WAIFU_TREASURY_TICK_LOWERS,
 			treasuryTickUppers: WAIFU_TREASURY_TICK_UPPERS,
 		};
@@ -1149,6 +1151,8 @@ async function main() {
 			agentSafeThreshold: 1,
 			platformBps: WAIFU.platformBps,
 			patronBps: WAIFU.patronBps,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: WAIFU_TREASURY_TICK_LOWERS,
 			treasuryTickUppers: WAIFU_TREASURY_TICK_UPPERS,
 		};

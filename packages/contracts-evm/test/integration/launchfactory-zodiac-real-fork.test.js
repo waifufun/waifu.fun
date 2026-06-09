@@ -139,10 +139,10 @@ describeFork("LaunchFactory + AgentSafeZodiacDeployer :: BSC fork", () => {
 			patron: patron.address,
 			agentSafeOwners: [creator.address],
 			agentSafeThreshold: 1,
-			platformBps: 1000,
-			patronBps: 2500,
 			agentEoa: agent.address,
 			roleConfigCalls,
+			platformBps: 1000,
+			patronBps: 2500,
 			treasuryTickLowers: [2000, 6000, 10000, 14000],
 			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};

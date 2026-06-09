@@ -85,16 +85,22 @@ async function deployStack() {
 	const NPMCF = await ethers.getContractFactory("MockNonfungiblePositionManager");
 	const mockNpm = await NPMCF.deploy(await mockWbnbForN.getAddress());
 
-	// Wave M3: Safe v1.4.1 mocks + AgentSafeDeployer so LaunchFactory can
-	// deploy the per-launch agent safe.
+	// Safe and Roles mocks + AgentSafeZodiacDeployer so LaunchFactory can
+	// deploy the per-launch Zodiac-constrained agent safe.
 	const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
 	const safeSingleton = await SafeSingletonCF.deploy();
 	const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
 	const safeProxyFactory = await SafeProxyFactoryCF.deploy();
-	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+	const RolesFactoryCF = await ethers.getContractFactory("MockRolesModuleFactory");
+	const rolesFactory = await RolesFactoryCF.deploy();
+	const RolesMastercopyCF = await ethers.getContractFactory("MockAgentActionTarget");
+	const rolesMastercopy = await RolesMastercopyCF.deploy();
+	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeZodiacDeployer");
 	const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
 		await safeSingleton.getAddress(),
 		await safeProxyFactory.getAddress(),
+		await rolesFactory.getAddress(),
+		await rolesMastercopy.getAddress(),
 	);
 
 	const platformReceiver = creator.address;
@@ -166,6 +172,8 @@ async function createLaunch(ctx, tier, overrides = {}) {
 		patron: overrides.patron ?? creator.address,
 		agentSafeOwners: overrides.agentSafeOwners ?? [creator.address],
 		agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
+		agentEoa: overrides.agentEoa ?? ethers.ZeroAddress,
+		roleConfigCalls: overrides.roleConfigCalls ?? [],
 		platformBps: overrides.platformBps ?? 1000,
 		patronBps: overrides.patronBps ?? 2500,
 		treasuryTickLowers: overrides.treasuryTickLowers ?? [2000, 6000, 10000, 14000],
@@ -452,6 +460,8 @@ describe("Wave H adversarial / edge cases", () => {
 				agentSafeThreshold: 1,
 				platformBps: 1000,
 				patronBps: 2500,
+				agentEoa: ethers.ZeroAddress,
+				roleConfigCalls: [],
 				treasuryTickLowers: [2000, 6000, 10000, 14000],
 				treasuryTickUppers: [4000, 8000, 12000, 16000],
 			}),
