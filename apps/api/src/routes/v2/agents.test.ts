@@ -301,6 +301,144 @@ function resetProvisionDeps() {
 	__setAgentAuthDbForTest(undefined);
 }
 
+const AGENT_DETAIL_TOKEN = "0x15fc6086064afe50ccf4c70000c55cecb6e17777";
+const AGENT_DETAIL_UUID = "68b871b6-96f7-408c-b8d0-388d804b342750";
+const AGENT_DETAIL_SLUG = "sol-the-architect";
+
+function createAgentIdentifierDb(rows: unknown[][]): Database {
+	const pending = [...rows];
+	return {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								limit() {
+									return Promise.resolve(pending.shift() ?? []);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+	} as unknown as Database;
+}
+
+function createAgentDetailPersona() {
+	return {
+		id: AGENT_DETAIL_UUID,
+		agentId: AGENT_DETAIL_SLUG,
+		tokenAddress: AGENT_DETAIL_TOKEN,
+		stewardAgentId: "sol-waifu",
+		ownerStewardUserId: null,
+		ownerAddress: null,
+	};
+}
+
+function createAgentDetailLookup(calls: string[]) {
+	return async (_db: Database, tokenAddress: string) => {
+		calls.push(tokenAddress);
+		return { id: AGENT_DETAIL_SLUG, tokenAddress, name: "Sol the Architect" } as never;
+	};
+}
+
+test("GET /v2/agents/:id resolves persona slug before returning detail", async () => {
+	const calls: string[] = [];
+	__setAgentsRouteDepsForTest({
+		db: createAgentIdentifierDb([[createAgentDetailPersona()]]),
+		getAgentByTokenAddress: createAgentDetailLookup(calls),
+	});
+	try {
+		const res = await app.request(`/${AGENT_DETAIL_SLUG}`);
+		assert.equal(res.status, 200);
+		assert.equal(((await res.json()) as { tokenAddress: string }).tokenAddress, AGENT_DETAIL_TOKEN);
+		assert.deepEqual(calls, [AGENT_DETAIL_TOKEN]);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
+test("GET /v2/agents/:id resolves documented underscore agent IDs before returning detail", async () => {
+	const calls: string[] = [];
+	__setAgentsRouteDepsForTest({
+		db: createAgentIdentifierDb([[{ ...createAgentDetailPersona(), agentId: "agt_eliza_01" }]]),
+		getAgentByTokenAddress: createAgentDetailLookup(calls),
+	});
+	try {
+		const res = await app.request("/agt_eliza_01");
+		assert.equal(res.status, 200);
+		assert.deepEqual(calls, [AGENT_DETAIL_TOKEN]);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
+test("GET /v2/agents/:id resolves persona uuid before returning detail", async () => {
+	const calls: string[] = [];
+	__setAgentsRouteDepsForTest({
+		db: createAgentIdentifierDb([[createAgentDetailPersona()]]),
+		getAgentByTokenAddress: createAgentDetailLookup(calls),
+	});
+	try {
+		const res = await app.request(`/${AGENT_DETAIL_UUID}`);
+		assert.equal(res.status, 200);
+		assert.equal(((await res.json()) as { id: string }).id, AGENT_DETAIL_SLUG);
+		assert.deepEqual(calls, [AGENT_DETAIL_TOKEN]);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
+test("GET /v2/agents/:id keeps token-address detail lookup working", async () => {
+	const calls: string[] = [];
+	__setAgentsRouteDepsForTest({
+		db: createAgentIdentifierDb([]),
+		getAgentByTokenAddress: createAgentDetailLookup(calls),
+	});
+	try {
+		const checksumLikeToken = `0x${AGENT_DETAIL_TOKEN.slice(2).toUpperCase()}`;
+		const res = await app.request(`/${checksumLikeToken}`);
+		assert.equal(res.status, 200);
+		assert.deepEqual(calls, [AGENT_DETAIL_TOKEN]);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
+test("GET /v2/agents/:id returns 404 for a well-formed unknown identifier", async () => {
+	const calls: string[] = [];
+	__setAgentsRouteDepsForTest({
+		db: createAgentIdentifierDb([[]]),
+		getAgentByTokenAddress: createAgentDetailLookup(calls),
+	});
+	try {
+		const res = await app.request("/unknown-agent");
+		assert.equal(res.status, 404);
+		assert.deepEqual(await res.json(), { error: "agent not found" });
+		assert.deepEqual(calls, []);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
+test("GET /v2/agents/:id returns 400 for a malformed identifier", async () => {
+	const calls: string[] = [];
+	__setAgentsRouteDepsForTest({
+		db: createAgentIdentifierDb([]),
+		getAgentByTokenAddress: createAgentDetailLookup(calls),
+	});
+	try {
+		const res = await app.request("/not%20a%20valid%20agent");
+		assert.equal(res.status, 400);
+		assert.deepEqual(await res.json(), { error: "invalid agent identifier" });
+		assert.deepEqual(calls, []);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
 test("GET /v2/agents/:token/apps returns registry rows and revenue totals", async () => {
 	const rows = [
 		{

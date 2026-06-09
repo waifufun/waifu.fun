@@ -80,6 +80,8 @@ export type RequireAgentOwnershipBindings = RequirePatronBindings & {
 	};
 };
 
+export type ResolvedAgentPersona = typeof agentPersonas.$inferSelect;
+
 // ─── Test-injection hooks ─────────────────────────────────────────
 
 export type StewardParser = (raw: string) => Promise<StewardAuthPrincipal | null>;
@@ -254,36 +256,7 @@ export function requireAgentOwnership(paramName = "id"): MiddlewareHandler<Requi
 		}
 
 		const db = getDb();
-		// `agent_personas.id` is a uuid column: querying it with a non-uuid string
-		// (a slug like `sol-the-architect`, or a token address `0x…`) makes Postgres
-		// throw `invalid input syntax for type uuid`, which surfaced as a 500 on the
-		// trading-policy / x / adapter routes. Only hit the uuid column when the
-		// param actually looks like a uuid; otherwise resolve by slug directly.
-		let agent: typeof agentPersonas.$inferSelect | undefined;
-		if (isUuid(agentId)) {
-			const rows = await db.select().from(agentPersonas).where(eq(agentPersonas.id, agentId)).limit(1);
-			agent = rows[0];
-		}
-
-		// Most newer patron routes pass the persona UUID as `:id`, but a few
-		// legacy v2 routes still use the stable agent slug (`agent_personas.agent_id`).
-		// Accept both during Wave 9 so adding ownership middleware doesn't break
-		// existing clients.
-		if (!agent) {
-			const byAgentId = await db.select().from(agentPersonas).where(eq(agentPersonas.agentId, agentId)).limit(1);
-			agent = byAgentId[0];
-		}
-		// The patron page routes by TOKEN ADDRESS (e.g. /patron/0x15fc...). Resolve
-		// that too, else the lookup misses, stewardAgentId stays null, and the
-		// trading-policy proxy falls back to the wrong (waifu) tenant -> 404.
-		if (!agent && /^0x[a-fA-F0-9]{40}$/.test(agentId)) {
-			const byToken = await db
-				.select()
-				.from(agentPersonas)
-				.where(eq(agentPersonas.tokenAddress, agentId.toLowerCase()))
-				.limit(1);
-			agent = byToken[0];
-		}
+		const agent = await resolveAgentByIdentifier(db, agentId);
 		if (!agent) {
 			return c.json({ ok: false, error: "NOT_FOUND", message: "agent not found" }, 404);
 		}
@@ -334,12 +307,10 @@ async function readWalletResolutionBody(c: Parameters<MiddlewareHandler>[0]): Pr
 	}
 }
 
-async function resolveAgentForOwnership(db: DbHandle, routeId: string) {
-	// Guard the uuid columns: `agent_personas.id` and `launches.id` are uuid, so
-	// querying them with a slug or token address throws at Postgres. Only hit
-	// them when the param is a valid uuid.
-	const routeIsUuid = isUuid(routeId);
-	if (routeIsUuid) {
+export async function resolveAgentByIdentifier(db: DbHandle, routeId: string): Promise<ResolvedAgentPersona | null> {
+	// Guard uuid columns: querying them with a slug or token address throws at
+	// Postgres. Only hit `agent_personas.id` when the param is a valid uuid.
+	if (isUuid(routeId)) {
 		const byPersonaId = await db.select().from(agentPersonas).where(eq(agentPersonas.id, routeId)).limit(1);
 		if (byPersonaId[0]) return byPersonaId[0];
 	}
@@ -358,6 +329,14 @@ async function resolveAgentForOwnership(db: DbHandle, routeId: string) {
 		if (byToken[0]) return byToken[0];
 	}
 
+	return null;
+}
+
+async function resolveAgentForOwnership(db: DbHandle, routeId: string) {
+	const persona = await resolveAgentByIdentifier(db, routeId);
+	if (persona) return persona;
+
+	const routeIsUuid = isUuid(routeId);
 	if (!routeIsUuid) return null;
 
 	const byLaunch = await db
