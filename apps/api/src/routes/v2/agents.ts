@@ -22,7 +22,7 @@ import { isAddress } from "viem";
 import { createKey } from "../../lib/agent-keys.js";
 import { ensureAgentIdMatches, requireAgentAuth } from "../../middleware/agent-auth.js";
 import { generateRuntimeApiKey, hashRuntimeApiKey } from "../../middleware/agent-pull-auth.js";
-import { requireAgentOwnership, requirePatron } from "../../middleware/patron-auth.js";
+import { requireAgentOwnership, requirePatron, resolveAgentByIdentifier } from "../../middleware/patron-auth.js";
 import type { RequireAgentOwnershipBindings, RequirePatronBindings } from "../../middleware/patron-auth.js";
 
 import { seedDefaultAdapterPolicies } from "../../services/agent-launch/default-adapter-policies.js";
@@ -67,6 +67,12 @@ export function parseIncludeLegacy(value: string | undefined): boolean {
 	return value === "true";
 }
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+const AGENT_SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,127}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isAgentDetailIdentifier(value: string): boolean {
+	return ADDRESS_RE.test(value) || UUID_RE.test(value) || AGENT_SLUG_RE.test(value);
+}
 
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	if (agentsRouteDepsForTest.db) return agentsRouteDepsForTest.db;
@@ -101,6 +107,7 @@ type AgentsRouteDepsForTest = {
 	createOrchestrator: (() => LaunchOrchestrator) | undefined;
 	createAgentKey: typeof createKey | undefined;
 	elizaCloudClient: Pick<ElizaCloudClient, "provisionWaifuAgent"> | undefined;
+	getAgentByTokenAddress: typeof agentQueries.getAgentByTokenAddress | undefined;
 };
 
 const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
@@ -108,6 +115,7 @@ const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
 	createOrchestrator: undefined,
 	createAgentKey: undefined,
 	elizaCloudClient: undefined,
+	getAgentByTokenAddress: undefined,
 };
 
 export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
@@ -115,6 +123,7 @@ export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest
 	agentsRouteDepsForTest.createOrchestrator = deps.createOrchestrator;
 	agentsRouteDepsForTest.createAgentKey = deps.createAgentKey;
 	agentsRouteDepsForTest.elizaCloudClient = deps.elizaCloudClient;
+	agentsRouteDepsForTest.getAgentByTokenAddress = deps.getAgentByTokenAddress;
 }
 
 function slugifyAgentId(name: string): string {
@@ -1066,23 +1075,36 @@ app.get("/:token/apps", async (c) => {
 });
 
 /**
- * GET /v2/agents/:tokenAddress
+ * GET /v2/agents/:id
  *
- * Detail view for a single agent, keyed by on-chain token address.
+ * Detail view for a single agent, keyed by persona UUID, persona slug, or
+ * on-chain token address. Patron pages link by slug while the legacy public
+ * route linked by token address, so normalize all valid identifiers to the
+ * token-address lookup that builds the existing detail payload.
  */
-app.get("/:token", async (c) => {
+app.get("/:id", async (c) => {
 	const db = requireDb();
 	if (!db) {
 		return c.json({ error: "database unavailable" }, 503);
 	}
 
-	const token = c.req.param("token");
-	if (!ADDRESS_RE.test(token)) {
-		return c.json({ error: "invalid token address" }, 400);
+	const id = c.req.param("id");
+	if (!isAgentDetailIdentifier(id)) {
+		return c.json({ error: "invalid agent identifier" }, 400);
 	}
 
 	try {
-		const detail = await agentQueries.getAgentByTokenAddress(db, token.toLowerCase());
+		let tokenAddress = id;
+		if (!ADDRESS_RE.test(id)) {
+			const persona = await resolveAgentByIdentifier(db, id);
+			if (!persona?.tokenAddress) {
+				return c.json({ error: "agent not found" }, 404);
+			}
+			tokenAddress = persona.tokenAddress;
+		}
+
+		const getAgentByTokenAddress = agentsRouteDepsForTest.getAgentByTokenAddress ?? agentQueries.getAgentByTokenAddress;
+		const detail = await getAgentByTokenAddress(db, tokenAddress.toLowerCase());
 		if (!detail) {
 			return c.json({ error: "agent not found" }, 404);
 		}
