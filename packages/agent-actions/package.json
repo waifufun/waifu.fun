@@ -18,6 +18,10 @@
 		"./adapters/pancakeswap-v3": {
 			"types": "./dist/adapters/pancakeswap-v3/index.d.ts",
 			"import": "./dist/adapters/pancakeswap-v3/index.js"
+		},
+		"./zodiac": {
+			"types": "./dist/zodiac/index.d.ts",
+			"import": "./dist/zodiac/index.js"
 		}
 	},
 	"files": ["src", "dist"],

@@ -11,6 +11,8 @@ export interface AdapterPermission {
 	target: Address;
 	/** Function selectors allowed (e.g. 0xa9059cbb for transfer). */
 	selectors: Hex[];
+	/** Risk tier for launch defaults. Omitted means default. */
+	tier?: "default" | "opt-in";
 	/** Optional per-tx value cap in wei. */
 	maxValuePerTx?: bigint;
 	/** Optional per-day aggregate cap. */
@@ -28,6 +30,8 @@ export interface AdapterAction<Name extends string = string, Input = unknown, Ou
 	label: string;
 	description: string;
 	permissions: AdapterPermission[];
+	/** Risk tier for launch defaults. Omitted means default. */
+	tier?: "default" | "opt-in";
 	/** Rough cost hint in basis points of tx value for fees, plus gas estimate in wei. */
 	cost: {
 		feeBps?: number;

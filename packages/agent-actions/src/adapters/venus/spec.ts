@@ -103,6 +103,7 @@ export const venusSpec = {
 				})),
 				...underlyingErc20Contracts.map((target) => ({
 					label: "Approve underlying for vToken supply",
+					tier: "opt-in" as const,
 					target,
 					selectors: ["0x095ea7b3" as const],
 				})),
@@ -113,6 +114,7 @@ export const venusSpec = {
 			name: "redeem",
 			label: "Redeem underlying",
 			description: "Redeem an underlying asset amount from a Venus vToken market.",
+			tier: "opt-in",
 			permissions: permissionForVTokens("Redeem underlying from vToken", "0x852a12e3"),
 			cost: { gasEstimate: 220_000n },
 		},
@@ -120,6 +122,7 @@ export const venusSpec = {
 			name: "borrow",
 			label: "Borrow",
 			description: "Borrow an underlying asset amount from a Venus vToken market.",
+			tier: "opt-in",
 			permissions: permissionForVTokens("Borrow from vToken", "0xc5ebeaec"),
 			cost: { gasEstimate: 280_000n },
 		},
