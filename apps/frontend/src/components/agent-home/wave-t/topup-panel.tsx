@@ -387,6 +387,7 @@ export function TopUpPanel({ agentTokenAddress, agentTicker, defaultChainId }: T
 					body: JSON.stringify({
 						txHash: flight.txHash,
 						fromChain: chain.id,
+						fromAddress: address,
 						bridge: quote?.ok ? quote.data.quote.bridge : undefined,
 					}),
 				});
@@ -419,7 +420,7 @@ export function TopUpPanel({ agentTokenAddress, agentTicker, defaultChainId }: T
 			alive = false;
 			window.clearTimeout(id);
 		};
-	}, [flight, agentTokenAddress, chain.id, quote]);
+	}, [flight, agentTokenAddress, address, chain.id, quote]);
 
 	const onSubmit = useCallback(async () => {
 		if (!quote || !quote.ok) return;
