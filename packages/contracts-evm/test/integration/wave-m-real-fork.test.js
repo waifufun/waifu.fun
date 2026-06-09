@@ -415,6 +415,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 
 		const createTx = await factory.connect(creator).createLaunch(cfg);
@@ -571,6 +573,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 1,
 			platformBps: 5001,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 		await expect(factory.connect(creator).createLaunch(cfgOver)).to.be.revertedWithCustomError(
 			factory,
@@ -595,6 +599,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 1,
 			platformBps: 5000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 		const tx = await factory.connect(creator).createLaunch(cfgMax);
 		const receipt = await tx.wait();
@@ -662,6 +668,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 2,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 
 		await (await factory.connect(creator).createLaunch(cfg)).wait();
@@ -711,6 +719,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 
 		await (await factory.connect(creator).createLaunch(cfg)).wait();
@@ -803,6 +813,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 
 		await (await factory.connect(creator).createLaunch(cfg)).wait();
@@ -897,6 +909,8 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 		});
 
 		await (await factory.connect(creator).createLaunch(cfg)).wait();

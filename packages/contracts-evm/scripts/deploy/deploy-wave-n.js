@@ -55,6 +55,8 @@ const BSC_MAINNET = {
 	TIP_RECEIVER: "0x4848489f0b2BEdd788c696e2D79b6b69D7484848",
 	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
 	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+	ZODIAC_ROLES_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
+	ZODIAC_ROLES_MASTERCOPY: "0x9646fDAD06d3e24444381f44362a3B0eB343D337",
 	// Wave N additions (PCS V3 only, no Chainlink)
 	PCS_V3_NPM: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
 	PCS_V3_FACTORY: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
@@ -69,6 +71,8 @@ const BSC_TESTNET = {
 	TIP_RECEIVER: "0x0000000000000000000000000000000000000000",
 	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
 	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+	ZODIAC_ROLES_FACTORY: "0x000000000000aDdB49795b0f9bA5BC298cDda236",
+	ZODIAC_ROLES_MASTERCOPY: "0x9646fDAD06d3e24444381f44362a3B0eB343D337",
 	// PCS V3 testnet addresses (verified against pancakeswap docs)
 	PCS_V3_NPM: "0x427bF5b37357632377eCbEC9de3626C71A5396c1",
 	PCS_V3_FACTORY: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
@@ -99,6 +103,8 @@ function resolveAddressBook(networkName) {
 		TIP_RECEIVER: process.env.TIP_RECEIVER || def.TIP_RECEIVER,
 		SAFE_SINGLETON: process.env.SAFE_SINGLETON || def.SAFE_SINGLETON,
 		SAFE_PROXY_FACTORY: process.env.SAFE_PROXY_FACTORY || def.SAFE_PROXY_FACTORY,
+		ZODIAC_ROLES_FACTORY: process.env.ZODIAC_ROLES_FACTORY || def.ZODIAC_ROLES_FACTORY,
+		ZODIAC_ROLES_MASTERCOPY: process.env.ZODIAC_ROLES_MASTERCOPY || def.ZODIAC_ROLES_MASTERCOPY,
 		PCS_V3_NPM: process.env.PCS_V3_NPM || def.PCS_V3_NPM,
 		PCS_V3_FACTORY: process.env.PCS_V3_FACTORY || def.PCS_V3_FACTORY,
 	};
@@ -166,7 +172,7 @@ async function main() {
 
 	if (process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1") {
 		console.log("=== DRY_RUN mode: NOT broadcasting transaction ===");
-		console.log("Would deploy RouterDeployer + AgentSafeDeployer + TreasuryLP5Deployer + LaunchFactory.");
+		console.log("Would deploy RouterDeployer + AgentSafeZodiacDeployer + TreasuryLP5Deployer + LaunchFactory.");
 		if (factoryOwner.toLowerCase() !== deployer.address.toLowerCase()) {
 			console.log(`Would transfer LaunchFactory ownership to ${factoryOwner}.`);
 		}
@@ -181,13 +187,18 @@ async function main() {
 	const routerDeployerAddress = await routerDeployer.getAddress();
 	console.log("RouterDeployer:    ", routerDeployerAddress);
 
-	// 2. AgentSafeDeployer
-	console.log("Deploying AgentSafeDeployer ...");
-	const AgentSafeDeployer = await ethers.getContractFactory("AgentSafeDeployer");
-	const agentSafeDeployer = await AgentSafeDeployer.deploy(book.SAFE_SINGLETON, book.SAFE_PROXY_FACTORY);
+	// 2. AgentSafeZodiacDeployer
+	console.log("Deploying AgentSafeZodiacDeployer ...");
+	const AgentSafeZodiacDeployer = await ethers.getContractFactory("AgentSafeZodiacDeployer");
+	const agentSafeDeployer = await AgentSafeZodiacDeployer.deploy(
+		book.SAFE_SINGLETON,
+		book.SAFE_PROXY_FACTORY,
+		book.ZODIAC_ROLES_FACTORY,
+		book.ZODIAC_ROLES_MASTERCOPY,
+	);
 	await agentSafeDeployer.waitForDeployment();
 	const agentSafeDeployerAddress = await agentSafeDeployer.getAddress();
-	console.log("AgentSafeDeployer: ", agentSafeDeployerAddress);
+	console.log("AgentSafeZodiacDeployer: ", agentSafeDeployerAddress);
 
 	// 3. TreasuryLP5Deployer (Wave O.1)
 	console.log("Deploying TreasuryLP5Deployer ...");
@@ -268,7 +279,7 @@ async function main() {
 		contracts: {
 			LaunchFactory: factoryAddress,
 			RouterDeployer: routerDeployerAddress,
-			AgentSafeDeployer: agentSafeDeployerAddress,
+			AgentSafeZodiacDeployer: agentSafeDeployerAddress,
 			TreasuryLP5Deployer: treasuryDeployerAddress,
 		},
 		constructorArgs: {
