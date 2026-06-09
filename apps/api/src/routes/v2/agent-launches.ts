@@ -9,7 +9,7 @@
  * read/write delegated to {@link LaunchService} and {@link launchRepo}.
  */
 
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Address } from "viem";
 import { z } from "zod";
@@ -27,6 +27,10 @@ import { issueRequestSiweNonce, validateRequestSiwe } from "../../lib/request-si
 import { parseJsonBody } from "../../lib/validation.js";
 import { requireAgentOrPatron } from "../../middleware/agent-or-patron-auth.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
+import {
+	type StewardWalletClient,
+	buildStewardWalletClientFromEnv,
+} from "../../services/agent-launch/steward-wallet-mint.js";
 import { FlapMetadataError, validateFlapMetadataCid } from "../../services/flap-metadata.js";
 import {
 	type CreateLaunchInput,
@@ -214,6 +218,12 @@ export interface AgentLaunchRoutesOptions {
 	getDb?: () => Database | null;
 	getService?: () => LaunchService | null;
 	addAgentProvisioningJob?: (payload: AgentProvisioningJob, options: { jobId: string }) => Promise<unknown>;
+	/**
+	 * Steward client used to MINT the agent's agent-hot EOA during
+	 * provision-on-launch. Defaults to a real env-configured Steward client
+	 * (POST /agents). Injected in tests so no network is touched.
+	 */
+	stewardWalletClient?: StewardWalletClient | null;
 	siweVerifier?: typeof verifySiweMessage;
 	// Injectable FLAP metadata uploader. Defaults to the @waifufun/flap package
 	// adapter (which POSTs to funcs.flap.sh). Overridden in tests so we never
@@ -249,6 +259,17 @@ export type AutoProvisionOnLaunchResult = {
 	jobId: string;
 	agentHotWalletAddress: string | null;
 	agentSafeAddress: string | null;
+	/**
+	 * The minted agent EOA, surfaced for the LaunchFactory `createLaunch`
+	 * handoff (#1013 wires this as `agentEoa` for AgentSafe + Zodiac role
+	 * assignment). Same value as `agentHotWalletAddress` when a real EOA was
+	 * minted; null only if Steward was unconfigured and the wallet stayed pending.
+	 */
+	agentEoa: string | null;
+	/** Steward agentId the EOA is filed under (stable across rotations). */
+	stewardAgentId: string | null;
+	/** true when this run minted a fresh Steward wallet, false when it reused one. */
+	stewardWalletMinted: boolean;
 };
 
 function defaultDb(): Database | null {
@@ -453,7 +474,7 @@ function stringFromMetadata(metadata: Record<string, unknown> | null | undefined
 	return null;
 }
 
-function buildLaunchWalletModel(input: AutoProvisionOnLaunchInput) {
+function buildLaunchWalletModel(input: AutoProvisionOnLaunchInput, stewardAgentId?: string | null) {
 	const agentSafeAddress = input.agentSafeAddress?.toLowerCase() ?? null;
 	const agentHotWalletAddress = input.agentHotWalletAddress?.toLowerCase() ?? null;
 	return {
@@ -468,10 +489,14 @@ function buildLaunchWalletModel(input: AutoProvisionOnLaunchInput) {
 				address: agentHotWalletAddress,
 				chain: "bsc",
 				ownerType: "agent",
-				status: agentHotWalletAddress ? "ready" : "pending-steward-eoa",
+				venue: "steward",
+				...(stewardAgentId ? { stewardAgentId } : {}),
+				// 'active'   -> Steward minted the agent-hot EOA, provisioning proceeds.
+				// 'pending-steward-eoa' -> Steward unconfigured/failed; still gated.
+				status: agentHotWalletAddress ? "active" : "pending-steward-eoa",
 				seam: agentHotWalletAddress
-					? "Steward agent EOA was supplied before launch-time Eliza Cloud provisioning."
-					: "LaunchFactory POST /v2/launches does not yet create the Steward agent EOA. Provisioning is deliberately gated until that EOA is created, then agent_wallet_registry role=agent-hot and agent_wallets.wallet_address must be updated before Eliza Cloud provisioning is enqueued.",
+					? "Steward minted the agent-hot EOA during provision-on-launch (POST /agents). It is the constrained burner the AgentSafe + Zodiac role layer (#1013) assigns as agentEoa via the factory createLaunch."
+					: "Steward is not configured (STEWARD_API_URL/STEWARD_API_KEY missing) so the agent-hot EOA could not be minted. Provisioning stays gated until a real EOA exists.",
 			},
 			safe: {
 				role: "agent-safe",
@@ -494,23 +519,92 @@ async function resolveAddAgentProvisioningJob(options: AgentLaunchRoutesOptions)
 export async function ensureAutoProvisionOnLaunch(
 	db: Database,
 	input: AutoProvisionOnLaunchInput,
-	options: Pick<AgentLaunchRoutesOptions, "addAgentProvisioningJob"> = {},
+	options: Pick<AgentLaunchRoutesOptions, "addAgentProvisioningJob" | "stewardWalletClient"> = {},
 ): Promise<AutoProvisionOnLaunchResult | null> {
 	if (!isAutoProvisionOnLaunchEnabled()) return null;
 
 	const tokenAddress = input.tokenAddress.toLowerCase();
 	const creator = input.creator.toLowerCase();
 	const agentSafeAddress = input.agentSafeAddress?.toLowerCase() ?? null;
-	const agentHotWalletAddress = input.agentHotWalletAddress?.toLowerCase() ?? null;
 	const agentId = autoProvisionAgentId(input.symbol, tokenAddress);
 	const now = new Date();
-	const walletModel = buildLaunchWalletModel({
-		...input,
-		tokenAddress,
-		creator,
-		agentSafeAddress,
-		agentHotWalletAddress,
-	});
+
+	// ── MINT the agent's Steward agent-hot EOA (the built-in agent wallet) ──
+	// This is the gap #1005 left open: nobody minted the EOA, so it stayed a
+	// zero-address sentinel and provisioning was gated. We mint it HERE using
+	// the same real Steward `POST /agents` call that created Sol's wallet.
+	// Idempotent on `agentId`: a retry reuses the existing EOA, no duplicate.
+	//
+	// Precedence: an explicitly-supplied agentHotWalletAddress (e.g. caller
+	// already minted) wins; otherwise we mint via Steward. If Steward is
+	// unconfigured the wallet stays null/pending and provisioning is NOT
+	// enqueued (honest gate, no fake wallet).
+	let agentHotWalletAddress = input.agentHotWalletAddress?.toLowerCase() ?? null;
+	let mintedStewardAgentId: string | null = null;
+	let mintedStewardTenantId: string | null = null;
+	let stewardWalletMinted = false;
+	let stewardMintError: string | null = null;
+
+	// SELF-HEAL: if a prior run already wrote a real (non-sentinel) agent-hot EOA
+	// for this token (e.g. it minted but crashed before enqueueing, or a later
+	// retry lands while Steward is temporarily down), reuse that recorded wallet
+	// instead of re-minting. This lets provisioning recover (registry + enqueue +
+	// agentEoa handoff) WITHOUT depending on Steward being reachable again.
+	if (!agentHotWalletAddress) {
+		const [existingWalletRow] = await db
+			.select({
+				walletAddress: agentWallets.walletAddress,
+				stewardAgentId: agentWallets.stewardAgentId,
+				stewardTenantId: agentWallets.stewardTenantId,
+			})
+			.from(agentWallets)
+			.where(eq(agentWallets.agentToken, tokenAddress))
+			.limit(1);
+		const recordedWallet = existingWalletRow?.walletAddress?.toLowerCase() ?? null;
+		if (recordedWallet && recordedWallet !== PENDING_AGENT_HOT_WALLET_ADDRESS) {
+			agentHotWalletAddress = recordedWallet;
+			mintedStewardAgentId = existingWalletRow?.stewardAgentId ?? null;
+			mintedStewardTenantId = existingWalletRow?.stewardTenantId ?? null;
+			stewardWalletMinted = false;
+		}
+	}
+
+	if (!agentHotWalletAddress) {
+		const stewardWalletClient =
+			options.stewardWalletClient === undefined ? buildStewardWalletClientFromEnv() : options.stewardWalletClient;
+		if (stewardWalletClient) {
+			// A Steward outage (network / 5xx) must NOT abort the whole upsert: the
+			// on-chain launch has already succeeded by the time we get here, so we
+			// still write the persona + wallet rows in a PENDING state (no fake
+			// wallet, no enqueue) so a later retry can mint + finish provisioning.
+			try {
+				const minted = await stewardWalletClient.ensureAgentWallet({
+					agentId,
+					name: input.name,
+					platformId: tokenAddress,
+				});
+				agentHotWalletAddress = minted.walletAddress.toLowerCase();
+				mintedStewardAgentId = minted.stewardAgentId;
+				mintedStewardTenantId = minted.tenantId;
+				stewardWalletMinted = minted.created;
+			} catch (err) {
+				// Swallow: stay pending. The mergedMetadata seam already documents the
+				// pending-steward-eoa recovery path; surface the reason for ops.
+				stewardMintError = err instanceof Error ? err.message : String(err);
+			}
+		}
+	}
+
+	const walletModel = buildLaunchWalletModel(
+		{
+			...input,
+			tokenAddress,
+			creator,
+			agentSafeAddress,
+			agentHotWalletAddress,
+		},
+		mintedStewardAgentId,
+	);
 	const mergedMetadata = {
 		...(input.metadata ?? {}),
 		launchSource: "launch-factory",
@@ -528,6 +622,7 @@ export async function ensureAutoProvisionOnLaunch(
 				ELIZA_CLOUD_BASE_URL: "https://api.elizacloud.ai",
 			},
 		},
+		...(stewardMintError ? { stewardMintError } : {}),
 	};
 
 	const personaValues = {
@@ -571,6 +666,14 @@ export async function ensureAutoProvisionOnLaunch(
 		.returning({ id: agentPersonas.id, agentId: agentPersonas.agentId });
 
 	const personaId = persona?.id ?? null;
+	const stewardTenantId = mintedStewardTenantId ?? process.env.STEWARD_TENANT_ID?.trim() ?? "waifu";
+	const agentWalletMetadata = {
+		walletModel,
+		roles: {
+			"agent-hot": walletModel.wallets.agentHot,
+			"agent-safe": walletModel.wallets.safe,
+		},
+	};
 	await db
 		.insert(agentWallets)
 		.values({
@@ -578,30 +681,36 @@ export async function ensureAutoProvisionOnLaunch(
 			walletAddress: agentHotWalletAddress ?? PENDING_AGENT_HOT_WALLET_ADDRESS,
 			safeAddress: agentSafeAddress,
 			internalAgentId: agentId,
+			// Record the Steward binding so policy/trading + signing paths can
+			// address the agent under the right tenant. Only set when minted.
+			...(mintedStewardAgentId ? { stewardAgentId: mintedStewardAgentId } : {}),
+			...(agentHotWalletAddress ? { stewardTenantId } : {}),
 			launchTxHash: input.txHash,
-			metadata: {
-				walletModel,
-				roles: {
-					"agent-hot": walletModel.wallets.agentHot,
-					"agent-safe": walletModel.wallets.safe,
-				},
-			},
+			metadata: agentWalletMetadata,
 			updatedAt: now,
 		})
 		.onConflictDoUpdate({
 			target: agentWallets.agentToken,
 			set: {
-				walletAddress: agentHotWalletAddress ?? PENDING_AGENT_HOT_WALLET_ADDRESS,
+				// Never downgrade a previously-minted real EOA back to the zero
+				// sentinel on a degraded retry (Steward down/unconfigured): when we
+				// have no fresh EOA, KEEP the existing wallet_address. Only write the
+				// sentinel if the row never had a real wallet.
+				walletAddress: agentHotWalletAddress
+					? agentHotWalletAddress
+					: sql`case when ${agentWallets.walletAddress} = ${PENDING_AGENT_HOT_WALLET_ADDRESS} or ${agentWallets.walletAddress} is null then ${PENDING_AGENT_HOT_WALLET_ADDRESS} else ${agentWallets.walletAddress} end`,
 				safeAddress: agentSafeAddress,
 				internalAgentId: agentId,
+				// On retry, only overwrite the steward binding when we have a fresh
+				// minted value; otherwise preserve whatever a prior run recorded.
+				...(mintedStewardAgentId ? { stewardAgentId: mintedStewardAgentId } : {}),
+				...(agentHotWalletAddress ? { stewardTenantId } : {}),
 				launchTxHash: input.txHash,
-				metadata: {
-					walletModel,
-					roles: {
-						"agent-hot": walletModel.wallets.agentHot,
-						"agent-safe": walletModel.wallets.safe,
-					},
-				},
+				// Preserve the prior (possibly 'active') wallet metadata when this
+				// degraded retry produced no EOA; otherwise refresh it.
+				metadata: agentHotWalletAddress
+					? agentWalletMetadata
+					: sql`coalesce(${agentWallets.metadata}, ${JSON.stringify(agentWalletMetadata)}::jsonb)`,
 				updatedAt: now,
 			},
 		})
@@ -686,7 +795,18 @@ export async function ensureAutoProvisionOnLaunch(
 		await enqueue(payload, { jobId });
 	}
 
-	return { agentId, personaId, jobId, agentHotWalletAddress, agentSafeAddress };
+	return {
+		agentId,
+		personaId,
+		jobId,
+		agentHotWalletAddress,
+		agentSafeAddress,
+		// The minted EOA is the agentEoa the LaunchFactory createLaunch handoff
+		// (#1013) consumes for AgentSafe + Zodiac role assignment.
+		agentEoa: agentHotWalletAddress,
+		stewardAgentId: mintedStewardAgentId,
+		stewardWalletMinted,
+	};
 }
 
 export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) {

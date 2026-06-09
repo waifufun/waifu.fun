@@ -1189,7 +1189,7 @@ test("agent-provisioning worker rejects invalid EVM wallets before calling Eliza
 			};
 			await assert.rejects(
 				() => processor({ id: "job-invalid-wallet", data: payload, attemptsMade: 0 } as never),
-				/valid EVM address/,
+				/valid (non-zero )?EVM address/,
 			);
 		},
 	);
