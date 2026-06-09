@@ -53,6 +53,7 @@ export const pancakeV3Spec = {
 			name: "swap",
 			label: "Swap",
 			description: "Swap an exact input amount through PancakeSwap v3 on BSC.",
+			tier: "opt-in",
 			permissions: [
 				{
 					label: "PancakeSwap v3 exactInputSingle",
@@ -85,6 +86,7 @@ export const pancakeV3Spec = {
 		name: "swap";
 		label: string;
 		description: string;
+		tier: "opt-in";
 		permissions: [{ label: string; target: typeof PANCAKE_V3_SWAP_ROUTER; selectors: ["0x04e45aaf"] }];
 		cost: { gasEstimate: bigint };
 		_phantomInput?: PancakeV3SwapInput;
