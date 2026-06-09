@@ -324,6 +324,8 @@ describe("Wave H adversarial / edge cases", () => {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: [2000, 6000, 10000, 14000],
 			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
@@ -492,6 +494,8 @@ describe("Wave H adversarial / edge cases", () => {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: [2000, 6000, 10000, 14000],
 			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
@@ -542,6 +546,8 @@ describe("Wave H adversarial / edge cases", () => {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: [2000, 6000, 10000, 14000],
 			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
