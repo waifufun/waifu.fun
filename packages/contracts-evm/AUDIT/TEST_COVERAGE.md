@@ -87,7 +87,7 @@ Wave H bundle flow e2e
   ✔ bundle revert leaves vault BNB intact (atomic-or-bust via EVM rollback)
   ✔ treasury allocation goes to TreasuryLP exactly and recordManagedToken locks in
   ✔ nonzero tipBnb is rejected until an explicit external tip-funding model exists
-  ✔ tier-90 vesting: TGE = 50%, linear over 24h reaches 100%
+  ✔ tier-90 vesting: TGE = 50%, linear over 30d reaches 100%
   ✔ three depositors get correct pro-rata shares
   ✔ withdraw with penalty=0 returns full amount; bonusPool stays zero
   ✔ requestLaunch returns true only when CLOSED + funded + router wired
@@ -103,7 +103,7 @@ uses mocked flap portal (`contracts/mocks/BundleFlowMocks.sol`). covers:
 - atomic-revert property (test explicitly induces revert post-portal and
   asserts vault BNB intact)
 - one-shot guards (`executed`, `distributed`)
-- vesting math (TGE 50% + linear 50% over 24h)
+- vesting math (TGE 50% + linear 50% over 30d)
 - pro-rata token distribution
 - refund math (principal + bonus pool share)
 - idempotent refund (second call reverts cleanly)

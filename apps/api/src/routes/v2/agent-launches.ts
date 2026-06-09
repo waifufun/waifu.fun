@@ -31,6 +31,7 @@ import {
 	LaunchService,
 	type LaunchServiceConfig,
 	type LaunchTierString,
+	TIER_TO_INT,
 	getLaunchTierConfigSnapshot,
 	launchRepo,
 } from "../../services/launch-v2/index.js";
@@ -43,7 +44,8 @@ const addressSchema = z
 	.regex(addressRegex, "Expected a 20-byte EVM address")
 	.transform((v) => v.toLowerCase() as `0x${string}`);
 
-const tierSchema = z.enum(["80", "90", "95", "98"]);
+const tierSchema = z.enum(["80", "90", "95", "98", "test"]);
+const enableTierTestCreates = process.env.WAIFU_ENABLE_TIER_TEST === "true";
 
 const siweProofSchema = z.object({
 	message: z.string().min(1),
@@ -163,6 +165,13 @@ export const createLaunchBodySchema = z
 				message: "agentSafeThreshold cannot exceed agentSafeOwners length",
 			});
 		}
+		if (body.tier === "test" && !enableTierTestCreates) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["tier"],
+				message: "test tier is disabled outside internal smoke runs",
+			});
+		}
 		if (body.platformBps + body.patronBps > 10_000) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
@@ -195,7 +204,7 @@ const listQuerySchema = z.object({
 	tier: z.coerce
 		.number()
 		.int()
-		.refine((n) => [80, 90, 95, 98].includes(n))
+		.refine((n) => [4, 80, 90, 95, 98].includes(n))
 		.optional(),
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 	offset: z.coerce.number().int().min(0).default(0),
@@ -647,7 +656,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				agentSafeOwners: input.agentSafeOwners,
 				agentSafeThreshold: input.agentSafeThreshold,
 				creator: input.creator,
-				tier: Number(tier),
+				tier: TIER_TO_INT[tier],
 				presaleCap: tierConfig.presaleCap,
 				v2BuyBnb: tierConfig.v2BuyBnb,
 				vestingEnabled: tierConfig.vestingEnabled,

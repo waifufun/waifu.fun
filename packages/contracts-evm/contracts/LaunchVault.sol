@@ -29,7 +29,7 @@ interface ILaunchFactoryOwner {
 ///         in during OPEN. on close + cap-met, the per-launch BundleRouter
 ///         pulls BNB, runs the atomic flap bundle, and calls distribute()
 ///         to set the token + presaler share. depositors then claim with
-///         optional 50/50/24h vesting. under-subscribed / bundle-failed /
+///         optional 50/50/30d vesting. under-subscribed / bundle-failed /
 ///         admin-stopped launches go to REFUND.
 ///
 /// @dev    state machine:
@@ -57,7 +57,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
 
     uint256 public constant BPS_DENOM = 10_000;
     uint256 public constant MAX_PENALTY_BPS = 1_000; // 10%
-    uint256 public constant VESTING_WINDOW = 86_400; // 24h
+    uint256 public constant VESTING_WINDOW = 30 days; // 30d
     uint256 public constant VESTING_TGE_BPS = 5_000;
     uint256 public constant VESTING_LINEAR_BPS = 5_000;
     uint256 public constant BUNDLE_GRACE_PERIOD = 86_400; // 24h after close

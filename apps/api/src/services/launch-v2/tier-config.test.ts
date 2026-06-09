@@ -52,3 +52,12 @@ test("getLaunchTierConfigSnapshot computes tier 95 and tier 98 from TierMath for
 		vestingEnabled: true,
 	});
 });
+
+test("getLaunchTierConfigSnapshot mirrors cheap safe TIER_TEST", () => {
+	assert.deepEqual(getLaunchTierConfigSnapshot("test"), {
+		presaleCap: "2400000000000000000",
+		quoteAmt: "2400000000000000000",
+		v2BuyBnb: "0",
+		vestingEnabled: false,
+	});
+});

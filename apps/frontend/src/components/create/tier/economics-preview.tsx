@@ -83,7 +83,7 @@ export function EconomicsPreview({ tier }: Props) {
 			<p className="mt-5 text-[11px] text-neutral-400 leading-relaxed">
 				presalers who clear the cap exit at roughly{" "}
 				<span className="text-accent">{tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x</span> when v2 opens.{" "}
-				{tier.vesting === "none" ? "no vesting, all unlocked at open." : "the rest unlocks 50% at open, 50% over 24h."}{" "}
+				{tier.vesting === "none" ? "no vesting, all unlocked at open." : "the rest unlocks 50% at open, 50% over 30d."}{" "}
 				{tier.burn}% of supply burns at graduation, leaving {tier.circulatingSupplyM}m circulating.
 			</p>
 		</div>

@@ -23,14 +23,14 @@ type Props = {
 };
 
 const TOKEN_DECIMALS = 18;
-const VESTING_WINDOW_SECS = 24 * 60 * 60; // 24h linear
+const VESTING_WINDOW_SECS = 30 * 24 * 60 * 60; // 30d linear
 
 /**
  * Claim widget for v3 launches that have entered LAUNCHED state.
  *
  * Vesting policy mirrors `LaunchVault._vestedPct()`:
  *   - if !vestingEnabled \u2192 100% claimable at TGE
- *   - else \u2192 50% at TGE, then linear to 100% over 24h
+ *   - else \u2192 50% at TGE, then linear to 100% over 30d
  *
  * The on-chain `claimableOf(user)` view is the source of truth for the
  * "claim now" amount; we derive locked/vested using the same constants
@@ -229,19 +229,19 @@ function Stat({
 }
 
 function VestingCopy({ launchTimestamp }: { launchTimestamp: number | null }) {
-	if (!launchTimestamp) return <span>50% at tge, 50% linear over 24h.</span>;
+	if (!launchTimestamp) return <span>50% at tge, 50% linear over 30d.</span>;
 
 	const { pct, remainingSecs } = vestingProgress(launchTimestamp, Math.floor(Date.now() / 1000));
 	if (remainingSecs <= 0) return <span>fully vested.</span>;
 
-	const hrs = Math.floor(remainingSecs / 3600);
+	const days = Math.floor(remainingSecs / 86400);
+	const hrs = Math.floor((remainingSecs % 86400) / 3600);
 	const mins = Math.floor((remainingSecs % 3600) / 60);
+	const remainingLabel = days > 0 ? `${days}d ${hrs}h` : `${hrs}h ${mins}m`;
 	return (
 		<span>
 			vesting <span className="tabular-nums text-white/75">{pct.toFixed(1)}%</span> · fully unlocks in{" "}
-			<span className="tabular-nums text-white/75">
-				{hrs}h {mins}m
-			</span>
+			<span className="tabular-nums text-white/75">{remainingLabel}</span>
 		</span>
 	);
 }

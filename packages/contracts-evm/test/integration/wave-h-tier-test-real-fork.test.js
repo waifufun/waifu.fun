@@ -5,14 +5,14 @@
 //
 // What this proves before the mainnet smoke launch:
 //   1. TierMath.tierBudget(4, _) returns the documented
-//      (17.34 BNB cap, 16.84 BNB quoteAmt, 0.5 BNB v2 buy, no vesting) budget
+//      (2.4 BNB cap, 2.4 BNB quoteAmt, 0 BNB v2 buy, no vesting) budget
 //      and the full flow executes against the real Portal at that budget.
 //   2. With noBurn=true the would-burn portion lands at `creator` instead of
 //      the DEAD address. DEAD balance for this token MUST be zero.
 //   3. Token splits remain correct (vault = 20% of supply, agentSafe = 10%).
-//   4. The 16.84 BNB quoteAmt clears Portal v5.14.3's graduation threshold so
-//      a PCS V2 pair gets created and seeded with non-zero reserves.
-//   5. Resell path via PCS V2 works (creator can swap claimed tokens to BNB).
+//   4. v2BuyBnb=0 keeps this cheap smoke budget curve-only; the router does
+//      not require a PCS V2 pair for TIER_TEST.
+//   5. Depositor claim path works with vesting disabled.
 //
 // Run with:
 //   LATEST_HEX=$(curl -s -X POST -H 'Content-Type: application/json' \
@@ -90,7 +90,7 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		return;
 	}
 
-	this.timeout(360_000); // 6 min: salt mining + real Portal calls + V2 swap
+	this.timeout(360_000); // 6 min: salt mining + real Portal calls
 
 	let factory;
 	let owner;
@@ -211,14 +211,14 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		expect(await router.noBurn()).to.equal(true);
 		console.log("    [tier-test] router.noBurn() = true confirmed");
 
-		// 4. Fill the 17.34 BNB cap, respecting 60% wallet cap (= 10.404 BNB).
-		//    creator deposits 10.4 BNB; depositor2 deposits 6.94 BNB.
-		const presaleCap = ethers.parseEther("17.34");
-		const walletCap = (presaleCap * 6_000n) / 10_000n; // 10.404 BNB
+		// 4. Fill the 2.4 BNB cap, respecting 60% wallet cap (= 1.44 BNB).
+		//    creator deposits 1.44 BNB; depositor2 deposits 0.96 BNB.
+		const presaleCap = ethers.parseEther("2.4");
+		const walletCap = (presaleCap * 6_000n) / 10_000n; // 1.44 BNB
 		expect(await vault.presaleCap()).to.equal(presaleCap);
 
-		const depositA = ethers.parseEther("10.4"); // under wallet cap
-		const depositB = presaleCap - depositA; // = 6.94 BNB
+		const depositA = ethers.parseEther("1.44"); // exactly at 60% wallet cap
+		const depositB = presaleCap - depositA; // = 0.96 BNB
 		expect(depositA).to.be.lte(walletCap);
 
 		await vault.connect(creator).deposit({ value: depositA });
@@ -284,103 +284,55 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		console.log("    [tier-test] DEAD balance = 0 (noBurn proof confirmed)");
 
 		// (f) Creator received the would-burn portion.
-		//     Splits: vault=200M, treasury=100M, V2 LP held by pair (~200M),
-		//     creator (noBurn destination) gets the remainder
-		//     (= totalY held by router after Portal call, less vault+treasury).
-		//     totalY ~= 500M for graduating tiers since Portal moves the V2 LP
-		//     slice into the pair and refunds the rest to the router beneficiary.
+		//     Splits: vault=200M, treasury=100M, creator (noBurn destination)
+		//     receives the router remainder. With v2BuyBnb=0 this is a curve-only
+		//     smoke path; any Portal-created pair is incidental.
 		const creatorTokenBalance = await token.balanceOf(creator.address);
 		expect(creatorTokenBalance).to.be.gt(0n);
 		console.log(`    [tier-test] creator (noBurn destination) balance: ${ethers.formatUnits(creatorTokenBalance, 18)}`);
 
-		// (g) PCS V2 pair MUST exist (TIER_TEST quoteAmt=16.84 BNB clears the
-		//     ~16.8 BNB graduation threshold on Portal v5.14.3).
+		// (g) v2BuyBnb=0 means the smoke tier is curve-only. The router must
+		//     complete without requiring a PCS V2 pair; if Portal happens to create
+		//     one anyway, it is incidental and not required for this proof.
 		const PCSFactoryAbi = ["function getPair(address,address) view returns (address)"];
 		const pcsFactory = new ethers.Contract(PCS_FACTORY, PCSFactoryAbi, ethers.provider);
 		const pair = await pcsFactory.getPair(predicted, WBNB);
-		expect(pair).to.not.equal(ethers.ZeroAddress);
-		console.log(`    [tier-test] PCS V2 pair at ${pair}`);
-
-		// V2 reserves non-zero on both sides (Portal-seeded LP + 0.5 BNB v2 buy).
-		const pairAbi = [
-			"function getReserves() view returns (uint112, uint112, uint32)",
-			"function token0() view returns (address)",
-		];
-		const pairContract = new ethers.Contract(pair, pairAbi, ethers.provider);
-		const [reserve0, reserve1] = await pairContract.getReserves();
-		const token0 = await pairContract.token0();
-		const tokenIsToken0 = token0.toLowerCase() === predicted.toLowerCase();
-		const pairBnbReserve = tokenIsToken0 ? reserve1 : reserve0;
-		const pairTokenReserve = tokenIsToken0 ? reserve0 : reserve1;
-		expect(pairBnbReserve).to.be.greaterThan(0n);
-		expect(pairTokenReserve).to.be.greaterThan(0n);
-		console.log(
-			`    [tier-test] V2 reserves: ${ethers.formatEther(pairBnbReserve)} BNB / ${ethers.formatUnits(pairTokenReserve, 18)} token`,
-		);
+		console.log(`    [tier-test] PCS V2 pair (optional with v2BuyBnb=0): ${pair}`);
 
 		// (h) Vault state == LAUNCHED (enum value 2).
 		expect(await vault.state()).to.equal(2);
 
-		// (i) Sum of accounted balances == totalSupply (within tax tolerance).
-		//     vault(200M) + agentSafe(100M) + creator + pair + tax_splitter = totalSupply.
-		//     The 3% buyTax on the 0.5 BNB V2 follow-up buy routes a small slice
-		//     of tokens to the TaxSplitter / marketing receiver, which is NOT one
-		//     of the addresses we hold a handle to here. So we assert the four
-		//     known buckets cover >=99.5% of supply, then log the unaccounted
-		//     tax-splitter delta separately.
-		const pairTokenBal = await token.balanceOf(pair);
+		// (i) Account the router-controlled launch buckets. With this curve-only
+		//     smoke tier, most of the remaining supply stays in FLAP curve-side
+		//     custody rather than a PCS V2 pair; that residual is expected.
+		const pairTokenBal = pair === ethers.ZeroAddress ? 0n : await token.balanceOf(pair);
 		const accounted =
 			vaultTokenBalance + agentSafeTokenBalance + treasuryTokenBalance + creatorTokenBalance + pairTokenBal;
 		const unaccounted = totalSupply - accounted;
 		expect(accounted).to.be.lte(totalSupply);
-		expect((accounted * 10_000n) / totalSupply).to.be.gte(9_950n); // >= 99.5% of supply accounted
+		expect(vaultTokenBalance + agentSafeTokenBalance).to.equal(ethers.parseUnits("300000000", 18));
 		console.log(
-			`    [tier-test] supply split: vault=${ethers.formatUnits(vaultTokenBalance, 18)} agentSafe=${ethers.formatUnits(agentSafeTokenBalance, 18)} treasuryLp=${ethers.formatUnits(treasuryTokenBalance, 18)} creator=${ethers.formatUnits(creatorTokenBalance, 18)} pair=${ethers.formatUnits(pairTokenBal, 18)} tax_splitter=${ethers.formatUnits(unaccounted, 18)}`,
+			`    [tier-test] supply split: vault=${ethers.formatUnits(vaultTokenBalance, 18)} agentSafe=${ethers.formatUnits(agentSafeTokenBalance, 18)} treasuryLp=${ethers.formatUnits(treasuryTokenBalance, 18)} creator=${ethers.formatUnits(creatorTokenBalance, 18)} pair=${ethers.formatUnits(pairTokenBal, 18)} curveSideOrUnaccounted=${ethers.formatUnits(unaccounted, 18)}`,
 		);
 
-		// (j) Salt is now used (factory dedupe state).
+		// (j) Vesting is disabled for TIER_TEST, so depositor2 can claim its full
+		//     pro-rata allocation immediately after launch.
+		const depositor2Before = await token.balanceOf(depositor2.address);
+		await (await vault.connect(depositor2).claim()).wait();
+		const depositor2Claimed = (await token.balanceOf(depositor2.address)) - depositor2Before;
+		const expectedDepositor2Claim = (depositB * vaultTokenBalance) / presaleCap;
+		expect(depositor2Claimed).to.equal(expectedDepositor2Claim);
+
+		// (k) Salt is now used (factory dedupe state).
 		expect(await factory.usedSalts(salt)).to.equal(true);
-
-		// 7. Resell-path proof: creator approves PCS V2 router for 1M tokens
-		//    and swaps them to BNB through the freshly-seeded V2 pair. This is
-		//    the gate the mainnet smoke launch will exercise to confirm recoup.
-		const pcsRouterAbi = [
-			"function swapExactTokensForETHSupportingFeeOnTransferTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline)",
-		];
-		const pcsRouter = new ethers.Contract(PCS_ROUTER, pcsRouterAbi, creator);
-
-		const sellAmount = ethers.parseUnits("1000000", 18); // 1M tokens
-		const tokenAsCreator = new ethers.Contract(
-			predicted,
-			["function approve(address,uint256) returns (bool)"],
-			creator,
-		);
-		await (await tokenAsCreator.approve(PCS_ROUTER, sellAmount)).wait();
-
-		const bnbBefore = await ethers.provider.getBalance(creator.address);
-		const swapTx = await pcsRouter.swapExactTokensForETHSupportingFeeOnTransferTokens(
-			sellAmount,
-			0, // accept any output (test-only, mainnet smoke will set real minOut)
-			[predicted, WBNB],
-			creator.address,
-			closeTimestamp + 3600,
-		);
-		const swapReceipt = await swapTx.wait();
-		const gasCost = swapReceipt.gasUsed * swapReceipt.gasPrice;
-		const bnbAfter = await ethers.provider.getBalance(creator.address);
-		const bnbReceived = bnbAfter + gasCost - bnbBefore;
-		expect(bnbReceived).to.be.gt(0n);
-		console.log(
-			`    [tier-test] recoup: sold 1M tokens for ${ethers.formatEther(bnbReceived)} BNB (gas: ${swapReceipt.gasUsed})`,
-		);
 
 		// ---- Summary ----
 		console.log("\n    ====== Wave H TIER_TEST + noBurn Summary ======");
 		console.log("    Tier:               TIER_TEST (4)");
 		console.log("    noBurn:             true");
-		console.log("    presaleCap:         17.34 BNB (10.4 + 6.94)");
-		console.log("    quoteAmt:           16.84 BNB");
-		console.log("    v2BuyBnb:           0.5 BNB");
+		console.log("    presaleCap:         2.4 BNB (1.44 + 0.96)");
+		console.log("    quoteAmt:           2.4 BNB");
+		console.log("    v2BuyBnb:           0 BNB");
 		console.log(`    createLaunch gas:   ${createReceipt.gasUsed}`);
 		console.log(`    executeBundle gas:  ${execReceipt.gasUsed}`);
 		console.log(`    Token:              ${predicted}`);
@@ -392,9 +344,9 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		console.log(
 			`    treasuryLp balance: ${ethers.formatUnits(treasuryTokenBalance, 18)} (deferred V3, 0 pre-finalize)`,
 		);
-		console.log(`    pair token reserve: ${ethers.formatUnits(pairTokenReserve, 18)}`);
-		console.log(`    tax-splitter unacct:${ethers.formatUnits(unaccounted, 18)} (~3% of v2-buy slice)`);
-		console.log(`    recoup proof:       1M tokens -> ${ethers.formatEther(bnbReceived)} BNB`);
+		console.log(`    pair token balance: ${ethers.formatUnits(pairTokenBal, 18)} (optional)`);
+		console.log(`    curve-side/unacct:  ${ethers.formatUnits(unaccounted, 18)} (expected for curve-only smoke)`);
+		console.log(`    depositor2 claim:   ${ethers.formatUnits(depositor2Claimed, 18)} (vesting off)`);
 		console.log("    ===============================================\n");
 	});
 });

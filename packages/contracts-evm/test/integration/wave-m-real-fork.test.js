@@ -149,10 +149,10 @@ const SAFE_ABI = [
 	"function VERSION() view returns (string)",
 ];
 
-// Tier TEST cap = 17.34 BNB. 60% wallet cap = 10.404 BNB.
-const TIER_TEST_CAP = ethers.parseEther("17.34");
-const TIER_TEST_DEPOSIT_A = ethers.parseEther("10.4"); // under wallet cap
-const TIER_TEST_DEPOSIT_B = TIER_TEST_CAP - TIER_TEST_DEPOSIT_A; // 6.94
+// Tier TEST cap = 2.4 BNB. 60% wallet cap = 1.44 BNB.
+const TIER_TEST_CAP = ethers.parseEther("2.4");
+const TIER_TEST_DEPOSIT_A = ethers.parseEther("1.44"); // exactly at 60% wallet cap
+const TIER_TEST_DEPOSIT_B = TIER_TEST_CAP - TIER_TEST_DEPOSIT_A; // 0.96
 
 async function deployFactory(platformReceiver) {
 	const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");

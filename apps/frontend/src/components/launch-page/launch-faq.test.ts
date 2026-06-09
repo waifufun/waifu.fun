@@ -25,16 +25,16 @@ describe("buildLaunchFaq", () => {
 		const items = buildLaunchFaq(LAUNCH_TIERS.TIER_80);
 		const claim = items.find((i) => i.q === "when can i claim?")?.a ?? "";
 		expect(claim).toMatch(/100% unlocks at tge/);
-		expect(claim).not.toMatch(/24h/);
+		expect(claim).not.toMatch(/30d/);
 	});
 
-	it("tier 90 mentions v2 lp + 24h vesting", () => {
+	it("tier 90 mentions v2 lp + 30d vesting", () => {
 		const items = buildLaunchFaq(LAUNCH_TIERS.TIER_90);
 		const bnb = items.find((i) => i.q === "what happens to the bnb?")?.a ?? "";
 		const claim = items.find((i) => i.q === "when can i claim?")?.a ?? "";
 		expect(bnb).toMatch(/pcs v2 lp/);
 		expect(bnb).toMatch(/90%/);
-		expect(claim).toMatch(/24h/);
+		expect(claim).toMatch(/30d/);
 		expect(claim).toMatch(/50% unlocks/);
 	});
 

@@ -22,7 +22,7 @@ export function buildLaunchFaq(tier: LaunchTierInfo): FaqItem[] {
 		{
 			q: "when can i claim?",
 			a: tier.vestingEnabled
-				? "50% unlocks at tge (the moment the bundle lands). the remaining 50% vests linearly over the first 24h. you can claim any time, but only the vested portion will transfer."
+				? "50% unlocks at tge (the moment the bundle lands). the remaining 50% vests linearly over the first 30d. you can claim any time, but only the vested portion will transfer."
 				: "100% unlocks at tge. trading opens and your full allocation is claimable in one tx.",
 		},
 		{
@@ -32,7 +32,7 @@ export function buildLaunchFaq(tier: LaunchTierInfo): FaqItem[] {
 		{
 			q: "what happens to the bnb?",
 			a: graduates
-				? `the round's bnb goes to bundle the launch: ${tier.bundlePct}% buys tokens in the same block as the deploy, ${tier.v2BuyBnb} bnb is added to pcs v2 lp at open. liquidity is locked. presale-side allocations get the 50% tge + 24h linear unlock.`
+				? `the round's bnb goes to bundle the launch: ${tier.bundlePct}% buys tokens in the same block as the deploy, ${tier.v2BuyBnb} bnb is added to pcs v2 lp at open. liquidity is locked. presale-side allocations get the 50% tge + 30d linear unlock.`
 				: "the round's bnb seeds the pcs bonding curve at deploy. there's no separate v2 lp; the bonding curve is the liquidity until the token graduates organically.",
 		},
 	];

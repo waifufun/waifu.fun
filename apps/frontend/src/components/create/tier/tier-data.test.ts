@@ -26,7 +26,7 @@ describe("tier-data", () => {
 		expect(t?.circulatingSupplyM).toBe(400);
 		expect(t?.presaler).toBe(2.0);
 		expect(t?.burn).toBe(60);
-		expect(t?.vesting).toBe("50/50/24h");
+		expect(t?.vesting).toBe("50/50/30d");
 	});
 
 	it("tier 80 has no vesting (legacy preset)", () => {

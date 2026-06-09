@@ -58,6 +58,14 @@ describe("tierBudget", () => {
 		}
 	});
 
+	test("TIER_TEST is 2.4 BNB curve-only smoke budget", () => {
+		const b = tierBudget("TIER_TEST", 300);
+		expect(b.presaleCapWei).toBe(24n * 10n ** 17n);
+		expect(b.quoteAmtWei).toBe(24n * 10n ** 17n);
+		expect(b.v2BuyBnbWei).toBe(0n);
+		expect(b.vestingEnabled).toBe(false);
+	});
+
 	test("TIER_90 at 3% tax", () => {
 		const b = tierBudget("TIER_90", 300);
 		expect(b.presaleCapWei).toBe(32n * ETHER);
@@ -83,7 +91,7 @@ describe("tierBudget", () => {
 	});
 
 	test("invariant: presaleCap == quoteAmt + v2BuyBnb across all (tier, tax) pairs", () => {
-		for (const tier of ["TIER_80", "TIER_90", "TIER_95", "TIER_98"]) {
+		for (const tier of ["TIER_80", "TIER_90", "TIER_95", "TIER_98", "TIER_TEST"]) {
 			for (const bps of [0, 100, 300, 500, 700, 1000]) {
 				const b = tierBudget(tier, bps);
 				expect(b.quoteAmtWei + b.v2BuyBnbWei).toBe(b.presaleCapWei);

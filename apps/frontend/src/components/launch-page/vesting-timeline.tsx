@@ -13,12 +13,12 @@ type Props = {
 	claimable?: bigint;
 };
 
-const VESTING_WINDOW_SEC = 24 * 60 * 60;
+const VESTING_WINDOW_SEC = 30 * 24 * 60 * 60;
 
 /**
  * Visual mirror of `LaunchVault` vesting math:
  *   - vestingEnabled=false: 100% unlock at TGE.
- *   - vestingEnabled=true:  50% TGE + 50% linear over 24h.
+ *   - vestingEnabled=true:  50% TGE + 50% linear over 30d.
  *
  * When `launchTimestamp` is provided post-launch, the bar ticks in real time
  * and the locked/claimable readouts surface beneath.
@@ -75,7 +75,7 @@ export function VestingTimeline({
 					<div className="mt-1 text-zinc-100">50% unlocked</div>
 				</div>
 				<div className="border border-white/10 bg-[#111114] p-3">
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">+24h</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">+30d</div>
 					<div className="mt-1 text-zinc-100">100% unlocked</div>
 				</div>
 			</div>
@@ -101,7 +101,7 @@ export function VestingTimeline({
 				)}
 			</div>
 			<p className="text-xs text-zinc-500">
-				50% claimable at tge, the remaining 50% vests linearly over the first 24h post-launch.
+				50% claimable at tge, the remaining 50% vests linearly over the first 30d post-launch.
 			</p>
 			{launchSec && allocation > 0n ? (
 				<dl className="grid grid-cols-3 gap-2 pt-1">

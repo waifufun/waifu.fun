@@ -196,7 +196,7 @@ per-launch escrow. all depositor BNB lives here until either claim or refund.
 - no per-depositor max cap. a single depositor can fill the entire vault.
   accepted; mitigated by tier sizing (tier 80 = 16 BNB, tier 98 = 160 BNB ,
   whale resistance is fundamentally a UX/marketing problem, not a contract one).
-- vesting parameters are fixed in code (50% TGE + 50% linear over 24h).
+- vesting parameters are fixed in code (50% TGE + 50% linear over 30d).
   per-launch vesting tuning is a follow-up wave.
 - `_allocationOfPure` floors via integer division. last depositor to claim
   may receive 1-2 wei less than their pro-rata share due to rounding.
@@ -455,7 +455,7 @@ honest list of "we know, we ship anyway, for these reasons":
    version that breaks our assumed `newTokenV6` semantics. we have no
    on-chain protection against this. monitoring + circuit-breaker via
    `adminEnableRefund` is the operational response.
-7. **vesting parameters hardcoded.** 50% TGE + 50% linear over 24h is
+7. **vesting parameters hardcoded.** 50% TGE + 50% linear over 30d is
    not configurable per launch in wave H. accepted; tunable in a follow-up.
 8. **rate-limit-throughput cap.** portal enforces 90s cooldown per
    `tx.origin`. 4-EOA pool gives 160 launches/hour ceiling. acceptable

@@ -122,7 +122,7 @@ mitigations planned:
 ## 6. no per-launch vesting configuration
 
 `LaunchVault` hardcodes:
-- `VESTING_WINDOW = 86_400` (24 hours)
+- `VESTING_WINDOW = 30 days` (2,592,000 seconds)
 - `VESTING_TGE_BPS = 5_000` (50% at TGE)
 - `VESTING_LINEAR_BPS = 5_000` (50% linear over the window)
 - `vestingEnabled` is a boolean per launch (off for tier 80, on for tier 90+).

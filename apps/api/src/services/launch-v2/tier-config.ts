@@ -26,6 +26,15 @@ function calibratedQuoteAmt(buyTaxBps: number): bigint {
 }
 
 export function getLaunchTierConfigSnapshot(tier: LaunchTierString, buyTaxBps = 300): LaunchTierConfigSnapshot {
+	if (tier === "test") {
+		return {
+			presaleCap: "2400000000000000000",
+			quoteAmt: "2400000000000000000",
+			v2BuyBnb: "0",
+			vestingEnabled: false,
+		};
+	}
+
 	if (tier === "80") {
 		return {
 			presaleCap: "16000000000000000000",
