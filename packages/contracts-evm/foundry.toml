@@ -56,3 +56,31 @@ runs = 10000
 runs = 256
 depth = 64
 fail_on_revert = false
+
+# zodiac profile: native-value-ceiling checker unit + BSC-fork integration tests
+# under test/foundry/zodiac/. The fork test deploys a real Roles v2 module proxy
+# off the canonical BSC mastercopy and proves the per-call value ceiling reverts
+# above-cap calls. Run:
+#   FOUNDRY_PROFILE=zodiac forge test                       # unit tests only (fork tests vm.skip off-chain)
+#   FOUNDRY_PROFILE=zodiac forge test --fork-url $BSC_RPC_URL  # incl. real Roles v2 fork proof
+[profile.zodiac]
+src = "contracts"
+out = "out-foundry"
+libs = ["node_modules", "lib"]
+test = "test/foundry/zodiac"
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+# via_ir required: sibling repo contracts (e.g. BundleRouter) hit stack-too-deep
+# without the IR pipeline. The zodiac tests themselves are small; the cost is
+# the one-time full-repo IR compile (cached afterwards).
+via_ir = true
+auto_detect_solc = false
+remappings = [
+  "forge-std/=lib/forge-std/src/",
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
+]
+
+[profile.zodiac.fuzz]
+runs = 4096

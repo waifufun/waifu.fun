@@ -139,13 +139,25 @@ describe("Zodiac Roles v2 encoder value caps", () => {
 			module: MODULE,
 			nativeValueConditionChecker: NATIVE_VALUE_CHECKER,
 		});
+		// Canonical Roles v2 tree: Matches(Calldata) root + value-level None children.
 		expect(config.permissions[0].conditions).toHaveLength(3);
-		expect(config.permissions[0].conditions[0].operator).toBe(ZodiacRolesV2Operator.And);
+		expect(config.permissions[0].conditions[0]).toEqual({
+			parent: 0,
+			paramType: ZodiacRolesV2ParameterType.Calldata,
+			operator: ZodiacRolesV2Operator.Matches,
+			compValue: "0x",
+		});
+		// maxValuePerTx Custom ceiling is pushed before the per-day ether allowance.
 		expect(config.permissions[0].conditions[1]).toEqual({
 			parent: 0,
 			paramType: ZodiacRolesV2ParameterType.None,
 			operator: ZodiacRolesV2Operator.Custom,
 			compValue: `${NATIVE_VALUE_CHECKER}00000000000000000000000a`,
+		});
+		expect(config.permissions[0].conditions[2]).toMatchObject({
+			parent: 0,
+			paramType: ZodiacRolesV2ParameterType.None,
+			operator: ZodiacRolesV2Operator.EtherWithinAllowance,
 		});
 		expect(config.permissions[0].allowanceCalls).toHaveLength(1);
 
@@ -211,7 +223,14 @@ describe("Zodiac Roles v2 encoder value caps", () => {
 		});
 
 		expect(config.permissions[0].allowanceCalls).toEqual([]);
+		// Single value-ceiling: Matches(Calldata) root wrapping one Custom child.
 		expect(config.permissions[0].conditions).toEqual([
+			{
+				parent: 0,
+				paramType: ZodiacRolesV2ParameterType.Calldata,
+				operator: ZodiacRolesV2Operator.Matches,
+				compValue: "0x",
+			},
 			{
 				parent: 0,
 				paramType: ZodiacRolesV2ParameterType.None,

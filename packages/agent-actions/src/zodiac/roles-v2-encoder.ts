@@ -227,7 +227,13 @@ function encodeValueCapConditions(
 	nativeValueConditionChecker: Address | undefined,
 ): { allowanceCalls: Hex[]; conditions: ZodiacRolesV2ConditionFlat[] } {
 	const allowanceCalls: Hex[] = [];
-	const conditions: ZodiacRolesV2ConditionFlat[] = [];
+	// Value-level conditions (per-tx Custom ceiling, per-day EtherWithinAllowance).
+	// These are NOT calldata-param conditions: per Zodiac Roles v2 `Integrity` +
+	// the canonical SDK `calldataMatches` encoding, they attach as `None`-typed
+	// children of a `Matches(Calldata)` root. A bare root `Custom`/`And` node
+	// (paramType None) is rejected at scopeFunction time because the root type
+	// tree must resolve to `Calldata` (Integrity.sol: UnsuitableRootNode).
+	const valueChildren: ZodiacRolesV2ConditionFlat[] = [];
 	const addEtherAllowance = (kind: "per-tx" | "per-day", cap: bigint, refill: bigint, period: number) => {
 		assertUint128(cap, `${kind} cap`);
 		assertUint128(refill, `${kind} refill`);
@@ -239,7 +245,9 @@ function encodeValueCapConditions(
 				args: [key, cap, cap, refill, BigInt(period), 0n],
 			}),
 		);
-		conditions.push({
+		// EtherWithinAllowance MUST be a direct child of the Calldata root
+		// (Integrity.sol enforces parent.paramType == Calldata for this operator).
+		valueChildren.push({
 			parent: 0,
 			paramType: ZodiacRolesV2ParameterType.None,
 			operator: ZodiacRolesV2Operator.EtherWithinAllowance,
@@ -248,24 +256,28 @@ function encodeValueCapConditions(
 	};
 
 	if (permission.maxValuePerTx !== undefined) {
-		conditions.push(nativeValueLessThanOrEqualCondition(permission.maxValuePerTx, nativeValueConditionChecker));
+		valueChildren.push(nativeValueLessThanOrEqualCondition(permission.maxValuePerTx, nativeValueConditionChecker));
 	}
 	if (permission.maxValuePerDay !== undefined)
 		addEtherAllowance("per-day", permission.maxValuePerDay, permission.maxValuePerDay, DAY_SECONDS);
-	if (conditions.length > 1) {
-		return {
-			allowanceCalls,
-			conditions: [
-				{
-					parent: 0,
-					paramType: ZodiacRolesV2ParameterType.None,
-					operator: ZodiacRolesV2Operator.And,
-					compValue: "0x",
-				},
-				...conditions,
-			],
-		};
+
+	// No value constraints: wildcard the function (empty conditions).
+	if (valueChildren.length === 0) {
+		return { allowanceCalls, conditions: [] };
 	}
+
+	// Wrap value-level conditions under a Matches(Calldata) root so the real
+	// Roles v2 module accepts the scopeFunction call and walks the conditions.
+	// Children reference the root via parent index 0 (BFS order: root first).
+	const conditions: ZodiacRolesV2ConditionFlat[] = [
+		{
+			parent: 0,
+			paramType: ZodiacRolesV2ParameterType.Calldata,
+			operator: ZodiacRolesV2Operator.Matches,
+			compValue: "0x",
+		},
+		...valueChildren,
+	];
 	return { allowanceCalls, conditions };
 }
 

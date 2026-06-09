@@ -172,12 +172,41 @@ async function main() {
 
 	if (process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1") {
 		console.log("=== DRY_RUN mode: NOT broadcasting transaction ===");
-		console.log("Would deploy RouterDeployer + AgentSafeZodiacDeployer + TreasuryLP5Deployer + LaunchFactory.");
+		console.log(
+			"Would deploy NativeValueCeilingChecker + RouterDeployer + AgentSafeZodiacDeployer + TreasuryLP5Deployer + LaunchFactory.",
+		);
 		if (factoryOwner.toLowerCase() !== deployer.address.toLowerCase()) {
 			console.log(`Would transfer LaunchFactory ownership to ${factoryOwner}.`);
 		}
 		return;
 	}
+
+	// 0. NativeValueCeilingChecker
+	// Stateless ICustomCondition checker that enforces per-call native-value
+	// ceilings (maxValuePerTx). The agent-actions Roles v2 encoder needs this
+	// address whenever a policy sets maxValuePerTx > 0 (it is embedded inline in
+	// the Custom condition compValue). A single deployment backs every agent Safe;
+	// override with NATIVE_VALUE_CHECKER to reuse an existing deployment.
+	let nativeValueCheckerAddress = process.env.NATIVE_VALUE_CHECKER;
+	if (nativeValueCheckerAddress && nativeValueCheckerAddress !== ethers.ZeroAddress) {
+		if (!ethers.isAddress(nativeValueCheckerAddress)) {
+			throw new Error(`Invalid NATIVE_VALUE_CHECKER address: ${nativeValueCheckerAddress}`);
+		}
+		const code = await ethers.provider.getCode(nativeValueCheckerAddress);
+		if (code === "0x") {
+			throw new Error(`NATIVE_VALUE_CHECKER ${nativeValueCheckerAddress} has no code on ${netName}.`);
+		}
+		nativeValueCheckerAddress = ethers.getAddress(nativeValueCheckerAddress);
+		console.log("NativeValueCeilingChecker (reused):", nativeValueCheckerAddress);
+	} else {
+		console.log("Deploying NativeValueCeilingChecker ...");
+		const NativeValueCeilingChecker = await ethers.getContractFactory("NativeValueCeilingChecker");
+		const nativeValueChecker = await NativeValueCeilingChecker.deploy();
+		await nativeValueChecker.waitForDeployment();
+		nativeValueCheckerAddress = await nativeValueChecker.getAddress();
+		console.log("NativeValueCeilingChecker:", nativeValueCheckerAddress);
+	}
+	console.log("");
 
 	// 1. RouterDeployer
 	console.log("Deploying RouterDeployer ...");
@@ -281,6 +310,7 @@ async function main() {
 			RouterDeployer: routerDeployerAddress,
 			AgentSafeZodiacDeployer: agentSafeDeployerAddress,
 			TreasuryLP5Deployer: treasuryDeployerAddress,
+			NativeValueCeilingChecker: nativeValueCheckerAddress,
 		},
 		constructorArgs: {
 			wbnb: book.WBNB,
@@ -302,6 +332,9 @@ async function main() {
 			proxyFactory: book.SAFE_PROXY_FACTORY,
 			rolesFactory: book.ZODIAC_ROLES_FACTORY,
 			rolesMastercopy: book.ZODIAC_ROLES_MASTERCOPY,
+			// Agent-actions Roles v2 encoder reads this for maxValuePerTx ceilings
+			// (pass it as `nativeValueConditionChecker` to buildZodiacRolesV2Config).
+			nativeValueConditionChecker: nativeValueCheckerAddress,
 		},
 		platformCommissionReceiver,
 	};
