@@ -33,8 +33,10 @@ Compatibility env vars:
 Provisioning metadata defaults:
 
 - `CHAIN_ID`: numeric chain id for the service payload when event data does not provide `chainId`; defaults to `56`.
-- `WAIFU_ELIZA_DEFAULT_MODEL`: waifu.fun-hosted launch default for every Eliza model tier; defaults to `openai/gpt-oss-120b`.
+- `WAIFU_ELIZA_DEFAULT_MODEL`: waifu.fun-hosted launch default for every Eliza model tier; defaults to `anthropic/claude-haiku-4.5`. Set this one env var to flip the hosted-agent default without code changes.
 - `ELIZAOS_CLOUD_DEFAULT_MODEL`: compatibility fallback for the same hosted-launch model default.
+- BitRouter-verified model slugs: `anthropic/claude-haiku-4.5` (current safe default), `anthropic/claude-sonnet-4.6`, and `x-ai/grok-4.20`.
+- Frontier-open target slugs to re-test once BitRouter routes them: `moonshotai/kimi-k2.6`, `z-ai/glm-5.1`, and `deepseek/deepseek-v4-pro`.
 - `ELIZAOS_CLOUD_SMALL_MODEL`: optional model default used by the older event-driven runtime provisioner when event data does not provide `smallModel`.
 - Hosted agents receive `WAIFU_INITIAL_CREDIT_USD=5`, `WAIFU_ACCESS_GUEST_MIN_TOKENS=1000`, `WAIFU_ACCESS_USER_MIN_TOKENS=100000`, and `WAIFU_ACCESS_THRESHOLD_MODE=strict_gt` in container env.
 - The agent EVM wallet is passed as `WAIFU_AGENT_EVM_ADDRESS`; the key is referenced by `WAIFU_AGENT_EVM_KEY_REF` and should stay in Steward/KMS custody. Direct provisions, worker provisions, and the admin ops test page all forward an explicit `walletKeyRef` when supplied, otherwise they default to `steward:<agentId>`.

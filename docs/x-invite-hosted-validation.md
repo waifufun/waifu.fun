@@ -1,6 +1,6 @@
 # X Invite Hosted Validation
 
-Scope: end-to-end requirement covering X login, invite-gated create, launch submission, hosted runtime provisioning on Eliza Cloud/Hetzner, gpt-oss-120b defaults, and wake/resurrect behavior.
+Scope: end-to-end requirement covering X login, invite-gated create, launch submission, hosted runtime provisioning on Eliza Cloud/Hetzner, hosted model defaults, and wake/resurrect behavior.
 
 ## Existing Coverage
 
@@ -40,7 +40,7 @@ Scope: end-to-end requirement covering X login, invite-gated create, launch subm
 1. Sign in with X via `/auth/oauth/start?provider=twitter&return_to=/create`.
 2. Complete create with a valid single-use invite and default hosted runtime.
 3. Confirm provision result includes agent id, token address, Safe address, and one-time agent API key.
-4. Confirm Eliza Cloud shows the agent under the Steward EVM wallet-owned account, the wallet account received its initial credit when new, and the hosted container is using gpt-oss-120b default model config.
+4. Confirm Eliza Cloud shows the agent under the Steward EVM wallet-owned account, the wallet account received its initial credit when new, and the hosted container is using the configured `WAIFU_ELIZA_DEFAULT_MODEL` default model config, currently `anthropic/claude-haiku-4.5` when unset.
 5. Confirm the token page chat route returns a role-scoped `waifu_access_token` for the creator/admin and for holders above the strict token thresholds, and that the embedded Eliza UI accepts the token without exposing full runtime control to guest/user holders.
 6. Let the hosted runtime scale idle, then send an inbound event and verify it wakes and processes.
 7. Mark/detect agent dormant, create an organization credit checkout from `/owner/tokens/:chain/:chainId/:contractAddress/billing/top-up`, complete payment, verify the checkout and organization balance from `/admin/ops/eliza-cloud`, then verify the Eliza Cloud credit webhook resumes the container, clears dormant state, restores premium model tier, and emits `agent.resurrected`.
