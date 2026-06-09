@@ -102,16 +102,22 @@ describe("Wave H bundle flow e2e", () => {
 		const NPMCF = await ethers.getContractFactory("MockNonfungiblePositionManager");
 		const mockNpm = await NPMCF.deploy(await mockWbnbForN.getAddress());
 
-		// Wave M3: AgentSafeDeployer + Safe v1.4.1 mocks so LaunchFactory can
-		// deploy the agent safe alongside the rest of the quintet.
+		// AgentSafeZodiacDeployer + Safe/Role mocks so LaunchFactory can deploy the
+		// Zodiac-constrained agent safe alongside the rest of the quintet.
 		const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
 		const safeSingleton = await SafeSingletonCF.deploy();
 		const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
 		const safeProxyFactory = await SafeProxyFactoryCF.deploy();
-		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+		const RolesFactoryCF = await ethers.getContractFactory("MockRolesModuleFactory");
+		const rolesFactory = await RolesFactoryCF.deploy();
+		const RolesMastercopyCF = await ethers.getContractFactory("MockAgentActionTarget");
+		const rolesMastercopy = await RolesMastercopyCF.deploy();
+		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeZodiacDeployer");
 		const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
 			await safeSingleton.getAddress(),
 			await safeProxyFactory.getAddress(),
+			await rolesFactory.getAddress(),
+			await rolesMastercopy.getAddress(),
 		);
 
 		// Platform receiver doubles as the platformCommissionReceiver immutable;

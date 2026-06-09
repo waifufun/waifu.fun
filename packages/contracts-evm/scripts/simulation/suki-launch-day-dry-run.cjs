@@ -509,6 +509,8 @@ async function main() {
 			agentSafeThreshold: 1,
 			platformBps: SUKI.platformBps,
 			patronBps: SUKI.patronBps,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: SUKI_TREASURY_TICK_LOWERS,
 			treasuryTickUppers: SUKI_TREASURY_TICK_UPPERS,
 		};

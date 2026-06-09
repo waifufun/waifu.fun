@@ -283,6 +283,8 @@ function buildConfig({ creator, bundleBot, platformSafe, label, predicted, vanit
 		patron: creator,
 		agentSafeOwners: [creator],
 		agentSafeThreshold: 1,
+		agentEoa: ethers.ZeroAddress,
+		roleConfigCalls: [],
 		platformBps: 1000,
 		patronBps: 2500,
 		treasuryTickLowers: TIER_LOWER_TICKS,

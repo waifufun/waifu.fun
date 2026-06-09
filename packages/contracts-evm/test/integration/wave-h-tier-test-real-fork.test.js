@@ -178,6 +178,8 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			tier: 4, // TIER_TEST
 			buyTaxBps: 300,
 			sellTaxBps: 300,
