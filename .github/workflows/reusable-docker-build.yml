@@ -44,6 +44,8 @@ jobs:
             service_name: bundle-bot
           - service: nav-snapshotter
             service_name: nav-snapshotter
+          - service: tier-cron
+            service_name: tier-cron
           - service: brain
             service_name: brain
 
