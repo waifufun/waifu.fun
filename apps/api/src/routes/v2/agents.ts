@@ -282,7 +282,7 @@ async function upsertLaunchAgentWallet(
 
 function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifuAgent"> | null {
 	if (agentsRouteDepsForTest.elizaCloudClient) return agentsRouteDepsForTest.elizaCloudClient;
-	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
 	const apiKey = resolveElizaCloudApiKey();
 	if (!serviceKey && !apiKey) return null;
@@ -692,7 +692,7 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 		return c.json({ error: "creditsAmount must be a positive number", unit: "usd_cents" }, 400);
 	}
 
-	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 	const apiKey = resolveElizaCloudApiKey() ?? "";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "";
 

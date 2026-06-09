@@ -37,7 +37,7 @@ const app = new Hono();
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
 function buildOffRamp(): CreditsOffRamp {
-	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 	const apiKey = resolveElizaCloudApiKey() ?? "";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "";
 	const sessionToken = resolveElizaCloudSessionToken() ?? "";

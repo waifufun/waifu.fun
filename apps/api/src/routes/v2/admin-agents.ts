@@ -313,7 +313,7 @@ function isElizaCloudTestEnabled(): boolean {
 }
 
 function configuredElizaCloudClient() {
-	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
 	const apiKey = resolveElizaCloudApiKey();
 	if (!serviceKey && !apiKey) return null;
@@ -350,7 +350,7 @@ function getElizaCloudReadiness() {
 	};
 	return {
 		ready: Object.values(checks).every(Boolean),
-		baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
+		baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
 		checks,
 		missing: Object.entries(checks)
 			.filter(([, value]) => !value)

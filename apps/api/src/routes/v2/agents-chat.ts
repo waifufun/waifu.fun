@@ -37,7 +37,7 @@ function requireDb(): Database | null {
 
 function getElizaClient(): Pick<ElizaCloudClient, "sendAgentMessage"> | null {
 	if (chatRouteDeps.elizaClient) return chatRouteDeps.elizaClient;
-	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
 	const apiKey = resolveElizaCloudApiKey();
 	if (!serviceKey && !apiKey) return null;

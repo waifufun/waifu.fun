@@ -12,7 +12,7 @@ import {
 	__setRequirePatronStewardParserForTest,
 } from "../../middleware/patron-auth.js";
 import type { LaunchService } from "../../services/launch-v2/launch-service.js";
-import { createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
+import { createAgentLaunchRoutes, ensureAutoProvisionOnLaunch, serializeAgentLaunch } from "./agent-launches.js";
 
 function wrapWithErrorHandler(router: ReturnType<typeof createAgentLaunchRoutes>): Hono<AppBindings> {
 	const app = new Hono<AppBindings>();
@@ -73,6 +73,7 @@ afterEach(() => {
 	__setRequirePatronDbForTest(undefined);
 	__setRequirePatronStewardParserForTest(undefined);
 	clearRequestSiweNoncesForTest();
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
 });
 
 function makeRow(overrides: Record<string, unknown> = {}) {
@@ -410,6 +411,371 @@ test("POST / accepts an agent api key + valid SIWE (Wave J)", async () => {
 	}
 
 	__setAgentOrPatronDbForTest(undefined);
+});
+
+type InsertCapture = { table: string | null; values: Record<string, unknown>; conflict?: unknown };
+
+function autoProvisionDb(captures: InsertCapture[], existingWalletRow: Record<string, unknown> | null = null) {
+	return {
+		// Recovery pre-check: SELECT the existing agent_wallets row for this token.
+		// Defaults to no existing row; pass `existingWalletRow` to simulate a prior
+		// run that already recorded an EOA.
+		select() {
+			const builder = {
+				from() {
+					return builder;
+				},
+				where() {
+					return builder;
+				},
+				limit() {
+					return Promise.resolve(existingWalletRow ? [existingWalletRow] : []);
+				},
+			};
+			return builder;
+		},
+		insert(table: unknown) {
+			const tableName = readDrizzleTableNameForLaunchTest(table);
+			const cap: InsertCapture = { table: tableName, values: {} };
+			captures.push(cap);
+			const builder = {
+				values(values: Record<string, unknown>) {
+					cap.values = values;
+					return builder;
+				},
+				onConflictDoUpdate(conflict: unknown) {
+					cap.conflict = conflict;
+					return builder;
+				},
+				returning() {
+					if (tableName === "agent_personas")
+						return Promise.resolve([{ id: "persona-uuid", agentId: cap.values.agentId }]);
+					return Promise.resolve([{ id: "row-id" }]);
+				},
+			};
+			return builder;
+		},
+	} as never;
+}
+
+const AUTO_SAFE = "0x000000000000000000000000000000000000eeee";
+const AUTO_AGENT_HOT = "0x0000000000000000000000000000000000000009";
+
+function autoProvisionInput(overrides: Record<string, unknown> = {}) {
+	return {
+		launchId: SAMPLE_ID,
+		name: "Demo Agent",
+		symbol: "DEMO",
+		description: "demo bio",
+		imageUrl: "ipfs://image",
+		tokenAddress: TOKEN,
+		creator: CREATOR,
+		tier: "80",
+		txHash: "0xfeed",
+		agentSafeAddress: AUTO_SAFE,
+		metadata: { description: "from metadata" },
+		...overrides,
+	};
+}
+
+test("ensureAutoProvisionOnLaunch is a flag-off no-op", async () => {
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+	const captures: InsertCapture[] = [];
+	let enqueued = false;
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		addAgentProvisioningJob: async () => {
+			enqueued = true;
+		},
+	});
+	assert.equal(result, null);
+	assert.equal(captures.length, 0);
+	assert.equal(enqueued, false);
+});
+
+test("ensureAutoProvisionOnLaunch stores owner_steward_user_id when patron-authed", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	const enqueued: Array<{ payload: unknown; options: { jobId: string } }> = [];
+	const result = await ensureAutoProvisionOnLaunch(
+		autoProvisionDb(captures),
+		autoProvisionInput({
+			agentHotWalletAddress: AUTO_AGENT_HOT,
+			patron: { id: "patron-1", stewardUserId: "steward-1", primaryAddress: CREATOR },
+		}),
+		{
+			addAgentProvisioningJob: async (payload, options) => {
+				enqueued.push({ payload, options });
+			},
+		},
+	);
+	assert.equal(result?.agentId, "waifu-demo-00000000");
+	assert.equal(result?.jobId, `launch:${SAMPLE_ID}:agent-provisioning`);
+	const persona = captures.find((c) => c.table === "agent_personas");
+	assert.equal(persona?.values.ownerStewardUserId, "steward-1");
+	assert.equal(persona?.values.ownerAddress, CREATOR);
+	assert.equal(enqueued[0]?.options.jobId, `launch:${SAMPLE_ID}:agent-provisioning`);
+	const payload = enqueued[0]?.payload as { source?: string; data?: Record<string, unknown> } | undefined;
+	assert.deepEqual(payload?.source, "agent.launched");
+	assert.equal(payload?.data?.tokenTicker, "DEMO");
+	assert.equal(payload?.data?.tokenName, "Demo Agent");
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch falls back to owner_address without patron context", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		addAgentProvisioningJob: async () => {},
+	});
+	const persona = captures.find((c) => c.table === "agent_personas");
+	assert.equal(persona?.values.ownerStewardUserId, null);
+	assert.equal(persona?.values.ownerAddress, CREATOR);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch records safe role and pending agent-hot when Steward unconfigured", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	let enqueued = false;
+	// stewardWalletClient: null => Steward is explicitly unconfigured, so no EOA
+	// is minted and the wallet honestly stays pending (no fake wallet).
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		stewardWalletClient: null,
+		addAgentProvisioningJob: async () => {
+			enqueued = true;
+		},
+	});
+	const wallet = captures.find((c) => c.table === "agent_wallets");
+	assert.equal(wallet?.values.walletAddress, "0x0000000000000000000000000000000000000000");
+	assert.equal(wallet?.values.stewardAgentId, undefined);
+	const walletMetadata = wallet?.values.metadata as {
+		roles?: Record<string, { role?: string; address?: string | null; status?: string }>;
+	};
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.role, "agent-hot");
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.address, null);
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.status, "pending-steward-eoa");
+	assert.equal(walletMetadata.roles?.["agent-safe"]?.role, "agent-safe");
+	assert.equal(walletMetadata.roles?.["agent-safe"]?.address, AUTO_SAFE);
+	const registry = captures.find((c) => c.table === "agent_wallet_registry");
+	assert.equal(registry?.values.role, "agent-safe");
+	assert.equal(registry?.values.address, AUTO_SAFE);
+	assert.equal(enqueued, false);
+	assert.equal(result?.agentEoa, null);
+	assert.equal(result?.stewardWalletMinted, false);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+const MINTED_EOA = "0x00000000000000000000000000000000000ABCDE";
+
+/** A mock StewardWalletClient that records calls and returns a deterministic EOA. */
+function mockStewardWalletClient(
+	overrides: { walletAddress?: string; created?: boolean; existing?: Set<string> } = {},
+) {
+	const calls: Array<{ agentId: string; name: string; platformId?: string }> = [];
+	const existing = overrides.existing ?? new Set<string>();
+	const client = {
+		calls,
+		async ensureAgentWallet(args: { agentId: string; name: string; platformId?: string }) {
+			calls.push(args);
+			const wasExisting = existing.has(args.agentId);
+			existing.add(args.agentId);
+			return {
+				stewardAgentId: args.agentId,
+				tenantId: "waifu",
+				walletAddress: overrides.walletAddress ?? MINTED_EOA,
+				solanaAddress: null,
+				created: overrides.created ?? !wasExisting,
+			};
+		},
+	};
+	return client;
+}
+
+test("ensureAutoProvisionOnLaunch MINTS the agent-hot Steward EOA and records it", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	const steward = mockStewardWalletClient();
+	const enqueued: Array<{ payload: unknown; options: { jobId: string } }> = [];
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		stewardWalletClient: steward,
+		addAgentProvisioningJob: async (payload, options) => {
+			enqueued.push({ payload, options });
+		},
+	});
+
+	// Steward was asked to mint the deterministic agent id, keyed on token.
+	assert.equal(steward.calls.length, 1);
+	assert.equal(steward.calls[0]?.agentId, "waifu-demo-00000000");
+	assert.equal(steward.calls[0]?.name, "Demo Agent");
+	assert.equal(steward.calls[0]?.platformId, TOKEN.toLowerCase());
+
+	// agent_wallets.wallet_address replaced the zero sentinel with the minted EOA,
+	// and the steward binding (agentId + tenant) is recorded.
+	const wallet = captures.find((c) => c.table === "agent_wallets");
+	assert.equal(wallet?.values.walletAddress, MINTED_EOA.toLowerCase());
+	assert.equal(wallet?.values.stewardAgentId, "waifu-demo-00000000");
+	assert.equal(wallet?.values.stewardTenantId, "waifu");
+	const walletMetadata = wallet?.values.metadata as {
+		roles?: Record<string, { role?: string; address?: string | null; status?: string; stewardAgentId?: string }>;
+	};
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.address, MINTED_EOA.toLowerCase());
+	// metadata agent-hot.status flipped 'pending-steward-eoa' -> 'active'.
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.status, "active");
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.stewardAgentId, "waifu-demo-00000000");
+
+	// agent_wallet_registry got a role=agent-hot venue=steward row for the EOA.
+	const hotRegistry = captures
+		.filter((c) => c.table === "agent_wallet_registry")
+		.find((c) => c.values.role === "agent-hot");
+	assert.equal(hotRegistry?.values.address, MINTED_EOA.toLowerCase());
+	assert.equal(hotRegistry?.values.venue, "steward");
+
+	// Provisioning was enqueued now that a real EOA exists.
+	assert.equal(enqueued.length, 1);
+	const payload = enqueued[0]?.payload as { data?: Record<string, unknown> } | undefined;
+	assert.equal(payload?.data?.agentWalletAddress, MINTED_EOA.toLowerCase());
+	assert.equal(payload?.data?.primaryWalletAddress, MINTED_EOA.toLowerCase());
+
+	// agentEoa is surfaced for the #1013 factory createLaunch handoff.
+	assert.equal(result?.agentEoa, MINTED_EOA.toLowerCase());
+	assert.equal(result?.agentHotWalletAddress, MINTED_EOA.toLowerCase());
+	assert.equal(result?.stewardAgentId, "waifu-demo-00000000");
+	assert.equal(result?.stewardWalletMinted, true);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch is idempotent: reuses an existing Steward EOA, no duplicate mint", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	// Mark the deterministic id as already-existing so the mock reports reuse.
+	const steward = mockStewardWalletClient({ existing: new Set(["waifu-demo-00000000"]) });
+
+	const first = await ensureAutoProvisionOnLaunch(autoProvisionDb([]), autoProvisionInput(), {
+		stewardWalletClient: steward,
+		addAgentProvisioningJob: async () => {},
+	});
+	const second = await ensureAutoProvisionOnLaunch(autoProvisionDb([]), autoProvisionInput(), {
+		stewardWalletClient: steward,
+		addAgentProvisioningJob: async () => {},
+	});
+
+	// Same EOA both times.
+	assert.equal(first?.agentEoa, MINTED_EOA.toLowerCase());
+	assert.equal(second?.agentEoa, MINTED_EOA.toLowerCase());
+	// Reuse (not freshly minted) since the id pre-existed.
+	assert.equal(first?.stewardWalletMinted, false);
+	assert.equal(second?.stewardWalletMinted, false);
+	// Both runs addressed the SAME steward agent id (no fork).
+	assert.equal(
+		steward.calls.every((c) => c.agentId === "waifu-demo-00000000"),
+		true,
+	);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch stays pending (no fake wallet, no enqueue) when Steward mint fails", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	let enqueued = false;
+	// Steward configured but the mint throws (network/5xx). The on-chain launch
+	// already happened, so we must STILL write the pending records and NOT abort.
+	const steward = {
+		async ensureAgentWallet() {
+			throw new Error("steward boom (network)");
+		},
+	};
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		stewardWalletClient: steward,
+		addAgentProvisioningJob: async () => {
+			enqueued = true;
+		},
+	});
+	// Persona + wallet rows still written (recoverable).
+	assert.ok(captures.find((c) => c.table === "agent_personas"));
+	const wallet = captures.find((c) => c.table === "agent_wallets");
+	assert.equal(wallet?.values.walletAddress, "0x0000000000000000000000000000000000000000");
+	// No EOA, so provisioning is NOT enqueued and agentEoa is null.
+	assert.equal(enqueued, false);
+	assert.equal(result?.agentEoa, null);
+	assert.equal(result?.stewardWalletMinted, false);
+	// The failure reason is surfaced in persona metadata for ops.
+	const persona = captures.find((c) => c.table === "agent_personas");
+	const personaMeta = persona?.values.metadata as { stewardMintError?: string };
+	assert.match(personaMeta.stewardMintError ?? "", /steward boom/);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch self-heals: reuses a previously-recorded EOA without re-minting (Steward down)", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	// Prior run already wrote a real EOA into agent_wallets.
+	const existingWalletRow = {
+		walletAddress: MINTED_EOA.toLowerCase(),
+		stewardAgentId: "waifu-demo-00000000",
+		stewardTenantId: "waifu",
+	};
+	// Steward is DOWN (mint would throw) — but we must NOT need it, the recorded
+	// wallet drives recovery.
+	const steward = {
+		async ensureAgentWallet() {
+			throw new Error("steward unavailable");
+		},
+	};
+	const enqueued: Array<{ payload: unknown }> = [];
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures, existingWalletRow), autoProvisionInput(), {
+		stewardWalletClient: steward,
+		addAgentProvisioningJob: async (payload) => {
+			enqueued.push({ payload });
+		},
+	});
+	// No mint attempt was even needed (recovery short-circuits before Steward).
+	// Registry agent-hot row + enqueue + agentEoa all recover off the recorded EOA.
+	const hotRegistry = captures
+		.filter((c) => c.table === "agent_wallet_registry")
+		.find((c) => c.values.role === "agent-hot");
+	assert.equal(hotRegistry?.values.address, MINTED_EOA.toLowerCase());
+	assert.equal(enqueued.length, 1);
+	assert.equal(result?.agentEoa, MINTED_EOA.toLowerCase());
+	assert.equal(result?.stewardAgentId, "waifu-demo-00000000");
+	assert.equal(result?.stewardWalletMinted, false);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch ignores a sentinel-only existing wallet and mints fresh", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	// Prior run only wrote the zero sentinel -> not a real wallet, so we mint.
+	const existingWalletRow = {
+		walletAddress: "0x0000000000000000000000000000000000000000",
+		stewardAgentId: null,
+		stewardTenantId: null,
+	};
+	const steward = mockStewardWalletClient();
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures, existingWalletRow), autoProvisionInput(), {
+		stewardWalletClient: steward,
+		addAgentProvisioningJob: async () => {},
+	});
+	assert.equal(steward.calls.length, 1);
+	assert.equal(result?.agentEoa, MINTED_EOA.toLowerCase());
+	assert.equal(result?.stewardWalletMinted, true);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch prefers an explicitly-supplied agent-hot EOA over minting", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const steward = mockStewardWalletClient();
+	const result = await ensureAutoProvisionOnLaunch(
+		autoProvisionDb([]),
+		autoProvisionInput({ agentHotWalletAddress: AUTO_AGENT_HOT }),
+		{
+			stewardWalletClient: steward,
+			addAgentProvisioningJob: async () => {},
+		},
+	);
+	// No mint call: caller already supplied the EOA.
+	assert.equal(steward.calls.length, 0);
+	assert.equal(result?.agentEoa, AUTO_AGENT_HOT);
+	assert.equal(result?.stewardWalletMinted, false);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
 });
 
 // ─── upload-metadata route (skill.md step 1) ───────────────────────
