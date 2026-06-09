@@ -97,10 +97,11 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		persona.tokenAddress;
 	if (!tokenAddress) throw new Error("token address is required for Eliza Cloud container provisioning");
 
-	const baseUrl = (process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai").replace(
-		/\/+$/,
-		"",
-	);
+	const baseUrl = (
+		process.env.ELIZA_CLOUD_BASE_URL ??
+		process.env.ELIZA_API_URL ??
+		"https://api.elizacloud.ai"
+	).replace(/\/+$/, "");
 	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
 	const apiKey =
 		process.env.ELIZA_CLOUD_API_KEY ??
@@ -166,8 +167,10 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	if (!primaryWalletAddress) {
 		throw new Error(`agent EVM wallet is required for Eliza Cloud provisioning (${payload.agentId})`);
 	}
-	if (!isAddress(primaryWalletAddress)) {
-		throw new Error(`agent EVM wallet must be a valid EVM address for Eliza Cloud provisioning (${payload.agentId})`);
+	if (!isAddress(primaryWalletAddress) || primaryWalletAddress === "0x0000000000000000000000000000000000000000") {
+		throw new Error(
+			`agent EVM wallet must be a valid non-zero EVM address for Eliza Cloud provisioning (${payload.agentId})`,
+		);
 	}
 	const walletKeyRef =
 		stringField(payload.data, "walletKeyRef") ??

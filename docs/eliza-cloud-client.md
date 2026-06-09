@@ -8,11 +8,12 @@ waifu.fun provisions hosted agents through the Eliza Cloud API:
 
 Default cloud routing:
 
-- waifu.fun uses `https://elizacloud.ai` by default.
+- waifu.fun uses `https://api.elizacloud.ai` by default. Production workers should still set `ELIZA_CLOUD_BASE_URL=https://api.elizacloud.ai` explicitly so the queue processor never falls back to a marketing-site origin.
 - `ELIZA_CLOUD_BASE_URL`: optional override for local development or staging Eliza Cloud origins.
 
 Required production secret:
 
+- `WAIFU_AUTO_PROVISION_ON_LAUNCH`: opt-in API flag for LaunchFactory `POST /v2/launches` to create the persona/wallet records and enqueue `agent-provisioning`. Leave unset/false until staging env and wallet-EOA creation are confirmed.
 - `ELIZA_CLOUD_SERVICE_KEY`: Eliza Cloud waifu service credential sent as `X-Service-Key` and compatibility `X-API-Key`. This is backend-only auth so the public app cannot create cloud agents directly.
 - `ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI`: container image URI sent as `container.image` to Eliza Cloud's service provisioning API.
 

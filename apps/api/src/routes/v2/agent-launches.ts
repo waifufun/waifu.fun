@@ -9,13 +9,15 @@
  * read/write delegated to {@link LaunchService} and {@link launchRepo}.
  */
 
+import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Address } from "viem";
 import { z } from "zod";
 
-import { getDatabase } from "@waifufun/db";
+import { agentPersonas, agentWalletRegistry, agentWallets, getDatabase } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 import { type UploadFlapMetadataInput, type UploadFlapMetadataResult, uploadFlapMetadata } from "@waifufun/flap";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 
 import { verifySiweMessage } from "../../lib/auth-service.js";
 import type { AppBindings } from "../../lib/bindings.js";
@@ -211,6 +213,7 @@ export interface AgentLaunchRoutesOptions {
 	launchService?: LaunchService;
 	getDb?: () => Database | null;
 	getService?: () => LaunchService | null;
+	addAgentProvisioningJob?: (payload: AgentProvisioningJob, options: { jobId: string }) => Promise<unknown>;
 	siweVerifier?: typeof verifySiweMessage;
 	// Injectable FLAP metadata uploader. Defaults to the @waifufun/flap package
 	// adapter (which POSTs to funcs.flap.sh). Overridden in tests so we never
@@ -218,11 +221,43 @@ export interface AgentLaunchRoutesOptions {
 	uploadMetadata?: (input: UploadFlapMetadataInput) => Promise<UploadFlapMetadataResult>;
 }
 
+type PatronLaunchContext = {
+	id?: string;
+	stewardUserId?: string;
+	primaryAddress?: string | null;
+};
+
+export type AutoProvisionOnLaunchInput = {
+	launchId: string;
+	name: string;
+	symbol: string;
+	description?: string | null;
+	imageUrl?: string | null;
+	tokenAddress: string;
+	creator: string;
+	tier: string | number;
+	txHash: string;
+	agentSafeAddress?: string | null;
+	agentHotWalletAddress?: string | null;
+	metadata?: Record<string, unknown> | null;
+	patron?: PatronLaunchContext | null;
+};
+
+export type AutoProvisionOnLaunchResult = {
+	agentId: string;
+	personaId: string | null;
+	jobId: string;
+	agentHotWalletAddress: string | null;
+	agentSafeAddress: string | null;
+};
+
 function defaultDb(): Database | null {
 	const url = process.env.DATABASE_URL;
 	if (!url) return null;
 	return getDatabase(url).db;
 }
+
+const PENDING_AGENT_HOT_WALLET_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const LAUNCH_SIWE_PURPOSE = "launch:create";
 const LAUNCH_SIWE_STATEMENT =
@@ -395,6 +430,265 @@ function tierLabelFromStoredValue(tier: number): string | null {
 	}
 }
 
+function isAutoProvisionOnLaunchEnabled(): boolean {
+	return /^(1|true|yes)$/i.test(process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH ?? "");
+}
+
+function autoProvisionAgentId(symbol: string, tokenAddress: string): string {
+	const cleanSymbol =
+		symbol
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "") || "agent";
+	return `waifu-${cleanSymbol}-${tokenAddress.toLowerCase().slice(2, 10)}`;
+}
+
+function stringFromMetadata(metadata: Record<string, unknown> | null | undefined, ...keys: string[]): string | null {
+	if (!metadata) return null;
+	for (const key of keys) {
+		const value = metadata[key];
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	return null;
+}
+
+function buildLaunchWalletModel(input: AutoProvisionOnLaunchInput) {
+	const agentSafeAddress = input.agentSafeAddress?.toLowerCase() ?? null;
+	const agentHotWalletAddress = input.agentHotWalletAddress?.toLowerCase() ?? null;
+	return {
+		version: 1,
+		model: "steward-eoa-plus-agent-safe",
+		defaultSignerRole: "agent-hot",
+		policyModel: "zodiac-roles",
+		constraintModel: "zodiac-roles",
+		wallets: {
+			agentHot: {
+				role: "agent-hot",
+				address: agentHotWalletAddress,
+				chain: "bsc",
+				ownerType: "agent",
+				status: agentHotWalletAddress ? "ready" : "pending-steward-eoa",
+				seam: agentHotWalletAddress
+					? "Steward agent EOA was supplied before launch-time Eliza Cloud provisioning."
+					: "LaunchFactory POST /v2/launches does not yet create the Steward agent EOA. Provisioning is deliberately gated until that EOA is created, then agent_wallet_registry role=agent-hot and agent_wallets.wallet_address must be updated before Eliza Cloud provisioning is enqueued.",
+			},
+			safe: {
+				role: "agent-safe",
+				address: agentSafeAddress,
+				chain: "bsc",
+				ownerType: "agent",
+				policyModel: "zodiac-roles",
+				zodiacRolesStatus: "pending-contract-attachment",
+			},
+		},
+	};
+}
+
+async function resolveAddAgentProvisioningJob(options: AgentLaunchRoutesOptions) {
+	if (options.addAgentProvisioningJob) return options.addAgentProvisioningJob;
+	const queue = await import("@waifufun/queue");
+	return queue.addAgentProvisioningJob;
+}
+
+export async function ensureAutoProvisionOnLaunch(
+	db: Database,
+	input: AutoProvisionOnLaunchInput,
+	options: Pick<AgentLaunchRoutesOptions, "addAgentProvisioningJob"> = {},
+): Promise<AutoProvisionOnLaunchResult | null> {
+	if (!isAutoProvisionOnLaunchEnabled()) return null;
+
+	const tokenAddress = input.tokenAddress.toLowerCase();
+	const creator = input.creator.toLowerCase();
+	const agentSafeAddress = input.agentSafeAddress?.toLowerCase() ?? null;
+	const agentHotWalletAddress = input.agentHotWalletAddress?.toLowerCase() ?? null;
+	const agentId = autoProvisionAgentId(input.symbol, tokenAddress);
+	const now = new Date();
+	const walletModel = buildLaunchWalletModel({
+		...input,
+		tokenAddress,
+		creator,
+		agentSafeAddress,
+		agentHotWalletAddress,
+	});
+	const mergedMetadata = {
+		...(input.metadata ?? {}),
+		launchSource: "launch-factory",
+		autoProvisionOnLaunch: true,
+		walletModel,
+		launch: {
+			id: input.launchId,
+			tier: input.tier,
+			txHash: input.txHash,
+			agentSafeAddress,
+		},
+		provisioningConfig: {
+			elizaCloudBaseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
+			requiredWorkerEnv: {
+				ELIZA_CLOUD_BASE_URL: "https://api.elizacloud.ai",
+			},
+		},
+	};
+
+	const personaValues = {
+		agentId,
+		tokenAddress,
+		ownerAddress: creator,
+		ownerStewardUserId: input.patron?.stewardUserId ?? null,
+		name: input.name,
+		bio: input.description ?? stringFromMetadata(input.metadata, "description") ?? null,
+		avatarUrl: input.imageUrl ?? stringFromMetadata(input.metadata, "image", "imageUrl", "avatarUrl") ?? null,
+		agentLaunchStatus: "launched" as const,
+		launchedAt: now,
+		launchTxHash: input.txHash,
+		chain: "bsc",
+		runtimeKind: "eliza-cloud",
+		metadata: mergedMetadata,
+		updatedAt: now,
+	};
+
+	const [persona] = await db
+		.insert(agentPersonas)
+		.values(personaValues)
+		.onConflictDoUpdate({
+			target: agentPersonas.agentId,
+			set: {
+				tokenAddress,
+				ownerAddress: creator,
+				ownerStewardUserId: input.patron?.stewardUserId ?? sql`coalesce(${agentPersonas.ownerStewardUserId}, null)`,
+				name: input.name,
+				bio: personaValues.bio,
+				avatarUrl: personaValues.avatarUrl,
+				agentLaunchStatus: "launched",
+				launchedAt: now,
+				launchTxHash: input.txHash,
+				chain: "bsc",
+				runtimeKind: "eliza-cloud",
+				metadata: mergedMetadata,
+				updatedAt: now,
+			},
+		})
+		.returning({ id: agentPersonas.id, agentId: agentPersonas.agentId });
+
+	const personaId = persona?.id ?? null;
+	await db
+		.insert(agentWallets)
+		.values({
+			agentToken: tokenAddress,
+			walletAddress: agentHotWalletAddress ?? PENDING_AGENT_HOT_WALLET_ADDRESS,
+			safeAddress: agentSafeAddress,
+			internalAgentId: agentId,
+			launchTxHash: input.txHash,
+			metadata: {
+				walletModel,
+				roles: {
+					"agent-hot": walletModel.wallets.agentHot,
+					"agent-safe": walletModel.wallets.safe,
+				},
+			},
+			updatedAt: now,
+		})
+		.onConflictDoUpdate({
+			target: agentWallets.agentToken,
+			set: {
+				walletAddress: agentHotWalletAddress ?? PENDING_AGENT_HOT_WALLET_ADDRESS,
+				safeAddress: agentSafeAddress,
+				internalAgentId: agentId,
+				launchTxHash: input.txHash,
+				metadata: {
+					walletModel,
+					roles: {
+						"agent-hot": walletModel.wallets.agentHot,
+						"agent-safe": walletModel.wallets.safe,
+					},
+				},
+				updatedAt: now,
+			},
+		})
+		.returning({ id: agentWallets.id });
+
+	if (agentHotWalletAddress) {
+		await db
+			.insert(agentWalletRegistry)
+			.values({
+				agentTokenAddress: tokenAddress,
+				address: agentHotWalletAddress,
+				chain: "bsc",
+				role: "agent-hot",
+				venue: "steward",
+				label: `${input.symbol.toUpperCase()} Steward Agent EOA`,
+				ownerType: "agent",
+				addedBy: input.patron?.stewardUserId ?? "launch-factory",
+			})
+			.onConflictDoUpdate({
+				target: [agentWalletRegistry.agentTokenAddress, agentWalletRegistry.address, agentWalletRegistry.chain],
+				set: {
+					role: "agent-hot",
+					venue: "steward",
+					label: `${input.symbol.toUpperCase()} Steward Agent EOA`,
+					ownerType: "agent",
+					addedBy: input.patron?.stewardUserId ?? "launch-factory",
+				},
+			})
+			.returning({ id: agentWalletRegistry.id });
+	}
+
+	if (agentSafeAddress) {
+		await db
+			.insert(agentWalletRegistry)
+			.values({
+				agentTokenAddress: tokenAddress,
+				address: agentSafeAddress,
+				chain: "bsc",
+				role: "agent-safe",
+				venue: "safe",
+				label: `${input.symbol.toUpperCase()} AgentSafe`,
+				ownerType: "agent",
+				addedBy: input.patron?.stewardUserId ?? "launch-factory",
+			})
+			.onConflictDoUpdate({
+				target: [agentWalletRegistry.agentTokenAddress, agentWalletRegistry.address, agentWalletRegistry.chain],
+				set: {
+					role: "agent-safe",
+					venue: "safe",
+					label: `${input.symbol.toUpperCase()} AgentSafe`,
+					ownerType: "agent",
+					addedBy: input.patron?.stewardUserId ?? "launch-factory",
+				},
+			})
+			.returning({ id: agentWalletRegistry.id });
+	}
+
+	const jobId = `launch:${input.launchId}:agent-provisioning`;
+	if (agentHotWalletAddress) {
+		const payload: AgentProvisioningJob = {
+			agentId,
+			source: "agent.launched",
+			data: {
+				launchId: input.launchId,
+				tokenAddress,
+				tokenContractAddress: tokenAddress,
+				chain: "bsc",
+				chainId: 56,
+				tokenName: input.name,
+				tokenTicker: input.symbol.toUpperCase(),
+				symbol: input.symbol.toUpperCase(),
+				txHash: input.txHash,
+				launchType: "native",
+				agentSafeAddress,
+				agentWalletAddress: agentHotWalletAddress,
+				primaryWalletAddress: agentHotWalletAddress,
+				walletModel,
+				elizaCloudBaseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
+			},
+		};
+		const enqueue = await resolveAddAgentProvisioningJob(options);
+		await enqueue(payload, { jobId });
+	}
+
+	return { agentId, personaId, jobId, agentHotWalletAddress, agentSafeAddress };
+}
+
 export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) {
 	const app = new Hono<AppBindings>();
 
@@ -555,7 +849,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 		}) as never,
 		async (c) => {
 			const body = await parseJsonBody(c, createLaunchBodySchema);
-			const patron = (c as unknown as { get(key: "patron"): { id: string } }).get("patron");
+			const patron = (c as unknown as { get(key: "patron"): PatronLaunchContext & { id: string } }).get("patron");
 			const siweError = await validateRequestSiwe({
 				patronId: patron.id,
 				purpose: LAUNCH_SIWE_PURPOSE,
@@ -663,6 +957,32 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				createTxHash: onchain.txHash,
 				createBlockNumber: onchain.blockNumber,
 			});
+
+			try {
+				await ensureAutoProvisionOnLaunch(
+					db,
+					{
+						launchId: row.id,
+						name: body.name,
+						symbol: body.symbol,
+						description: stringFromMetadata(metadata, "description"),
+						imageUrl: stringFromMetadata(metadata, "image", "imageUrl", "avatarUrl"),
+						tokenAddress: row.tokenAddress,
+						creator: input.creator,
+						tier,
+						txHash: onchain.txHash,
+						agentSafeAddress: row.agentSafeAddress,
+						metadata,
+						patron,
+					},
+					options,
+				);
+			} catch (error) {
+				c.get("logger")?.error(
+					{ error, launchId: row.id, tokenAddress: row.tokenAddress },
+					"auto provision on launch failed",
+				);
+			}
 
 			return respondAccepted(c, {
 				id: row.id,

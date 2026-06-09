@@ -12,7 +12,7 @@ import {
 	__setRequirePatronStewardParserForTest,
 } from "../../middleware/patron-auth.js";
 import type { LaunchService } from "../../services/launch-v2/launch-service.js";
-import { createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
+import { createAgentLaunchRoutes, ensureAutoProvisionOnLaunch, serializeAgentLaunch } from "./agent-launches.js";
 
 function wrapWithErrorHandler(router: ReturnType<typeof createAgentLaunchRoutes>): Hono<AppBindings> {
 	const app = new Hono<AppBindings>();
@@ -73,6 +73,7 @@ afterEach(() => {
 	__setRequirePatronDbForTest(undefined);
 	__setRequirePatronStewardParserForTest(undefined);
 	clearRequestSiweNoncesForTest();
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
 });
 
 function makeRow(overrides: Record<string, unknown> = {}) {
@@ -410,6 +411,135 @@ test("POST / accepts an agent api key + valid SIWE (Wave J)", async () => {
 	}
 
 	__setAgentOrPatronDbForTest(undefined);
+});
+
+type InsertCapture = { table: string | null; values: Record<string, unknown>; conflict?: unknown };
+
+function autoProvisionDb(captures: InsertCapture[]) {
+	return {
+		insert(table: unknown) {
+			const tableName = readDrizzleTableNameForLaunchTest(table);
+			const cap: InsertCapture = { table: tableName, values: {} };
+			captures.push(cap);
+			const builder = {
+				values(values: Record<string, unknown>) {
+					cap.values = values;
+					return builder;
+				},
+				onConflictDoUpdate(conflict: unknown) {
+					cap.conflict = conflict;
+					return builder;
+				},
+				returning() {
+					if (tableName === "agent_personas")
+						return Promise.resolve([{ id: "persona-uuid", agentId: cap.values.agentId }]);
+					return Promise.resolve([{ id: "row-id" }]);
+				},
+			};
+			return builder;
+		},
+	} as never;
+}
+
+const AUTO_SAFE = "0x000000000000000000000000000000000000eeee";
+const AUTO_AGENT_HOT = "0x0000000000000000000000000000000000000009";
+
+function autoProvisionInput(overrides: Record<string, unknown> = {}) {
+	return {
+		launchId: SAMPLE_ID,
+		name: "Demo Agent",
+		symbol: "DEMO",
+		description: "demo bio",
+		imageUrl: "ipfs://image",
+		tokenAddress: TOKEN,
+		creator: CREATOR,
+		tier: "80",
+		txHash: "0xfeed",
+		agentSafeAddress: AUTO_SAFE,
+		metadata: { description: "from metadata" },
+		...overrides,
+	};
+}
+
+test("ensureAutoProvisionOnLaunch is a flag-off no-op", async () => {
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+	const captures: InsertCapture[] = [];
+	let enqueued = false;
+	const result = await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		addAgentProvisioningJob: async () => {
+			enqueued = true;
+		},
+	});
+	assert.equal(result, null);
+	assert.equal(captures.length, 0);
+	assert.equal(enqueued, false);
+});
+
+test("ensureAutoProvisionOnLaunch stores owner_steward_user_id when patron-authed", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	const enqueued: Array<{ payload: unknown; options: { jobId: string } }> = [];
+	const result = await ensureAutoProvisionOnLaunch(
+		autoProvisionDb(captures),
+		autoProvisionInput({
+			agentHotWalletAddress: AUTO_AGENT_HOT,
+			patron: { id: "patron-1", stewardUserId: "steward-1", primaryAddress: CREATOR },
+		}),
+		{
+			addAgentProvisioningJob: async (payload, options) => {
+				enqueued.push({ payload, options });
+			},
+		},
+	);
+	assert.equal(result?.agentId, "waifu-demo-00000000");
+	assert.equal(result?.jobId, `launch:${SAMPLE_ID}:agent-provisioning`);
+	const persona = captures.find((c) => c.table === "agent_personas");
+	assert.equal(persona?.values.ownerStewardUserId, "steward-1");
+	assert.equal(persona?.values.ownerAddress, CREATOR);
+	assert.equal(enqueued[0]?.options.jobId, `launch:${SAMPLE_ID}:agent-provisioning`);
+	const payload = enqueued[0]?.payload as { source?: string; data?: Record<string, unknown> } | undefined;
+	assert.deepEqual(payload?.source, "agent.launched");
+	assert.equal(payload?.data?.tokenTicker, "DEMO");
+	assert.equal(payload?.data?.tokenName, "Demo Agent");
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch falls back to owner_address without patron context", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		addAgentProvisioningJob: async () => {},
+	});
+	const persona = captures.find((c) => c.table === "agent_personas");
+	assert.equal(persona?.values.ownerStewardUserId, null);
+	assert.equal(persona?.values.ownerAddress, CREATOR);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
+});
+
+test("ensureAutoProvisionOnLaunch records safe role and pending agent-hot Steward EOA seam", async () => {
+	process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH = "true";
+	const captures: InsertCapture[] = [];
+	let enqueued = false;
+	await ensureAutoProvisionOnLaunch(autoProvisionDb(captures), autoProvisionInput(), {
+		addAgentProvisioningJob: async () => {
+			enqueued = true;
+		},
+	});
+	const wallet = captures.find((c) => c.table === "agent_wallets");
+	assert.equal(wallet?.values.walletAddress, "0x0000000000000000000000000000000000000000");
+	const walletMetadata = wallet?.values.metadata as {
+		roles?: Record<string, { role?: string; address?: string | null; status?: string }>;
+	};
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.role, "agent-hot");
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.address, null);
+	assert.equal(walletMetadata.roles?.["agent-hot"]?.status, "pending-steward-eoa");
+	assert.equal(walletMetadata.roles?.["agent-safe"]?.role, "agent-safe");
+	assert.equal(walletMetadata.roles?.["agent-safe"]?.address, AUTO_SAFE);
+	const registry = captures.find((c) => c.table === "agent_wallet_registry");
+	assert.equal(registry?.values.role, "agent-safe");
+	assert.equal(registry?.values.address, AUTO_SAFE);
+	assert.equal(enqueued, false);
+	delete process.env.WAIFU_AUTO_PROVISION_ON_LAUNCH;
 });
 
 // ─── upload-metadata route (skill.md step 1) ───────────────────────

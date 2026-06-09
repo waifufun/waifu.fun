@@ -845,7 +845,7 @@ test("agent-provisioning worker polls partial Eliza Cloud metadata instead of sk
 		assert.equal(result.status, "running");
 	});
 
-	assert.deepEqual(requests, ["https://elizacloud.ai/api/v1/agents/cloud-partial-1/status"]);
+	assert.deepEqual(requests, ["https://api.elizacloud.ai/api/v1/agents/cloud-partial-1/status"]);
 	assert.ok(
 		updates.some(
 			(update) =>
