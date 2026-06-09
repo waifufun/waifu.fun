@@ -127,6 +127,11 @@ const agentSafeOwnersSchema = z
 	.max(10, "agentSafeOwners may include at most 10 owners")
 	.transform((owners) => Array.from(new Set(owners)) as `0x${string}`[]);
 
+const hexBytesSchema = z
+	.string()
+	.regex(/^0x[0-9a-fA-F]*$/, "must be hex bytes")
+	.transform((v) => v.toLowerCase() as `0x${string}`);
+
 const waveMSplitBodySchema = {
 	platformReceiver: addressSchema.optional(),
 	platformBps: z.coerce.number().int().min(1000).max(5000).default(1000),
@@ -134,6 +139,8 @@ const waveMSplitBodySchema = {
 	patron: addressSchema.optional(),
 	agentSafeOwners: agentSafeOwnersSchema.optional(),
 	agentSafeThreshold: z.coerce.number().int().min(1).max(10).default(1),
+	agentEoa: addressSchema.optional(),
+	roleConfigCalls: z.array(hexBytesSchema).max(128).optional(),
 } as const;
 
 export const createLaunchBodySchema = z
@@ -167,6 +174,22 @@ export const createLaunchBodySchema = z
 				code: z.ZodIssueCode.custom,
 				path: ["agentSafeThreshold"],
 				message: "agentSafeThreshold cannot exceed agentSafeOwners length",
+			});
+		}
+		const agentEoa = body.agentEoa ?? "0x0000000000000000000000000000000000000000";
+		const roleConfigCalls = body.roleConfigCalls ?? [];
+		if (agentEoa === "0x0000000000000000000000000000000000000000" && roleConfigCalls.length > 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["roleConfigCalls"],
+				message: "roleConfigCalls require a non-zero agentEoa",
+			});
+		}
+		if (agentEoa !== "0x0000000000000000000000000000000000000000" && roleConfigCalls.length === 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["roleConfigCalls"],
+				message: "roleConfigCalls are required when agentEoa is non-zero",
 			});
 		}
 		if (body.platformBps + body.patronBps > 10_000) {
@@ -1009,6 +1032,8 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				commissionReceiver;
 			const patronAddress = (body.patron ?? creator) as `0x${string}`;
 			const agentSafeOwners = (body.agentSafeOwners ?? [creator]) as `0x${string}`[];
+			const agentEoa = (body.agentEoa ?? "0x0000000000000000000000000000000000000000") as `0x${string}`;
+			const roleConfigCalls = (body.roleConfigCalls ?? []) as `0x${string}`[];
 			const mineInput: MineSaltInput = { creator };
 			if (process.env.LAUNCH_VANITY_SUFFIX !== undefined) mineInput.suffix = process.env.LAUNCH_VANITY_SUFFIX;
 			if (process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS !== undefined) {
@@ -1036,6 +1061,8 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				agentSafeThreshold: body.agentSafeThreshold,
 				platformBps: body.platformBps,
 				patronBps: body.patronBps,
+				agentEoa,
+				roleConfigCalls,
 				tier,
 				buyTaxBps: body.buyTaxBps ?? Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
 				sellTaxBps: body.sellTaxBps ?? Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),

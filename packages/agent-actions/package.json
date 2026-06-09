@@ -22,6 +22,10 @@
 		"./capability": {
 			"types": "./dist/capability/index.d.ts",
 			"import": "./dist/capability/index.js"
+		},
+		"./zodiac": {
+			"types": "./dist/zodiac/index.d.ts",
+			"import": "./dist/zodiac/index.js"
 		}
 	},
 	"files": ["src", "dist"],

@@ -15,6 +15,24 @@ const { ethers } = require("hardhat");
 const TIER_80 = 0;
 const MAX_TICK_PCS_V3_1PCT = 887200;
 
+const SAFE_ABI = [
+	"function getModulesPaginated(address start,uint256 pageSize) view returns (address[] array,address next)",
+	"function isModuleEnabled(address module) view returns (bool)",
+];
+
+const ROLES_ABI = [
+	"function memberOf(address module,bytes32 role) view returns (bool)",
+	"function scopedFunction(bytes32 role,address target,bytes4 selector) view returns (bool)",
+	"function assignRoles(address module,bytes32[] roleKeys,bool[] memberOf)",
+	"function scopeFunction(bytes32 roleKey,address targetAddress,bytes4 functionSig,uint8[] options,bytes conditions,uint8 executionOptions)",
+	"function execTransactionWithRole(address to,uint256 value,bytes data,uint8 operation,bytes32 role,bool shouldRevert) returns (bool)",
+	"error NotAllowed()",
+];
+
+const CLAIM_REWARDS_SELECTOR = "0x372500ab";
+const WITHDRAW_FUNDS_SELECTOR = "0xb60d4288";
+const SENTINEL_MODULES = "0x0000000000000000000000000000000000000001";
+
 function computeInitCodeHash(creationCode, name, symbol) {
 	const encoded = ethers.AbiCoder.defaultAbiCoder().encode(["string", "string"], [name, symbol]);
 	const initCode = ethers.concat([creationCode, encoded]);
@@ -70,10 +88,16 @@ async function deployStack() {
 	const safeSingleton = await SafeSingletonCF.deploy();
 	const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
 	const safeProxyFactory = await SafeProxyFactoryCF.deploy();
-	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+	const RolesFactoryCF = await ethers.getContractFactory("MockRolesModuleFactory");
+	const rolesFactory = await RolesFactoryCF.deploy();
+	const ActionTargetCF = await ethers.getContractFactory("MockAgentActionTarget");
+	const actionTarget = await ActionTargetCF.deploy();
+	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeZodiacDeployer");
 	const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
 		await safeSingleton.getAddress(),
 		await safeProxyFactory.getAddress(),
+		await rolesFactory.getAddress(),
+		await actionTarget.getAddress(),
 	);
 
 	// Platform receiver doubles as platformCommissionReceiver immutable.
@@ -110,6 +134,8 @@ async function deployStack() {
 		name,
 		symbol,
 		agentSafeDeployer,
+		rolesFactory,
+		actionTarget,
 		safeSingleton,
 		safeProxyFactory,
 		platformReceiver,
@@ -146,6 +172,8 @@ function buildConfig(ctx, overrides = {}) {
 				agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
 				platformBps: overrides.platformBps ?? 1000,
 				patronBps: overrides.patronBps ?? 2500,
+				agentEoa: overrides.agentEoa ?? ethers.ZeroAddress,
+				roleConfigCalls: overrides.roleConfigCalls ?? [],
 				treasuryTickLowers: overrides.treasuryTickLowers ?? [2000, 6000, 10000, 14000],
 				treasuryTickUppers: overrides.treasuryTickUppers ?? [4000, 8000, 12000, 16000],
 			};
@@ -210,6 +238,71 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 			expect(await splitter.platformBps()).to.equal(1500);
 			expect(await splitter.patronBps()).to.equal(3000);
 			expect(await splitter.agentBps()).to.equal(10000 - 1500 - 3000);
+		});
+
+		it("createLaunch deploys a Zodiac-constrained AgentSafe through the real factory", async () => {
+			const ctx = await deployStack();
+			const agentRole = await ctx.agentSafeDeployer.AGENT_ROLE();
+			const rolesInterface = new ethers.Interface(ROLES_ABI);
+			const roleConfigCalls = [
+				rolesInterface.encodeFunctionData("assignRoles", [ctx.bundleBot.address, [agentRole], [true]]),
+				rolesInterface.encodeFunctionData("scopeFunction", [
+					agentRole,
+					await ctx.actionTarget.getAddress(),
+					CLAIM_REWARDS_SELECTOR,
+					[1],
+					"0x",
+					0,
+				]),
+			];
+			const cfg = await buildConfig(ctx, {
+				agentEoa: ctx.bundleBot.address,
+				roleConfigCalls,
+			}).config();
+
+			const addrs = await ctx.factory.connect(ctx.creator).createLaunch.staticCall(cfg);
+			await (await ctx.factory.connect(ctx.creator).createLaunch(cfg)).wait();
+
+			const safe = new ethers.Contract(addrs.agentSafe, SAFE_ABI, ethers.provider);
+			const [modules, next] = await safe.getModulesPaginated(SENTINEL_MODULES, 10);
+			expect(modules.length).to.equal(1);
+			expect(next).to.equal(SENTINEL_MODULES);
+			const rolesAddress = modules[0];
+			expect(await safe.isModuleEnabled(rolesAddress)).to.equal(true);
+
+			const rolesRead = new ethers.Contract(rolesAddress, ROLES_ABI, ethers.provider);
+			expect(await rolesRead.memberOf(ctx.bundleBot.address, agentRole)).to.equal(true);
+			expect(
+				await rolesRead.scopedFunction(agentRole, await ctx.actionTarget.getAddress(), CLAIM_REWARDS_SELECTOR),
+			).to.equal(true);
+			expect(
+				await rolesRead.scopedFunction(agentRole, await ctx.actionTarget.getAddress(), WITHDRAW_FUNDS_SELECTOR),
+			).to.equal(false);
+
+			const rolesAsAgent = new ethers.Contract(rolesAddress, ROLES_ABI, ctx.bundleBot);
+			await expect(
+				rolesAsAgent.execTransactionWithRole(
+					await ctx.actionTarget.getAddress(),
+					0,
+					ctx.actionTarget.interface.encodeFunctionData("claimRewards"),
+					0,
+					agentRole,
+					true,
+				),
+			).to.not.be.reverted;
+			expect(await ctx.actionTarget.allowedCalls()).to.equal(1n);
+
+			await expect(
+				rolesAsAgent.execTransactionWithRole(
+					await ctx.actionTarget.getAddress(),
+					0,
+					ctx.actionTarget.interface.encodeFunctionData("withdrawFunds"),
+					0,
+					agentRole,
+					true,
+				),
+			).to.be.revertedWithCustomError(rolesAsAgent, "NotAllowed");
+			expect(await ctx.actionTarget.gatedCalls()).to.equal(0n);
 		});
 
 		it("AgentSafe has the configured owners and threshold", async () => {

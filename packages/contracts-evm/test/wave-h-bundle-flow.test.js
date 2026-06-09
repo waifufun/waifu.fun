@@ -189,6 +189,8 @@ describe("Wave H bundle flow e2e", () => {
 			agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
 			platformBps: overrides.platformBps ?? 1000,
 			patronBps: overrides.patronBps ?? 2500,
+			agentEoa: overrides.agentEoa ?? ethers.ZeroAddress,
+			roleConfigCalls: overrides.roleConfigCalls ?? [],
 			treasuryTickLowers: overrides.treasuryTickLowers ?? [2000, 6000, 10000, 14000],
 			treasuryTickUppers: overrides.treasuryTickUppers ?? [4000, 8000, 12000, 16000],
 		};
@@ -643,6 +645,8 @@ describe("Wave H bundle flow e2e", () => {
 			agentSafeThreshold: 1,
 			platformBps: 1000,
 			patronBps: 2500,
+			agentEoa: ethers.ZeroAddress,
+			roleConfigCalls: [],
 			treasuryTickLowers: [2000, 6000, 10000, 14000],
 			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
