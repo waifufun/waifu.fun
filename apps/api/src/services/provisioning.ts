@@ -297,8 +297,13 @@ export function buildProvisionOptions(
 	if (webhookSecret) opts.webhookSecret = webhookSecret;
 	const apiKey = stringField(eventData, "apiKey");
 	if (apiKey) opts.apiKey = apiKey;
-	const smallModel = stringField(eventData, "smallModel") ?? process.env.ELIZAOS_CLOUD_SMALL_MODEL;
-	if (smallModel) opts.modelDefaults = { ELIZAOS_CLOUD_SMALL_MODEL: smallModel };
+	const smallModel =
+		stringField(eventData, "smallModel") ??
+		process.env.WAIFU_ELIZA_DEFAULT_MODEL ??
+		process.env.ELIZAOS_CLOUD_SMALL_MODEL ??
+		process.env.ELIZAOS_CLOUD_DEFAULT_MODEL ??
+		"anthropic/claude-haiku-4.5";
+	opts.modelDefaults = { ELIZAOS_CLOUD_SMALL_MODEL: smallModel };
 
 	return opts;
 }
