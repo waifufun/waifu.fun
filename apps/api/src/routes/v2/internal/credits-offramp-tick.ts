@@ -61,6 +61,7 @@ function buildElizaClient(): OffRampElizaClient & {
 		platformStewardUserId: resolveElizaCloudPlatformStewardUserId() ?? "",
 		platformStewardTenantId: process.env.ELIZA_CLOUD_PLATFORM_STEWARD_TENANT_ID ?? "",
 		logger: console,
+		resilient: true,
 	});
 	return client as unknown as OffRampElizaClient & {
 		getCreditBalance?: (agentId?: string) => Promise<{ balance: number }>;

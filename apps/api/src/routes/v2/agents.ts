@@ -332,6 +332,7 @@ function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifu
 		...(serviceKey ? { serviceKey } : {}),
 		...(apiKey ? { apiKey } : {}),
 		logger: console,
+		resilient: true,
 	});
 }
 
@@ -836,7 +837,14 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 	try {
 		const result = await resurrectAgent(agentId, body.creditsAmount, {
 			db,
-			elizaClient: createElizaCloudClient({ baseUrl, apiKey, serviceKey, sessionToken, logger: console }),
+			elizaClient: createElizaCloudClient({
+				baseUrl,
+				apiKey,
+				serviceKey,
+				sessionToken,
+				logger: console,
+				resilient: true,
+			}),
 		});
 		// `ok: true` = the top-up was INITIATED, not that the agent is awake. The
 		// agent stays dormant until the confirmed-payment webhook fires.

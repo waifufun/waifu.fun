@@ -4,6 +4,13 @@ import { isAddress } from "viem";
 
 import { agentPersonaQueries, agentPersonas, agentWallets, agents, tokens } from "@waifufun/db";
 import { type AgentProvisioningJob, parseJobPayload } from "@waifufun/queue/jobs";
+import {
+	CIRCUIT_STATE_CODE,
+	CircuitBreaker,
+	CircuitOpenError,
+	type CircuitState,
+	ElizaCloudUnavailableError,
+} from "@waifufun/resilience";
 
 import { emitAgentEvent } from "../lib/emit.js";
 import type { WorkerContext, WorkerProcessor } from "../lib/types.js";
@@ -277,8 +284,7 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 
 	let cloudAgent: Record<string, unknown>;
 	try {
-		cloudAgent = await requestJson<Record<string, unknown>>(baseUrl, "/api/v1/agents", authKey, {
-			method: "POST",
+		cloudAgent = await provisioningPost<Record<string, unknown>>(baseUrl, "/api/v1/agents", authKey, {
 			body: {
 				tokenContractAddress: tokenAddress,
 				chain,
@@ -421,6 +427,125 @@ async function requestJson<T>(
 		return responseRecord.data as T;
 	}
 	return json as T;
+}
+
+// ─── Circuit breaker (provisioning POST only) ─────────────────────────
+//
+// The breaker guards ONLY the container-creating POST /api/v1/agents, NOT the
+// status-poll GETs. Rationale (task #12):
+//   - The status poll (waitForRuntimeStatus) already treats boot-time 404/5xx/
+//     timeouts as EXPECTED transient blips (isTransientStatusError) and has its
+//     own bounded attempt budget. Routing those through the breaker would let a
+//     normal container boot trip the circuit on healthy traffic — a false open.
+//   - The POST is the single non-idempotent, container-creating call where a
+//     genuine Eliza Cloud outage should fast-fail and let BullMQ retry the whole
+//     job (the worker's existing job-queue retry IS the resilience layer here —
+//     we add NO per-request retry, only the breaker).
+//
+// 409 is NOT a failure: it is the adoption signal (an agent already exists for
+// this token). It is caught INSIDE the breaker callback and re-thrown OUTSIDE,
+// so the breaker records a success (never trips on adoption) while the caller
+// still receives the original ElizaCloudRequestError to drive existingAgentId
+// adoption. Network errors, timeouts, and 5xx propagate as throws inside the
+// callback and DO count toward the failure threshold.
+
+/**
+ * One breaker per Eliza Cloud base URL within this worker process. Shared across
+ * every provisioning job in THIS process so a sustained outage trips once, not
+ * per-job.
+ *
+ * Breaker state is intentionally PER-PROCESS — it is NOT shared across worker
+ * replicas. If the worker is scaled to N replicas, each keeps an independent
+ * failure count and may trip at a different time. That is accepted: the breaker
+ * is a local fast-fail/load-shed optimization, and BullMQ job-retry (plus the
+ * atomic provisioning claim) remains the cross-process correctness guarantee.
+ * Do not assume a global/shared circuit; there is no cross-replica trip.
+ */
+const provisioningBreakers = new Map<string, CircuitBreaker>();
+
+function provisioningGaugeOnStateChange(next: CircuitState, _prev: CircuitState, circuitName: string): void {
+	// Lazy import keeps prom-client off this module's import path for unit tests
+	// that never touch the breaker; gauge updates are best-effort.
+	void import("@waifufun/metrics")
+		.then(({ elizaCloudCircuitBreakerState }) => {
+			elizaCloudCircuitBreakerState.set({ circuit: circuitName }, CIRCUIT_STATE_CODE[next]);
+		})
+		.catch(() => {
+			/* metrics are advisory; never let a gauge update break provisioning */
+		});
+}
+
+function getProvisioningBreaker(baseUrl: string): CircuitBreaker {
+	const circuitName = `eliza-cloud-worker-provision:${baseUrl}`;
+	const existing = provisioningBreakers.get(circuitName);
+	if (existing) return existing;
+	const breaker = new CircuitBreaker({
+		name: circuitName,
+		onStateChange: provisioningGaugeOnStateChange,
+	});
+	provisioningBreakers.set(circuitName, breaker);
+	return breaker;
+}
+
+/** TEST-ONLY: reset cached breakers so each test starts from a closed circuit. */
+export function __resetProvisioningBreakersForTest(): void {
+	provisioningBreakers.clear();
+}
+
+function resilienceDisabled(): boolean {
+	return process.env.WAIFU_DISABLE_ELIZA_RESILIENCE === "true";
+}
+
+/**
+ * The container-creating POST, guarded by the circuit breaker (breaker-only — no
+ * retry; BullMQ retries the whole job). On an open circuit, a CircuitOpenError is
+ * translated to ElizaCloudUnavailableError and propagates so the job-queue retry
+ * fires. A 409 is treated as a non-failure (see the section comment above): the
+ * original error is preserved for the caller's adoption path and does not trip
+ * the breaker.
+ */
+async function provisioningPost<T>(
+	baseUrl: string,
+	path: string,
+	authKey: string,
+	options: { body?: Record<string, unknown> },
+): Promise<T> {
+	const doPost = () => requestJson<T>(baseUrl, path, authKey, { method: "POST", body: options.body });
+
+	if (resilienceDisabled()) {
+		return doPost();
+	}
+
+	const breaker = getProvisioningBreaker(baseUrl);
+	// Sentinel wrapper: a 409 must NOT count as a breaker failure. We catch it
+	// inside the breaker callback and surface it as a resolved value, then re-throw
+	// the original error outside the breaker so adoption still fires unchanged.
+	let adoption409: ElizaCloudRequestError | undefined;
+	try {
+		const result = await breaker.execute(async () => {
+			try {
+				return await doPost();
+			} catch (err) {
+				if (err instanceof ElizaCloudRequestError && err.status === 409) {
+					adoption409 = err;
+					// Resolve the breaker callback so 409 is recorded as a success, not a
+					// failure. The marker below re-throws the original error to the caller.
+					return undefined as T;
+				}
+				throw err;
+			}
+		});
+		if (adoption409) throw adoption409;
+		return result;
+	} catch (err) {
+		if (err instanceof CircuitOpenError) {
+			throw new ElizaCloudUnavailableError(
+				`Eliza Cloud is temporarily unavailable (worker provisioning POST ${path})`,
+				{ circuitName: err.circuitName, cause: err },
+			);
+		}
+		throw err;
+	}
 }
 
 class ElizaCloudRequestError extends Error {
