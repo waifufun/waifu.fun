@@ -24,6 +24,7 @@ import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAccount, useSignMessage } from "wagmi";
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
+import { pollUntilProvisioned } from "./wizard-provision-poll";
 import {
 	provisionCloudStorageKey,
 	provisionSuccessRoute,
@@ -65,6 +66,7 @@ function WizardInner() {
 	const [provisioning, setProvisioning] = useState(false);
 	const [signingLaunch, setSigningLaunch] = useState(false);
 	const [awaitingProvisionResponse, setAwaitingProvisionResponse] = useState(false);
+	const [provisionStatusLabel, setProvisionStatusLabel] = useState<string | null>(null);
 	const provisionPromise = useRef<Promise<ProvisionResult> | null>(null);
 	const launchPromise = useRef<Promise<CreateLaunchResult> | null>(null);
 
@@ -203,6 +205,29 @@ function WizardInner() {
 			}
 		}
 
+		// PR-1 async provisioning: a 202 means the token launched and the invite is
+		// spent, but the hosted runtime is still being provisioned by the worker.
+		// Poll the agent detail endpoint for readiness, feeding live status to the
+		// loader. On ready/failed/timeout we ALWAYS route to a real page (patron or
+		// launch) — never a dead-end error. The token + agent exist regardless.
+		if (result?.ok && result.asyncProvisioning) {
+			setAwaitingProvisionResponse(true);
+			let outcome: "ready" | "failed" | "timeout" = "timeout";
+			try {
+				outcome = await pollUntilProvisioned(result.agentId, setProvisionStatusLabel);
+			} catch {
+				outcome = "timeout";
+			} finally {
+				setAwaitingProvisionResponse(false);
+				setProvisionStatusLabel(null);
+			}
+			if (outcome === "failed") {
+				toast.error("provisioning failed. your agent launched, check its patron page for details.");
+			} else if (outcome === "timeout") {
+				toast.success("provisioning in progress. your agent launched, check back in a few minutes.");
+			}
+		}
+
 		// Clear the wizard draft on any terminal outcome so a fresh /create/wizard
 		// visit starts clean.
 		try {
@@ -266,7 +291,11 @@ function WizardInner() {
 				completeLabel={signingLaunch ? "signing..." : "sign to confirm launch"}
 			/>
 			{provisioning ? (
-				<ProvisioningLoader onDone={handleProvisioningDone} awaitingResponse={awaitingProvisionResponse} />
+				<ProvisioningLoader
+					onDone={handleProvisioningDone}
+					awaitingResponse={awaitingProvisionResponse}
+					statusLabel={provisionStatusLabel}
+				/>
 			) : null}
 		</>
 	);

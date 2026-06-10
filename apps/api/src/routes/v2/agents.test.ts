@@ -709,10 +709,11 @@ test("POST /v2/agents/provision launches as patron and returns one-time keys", a
 	resetProvisionDeps();
 });
 
-test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async () => {
+test("POST /v2/agents/provision enqueues hosted provisioning async and returns 202 without calling Eliza Cloud inline", async () => {
 	const db = createProvisionDb();
 	const launches: unknown[] = [];
 	const cloudInputs: unknown[] = [];
+	const enqueued: Array<{ payload: unknown; options: { jobId: string } }> = [];
 	__setRequirePatronDbForTest(db);
 	__setRequirePatronStewardParserForTest(async () => ({
 		userId: "steward-user-1",
@@ -723,24 +724,17 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 	__setAgentsRouteDepsForTest({
 		db,
 		createAgentKey: async (_db, agentId) => ({ raw: "agk_hosted_key", row: { agentId } as never }),
+		// If the inline path is ever reused this stub records it; the async path
+		// must NOT call it (provisioning happens in the worker).
 		elizaCloudClient: {
 			async provisionWaifuAgent(input) {
 				cloudInputs.push(input);
-				return {
-					agentId: input.agentId,
-					cloudAgentId: "cloud-waifu-test-waifu",
-					status: "queued",
-					containerUrl: "http://internal-runtime.example",
-					webUiUrl: "https://public-runtime.example",
-					jobId: "job-1",
-					polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
-					account: {
-						primaryWalletAddress: input.account?.primaryWalletAddress ?? null,
-						walletKeyRef: input.account?.walletKeyRef ?? null,
-						initialFreeCreditsUsd: 5,
-					},
-				};
+				throw new Error("async provisioning must not call Eliza Cloud inline");
 			},
+		},
+		addAgentProvisioningJob: async (payload, options) => {
+			enqueued.push({ payload, options });
+			return { id: options.jobId };
 		},
 		createOrchestrator: () =>
 			({
@@ -766,72 +760,54 @@ test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async 
 		body: JSON.stringify(payload),
 	});
 
-	assert.equal(res.status, 200, await res.clone().text());
+	assert.equal(res.status, 202, await res.clone().text());
 	const json = (await res.json()) as {
-		cloudAgentId?: string;
+		agentId?: string;
+		tokenAddress?: string;
+		safeAddress?: string;
+		agentApiKey?: string;
+		status?: string;
 		cloudStatus?: string;
-		webUiUrl?: string | null;
-		cloud?: {
-			provider?: string;
-			agentId?: string;
-			status?: string;
-			webUiUrl?: string | null;
-			account?: { walletKeyRef?: string | null };
-		};
+		provisioningJobId?: string;
+		cloudAgentId?: string;
 	};
-	assert.equal(json.cloudAgentId, "cloud-waifu-test-waifu");
-	assert.equal(json.cloudStatus, "queued");
-	assert.equal(json.webUiUrl, "https://public-runtime.example");
-	assert.equal(cloudInputs.length, 1);
-	const provisionedAgentId = (cloudInputs[0] as { agentId?: string }).agentId;
-	assert.equal(json.cloud?.account?.walletKeyRef, `steward:${provisionedAgentId}`);
-	assert.deepEqual(json.cloud, {
-		provider: "eliza-cloud",
-		agentId: "cloud-waifu-test-waifu",
-		containerId: null,
-		containerUrl: "http://internal-runtime.example",
-		webUiUrl: "https://public-runtime.example",
-		status: "queued",
-		jobId: "job-1",
-		polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
-		characterId: null,
-		account: {
-			primaryWalletAddress: "0x0000000000000000000000000000000000000002",
-			walletKeyRef: `steward:${provisionedAgentId}`,
-			initialFreeCreditsUsd: 5,
-		},
-	});
-	assert.equal(
-		(cloudInputs[0] as { tokenContractAddress?: string }).tokenContractAddress,
-		"0x0000000000000000000000000000000000000004",
+	assert.equal(json.status, "provisioning");
+	assert.equal(json.cloudStatus, "provisioning");
+	assert.equal(json.agentApiKey, "agk_hosted_key");
+	assert.equal(json.tokenAddress, "0x0000000000000000000000000000000000000004");
+	assert.equal(json.safeAddress, "0x0000000000000000000000000000000000000003");
+	// No inline cloud agent id — provisioning has not happened yet.
+	assert.equal(json.cloudAgentId, undefined);
+	assert.equal(cloudInputs.length, 0);
+
+	// Exactly one job enqueued, with the launch result threaded into the payload.
+	assert.equal(enqueued.length, 1);
+	const enqueuedPayload = enqueued[0]?.payload as {
+		agentId?: string;
+		source?: string;
+		data?: Record<string, unknown>;
+	};
+	assert.equal(enqueuedPayload.source, "agent.launched");
+	assert.equal(enqueuedPayload.agentId, json.agentId);
+	assert.equal(json.provisioningJobId, enqueued[0]?.options.jobId);
+	assert.equal(enqueuedPayload.data?.tokenContractAddress, "0x0000000000000000000000000000000000000004");
+	assert.equal(enqueuedPayload.data?.tokenAddress, "0x0000000000000000000000000000000000000004");
+	assert.equal(enqueuedPayload.data?.agentSafeAddress, "0x0000000000000000000000000000000000000003");
+	assert.equal(enqueuedPayload.data?.agentWalletAddress, "0x0000000000000000000000000000000000000002");
+	assert.equal(enqueuedPayload.data?.primaryWalletAddress, "0x0000000000000000000000000000000000000002");
+
+	// Invite is confirmed on token-launch success even though provisioning is async.
+	assert.equal(db.__inviteState.invite.usedCount, 1);
+	// An honest 'provisioning' status is seeded so GET /v2/agents/:id shows progress.
+	const seeded = db.__updates.find(
+		(values) => (values.metadata as { provisioning?: { status?: string } } | undefined)?.provisioning?.status === "provisioning",
 	);
-	assert.equal((cloudInputs[0] as { access?: { thresholdMode?: string } }).access?.thresholdMode, "strict_gt");
-	assert.equal(
-		(cloudInputs[0] as { account?: { primaryWalletAddress?: string | null } }).account?.primaryWalletAddress,
-		"0x0000000000000000000000000000000000000002",
-	);
-	assert.equal(
-		(cloudInputs[0] as { account?: { walletKeyRef?: string | null } }).account?.walletKeyRef,
-		`steward:${provisionedAgentId}`,
-	);
-	const overlay =
-		db.__updates.find((values) => values.cloudAgentId === "cloud-waifu-test-waifu") ??
-		db.__inserts.find((values) => values.cloudAgentId === "cloud-waifu-test-waifu");
-	assert.equal(overlay?.webUiUrl, "https://public-runtime.example");
-	assert.equal(overlay?.bridgeUrl, "http://internal-runtime.example");
-	const metadataUpdate = db.__updates.find((values) => values.elizaCloudAgentId === "cloud-waifu-test-waifu");
-	const provisioning = (metadataUpdate?.metadata as { provisioning?: Record<string, unknown> } | undefined)
-		?.provisioning;
-	assert.equal(provisioning?.webUiUrl, "https://public-runtime.example");
-	assert.equal(
-		(provisioning?.account as { walletKeyRef?: string } | undefined)?.walletKeyRef,
-		`steward:${provisionedAgentId}`,
-	);
+	assert.ok(seeded, "expected metadata.provisioning.status='provisioning' to be seeded");
 	assert.equal(launches.length, 1);
 	resetProvisionDeps();
 });
 
-test("POST /v2/agents/provision keeps hosted agents provisioning until Eliza returns a hosted URL", async () => {
+test("POST /v2/agents/provision returns 202 even when the enqueue fails (launch already succeeded)", async () => {
 	const db = createProvisionDb();
 	__setRequirePatronDbForTest(db);
 	__setRequirePatronStewardParserForTest(async () => ({
@@ -842,20 +818,9 @@ test("POST /v2/agents/provision keeps hosted agents provisioning until Eliza ret
 	}));
 	__setAgentsRouteDepsForTest({
 		db,
-		createAgentKey: async (_db, agentId) => ({ raw: "agk_hosted_pending_url_key", row: { agentId } as never }),
-		elizaCloudClient: {
-			async provisionWaifuAgent(input) {
-				return {
-					agentId: input.agentId,
-					cloudAgentId: "cloud-waifu-pending-url",
-					status: "running",
-					account: {
-						primaryWalletAddress: input.account?.primaryWalletAddress ?? null,
-						walletKeyRef: input.account?.walletKeyRef ?? null,
-						initialFreeCreditsUsd: 5,
-					},
-				};
-			},
+		createAgentKey: async (_db, agentId) => ({ raw: "agk_hosted_key", row: { agentId } as never }),
+		addAgentProvisioningJob: async () => {
+			throw new Error("redis unavailable");
 		},
 		createOrchestrator: () =>
 			({
@@ -878,15 +843,13 @@ test("POST /v2/agents/provision keeps hosted agents provisioning until Eliza ret
 		body: JSON.stringify(payload),
 	});
 
-	assert.equal(res.status, 200, await res.clone().text());
-	const overlay =
-		db.__updates.find((values) => values.cloudAgentId === "cloud-waifu-pending-url") ??
-		db.__inserts.find((values) => values.cloudAgentId === "cloud-waifu-pending-url");
-	assert.equal(overlay?.agentStatus, "provisioning");
-	assert.equal(overlay?.lifecycleState, "birth");
-	assert.equal(overlay?.webUiUrl, null);
-	const tokenUpdate = db.__updates.find((values) => values.agentId === "agent-row-1");
-	assert.equal(tokenUpdate?.agentStatus, "provisioning");
+	// Launch succeeded + invite spent; a queue outage must not fail the request.
+	assert.equal(res.status, 202, await res.clone().text());
+	const json = (await res.json()) as { status?: string; cloudStatus?: string; provisioningJobId?: string };
+	assert.equal(json.status, "provisioning");
+	assert.equal(json.cloudStatus, "pending");
+	assert.equal(json.provisioningJobId, undefined);
+	assert.equal(db.__inviteState.invite.usedCount, 1);
 	resetProvisionDeps();
 });
 
