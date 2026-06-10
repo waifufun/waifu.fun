@@ -22,11 +22,15 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "loading" | "error";
 
+// Sensitive params we strip from the URL/hash after reading them so a JWT or
+// authorization code is never left in the address bar / history / referrer.
+const SENSITIVE_PARAMS = ["token", "refreshToken", "code"] as const;
+
 function scrubCallbackUrl() {
 	if (typeof window === "undefined") return;
 	const url = new URL(window.location.href);
 	let changed = false;
-	for (const key of ["token", "refreshToken"]) {
+	for (const key of SENSITIVE_PARAMS) {
 		if (url.searchParams.has(key)) {
 			url.searchParams.delete(key);
 			changed = true;
@@ -34,7 +38,7 @@ function scrubCallbackUrl() {
 	}
 	if (url.hash) {
 		const hashParams = new URLSearchParams(url.hash.slice(1));
-		for (const key of ["token", "refreshToken"]) {
+		for (const key of SENSITIVE_PARAMS) {
 			if (hashParams.has(key)) {
 				hashParams.delete(key);
 				changed = true;
@@ -63,39 +67,53 @@ function CallbackInner() {
 			typeof window !== "undefined" && window.location.hash.startsWith("#")
 				? new URLSearchParams(window.location.hash.slice(1))
 				: new URLSearchParams();
+		// PKCE authorization-code flow (current): Steward redirects back with
+		// `?code=`. The matching `code_verifier` is in the HttpOnly `wf_oauth_pkce`
+		// cookie set at /auth/oauth/start, so we POST `{ code }` to the same-origin
+		// /api/auth/exchange proxy which swaps it server-side.
+		const code = params?.get("code") ?? hashParams.get("code");
+		// Legacy implicit flow (fallback): Steward used to emit `?token=&refreshToken=`.
 		const token = params?.get("token") ?? hashParams.get("token");
-		// Steward emits `?token=&refreshToken=`: it does NOT echo our state.
 		const refreshToken = params?.get("refreshToken") ?? hashParams.get("refreshToken");
 		const errorParam = params?.get("error") ?? hashParams.get("error");
 		const errorDescription = params?.get("error_description") ?? hashParams.get("error_description");
 		scrubCallbackUrl();
 
-		// Steward (or the provider) returned an error before we even got the JWT.
+		// Steward (or the provider) returned an error before we even got the code.
 		if (errorParam) {
 			setPhase("error");
 			setError(errorDescription ? `${errorParam}: ${errorDescription}` : errorParam);
 			return;
 		}
 
-		if (!token) {
+		if (!code && !token) {
 			setPhase("error");
-			setError("missing token in callback URL");
+			setError("missing authorization code in callback URL");
 			return;
 		}
 
 		const controller = new AbortController();
 		(async () => {
 			try {
-				// POST to SAME-ORIGIN /api/auth/finalize Next.js route which
-				// proxies to api.waifu.fun and mirrors Set-Cookie back as a
-				// first-party cookie. Avoids cross-origin storage failures.
-				const res = await fetch("/api/auth/finalize", {
-					method: "POST",
-					credentials: "include",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ provider: "oauth", token, refreshToken }),
-					signal: controller.signal,
-				});
+				// Prefer the PKCE exchange when we have a `code`; fall back to the
+				// legacy token finalize otherwise. Both are SAME-ORIGIN proxies that
+				// hit api.waifu.fun and mirror Set-Cookie back as a first-party
+				// cookie (avoids cross-origin / ITP storage failures).
+				const res = code
+					? await fetch("/api/auth/exchange", {
+							method: "POST",
+							credentials: "include",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({ code }),
+							signal: controller.signal,
+						})
+					: await fetch("/api/auth/finalize", {
+							method: "POST",
+							credentials: "include",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({ provider: "oauth", token, refreshToken }),
+							signal: controller.signal,
+						});
 				if (!res.ok) {
 					const body = (await res.json().catch(() => null)) as {
 						error?: string;
