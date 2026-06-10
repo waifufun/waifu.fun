@@ -12,7 +12,7 @@
 		"clean": "rm -rf dist",
 		"check": "tsc -p tsconfig.json --noEmit",
 		"test": "node --import tsx --test $(find test -name '*.test.ts' -type f | sort)",
-		"lint": "biome check ."
+		"lint": "biome check src test package.json tsconfig.json"
 	},
 	"exports": {
 		".": {

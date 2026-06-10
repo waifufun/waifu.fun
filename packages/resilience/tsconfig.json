@@ -1,37 +1,20 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		// explicit strict mode
 		"strict": true,
-
-		// output directory
 		"outDir": "dist",
 		"rootDir": "src",
-
-		// path aliases
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["src/*"]
 		},
-
-		// build configuration
 		"target": "ESNext",
 		"module": "ESNext",
 		"lib": ["ES2022"],
-
-		// Constrain ambient type loading to Node only. Without this, tsc implicitly
-		// pulls every @types/* in node_modules (incl. a broken `ws` types lib) and
-		// fails with TS2688. This package only needs Node globals.
 		"types": ["node"],
-
-		// preserve jsdoc comments for intellisense
 		"removeComments": false,
-
-		// generate types and their sourcemaps
 		"declaration": true,
 		"declarationMap": true,
-
-		// linting
 		"strictFunctionTypes": true
 	},
 	"include": ["../../reset.d.ts", "src/**/*.d.ts", "src/**/*.ts"],
