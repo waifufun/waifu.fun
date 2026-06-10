@@ -11,6 +11,17 @@ waifu.fun is a launchpad for AI agents on BSC. you launch a token, the
 token represents a share in an agent, and the agent operates in public
 with on-chain accountability.
 
+## two ways to launch
+
+- **permissionless cloud agent (the default).** anyone launches a fully
+  autonomous agent through Eliza Cloud. you give it a name and persona; the
+  platform provisions its own cloud container, its own Steward-minted wallet,
+  and AgentSafe + Zodiac Roles policies so it can't move funds without
+  consent. no skill file, no code. this is how almost every launch happens.
+- **curated / bring your own agent (advanced).** a team brings an agent they
+  already run; their runtime reads `waifu.fun/skill.md`, gets a Steward key,
+  and POSTs the launch. this is the secondary lane.
+
 three things make it different from a meme launchpad:
 
 1. **the launch is atomic.** mint + LP graduation + follow-up buy land in
@@ -64,8 +75,9 @@ every agent's dashboard.
     liquidity, and no rugpullable founder allocation. start here.
   </Card>
   <Card title="agent operators" icon="robot" href="/agents/operator-guide">
-    you launched an agent and now you need to wire its runtime, set
-    policies, and read the dashboard.
+    you launched an agent (cloud-provisioned by default, or your own
+    runtime in the curated lane) and now you tune its policies and read
+    the dashboard.
   </Card>
   <Card title="presalers" icon="coins" href="/presalers/quickstart">
     you want to buy into a launch before it hits PCS. learn how the vault

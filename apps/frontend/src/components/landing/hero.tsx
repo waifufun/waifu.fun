@@ -183,40 +183,45 @@ export default function Hero() {
 					</RevealLine>
 				</div>
 
-				{/* Subtitle */}
+				{/* Subtitle: one tight line, lead with the idea not the feature list */}
 				<motion.p
-					className="mt-8 text-lg text-[#71717a] max-w-md leading-relaxed"
+					className="mt-8 text-lg text-[#a1a1aa] max-w-xl leading-relaxed"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
 				>
-					{t("hero.notChatbots")} <span className="text-[#a1a1aa]">{t("hero.economicActors")}</span>
+					<span className="text-[#d4d4d8]">{t("hero.subtitleLead")}</span> {t("hero.subtitleBody")}
 				</motion.p>
 
-				{/* CTAs */}
+				{/* CTAs: primary = launch, secondary = browse */}
 				<motion.div
 					className="mt-8 flex flex-col sm:flex-row items-center gap-3"
 					initial={{ opacity: 0, y: 16 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.75, ease: EASE }}
 				>
-					<MagneticButton href="/give-skill" variant="primary">
-						{t("hero.giveSkill")}
+					<MagneticButton href="/create/wizard" variant="primary">
+						{t("hero.launchAgent")}
 					</MagneticButton>
 					<MagneticButton href="/agents" variant="ghost">
 						{t("hero.browseAgents")}
 					</MagneticButton>
 				</motion.div>
 
-				{/* Invite-only line */}
-				<motion.p
-					className="mt-4 text-[10px] font-mono uppercase tracking-[0.2em] text-[#52525b]"
+				{/* One muted secondary line: invite-only + bring-your-own, collapsed */}
+				<motion.div
+					className="mt-4"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
-					transition={{ duration: 0.6, delay: 0.9 }}
+					transition={{ duration: 0.6, delay: 0.85 }}
 				>
-					{t("hero.inviteOnly")}
-				</motion.p>
+					<a
+						href="/give-skill"
+						className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#52525b] hover:text-[#a1a1aa] transition-colors duration-200"
+					>
+						{t("hero.curatedLane")} →
+					</a>
+				</motion.div>
 
 				{/* Partner rail */}
 				<motion.div

@@ -33,7 +33,9 @@ export default function StepPersona() {
 	const inviteCodeId = useId();
 	const importTextareaId = useId();
 	const importFileId = useId();
-	const [mode, setMode] = useState<"import" | "create">("import");
+	// Default lane = create-from-scratch (permissionless cloud agent). Import
+	// (bring-your-own character.json) is the curated/advanced lane, demoted.
+	const [mode, setMode] = useState<"import" | "create">("create");
 	const [importText, setImportText] = useState("");
 	const [importError, setImportError] = useState<string | null>(null);
 	const [importWarnings, setImportWarnings] = useState<string[]>([]);
@@ -167,21 +169,10 @@ export default function StepPersona() {
 				</p>
 			</section>
 
-			{/* Mode switcher: import existing agent vs create from scratch */}
+			{/* Lane switcher: default = create from scratch (permissionless cloud).
+			    import = curated / bring your own agent (advanced). */}
 			<section>
-				<div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em]">
-					<button
-						type="button"
-						onClick={() => setMode("import")}
-						className={cn(
-							"px-3 h-8 border",
-							mode === "import"
-								? "border-[#00ff87]/50 text-[#00ff87] bg-[#00ff87]/[0.04]"
-								: "border-white/10 text-white/40 hover:text-white/70",
-						)}
-					>
-						[import]
-					</button>
+				<div className="flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em]">
 					<button
 						type="button"
 						onClick={() => setMode("create")}
@@ -192,12 +183,39 @@ export default function StepPersona() {
 								: "border-white/10 text-white/40 hover:text-white/70",
 						)}
 					>
-						[create]
+						[create] default
+					</button>
+					<button
+						type="button"
+						onClick={() => setMode("import")}
+						className={cn(
+							"px-3 h-8 border",
+							mode === "import"
+								? "border-[#00ff87]/50 text-[#00ff87] bg-[#00ff87]/[0.04]"
+								: "border-white/10 text-white/40 hover:text-white/70",
+						)}
+					>
+						[import] curated
 					</button>
 					<span className="text-white/30 ml-2">
-						{mode === "import" ? "paste an existing eliza character file" : "build a new agent from scratch"}
+						{mode === "import"
+							? "curated lane: bring your own eliza character file"
+							: "permissionless: name it, the platform provisions the rest"}
 					</span>
 				</div>
+
+				{mode === "create" ? (
+					<p className="mt-3 max-w-[68ch] text-[11px] leading-relaxed text-white/40">
+						this launches a permissionless cloud agent. you give it a name, ticker, and persona below; the platform
+						provisions its own eliza cloud container, its own steward wallet, and built-in guardrails (agentsafe +
+						zodiac policies). no skill file needed.
+					</p>
+				) : (
+					<p className="mt-3 max-w-[68ch] text-[11px] leading-relaxed text-white/40">
+						curated / advanced. paste a character.json from an agent you already run. most launchers should use [create]
+						instead.
+					</p>
+				)}
 
 				{mode === "import" ? (
 					<div className="mt-4 border border-white/8 bg-white/[0.012] p-5 flex flex-col gap-4">
