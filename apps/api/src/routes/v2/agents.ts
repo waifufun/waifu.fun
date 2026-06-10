@@ -52,6 +52,7 @@ import {
 	validateProvisionRequest,
 } from "../../services/provision/payload-adapter.js";
 import { handleOffRampConvert } from "./agents/credits-offramp.js";
+import { elizaUnavailableBody, isElizaCloudUnavailable } from "./eliza-unavailable.js";
 
 const app = new Hono<RequireAgentOwnershipBindings>();
 
@@ -113,6 +114,7 @@ type AgentsRouteDepsForTest = {
 	getAgentByTokenAddress: typeof agentQueries.getAgentByTokenAddress | undefined;
 	emitAgentEvent: typeof emitAgentEvent | undefined;
 	addAgentProvisioningJob: AddAgentProvisioningJob | undefined;
+	resurrectAgent: typeof resurrectAgent | undefined;
 };
 
 const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
@@ -123,6 +125,7 @@ const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
 	getAgentByTokenAddress: undefined,
 	emitAgentEvent: undefined,
 	addAgentProvisioningJob: undefined,
+	resurrectAgent: undefined,
 };
 
 export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
@@ -133,6 +136,7 @@ export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest
 	agentsRouteDepsForTest.getAgentByTokenAddress = deps.getAgentByTokenAddress;
 	agentsRouteDepsForTest.emitAgentEvent = deps.emitAgentEvent;
 	agentsRouteDepsForTest.addAgentProvisioningJob = deps.addAgentProvisioningJob;
+	agentsRouteDepsForTest.resurrectAgent = deps.resurrectAgent;
 }
 
 /**
@@ -835,7 +839,7 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 
 	const sessionToken = resolveElizaCloudSessionToken() ?? "";
 	try {
-		const result = await resurrectAgent(agentId, body.creditsAmount, {
+		const result = await (agentsRouteDepsForTest.resurrectAgent ?? resurrectAgent)(agentId, body.creditsAmount, {
 			db,
 			elizaClient: createElizaCloudClient({
 				baseUrl,
@@ -850,6 +854,12 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 		// agent stays dormant until the confirmed-payment webhook fires.
 		return c.json({ ok: true, ...result, creditsUnit: "usd_cents" }, 200);
 	} catch (err) {
+		// Open circuit: Eliza Cloud is down. /resurrect is a patron-facing credit
+		// top-up, so surface an honest 503 + CREDITS_UNAVAILABLE instead of a 500
+		// that reads as "we broke" for what is really a transient upstream outage.
+		if (isElizaCloudUnavailable(err)) {
+			return c.json(elizaUnavailableBody("CREDITS_UNAVAILABLE"), 503);
+		}
 		return c.json(
 			{
 				error: "failed to resurrect agent",
