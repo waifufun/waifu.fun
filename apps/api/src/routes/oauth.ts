@@ -454,11 +454,7 @@ async function finalizeStewardToken(
 	// logic in middleware/patron-auth.ts so the cookie path and the bearer
 	// path stay identical.
 	const db = getDb();
-	const existing = await db
-		.select()
-		.from(patronUsers)
-		.where(eq(patronUsers.stewardUserId, principal.userId))
-		.limit(1);
+	const existing = await db.select().from(patronUsers).where(eq(patronUsers.stewardUserId, principal.userId)).limit(1);
 
 	let row = existing[0];
 	if (!row) {
