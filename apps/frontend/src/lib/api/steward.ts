@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { clearStashedPkce, generatePkcePair, generateState, readStashedPkce, stashPkce } from "../pkce";
 import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 /**
  * Steward integration. Steward is the patron-agent identity link
- * (https://eliza.steward.dev). One Steward account → many agents owned by
+ * (https://eliza.steward.fi). One Steward account → many agents owned by
  * the same wallet.
  *
  * Backend contract (W7.4 backend wave):
@@ -21,21 +22,119 @@ export type StewardStatus = {
 	email?: string | null;
 };
 
-export const STEWARD_OAUTH_URL = "https://eliza.steward.dev/oauth/authorize";
+// Steward prod base. NOTE: the canonical host is `eliza.steward.fi` — the
+// old `eliza.steward.dev` host is DEAD (DNS no longer resolves) and was the
+// cause of the OAuth/passkey "failed to fetch" regressions. Keep every
+// Steward reference on `.fi`.
+export const STEWARD_BASE_URL =
+	(typeof process !== "undefined" && process.env.NEXT_PUBLIC_STEWARD_URL?.trim()) || "https://eliza.steward.fi";
+export const STEWARD_OAUTH_AUTHORIZE_URL = `${STEWARD_BASE_URL}/oauth/authorize`;
+export const STEWARD_OAUTH_TOKEN_URL = `${STEWARD_BASE_URL}/oauth/token`;
 export const STEWARD_CLIENT_ID = "waifu-fun";
 export const STEWARD_LOCAL_TOKEN_KEY = "waifu-steward-token";
 export const STEWARD_LOCAL_USER_KEY = "waifu-steward-user-id";
 
-export function buildStewardAuthUrl(opts: { mode?: "signin" | "signup"; redirectUri: string }) {
+/**
+ * Build a Steward Authorization-Code + PKCE authorize URL.
+ *
+ * Steward REQUIRES PKCE for `response_type=code` (the implicit token flow is
+ * disabled), so we:
+ *   1. generate a `code_verifier` + S256 `code_challenge`
+ *   2. stash the verifier (and a CSRF `state`) in sessionStorage so the
+ *      callback can complete the code→token exchange
+ *   3. include `code_challenge` + `code_challenge_method=S256` + `state` on
+ *      the authorize URL
+ *
+ * Async because deriving the S256 challenge uses `crypto.subtle.digest`.
+ */
+export async function buildStewardAuthUrl(opts: {
+	mode?: "signin" | "signup";
+	redirectUri: string;
+}): Promise<string> {
+	const { codeVerifier, codeChallenge, codeChallengeMethod } = await generatePkcePair();
+	const state = generateState();
+	// Stash BEFORE returning the URL so the verifier is durable even if the
+	// caller navigates immediately.
+	stashPkce(codeVerifier, state);
+
 	const params = new URLSearchParams({
 		client_id: STEWARD_CLIENT_ID,
 		redirect_uri: opts.redirectUri,
 		response_type: "code",
+		code_challenge: codeChallenge,
+		code_challenge_method: codeChallengeMethod,
+		state,
 	});
 	if (opts.mode === "signup") {
 		params.set("screen", "signup");
 	}
-	return `${STEWARD_OAUTH_URL}?${params.toString()}`;
+	return `${STEWARD_OAUTH_AUTHORIZE_URL}?${params.toString()}`;
+}
+
+export interface StewardTokenResult {
+	token: string;
+	refreshToken?: string | null;
+	stewardUserId?: string | null;
+}
+
+/**
+ * Complete the PKCE code→token exchange against Steward.
+ *
+ * Reads the stashed `code_verifier` (+ validates `state` for CSRF) written by
+ * {@link buildStewardAuthUrl}, then POSTs to Steward's token endpoint. On
+ * success the stash is cleared and the issued token(s) are returned for the
+ * caller to finalize against the waifu.fun backend.
+ *
+ * Steward's token endpoint expects: { code, redirectUri, code_verifier }.
+ */
+export async function exchangeStewardCode(opts: {
+	code: string;
+	redirectUri: string;
+	state?: string | null;
+}): Promise<StewardTokenResult> {
+	const { verifier, state: stashedState } = readStashedPkce();
+	if (!verifier) {
+		throw new Error("missing PKCE code_verifier — start the sign-in again");
+	}
+	// CSRF: if Steward echoed our state back, it must match what we stashed.
+	if (opts.state && stashedState && opts.state !== stashedState) {
+		throw new Error("OAuth state mismatch — possible CSRF, sign in again");
+	}
+
+	const res = await fetch(STEWARD_OAUTH_TOKEN_URL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			grant_type: "authorization_code",
+			code: opts.code,
+			redirectUri: opts.redirectUri,
+			redirect_uri: opts.redirectUri,
+			code_verifier: verifier,
+			client_id: STEWARD_CLIENT_ID,
+		}),
+	});
+
+	const json = (await res.json().catch(() => null)) as {
+		ok?: boolean;
+		token?: string;
+		accessToken?: string;
+		refreshToken?: string;
+		userId?: string;
+		error?: string;
+		message?: string;
+	} | null;
+
+	if (!res.ok || !json) {
+		throw new Error(json?.message ?? json?.error ?? `steward token exchange failed (http ${res.status})`);
+	}
+
+	const token = json.token ?? json.accessToken;
+	if (!token) {
+		throw new Error("steward token exchange returned no token");
+	}
+
+	clearStashedPkce();
+	return { token, refreshToken: json.refreshToken ?? null, stewardUserId: json.userId ?? null };
 }
 
 export function defaultStewardRedirectUri() {

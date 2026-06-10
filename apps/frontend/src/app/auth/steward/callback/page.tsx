@@ -195,7 +195,7 @@ function StewardCallbackInner() {
 				</div>
 
 				<p className="mt-5 text-center text-[11px] text-neutral-600 leading-relaxed">
-					source: <span className="font-mono text-neutral-500">eliza.steward.dev</span>
+					source: <span className="font-mono text-neutral-500">eliza.steward.fi</span>
 				</p>
 			</div>
 		</main>
