@@ -12,6 +12,13 @@
  *     container or confuse the worker's 409-adoption path, so they get exactly
  *     one attempt per call.
  *
+ * The breaker only counts TRANSIENT failures (5xx / timeout / network). A 4xx is
+ * a client error (409 adoption, 429 rate limit, 404, 400) — it never means the
+ * upstream is down, and because breakers are SHARED per base URL, counting one
+ * agent's repeated 4xx would open the circuit for every route. So a 4xx is caught
+ * inside the breaker callback, recorded as a non-failure, and the original error
+ * is re-thrown to the caller (see `executeCountingTransientOnly`).
+ *
  * When the breaker is open the wrapper translates the package-level
  * {@link CircuitOpenError} into an {@link ElizaCloudUnavailableError} (HTTP 503 +
  * machine-readable code) so consuming routes catch a single terminal type. Every
@@ -146,6 +153,66 @@ export function __resetElizaResilienceBreakersForTest(): void {
 }
 
 /**
+ * Should this error count toward the breaker's consecutive-failure tally?
+ *
+ * The breaker exists to trip when Eliza Cloud itself is unhealthy — 5xx, request
+ * timeouts, or network-level failures (DNS/connect/reset). A 4xx is a CLIENT
+ * error: 400 bad payload, 404 unknown agent, 409 provisioning adoption, 429 rate
+ * limit. None of those mean the upstream is down, and because breakers are SHARED
+ * per base URL, counting them would let one misbehaving agent's repeated 409/429
+ * open the circuit for EVERY route. So 4xx must NOT count.
+ *
+ * This is NOT the same predicate as {@link isRetryableElizaError}: that one is
+ * "safe to retry" and deliberately returns false for unrecognized/network errors
+ * (fail closed — don't hammer something we can't classify). The breaker wants the
+ * opposite default for the unknown case: a raw network error (no numeric status,
+ * not a timeout) is exactly the upstream-down signal the breaker should trip on,
+ * so it MUST count. The only thing we exclude is a recognized 4xx.
+ */
+function isNonTransientClientError(error: unknown): boolean {
+	if (
+		typeof error === "object" &&
+		error !== null &&
+		"status" in error &&
+		typeof (error as { status: unknown }).status === "number"
+	) {
+		const { status } = error as { status: number };
+		return status >= 400 && status <= 499;
+	}
+	return false;
+}
+
+/**
+ * Run `fn` through the breaker, but only let TRANSIENT failures (5xx / timeout /
+ * network) count against it. A non-transient client error (any 4xx) is caught
+ * INSIDE the breaker callback and recorded as a success via a sentinel, then the
+ * ORIGINAL error is re-thrown OUTSIDE the breaker so the caller still sees the
+ * unshaped 409/429/4xx. Mirrors the worker's `provisioningPost` sentinel pattern
+ * (apps/worker/src/processors/agent-provisioning.ts) but generalized from 409-only
+ * to every 4xx.
+ */
+async function executeCountingTransientOnly<T>(breaker: CircuitBreaker, fn: () => Promise<T>): Promise<T> {
+	let suppressedClientError: unknown;
+	const result = await breaker.execute(async () => {
+		try {
+			return await fn();
+		} catch (err) {
+			if (isNonTransientClientError(err)) {
+				// Record as a breaker success; the marker below re-throws the original
+				// error to the caller so its status/shape is preserved verbatim.
+				suppressedClientError = err;
+				return undefined as T;
+			}
+			throw err;
+		}
+	});
+	if (suppressedClientError !== undefined) {
+		throw suppressedClientError;
+	}
+	return result;
+}
+
+/**
  * Wrap an existing ElizaClient with circuit breaker + selective retry. Returns a
  * Proxy that intercepts the whitelisted methods and delegates everything else
  * (constructors, fields, unknown methods) straight to the target so the wrapper
@@ -164,11 +231,11 @@ export function wrapElizaClientWithResilience(
 	const retryOptions = options.retry ?? {};
 
 	const runMutation = <T>(operation: string, fn: () => Promise<T>): Promise<T> =>
-		guardCircuit(operation, () => breaker.execute(fn));
+		guardCircuit(operation, () => executeCountingTransientOnly(breaker, fn));
 
 	const runRetryableGet = <T>(operation: string, fn: () => Promise<T>): Promise<T> =>
 		guardCircuit(operation, () =>
-			breaker.execute(() =>
+			executeCountingTransientOnly(breaker, () =>
 				withRetry(fn, {
 					isRetryable: isRetryableElizaError,
 					...(retryOptions.maxAttempts !== undefined ? { maxAttempts: retryOptions.maxAttempts } : {}),

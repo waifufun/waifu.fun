@@ -125,6 +125,133 @@ test("provisioning 409 propagates unshaped (worker adoption path)", async () => 
 	assert.equal(attempts, 1, "409 must not be retried");
 });
 
+test("breaker does NOT count repeated 409 mutations as failures (shared breaker stays closed)", async () => {
+	__resetElizaResilienceBreakersForTest();
+	const clock = 0;
+	const breaker = fastBreaker(() => clock, { failureThreshold: 3 });
+	let upstreamCalls = 0;
+	const { client } = makeStub({
+		provisionWaifuAgent: () => {
+			upstreamCalls += 1;
+			return Promise.reject(new ElizaApiError(409, "already exists"));
+		},
+	});
+	const wrapped = wrapElizaClientWithResilience(client, "test", { breaker, retry: { maxAttempts: 1 } });
+
+	// failureThreshold is 3. Fire 4 conflicting mutations; none must trip the breaker.
+	for (let i = 0; i < 4; i += 1) {
+		await assert.rejects(
+			() => wrapped.provisionWaifuAgent({} as unknown as Parameters<ElizaClient["provisionWaifuAgent"]>[0]),
+			(err: unknown) => err instanceof ElizaApiError && err.status === 409,
+		);
+	}
+	// Every call reached upstream — the circuit never opened to fast-fail any of them.
+	assert.equal(upstreamCalls, 4, "all 4 calls must reach upstream; 409s must not open the shared breaker");
+	assert.equal(breaker.getState(), "closed", "circuit must stay closed after repeated 409s");
+});
+
+test("breaker does NOT count repeated 429 mutations as failures", async () => {
+	__resetElizaResilienceBreakersForTest();
+	const clock = 0;
+	const breaker = fastBreaker(() => clock, { failureThreshold: 3 });
+	let upstreamCalls = 0;
+	const { client } = makeStub({
+		sendAgentMessage: () => {
+			upstreamCalls += 1;
+			return Promise.reject(new ElizaApiError(429, "rate limited"));
+		},
+	});
+	const wrapped = wrapElizaClientWithResilience(client, "test", { breaker, retry: { maxAttempts: 1 } });
+
+	for (let i = 0; i < 4; i += 1) {
+		await assert.rejects(
+			() => wrapped.sendAgentMessage({ agentId: "a", text: "hi", sessionId: "s" }),
+			(err: unknown) => err instanceof ElizaApiError && err.status === 429,
+		);
+	}
+	assert.equal(upstreamCalls, 4, "all 4 calls must reach upstream; 429s must not open the breaker");
+	assert.equal(breaker.getState(), "closed", "circuit must stay closed after repeated 429s");
+});
+
+test("breaker DOES count 5xx mutations and opens at the failure threshold", async () => {
+	__resetElizaResilienceBreakersForTest();
+	const clock = 0;
+	const breaker = fastBreaker(() => clock, { failureThreshold: 3 });
+	let upstreamCalls = 0;
+	const { client } = makeStub({
+		sendAgentMessage: () => {
+			upstreamCalls += 1;
+			return Promise.reject(new ElizaApiError(503, "down"));
+		},
+	});
+	const wrapped = wrapElizaClientWithResilience(client, "test", { breaker, retry: { maxAttempts: 1 } });
+
+	// 3 consecutive 5xx mutations trip the breaker (mutations are not retried → 1 hit each).
+	for (let i = 0; i < 3; i += 1) {
+		await assert.rejects(
+			() => wrapped.sendAgentMessage({ agentId: "a", text: "hi", sessionId: "s" }),
+			(err: unknown) => err instanceof ElizaApiError && err.status === 503,
+		);
+	}
+	assert.equal(upstreamCalls, 3, "3 upstream 5xx failures before the circuit opens");
+	assert.equal(breaker.getState(), "open", "circuit must open after threshold consecutive 5xx");
+
+	// 4th call: circuit open → ElizaCloudUnavailableError, upstream NOT touched.
+	await assert.rejects(
+		() => wrapped.sendAgentMessage({ agentId: "a", text: "hi", sessionId: "s" }),
+		(err: unknown) => err instanceof ElizaCloudUnavailableError,
+	);
+	assert.equal(upstreamCalls, 3, "open circuit must not call upstream");
+});
+
+test("breaker DOES count a raw network error (no status) and opens", async () => {
+	__resetElizaResilienceBreakersForTest();
+	const clock = 0;
+	const breaker = fastBreaker(() => clock, { failureThreshold: 2 });
+	let upstreamCalls = 0;
+	const { client } = makeStub({
+		sendAgentMessage: () => {
+			upstreamCalls += 1;
+			// A bare fetch failure (ECONNREFUSED etc.) has no numeric status — it is the
+			// upstream-down signal the breaker MUST trip on (unlike isRetryableElizaError,
+			// which fails closed and would not retry it).
+			return Promise.reject(new Error("ECONNREFUSED"));
+		},
+	});
+	const wrapped = wrapElizaClientWithResilience(client, "test", { breaker, retry: { maxAttempts: 1 } });
+
+	for (let i = 0; i < 2; i += 1) {
+		await assert.rejects(
+			() => wrapped.sendAgentMessage({ agentId: "a", text: "hi", sessionId: "s" }),
+			(err: unknown) => err instanceof Error && err.message === "ECONNREFUSED",
+		);
+	}
+	assert.equal(breaker.getState(), "open", "network errors must count and open the circuit");
+});
+
+test("breaker does NOT count 404 on a retryable GET (after retries exhaust, circuit stays closed)", async () => {
+	__resetElizaResilienceBreakersForTest();
+	const clock = 0;
+	const breaker = fastBreaker(() => clock, { failureThreshold: 3 });
+	let upstreamCalls = 0;
+	const { client } = makeStub({
+		getCreditBalance: () => {
+			upstreamCalls += 1;
+			return Promise.reject(new ElizaApiError(404, "not found"));
+		},
+	});
+	const wrapped = wrapElizaClientWithResilience(client, "test", { breaker, ...noWait });
+
+	for (let i = 0; i < 4; i += 1) {
+		await assert.rejects(
+			() => wrapped.getCreditBalance("agent-1"),
+			(err: unknown) => err instanceof ElizaApiError && err.status === 404,
+		);
+	}
+	assert.equal(upstreamCalls, 4, "404 GETs are not retried (1 hit each) and must reach upstream every time");
+	assert.equal(breaker.getState(), "closed", "4xx on a GET must not open the breaker either");
+});
+
 test("open circuit throws ElizaCloudUnavailableError WITHOUT calling upstream", async () => {
 	__resetElizaResilienceBreakersForTest();
 	const clock = 0;
