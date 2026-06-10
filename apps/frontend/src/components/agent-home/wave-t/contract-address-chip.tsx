@@ -3,6 +3,7 @@
 import { Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
  *   ticker / chain pills without crowding the bio.
  */
 export function ContractAddressChip({ address }: { address: string }) {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 	const cleaned = address.startsWith("0x") ? address : `0x${address}`;
 	const short = `${cleaned.slice(0, 6)}…${cleaned.slice(-4)}`;
@@ -50,7 +52,7 @@ export function ContractAddressChip({ address }: { address: string }) {
 				type="button"
 				onClick={copy}
 				className="inline-flex items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)]"
-				aria-label={copied ? "contract address copied" : "copy contract address"}
+				aria-label={copied ? t("agent.contractChip.copiedAria") : t("agent.contractChip.copyAria")}
 			>
 				<span>{short}</span>
 				{copied ? (
@@ -64,7 +66,7 @@ export function ContractAddressChip({ address }: { address: string }) {
 				target="_blank"
 				rel="noopener noreferrer"
 				className="inline-flex items-center text-[var(--text-secondary)] opacity-60 hover:opacity-100 transition-opacity"
-				aria-label="open contract on bscscan"
+				aria-label={t("agent.contractChip.openOnBscscanAria")}
 			>
 				<ExternalLink className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
 			</a>

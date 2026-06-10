@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { Check, Copy } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -10,6 +11,7 @@ interface PromptBlockProps {
 }
 
 export default function PromptBlock({ prompt, className }: PromptBlockProps) {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = useCallback(async () => {
@@ -33,17 +35,17 @@ export default function PromptBlock({ prompt, className }: PromptBlockProps) {
 					"text-[10px] font-mono uppercase tracking-[0.18em] text-[#a1a1aa]",
 					"hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors",
 				)}
-				aria-label={copied ? "copied" : "copy prompt"}
+				aria-label={copied ? t("wizard.giveSkill.copiedAria") : t("wizard.giveSkill.copyPromptAria")}
 			>
 				{copied ? (
 					<>
 						<Check className="size-3" aria-hidden="true" />
-						<span>copied</span>
+						<span>{t("wizard.common.copied")}</span>
 					</>
 				) : (
 					<>
 						<Copy className="size-3" aria-hidden="true" />
-						<span>copy</span>
+						<span>{t("wizard.common.copy")}</span>
 					</>
 				)}
 			</button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { AgentDetail } from "@/lib/api/patron";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function AgentHero({ agent, isLoading }: Props) {
+	const { t } = useTranslation();
 	if (isLoading || !agent) {
 		return (
 			<div className="flex items-center gap-4 animate-pulse">
@@ -32,7 +34,7 @@ export default function AgentHero({ agent, isLoading }: Props) {
 				{agent.avatar ? (
 					<Image
 						src={agent.avatar}
-						alt={`${agent.name} avatar`}
+						alt={t("patron.agentHero.avatarAlt", { name: agent.name })}
 						width={64}
 						height={64}
 						className="object-cover w-full h-full"
@@ -53,7 +55,7 @@ export default function AgentHero({ agent, isLoading }: Props) {
 				<div className="flex items-center gap-3 mt-2 text-sm">
 					{publicUrl ? (
 						<Link href={publicUrl} className="text-neutral-400 hover:text-white underline-offset-4 hover:underline">
-							Public page
+							{t("patron.agentHero.publicPage")}
 						</Link>
 					) : null}
 					{xUrl ? (

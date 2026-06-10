@@ -20,12 +20,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { LaunchCard, LaunchCardSkeleton } from "@/components/launches-discover/launch-card";
+import { useTranslation } from "@/contexts/locale-context";
 import { useLaunchesList } from "@/lib/api/launches-list";
 
 const RAIL_LIMIT = 6;
 const SKELETON_TIMEOUT_MS = 4000;
 
 export function LiveLaunchesRail() {
+	const { t } = useTranslation();
 	const { data, isLoading, isError } = useLaunchesList({ state: "open", limit: RAIL_LIMIT });
 
 	const [skeletonExpired, setSkeletonExpired] = useState(false);
@@ -49,15 +51,15 @@ export function LiveLaunchesRail() {
 				<div>
 					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-2 flex items-center gap-2">
 						<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-						live now
+						{t("discover.liveRail.liveNow")}
 					</div>
 					<h2 className="text-2xl md:text-3xl leading-tight tracking-tight text-white">
 						{showSkeleton ? (
 							<span className="inline-block h-7 md:h-9 w-44 md:w-56 rounded bg-white/[0.06] animate-pulse align-middle" />
 						) : launches.length === 1 ? (
-							"1 round live"
+							t("discover.liveRail.oneRoundLive")
 						) : (
-							`${launches.length} rounds live`
+							t("discover.liveRail.roundsLive", { count: String(launches.length) })
 						)}
 					</h2>
 				</div>
@@ -65,7 +67,7 @@ export function LiveLaunchesRail() {
 					href="/launches"
 					className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors duration-150"
 				>
-					browse all
+					{t("discover.liveRail.browseAll")}
 				</Link>
 			</div>
 

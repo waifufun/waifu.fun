@@ -1,4 +1,7 @@
+"use client";
+
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import { resolveImageUrl } from "@/lib/image-url";
 import { timeAgo } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
@@ -11,6 +14,7 @@ function shortAddress(addr: string): string {
 }
 
 export default function AgentCard({ agent }: { agent: AgentListItem }) {
+	const { t } = useTranslation();
 	const graduated = agent.status === "graduated";
 	const pending = agent.status === "pending";
 
@@ -22,7 +26,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img
 						src={resolveImageUrl(agent.image) ?? "/brand/icon/icon_on_black_512.png"}
-						alt={`${agent.name} logo`}
+						alt={t("discover.agentCard.logoAlt", { name: agent.name })}
 						loading="lazy"
 						className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
 					/>
@@ -43,7 +47,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 					</div>
 
 					<p className="text-[11px] leading-relaxed text-white/50 line-clamp-2 min-h-[2.2rem]">
-						{agent.description || "no description."}
+						{agent.description || t("discover.agentCard.noDescription")}
 					</p>
 
 					{/* identity strip: short token address + last activity. Replaces
@@ -57,20 +61,24 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 							<span className="inline-flex items-center gap-1 shrink-0">
 								<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
 								<span>
-									{agent.lastActionType || "action"} {timeAgo(agent.lastActionAt)}
+									{agent.lastActionType || t("discover.agentCard.defaultAction")} {timeAgo(agent.lastActionAt)}
 								</span>
 							</span>
 						) : (
-							<span className="text-white/20">warming up</span>
+							<span className="text-white/20">{t("discover.agentCard.warmingUp")}</span>
 						)}
 					</div>
 
 					<div className="flex items-center justify-between pt-2 mt-1 border-t border-white/10">
 						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">
-							{pending ? "pending" : graduated ? "on pancakeswap" : "on curve"}
+							{pending
+								? t("discover.agentCard.pending")
+								: graduated
+									? t("discover.agentCard.onPancakeswap")
+									: t("discover.agentCard.onCurve")}
 						</div>
 						<div className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 group-hover:text-[#00ff87] transition-colors">
-							view
+							{t("discover.agentCard.view")}
 							<ArrowUpRight
 								className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]"
 								strokeWidth={1.75}
@@ -84,11 +92,12 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 }
 
 function StatusBadge({ status }: { status: AgentListItem["status"] }) {
+	const { t } = useTranslation();
 	if (status === "graduated") {
 		return (
 			<span className="inline-flex items-center gap-1.5 h-5 px-1.5 rounded-sm text-[9px] font-mono uppercase tracking-[0.16em] bg-black/70 backdrop-blur-sm border border-white/20 text-white/70">
 				<span className="w-1 h-1 rounded-full bg-white/50" />
-				graduated
+				{t("discover.agentCard.graduated")}
 			</span>
 		);
 	}
@@ -96,14 +105,14 @@ function StatusBadge({ status }: { status: AgentListItem["status"] }) {
 		return (
 			<span className="inline-flex items-center gap-1.5 h-5 px-1.5 rounded-sm text-[9px] font-mono uppercase tracking-[0.16em] bg-black/70 backdrop-blur-sm border border-white/15 text-white/40">
 				<span className="w-1 h-1 rounded-full bg-white/30" />
-				pending
+				{t("discover.agentCard.pending")}
 			</span>
 		);
 	}
 	return (
 		<span className="inline-flex items-center gap-1.5 h-5 px-1.5 rounded-sm text-[9px] font-mono uppercase tracking-[0.16em] bg-black/70 backdrop-blur-sm border border-[#00ff87]/40 text-[#00ff87]">
 			<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
-			active
+			{t("discover.agentCard.active")}
 		</span>
 	);
 }

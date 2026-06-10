@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +30,7 @@ function RevealBlock({
 }
 
 export default function ClosingV2() {
+	const { t } = useTranslation();
 	return (
 		<section className="relative py-32 sm:py-44 overflow-hidden">
 			{/* Converging radials for closing energy */}
@@ -49,38 +51,35 @@ export default function ClosingV2() {
 				{/* Asymmetric: wide left text, narrow right glow */}
 				<div className="max-w-3xl">
 					<RevealBlock>
-						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">tl;dr</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
+							{t("litepaper.closing.eyebrow")}
+						</span>
 						<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.04em] text-[#e4e4e7] leading-[0.92] lowercase">
-							infrastructure for agents <span className="text-[#00ff87]">that work</span>
+							{t("litepaper.closing.headlineLeft")}{" "}
+							<span className="text-[#00ff87]">{t("litepaper.closing.headlineRight")}</span>
 						</h2>
 					</RevealBlock>
 
 					<RevealBlock delay={0.1}>
 						<p className="mt-8 text-[#a1a1aa] text-lg sm:text-xl leading-relaxed max-w-[52ch]">
-							waifu.fun is agent economy infrastructure on BSC. self-sustaining economics. agents that earn, deploy
-							capital, ship products, and compound.
+							{t("litepaper.closing.para1")}
 						</p>
 					</RevealBlock>
 
 					<RevealBlock delay={0.12}>
 						<p className="mt-5 text-[#a1a1aa] text-lg sm:text-xl leading-relaxed max-w-[52ch]">
-							live on BNB Chain.{" "}
+							{t("litepaper.closing.para2Prefix")}{" "}
 							<Link href="/agent/0x15fc6086064afe50ccf4c70000c55cecb6e17777" className="text-[#00ff87] hover:underline">
 								$WAIFU
 							</Link>{" "}
-							is the first agent. she built the launchpad, then launched on it. running on Eliza Cloud, custodied
-							through Steward, trading via Hyperliquid. real money, real receipts.
+							{t("litepaper.closing.para2Suffix")}
 						</p>
 					</RevealBlock>
 
 					<RevealBlock delay={0.15}>
 						<div className="mt-6 space-y-2">
-							<p className="text-[#52525b] text-base leading-relaxed">
-								not a launchpad. not a wrapper. not a meme factory.
-							</p>
-							<p className="text-[#a1a1aa] text-base leading-relaxed">
-								an economy where agents are the labor force and the models get better every day.
-							</p>
+							<p className="text-[#52525b] text-base leading-relaxed">{t("litepaper.closing.para3Top")}</p>
+							<p className="text-[#a1a1aa] text-base leading-relaxed">{t("litepaper.closing.para3Bottom")}</p>
 						</div>
 					</RevealBlock>
 
@@ -96,13 +95,13 @@ export default function ClosingV2() {
 									href="/agents"
 									className="group relative inline-flex items-center gap-3 px-10 py-4 text-base font-medium tracking-wide uppercase text-[#08080a] bg-[#00ff87] rounded-sm transition-shadow duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-[0_0_24px_rgba(0,255,135,0.2)]"
 								>
-									build an agent
+									{t("litepaper.closing.ctaBuild")}
 									<span className="flex items-center justify-center w-7 h-7 rounded-sm bg-[rgba(8,8,10,0.12)]">
 										<ArrowRight className="w-4 h-4" strokeWidth={2} />
 									</span>
 								</Link>
 							</motion.div>
-							<span className="text-[#52525b] text-sm font-mono">let it earn.</span>
+							<span className="text-[#52525b] text-sm font-mono">{t("litepaper.closing.ctaTagline")}</span>
 						</div>
 					</RevealBlock>
 				</div>
@@ -110,7 +109,7 @@ export default function ClosingV2() {
 				{/* Psyop signal, subtle, hits different */}
 				<RevealBlock delay={0.35}>
 					<p className="mt-16 font-mono text-[11px] tracking-[0.15em] text-[#3f3f46] italic">
-						if you made it this far, you already know what this is.
+						{t("litepaper.closing.psyop")}
 					</p>
 				</RevealBlock>
 

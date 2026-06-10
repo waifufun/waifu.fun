@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
@@ -22,6 +23,7 @@ function scrubCallbackUrl() {
 }
 
 function TwitterFinalizeInner() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const params = useSearchParams();
 	const ranRef = useRef(false);
@@ -43,7 +45,7 @@ function TwitterFinalizeInner() {
 		}
 		if (!code) {
 			setPhase("error");
-			setError("missing code in twitter callback URL");
+			setError(t("auth.twitterFinalize.missingCode"));
 			return;
 		}
 
@@ -66,12 +68,12 @@ function TwitterFinalizeInner() {
 			} catch (err) {
 				if ((err as { name?: string })?.name === "AbortError") return;
 				setPhase("error");
-				setError(err instanceof Error ? err.message : "twitter sign-in failed");
+				setError(err instanceof Error ? err.message : t("auth.twitterFinalize.signInFailedFallback"));
 			}
 		})();
 
 		return () => controller.abort();
-	}, [params]);
+	}, [params, t]);
 
 	return (
 		<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a] px-6">
@@ -81,11 +83,15 @@ function TwitterFinalizeInner() {
 				transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
 				className="w-full max-w-md space-y-6"
 			>
-				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">waifu.fun / auth / twitter</p>
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">
+					{t("auth.twitterFinalize.eyebrow")}
+				</p>
 				{phase === "loading" ? (
 					<>
-						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">signing you in</h1>
-						<p className="text-sm text-[#a1a1aa] leading-relaxed">finishing twitter / x auth.</p>
+						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">
+							{t("auth.twitterFinalize.signingIn")}
+						</h1>
+						<p className="text-sm text-[#a1a1aa] leading-relaxed">{t("auth.twitterFinalize.finishingAuth")}</p>
 						<div
 							className="h-px bg-gradient-to-r from-[#00ff87]/40 via-[#00ff87]/10 to-transparent"
 							aria-hidden="true"
@@ -93,14 +99,18 @@ function TwitterFinalizeInner() {
 					</>
 				) : (
 					<>
-						<h1 className="text-2xl font-medium text-[#f87171] tracking-tight">sign-in failed</h1>
-						<p className="text-sm text-[#a1a1aa] leading-relaxed font-mono">{error ?? "unknown error"}</p>
+						<h1 className="text-2xl font-medium text-[#f87171] tracking-tight">
+							{t("auth.twitterFinalize.signInFailed")}
+						</h1>
+						<p className="text-sm text-[#a1a1aa] leading-relaxed font-mono">
+							{error ?? t("auth.twitterFinalize.unknownError")}
+						</p>
 						<button
 							type="button"
 							onClick={() => router.replace("/auth/connect")}
 							className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#00ff87] border border-[#00ff87]/30 px-4 py-2 rounded-sm hover:bg-[#00ff87]/10 transition-colors duration-200"
 						>
-							try again
+							{t("auth.twitterFinalize.tryAgain")}
 						</button>
 					</>
 				)}
@@ -109,15 +119,18 @@ function TwitterFinalizeInner() {
 	);
 }
 
+function TwitterFinalizeFallback() {
+	const { t } = useTranslation();
+	return (
+		<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a] text-[#71717a] text-sm">
+			{t("auth.twitterFinalize.loading")}
+		</div>
+	);
+}
+
 export default function TwitterFinalizePage() {
 	return (
-		<Suspense
-			fallback={
-				<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a] text-[#71717a] text-sm">
-					loading
-				</div>
-			}
-		>
+		<Suspense fallback={<TwitterFinalizeFallback />}>
 			<TwitterFinalizeInner />
 		</Suspense>
 	);

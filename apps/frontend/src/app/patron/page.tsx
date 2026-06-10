@@ -6,11 +6,13 @@ import AgentGrid from "@/components/patron/agent-grid";
 import AggregateStrip from "@/components/patron/aggregate-strip";
 import EmptyState from "@/components/patron/empty-state";
 import PatronHeader from "@/components/patron/patron-header";
+import { useTranslation } from "@/contexts/locale-context";
 import useAddress from "@/hooks/use-address";
 import { useWaifuMe } from "@/hooks/use-waifu-me";
 import { usePatronAgents } from "@/lib/api/patron";
 
 export default function PatronPage() {
+	const { t } = useTranslation();
 	const address = useAddress();
 	const { me } = useWaifuMe();
 	// Prefer the wallet-bound owner filter when a wallet is connected; fall
@@ -19,23 +21,20 @@ export default function PatronPage() {
 
 	return (
 		<main className="py-6">
-			<PatronHeader
-				title="your agents"
-				subtitle="agents you patron. treasuries, runways, TaxSplitter routing, controls."
-			/>
+			<PatronHeader title={t("patron.page.title")} subtitle={t("patron.page.subtitle")} />
 
 			{agents && agents.length > 0 ? <AggregateStrip agents={agents} /> : null}
 			<AgentGrid agents={agents} isLoading={isLoading} error={error as Error | null} />
 
 			{!isLoading && !error && (!agents || agents.length === 0) ? (
 				<EmptyState
-					title="no agents yet."
+					title={t("patron.page.emptyTitle")}
 					body={
 						address
-							? "this wallet hasn't launched anything yet."
+							? t("patron.page.emptyWalletEmpty")
 							: me?.wallets.length
-								? "you haven't launched yet."
-								: "link a wallet first, then launch your first agent."
+								? t("patron.page.emptyAccount")
+								: t("patron.page.emptyNoWallet")
 					}
 					ctaHref="/create/wizard"
 				/>
@@ -43,11 +42,11 @@ export default function PatronPage() {
 
 			{!address && me && me.wallets.length === 0 ? (
 				<div className="mt-6 rounded-sm border border-white/10 bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[#a1a1aa]">
-					you're signed in but haven't linked a wallet.{" "}
+					{t("patron.page.signedInNoWallet")}{" "}
 					<Link href="/patron/wallets" className="text-[#00ff87] hover:underline transition-colors">
-						link a wallet
+						{t("patron.page.linkWalletCta")}
 					</Link>{" "}
-					to launch on bsc.
+					{t("patron.page.toLaunchOnBsc")}
 				</div>
 			) : null}
 		</main>

@@ -5,6 +5,9 @@
  * they've backed. Mirrors the visual language of the existing patron
  * `AggregateStrip` so the two pages feel like siblings.
  */
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import type { PortfolioTotals } from "@/lib/portfolio/aggregate";
 import { formatBnb, formatBnbDelta, formatTokens } from "@/lib/portfolio/format";
 
@@ -13,6 +16,7 @@ type Props = {
 };
 
 export default function PortfolioStats({ totals }: Props) {
+	const { t } = useTranslation();
 	// Total exposure: the cost basis the patron put in vs the implied
 	// current value (realized + unrealized). pnl is the delta.
 	const currentValueWei = totals.realizedWei + totals.unrealizedWei;
@@ -21,36 +25,36 @@ export default function PortfolioStats({ totals }: Props) {
 
 	const metrics: { label: string; value: string; tone?: "neutral" | "positive" | "negative" }[] = [
 		{
-			label: "backed",
+			label: t("portfolio.stats.backed"),
 			value: String(totals.count),
 		},
 		{
-			label: "invested",
+			label: t("portfolio.stats.invested"),
 			value: `${formatBnb(totals.investedWei)} BNB`,
 		},
 		{
-			label: "realized",
+			label: t("portfolio.stats.realized"),
 			value: `${formatBnb(totals.realizedWei)} BNB`,
 		},
 		{
-			label: "unrealized",
+			label: t("portfolio.stats.unrealized"),
 			value: `${formatBnb(totals.unrealizedWei)} BNB`,
 		},
 		{
-			label: "p&l",
+			label: t("portfolio.stats.pnl"),
 			value: `${formatBnbDelta(pnlWei)} BNB`,
 			tone: pnlWei === 0n ? "neutral" : pnlPositive ? "positive" : "negative",
 		},
 		{
-			label: "claimable",
-			value: `${formatTokens(totals.claimableTokens)} tokens`,
+			label: t("portfolio.stats.claimable"),
+			value: `${formatTokens(totals.claimableTokens)} ${t("portfolio.stats.claimableTokensSuffix")}`,
 			tone: totals.claimableTokens > 0n ? "positive" : "neutral",
 		},
 	];
 
 	return (
 		<section
-			aria-label="portfolio overview"
+			aria-label={t("portfolio.stats.sectionAria")}
 			className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px mb-6 rounded-sm overflow-hidden bg-stroke-strong border border-stroke-strong"
 		>
 			{metrics.map((m) => (

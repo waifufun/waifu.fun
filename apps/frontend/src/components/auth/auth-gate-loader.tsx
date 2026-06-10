@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
+
 /**
  * Tiny monochrome placeholder shown while the auth gate is resolving
  * (Steward context still loading, or in-page redirect in flight).
@@ -9,9 +11,12 @@
  * 50–200ms it takes the auth state to hydrate.
  */
 export function AuthGateLoader() {
+	const { t } = useTranslation();
 	return (
 		<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a]">
-			<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">verifying session…</div>
+			<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">
+				{t("auth.gate.verifyingSession")}
+			</div>
 		</div>
 	);
 }

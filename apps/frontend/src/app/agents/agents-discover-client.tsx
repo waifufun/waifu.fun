@@ -8,6 +8,7 @@ import PaginationBar from "@/components/agents-discover/pagination-bar";
 import type { AgentListItem, AgentSort, AgentStatusFilter } from "@/components/agents-discover/types";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import { fetchAgents } from "@/lib/agents-api";
 import { RotateCcw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -30,6 +31,7 @@ function parsePage(v: string | null): number {
 }
 
 function AgentsDiscoverInner() {
+	const { t } = useTranslation();
 	const searchParams = useSearchParams();
 	const { status, sort, page } = useMemo(() => {
 		return {
@@ -76,13 +78,13 @@ function AgentsDiscoverInner() {
 	) : (
 		<div className="text-[11px] md:text-xs font-mono text-white/45">
 			<span className="text-white/80">{total.toLocaleString()}</span>{" "}
-			<span className="uppercase tracking-[0.18em]">agents launched on waifu.fun</span>
+			<span className="uppercase tracking-[0.18em]">{t("discover.agents.countSuffix")}</span>
 		</div>
 	);
 
 	return (
 		<PageShell maxWidth="wide">
-			<PageHeader eyebrow="waifu.fun / agents" title="agents" right={countMeta} />
+			<PageHeader eyebrow={t("discover.agents.pageEyebrow")} title={t("discover.agents.pageTitle")} right={countMeta} />
 			<div className="mb-0">
 				<FilterBar status={status} sort={sort} />
 			</div>
@@ -99,10 +101,10 @@ function AgentsDiscoverInner() {
 					<AgentsListError onRetry={() => setReloadKey((k) => k + 1)} />
 				) : agents.length === 0 ? (
 					<EmptyState
-						title={status === "all" ? "no agents yet." : `no ${status} agents.`}
-						subtitle={status === "all" ? "be the first." : "try a different filter, or launch one."}
+						title={status === "all" ? t("discover.agents.emptyTitle") : t("discover.agents.noStatusTitle", { status })}
+						subtitle={status === "all" ? t("discover.agents.emptyBeFirst") : t("discover.agents.noStatusBody")}
 						ctaHref="/create/wizard"
-						ctaLabel="launch yours"
+						ctaLabel={t("discover.agents.launchYoursCta")}
 					/>
 				) : (
 					<AgentGrid agents={agents} />
@@ -115,11 +117,12 @@ function AgentsDiscoverInner() {
 }
 
 function AgentsFallback() {
+	const { t } = useTranslation();
 	return (
 		<PageShell maxWidth="wide">
 			<PageHeader
-				eyebrow="waifu.fun / agents"
-				title="agents"
+				eyebrow={t("discover.agents.pageEyebrow")}
+				title={t("discover.agents.pageTitle")}
 				right={<div className="h-3 w-48 bg-white/5 rounded-sm" />}
 			/>
 			<div className="h-12 border-y border-white/10" />
@@ -139,12 +142,15 @@ function AgentsFallback() {
  * forever. No 'oops' copy, no exclamation marks.
  */
 function AgentsListError({ onRetry }: { onRetry: () => void }) {
+	const { t } = useTranslation();
 	return (
 		<SurfaceCard padding="lg" className="text-center">
-			<div className="font-mono text-[11px] uppercase tracking-[0.24em] text-white/40">agents / unavailable</div>
-			<h2 className="mt-3 text-xl tracking-tight md:text-2xl">we couldn&apos;t load the agents list</h2>
+			<div className="font-mono text-[11px] uppercase tracking-[0.24em] text-white/40">
+				{t("discover.agents.unavailable")}
+			</div>
+			<h2 className="mt-3 text-xl tracking-tight md:text-2xl">{t("discover.agents.errorTitle")}</h2>
 			<p className="mx-auto mt-2.5 max-w-[44ch] text-sm leading-relaxed text-white/55">
-				the api responded with an error. retry once; if it keeps failing the backend is likely warming up.
+				{t("discover.agents.errorBody")}
 			</p>
 			<button
 				type="button"
@@ -152,7 +158,7 @@ function AgentsListError({ onRetry }: { onRetry: () => void }) {
 				className="mt-6 inline-flex h-10 items-center gap-2 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/[0.06] px-5 font-mono text-[11px] uppercase tracking-[0.2em] text-[#00ff87] transition-colors duration-200 hover:border-[#00ff87]/60 hover:bg-[#00ff87]/[0.1]"
 			>
 				<RotateCcw className="h-3 w-3" strokeWidth={1.75} />
-				retry
+				{t("common.retry")}
 			</button>
 		</SurfaceCard>
 	);

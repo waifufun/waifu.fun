@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
+
 /**
  * DEXScreener chart embed for the post-launch surface (W50).
  *
@@ -23,6 +25,7 @@ type Props = {
 };
 
 export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
+	const { t } = useTranslation();
 	const target = pairAddress ?? tokenAddress.toLowerCase();
 	const src = `https://dexscreener.com/bsc/${target}?embed=1&theme=dark&trades=0&info=0`;
 	const link = pairUrl ?? `https://dexscreener.com/bsc/${tokenAddress.toLowerCase()}`;
@@ -49,22 +52,27 @@ export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
 	}, []);
 
 	return (
-		<section className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden" aria-label="price chart">
+		<section
+			className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden"
+			aria-label={t("post.chart.sectionAria")}
+		>
 			<div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">price chart</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+					{t("post.chart.priceChart")}
+				</div>
 				<a
 					href={link}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
-					aria-label="open chart on dexscreener"
+					aria-label={t("post.chart.openOnAria")}
 				>
 					dexscreener
 				</a>
 			</div>
 			<iframe
 				src={src}
-				title={`price chart for ${tokenAddress}`}
+				title={t("post.chart.iframeTitle", { address: tokenAddress })}
 				className="w-full h-[320px] sm:h-[420px] border-0"
 				loading="lazy"
 			/>

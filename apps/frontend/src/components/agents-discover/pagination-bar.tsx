@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,7 @@ export default function PaginationBar({
 	pageSize: number;
 	total: number;
 }) {
+	const { t } = useTranslation();
 	const pathname = usePathname() ?? "/agents";
 	const searchParams = useSearchParams();
 
@@ -36,11 +38,11 @@ export default function PaginationBar({
 	return (
 		<div className="mt-10 flex items-center justify-between border-t border-white/10 pt-5">
 			<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">
-				{start}–{end} of {total}
+				{t("common.pagination.range", { start: String(start), end: String(end), total: String(total) })}
 			</div>
 			<div className="flex items-center gap-2">
-				<PageLink href={buildHref(page - 1)} disabled={!hasPrev} label="prev" dir="prev" />
-				<PageLink href={buildHref(page + 1)} disabled={!hasNext} label="next" dir="next" />
+				<PageLink href={buildHref(page - 1)} disabled={!hasPrev} label={t("common.pagination.prev")} dir="prev" />
+				<PageLink href={buildHref(page + 1)} disabled={!hasNext} label={t("common.pagination.next")} dir="next" />
 			</div>
 		</div>
 	);

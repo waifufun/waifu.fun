@@ -1,6 +1,7 @@
 "use client";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "@/contexts/locale-context";
 import useSlippage from "@/hooks/use-slippage";
 import useSpeed, { type TSpeed } from "@/hooks/use-speed";
 import { cn } from "@/lib/utils";
@@ -9,7 +10,14 @@ import { useState } from "react";
 import { Switch } from "../switch-button";
 import { Button } from "../ui/button";
 
+const SPEED_LABEL_KEYS: Record<TSpeed, string> = {
+	normal: "swap.advanced.speed.normal",
+	turbo: "swap.advanced.speed.turbo",
+	ultra: "swap.advanced.speed.ultra",
+};
+
 export default function AdvancedSettings() {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const { slippage, setSlippage } = useSlippage();
 	const { speed, setSpeed } = useSpeed();
@@ -17,7 +25,7 @@ export default function AdvancedSettings() {
 	return (
 		<div className="w-full">
 			<div className="w-full flex items-center justify-between text-xs font-medium text-white">
-				<span className="text-xs">Advanced Settings</span>
+				<span className="text-xs">{t("swap.advanced.title")}</span>
 				<Switch checked={open} onCheckedChange={setOpen} />
 			</div>
 
@@ -26,13 +34,13 @@ export default function AdvancedSettings() {
 					{/* Speed */}
 					<div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between p-0">
 						<div className="flex items-center gap-1">
-							<span className="text-xs text-white font-medium">Speed</span>
+							<span className="text-xs text-white font-medium">{t("swap.advanced.speedLabel")}</span>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<HelpCircle size={16} className="text-waifufun-text-secondary" />
 								</TooltipTrigger>
 								<TooltipContent>
-									<span>Choose how fast your transaction executes</span>
+									<span>{t("swap.advanced.speedTooltip")}</span>
 								</TooltipContent>
 							</Tooltip>
 						</div>
@@ -48,7 +56,7 @@ export default function AdvancedSettings() {
 										String(speed) === String(label) && "border border-[#00ff87]",
 									)}
 								>
-									{String(label)}
+									{t(SPEED_LABEL_KEYS[label])}
 								</Button>
 							))}
 						</div>
@@ -58,14 +66,14 @@ export default function AdvancedSettings() {
 					<div className="flex flex-col gap-4">
 						<div className="flex items-center justify-between w-full">
 							<div className="flex items-center gap-1">
-								<span className="text-xs text-white font-medium">Slippage</span>
+								<span className="text-xs text-white font-medium">{t("swap.advanced.slippageLabel")}</span>
 
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<HelpCircle size={16} className="text-waifufun-text-secondary" />
 									</TooltipTrigger>
 									<TooltipContent>
-										<span>This is the maximum amount of slippage you are willing to accept when placing the trade</span>
+										<span>{t("swap.advanced.slippageTooltip")}</span>
 									</TooltipContent>
 								</Tooltip>
 							</div>
@@ -92,7 +100,7 @@ export default function AdvancedSettings() {
 							])}
 						>
 							<AlertCircle className="text-waifufun-background-action-highlight" />
-							Your transaction may be frontrun and result in an unfavorable trade
+							{t("swap.advanced.frontrunWarning")}
 						</div>
 					</div>
 				</div>

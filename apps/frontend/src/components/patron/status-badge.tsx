@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import type { PatronAgentStatus } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 
@@ -8,14 +11,16 @@ const STYLES: Record<PatronAgentStatus, string> = {
 	killed: "bg-red-500/10 text-red-400 border-red-500/30",
 };
 
-const LABELS: Record<PatronAgentStatus, string> = {
-	provisioned: "Ready to launch",
-	active: "Active",
-	dormant: "Dormant",
-	killed: "Killed",
+const LABEL_KEYS: Record<PatronAgentStatus, string> = {
+	provisioned: "patron.status.provisioned",
+	active: "patron.status.active",
+	dormant: "patron.status.dormant",
+	killed: "patron.status.killed",
 };
 
 export default function StatusBadge({ status }: { status: PatronAgentStatus }) {
+	const { t } = useTranslation();
+	const labelKey = LABEL_KEYS[status];
 	return (
 		<span
 			className={cn(
@@ -34,7 +39,7 @@ export default function StatusBadge({ status }: { status: PatronAgentStatus }) {
 				)}
 				aria-hidden
 			/>
-			{LABELS[status] ?? status}
+			{labelKey ? t(labelKey) : status}
 		</span>
 	);
 }

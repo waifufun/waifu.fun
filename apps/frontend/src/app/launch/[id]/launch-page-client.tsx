@@ -18,6 +18,7 @@ import { StateBanner } from "@/components/launch-page/state-banner";
 import { TierInfoCard } from "@/components/launch-page/tier-info-card";
 import { ClaimWidget } from "@/components/post-launch/claim-widget";
 import { ErrorState } from "@/components/ui/error-state";
+import { useTranslation } from "@/contexts/locale-context";
 import { useLaunchMeta, useVaultSnapshot, useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 import { type LaunchDisplayState, deriveLaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
@@ -30,6 +31,7 @@ type Props = {
 };
 
 export default function LaunchPageClient({ id }: Props) {
+	const { t } = useTranslation();
 	// Static export builds a single `/launch/_` shell (see `page.tsx`'s
 	// `generateStaticParams`). The CF Pages function serves that shell for
 	// every `/launch/<real-id>` request, so the page mounts with `id="_"`
@@ -127,8 +129,8 @@ export default function LaunchPageClient({ id }: Props) {
 		return (
 			<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-12">
 				<ErrorState
-					title="couldn't load this launch."
-					message={meta.error instanceof Error ? meta.error.message : "unknown error."}
+					title={t("launch.page.loadErrorTitle")}
+					message={meta.error instanceof Error ? meta.error.message : t("launch.page.loadErrorUnknown")}
 					onRetry={() => void meta.refetch()}
 					homeHref="/launches"
 				/>
@@ -137,14 +139,14 @@ export default function LaunchPageClient({ id }: Props) {
 	}
 
 	if (!meta.data && !vaultAddress) {
-		return <NotFound id={runtimeId} reason="launch not found" />;
+		return <NotFound id={runtimeId} reason={t("launch.page.notFoundReason")} />;
 	}
 
 	const capWeiResolved = apiCapWei ?? capFromTier(tier.presaleCapBnb);
 
 	return (
 		<main
-			aria-label="launch surface"
+			aria-label={t("launch.page.mainAria")}
 			className="min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
 			data-testid="launch-page"
 			style={THEME_TOKENS as React.CSSProperties}
@@ -186,7 +188,7 @@ export default function LaunchPageClient({ id }: Props) {
 						{showClaimWidget ? (
 							<ClaimWidget
 								vault={vaultAddress}
-								ticker={meta.data?.tokenTicker ?? "tokens"}
+								ticker={meta.data?.tokenTicker ?? t("launch.page.tickerFallback")}
 								vestingEnabled={snap?.vestingEnabled ?? true}
 								launchTimestamp={launchTimestampNumber}
 								onClaimed={refreshAfterClaim}
@@ -220,7 +222,7 @@ export default function LaunchPageClient({ id }: Props) {
 					{showClaimWidget ? (
 						<ClaimWidget
 							vault={vaultAddress}
-							ticker={meta.data?.tokenTicker ?? "tokens"}
+							ticker={meta.data?.tokenTicker ?? t("launch.page.tickerFallback")}
 							vestingEnabled={snap?.vestingEnabled ?? true}
 							launchTimestamp={launchTimestampNumber}
 							onClaimed={refreshAfterClaim}
@@ -255,6 +257,7 @@ export default function LaunchPageClient({ id }: Props) {
 }
 
 function TopBar() {
+	const { t } = useTranslation();
 	return (
 		<div className="flex items-center justify-between">
 			<Link
@@ -262,7 +265,7 @@ function TopBar() {
 				href="/launches"
 			>
 				<ArrowLeft className="h-3 w-3" strokeWidth={1.5} />
-				all launches
+				{t("launch.page.topBarAllLaunches")}
 			</Link>
 		</div>
 	);
@@ -292,9 +295,14 @@ function LoadingState() {
 }
 
 function NotFound({ id, reason }: { id: string; reason: string }) {
+	const { t } = useTranslation();
 	return (
 		<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-12">
-			<ErrorState title="launch not found." message={`no round for ${id}. ${reason}`} homeHref="/launches" />
+			<ErrorState
+				title={t("launch.page.notFoundTitle")}
+				message={t("launch.page.notFoundMessage", { id, reason })}
+				homeHref="/launches"
+			/>
 		</main>
 	);
 }

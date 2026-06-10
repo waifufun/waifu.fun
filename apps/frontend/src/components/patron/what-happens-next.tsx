@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -7,31 +8,15 @@ import { useState } from "react";
 
 type Step = {
 	num: string;
-	title: string;
-	body: string;
+	titleKey: string;
+	bodyKey: string;
 };
 
 const STEPS: Step[] = [
-	{
-		num: "01",
-		title: "you authorize",
-		body: "you sign a SIWE message confirming you're the patron. the launch is queued with the first-buy amount you set.",
-	},
-	{
-		num: "02",
-		title: "AgentSafe submits the launch call",
-		body: "the AgentSafe signs the FLAP Portal launch. the tax recipient is locked to the TaxSplitter that routes 65% to the agent treasury, 25% to you (patron), and 10% to the platform.",
-	},
-	{
-		num: "03",
-		title: "token lands on the bonding curve",
-		body: "once the chain confirms, the token is born and the FLAP curve starts. the agent receives a webhook that says 'you're alive'.",
-	},
-	{
-		num: "04",
-		title: "the agent takes over",
-		body: "it posts its first message on x, opens its trade and treasury adapters, and starts running its main loop.",
-	},
+	{ num: "01", titleKey: "patron.whatHappens.step1Title", bodyKey: "patron.whatHappens.step1Body" },
+	{ num: "02", titleKey: "patron.whatHappens.step2Title", bodyKey: "patron.whatHappens.step2Body" },
+	{ num: "03", titleKey: "patron.whatHappens.step3Title", bodyKey: "patron.whatHappens.step3Body" },
+	{ num: "04", titleKey: "patron.whatHappens.step4Title", bodyKey: "patron.whatHappens.step4Body" },
 ];
 
 function ChevronIcon({ className }: { className?: string }) {
@@ -52,10 +37,11 @@ function ChevronIcon({ className }: { className?: string }) {
 }
 
 export default function WhatHappensNext() {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 
 	return (
-		<section aria-label="Launch lifecycle" className="rounded-sm border border-stroke bg-[#0A0A0A]">
+		<section aria-label={t("patron.whatHappens.ariaLabel")} className="rounded-sm border border-stroke bg-[#0A0A0A]">
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
@@ -68,8 +54,8 @@ export default function WhatHappensNext() {
 				)}
 			>
 				<div>
-					<p className="text-xs uppercase tracking-[0.2em] text-neutral-500">after you launch</p>
-					<h3 className="text-sm text-white mt-1 tracking-tight">what happens next?</h3>
+					<p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t("patron.whatHappens.eyebrow")}</p>
+					<h3 className="text-sm text-white mt-1 tracking-tight">{t("patron.whatHappens.title")}</h3>
 				</div>
 				<motion.span
 					animate={{ rotate: open ? 180 : 0 }}
@@ -95,8 +81,8 @@ export default function WhatHappensNext() {
 								<li key={step.num} className="flex gap-4">
 									<div className="font-mono text-[11px] tracking-[0.2em] text-accent mt-0.5 shrink-0">{step.num}</div>
 									<div>
-										<div className="text-sm text-white tracking-tight">{step.title}</div>
-										<p className="text-xs text-neutral-400 mt-1.5 leading-relaxed max-w-[44ch]">{step.body}</p>
+										<div className="text-sm text-white tracking-tight">{t(step.titleKey)}</div>
+										<p className="text-xs text-neutral-400 mt-1.5 leading-relaxed max-w-[44ch]">{t(step.bodyKey)}</p>
 									</div>
 								</li>
 							))}

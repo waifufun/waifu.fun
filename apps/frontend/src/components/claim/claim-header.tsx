@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { usePatronAuth } from "@/contexts/auth-context";
+import { useTranslation } from "@/contexts/locale-context";
 
 /**
  * ClaimHeader
@@ -21,6 +22,7 @@ import { usePatronAuth } from "@/contexts/auth-context";
  */
 export default function ClaimHeader() {
 	const { patronUser, isLoading } = usePatronAuth();
+	const { t } = useTranslation();
 
 	return (
 		<div className="relative z-10 mb-8 flex items-center justify-between gap-3">
@@ -29,12 +31,14 @@ export default function ClaimHeader() {
 				className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-white/70 transition-colors"
 			>
 				<ArrowLeft className="w-3 h-3" />
-				waifu.fun
+				{t("claim.header.back")}
 			</Link>
 
 			<div className="flex items-center gap-3">
 				{!isLoading && patronUser ? <ConnectedXPill user={patronUser} /> : null}
-				<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30">claim</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30">
+					{t("claim.header.eyebrow")}
+				</div>
 			</div>
 		</div>
 	);
@@ -49,6 +53,7 @@ function ConnectedXPill({
 		xDisplayName?: string | null;
 	};
 }) {
+	const { t } = useTranslation();
 	const avatarFallback = `https://unavatar.io/twitter/${user.xHandle}`;
 	const avatarSrc = user.xAvatarUrl ?? avatarFallback;
 
@@ -58,7 +63,7 @@ function ConnectedXPill({
 			target="_blank"
 			rel="noopener noreferrer"
 			className="group inline-flex h-8 items-center gap-2 rounded-full border border-[#1d9bf0]/25 bg-[#1d9bf0]/[0.08] px-2.5 pr-3.5 text-xs font-mono text-white/80 transition-colors hover:border-[#1d9bf0]/45 hover:bg-[#1d9bf0]/[0.14]"
-			aria-label={`signed in as @${user.xHandle}`}
+			aria-label={t("claim.header.signedInAria", { handle: user.xHandle })}
 		>
 			<span className="relative flex size-5 shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
 				{/* eslint-disable-next-line @next/next/no-img-element */}

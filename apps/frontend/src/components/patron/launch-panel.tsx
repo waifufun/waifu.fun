@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import useBalance from "@/hooks/use-balance";
 import { useXConnection } from "@/lib/api/x-connection";
 import { cn } from "@/lib/utils";
@@ -20,11 +21,11 @@ type Props = {
 type Preset = "all" | "half" | "quarter" | "zero";
 
 const PRESET_ORDER: Preset[] = ["all", "half", "quarter", "zero"];
-const PRESET_LABELS: Record<Preset, string> = {
-	all: "All",
-	half: "Half",
-	quarter: "Quarter",
-	zero: "0",
+const PRESET_LABEL_KEYS: Record<Preset, string> = {
+	all: "patron.launchPanel.presetAll",
+	half: "patron.launchPanel.presetHalf",
+	quarter: "patron.launchPanel.presetQuarter",
+	zero: "patron.launchPanel.presetZero",
 };
 const PRESET_FRACTION: Record<Preset, number> = {
 	all: 1,
@@ -70,6 +71,7 @@ function formatBnb(n: number | null | undefined, digits = 4): string {
 }
 
 export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunching = false }: Props) {
+	const { t } = useTranslation();
 	const { balance, isLoading: balanceLoading, error: balanceError, refetch } = useSafeBalance(safeAddress);
 	const xConnection = useXConnection(agentId);
 	const xData = xConnection.status.data;
@@ -93,9 +95,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 	const exceedsBalance = parsed.ok && balance != null && parsed.value > balance + 1e-12;
 	const validationError = !parsed.ok
-		? "Enter a valid non-negative amount"
+		? t("patron.launchPanel.invalidAmount")
 		: exceedsBalance
-			? "First buy can't exceed Safe balance"
+			? t("patron.launchPanel.exceedsSafeBalance")
 			: null;
 
 	// Empty Safe state: balance read succeeded and equals 0.
@@ -162,17 +164,19 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 	// Empty Safe: render a focused funding state instead of the form.
 	if (isEmptySafe) {
 		return (
-			<section aria-label="Fund Safe" className="relative rounded-sm border border-stroke-strong bg-[#0C0C0C]">
+			<section
+				aria-label={t("patron.launchPanel.fundSafeAriaLabel")}
+				className="relative rounded-sm border border-stroke-strong bg-[#0C0C0C]"
+			>
 				<div className="px-6 md:px-8 py-12 space-y-6">
 					<div className="flex items-start gap-3">
 						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] text-[#a1a1aa]">
 							<AlertTriangle className="w-4 h-4" />
 						</div>
 						<div>
-							<h2 className="text-xl text-white tracking-tight">fund the safe first.</h2>
+							<h2 className="text-xl text-white tracking-tight">{t("patron.launchPanel.fundSafeTitle")}</h2>
 							<p className="text-sm text-neutral-400 mt-2 max-w-[60ch] leading-relaxed">
-								your agent&apos;s safe holds 0 BNB. send BNB to the address below so the safe can pay gas and
-								(optionally) take a first buy.
+								{t("patron.launchPanel.fundSafeBody")}
 							</p>
 						</div>
 					</div>
@@ -184,11 +188,11 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 								type="button"
 								onClick={handleCopy}
 								disabled={!safeAddress}
-								aria-label="Copy Safe address"
+								aria-label={t("patron.launchPanel.copySafeAria")}
 								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-stroke text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
 							>
 								{copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
-								{copied ? "Copied" : "Copy"}
+								{copied ? t("patron.launchPanel.copied") : t("patron.launchPanel.copy")}
 							</button>
 							{safeAddress ? (
 								<a
@@ -196,7 +200,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									target="_blank"
 									rel="noopener noreferrer"
 									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
-									aria-label="View Safe on BscScan"
+									aria-label={t("patron.launchPanel.viewSafeAria")}
 								>
 									<ExternalLink className="w-3.5 h-3.5" />
 								</a>
@@ -206,9 +210,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 					<div className="flex items-center gap-3 flex-wrap">
 						<Button type="button" onClick={() => refetch()} className="h-10 bg-white text-black hover:bg-white/90">
-							i funded it. refresh.
+							{t("patron.launchPanel.fundSafeFundedCta")}
 						</Button>
-						<p className="text-[11px] text-neutral-500">balance refreshes every 60 seconds automatically.</p>
+						<p className="text-[11px] text-neutral-500">{t("patron.launchPanel.fundSafeAutoRefresh")}</p>
 					</div>
 				</div>
 			</section>
@@ -217,16 +221,21 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 	return (
 		<>
-			<section aria-label="Launch panel" className="relative rounded-sm border border-stroke bg-[#0C0C0C]">
+			<section
+				aria-label={t("patron.launchPanel.ariaLabel")}
+				className="relative rounded-sm border border-stroke bg-[#0C0C0C]"
+			>
 				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-stroke">
 					<div className="flex items-center justify-between gap-4 flex-wrap">
 						<div>
-							<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">[pre-launch]</p>
-							<h2 className="mt-1 text-xl text-white tracking-tight">launch the token.</h2>
+							<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">
+								{t("patron.launchPanel.preLaunchTag")}
+							</p>
+							<h2 className="mt-1 text-xl text-white tracking-tight">{t("patron.launchPanel.title")}</h2>
 						</div>
 						<div className="inline-flex items-center gap-2 text-xs text-neutral-500">
 							<Shield className="w-3.5 h-3.5" />
-							<span>patron-only.</span>
+							<span>{t("patron.launchPanel.patronOnly")}</span>
 						</div>
 					</div>
 				</header>
@@ -235,9 +244,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					<div className="px-6 md:px-8 py-3 border-b border-stroke-strong bg-white/[0.02] flex items-start gap-3">
 						<AlertTriangle className="w-4 h-4 mt-0.5 text-[#a1a1aa] shrink-0" />
 						<p className="text-xs text-[#a1a1aa] leading-relaxed">
-							x not connected. your agent will launch silently.{" "}
+							{t("patron.launchPanel.xNotConnectedPrefix")}{" "}
 							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-white">
-								connect now.
+								{t("patron.launchPanel.xConnectNow")}
 							</Link>
 						</p>
 					</div>
@@ -247,14 +256,16 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{/* LEFT: Safe details */}
 					<div className="px-6 md:px-8 py-7 space-y-6">
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">safe</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">
+								{t("patron.launchPanel.safe")}
+							</h3>
 							<div className="flex items-center gap-2">
 								<code className="font-mono text-sm text-white truncate">{shortAddress(safeAddress)}</code>
 								<button
 									type="button"
 									onClick={handleCopy}
 									disabled={!safeAddress}
-									aria-label="Copy Safe address"
+									aria-label={t("patron.launchPanel.copySafeAria")}
 									className={cn(
 										"inline-flex items-center justify-center w-7 h-7 rounded-sm border transition-colors",
 										"border-stroke text-neutral-400 hover:text-white hover:bg-white/5",
@@ -269,7 +280,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 										target="_blank"
 										rel="noopener noreferrer"
 										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
-										aria-label="View Safe on BscScan"
+										aria-label={t("patron.launchPanel.viewSafeAria")}
 									>
 										<ExternalLink className="w-3.5 h-3.5" />
 									</a>
@@ -278,7 +289,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">balance</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">
+								{t("patron.launchPanel.balance")}
+							</h3>
 							<div className="flex items-baseline gap-2">
 								<div className="font-mono text-2xl text-white">{balanceLoading ? "…" : formatBnb(balance)}</div>
 								<div className="text-xs uppercase tracking-[0.2em] text-neutral-500">BNB</div>
@@ -287,27 +300,29 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									onClick={() => refetch()}
 									className="ml-2 text-[11px] text-neutral-500 hover:text-white underline-offset-4 hover:underline"
 								>
-									refresh
+									{t("patron.launchPanel.refresh")}
 								</button>
 							</div>
 							{balanceError ? (
 								<p role="alert" className="text-[11px] text-red-300 mt-1">
-									Couldn&apos;t read balance. {balanceError.message}
+									{t("patron.launchPanel.readBalanceError", { message: balanceError.message })}
 								</p>
 							) : null}
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">x account</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">
+								{t("patron.launchPanel.xAccount")}
+							</h3>
 							{xLoading ? (
 								<div className="h-4 w-32 bg-[#141414] rounded animate-pulse" />
 							) : xConnected ? (
 								<p className="text-sm text-white">
-									connected{" "}
+									{t("patron.launchPanel.connectedHandlePrefix")}{" "}
 									<span className="text-neutral-400 font-mono">@{(xData?.xHandle ?? "").replace(/^@/, "")}</span>
 								</p>
 							) : (
-								<p className="text-sm text-[#a1a1aa]">not connected</p>
+								<p className="text-sm text-[#a1a1aa]">{t("patron.launchPanel.notConnected")}</p>
 							)}
 						</div>
 					</div>
@@ -316,7 +331,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					<div className="px-6 md:px-8 py-7 space-y-5">
 						<div className="flex items-center justify-between gap-4 flex-wrap">
 							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-								first buy (BNB)
+								{t("patron.launchPanel.firstBuyLabel")}
 							</label>
 							{balance != null && parsed.ok && parsed.value > 0 ? (
 								<span className="text-[11px] font-mono text-neutral-500">{formatBnb(parsed.value, 6)} BNB</span>
@@ -340,7 +355,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 										? "border-red-500/50 focus:border-red-400 focus:ring-red-400/30"
 										: "border-stroke focus:border-accent/60 focus:ring-accent/30",
 								)}
-								placeholder="0"
+								placeholder={t("patron.launchPanel.firstBuyPlaceholder")}
 							/>
 							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-[0.2em] text-neutral-500 font-mono">
 								BNB
@@ -363,14 +378,14 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 												: "border-stroke text-neutral-400 hover:text-white hover:bg-white/5",
 										)}
 									>
-										{PRESET_LABELS[preset]}
+										{t(PRESET_LABEL_KEYS[preset])}
 									</button>
 								);
 							})}
 						</div>
 
 						<p id="first-buy-help" className="text-xs text-neutral-500 leading-relaxed max-w-[42ch]">
-							optional. defaults 0. the agent&apos;s safe will buy this many BNB of its own token at launch.
+							{t("patron.launchPanel.firstBuyHelp")}
 						</p>
 
 						{validationError ? (
@@ -386,7 +401,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						type="button"
 						onClick={handleSubmit}
 						disabled={!canLaunch}
-						aria-label="launch token"
+						aria-label={t("patron.launchPanel.launchAria")}
 						className={cn(
 							"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
 							"bg-accent text-black hover:bg-accent-dim hover:text-black",
@@ -396,14 +411,14 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						{isLaunching ? (
 							<>
 								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-								authorizing…
+								{t("patron.launchPanel.authorizing")}
 							</>
 						) : (
-							"launch token"
+							t("patron.launchPanel.launchCta")
 						)}
 					</Button>
 					<p className="text-[11px] text-neutral-500 mt-3 text-center max-w-[60ch] mx-auto">
-						you sign. the AgentSafe submits via the FLAP Portal. token lands on the curve.
+						{t("patron.launchPanel.launchNote")}
 					</p>
 				</div>
 			</section>
@@ -424,7 +439,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					type="button"
 					onClick={handleSubmit}
 					disabled={!canLaunch}
-					aria-label="launch token"
+					aria-label={t("patron.launchPanel.launchAria")}
 					tabIndex={stickyVisible ? 0 : -1}
 					className={cn(
 						"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
@@ -435,10 +450,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{isLaunching ? (
 						<>
 							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-							authorizing…
+							{t("patron.launchPanel.authorizing")}
 						</>
 					) : (
-						"launch token"
+						t("patron.launchPanel.launchCta")
 					)}
 				</Button>
 			</div>

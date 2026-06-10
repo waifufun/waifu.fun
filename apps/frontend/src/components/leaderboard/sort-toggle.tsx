@@ -1,13 +1,8 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { LeaderboardSort } from "@/lib/api/leaderboard";
 import { cn } from "@/lib/utils";
-
-const OPTIONS: { key: LeaderboardSort; label: string }[] = [
-	{ key: "runway", label: "runway" },
-	{ key: "treasury", label: "treasury" },
-	{ key: "burn", label: "burn" },
-];
 
 type Props = {
 	value: LeaderboardSort;
@@ -18,9 +13,15 @@ type Props = {
 // is transparent with the soft border. Matches the StatPill grammar from
 // `wave-t/_primitives.tsx` but rendered as buttons so it stays interactive.
 export default function SortToggle({ value, onChange }: Props) {
+	const { t } = useTranslation();
+	const OPTIONS: { key: LeaderboardSort; label: string }[] = [
+		{ key: "runway", label: t("leaderboard.sortRunway") },
+		{ key: "treasury", label: t("leaderboard.sortTreasury") },
+		{ key: "burn", label: t("leaderboard.sortBurn") },
+	];
 	return (
 		<div
-			aria-label="sort leaderboard"
+			aria-label={t("leaderboard.sortAria")}
 			className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em]"
 		>
 			{OPTIONS.map((opt) => {

@@ -2,6 +2,7 @@
 
 import { type Address, isAddress } from "viem";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { useLaunchByToken } from "@/hooks/use-post-launch";
 import { usePostLaunchMarket } from "@/hooks/use-post-launch-market";
 
@@ -29,6 +30,7 @@ type Props = {
  *   failed    \u2192 don't render here (the existing page already shows the error state).
  */
 export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
+	const { t } = useTranslation();
 	const launch = useLaunchByToken(tokenAddress);
 
 	// Order matters: hooks above any conditional returns. The launched-token
@@ -47,10 +49,14 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 	const token = tokenFromLaunch;
 
 	return (
-		<section className="mt-10 flex flex-col gap-5" aria-label="post-launch surface" data-testid="post-launch-surface">
+		<section
+			className="mt-10 flex flex-col gap-5"
+			aria-label={t("post.surface.sectionAria")}
+			data-testid="post-launch-surface"
+		>
 			{token ? (
 				<>
-					<SectionHeader>price chart</SectionHeader>
+					<SectionHeader>{t("post.surface.priceChartHeader")}</SectionHeader>
 					<TokenChart
 						tokenAddress={token}
 						pairAddress={market.data?.pairAddress ?? null}
@@ -59,17 +65,17 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 				</>
 			) : null}
 
-			<SectionHeader>tier ladder</SectionHeader>
+			<SectionHeader>{t("post.surface.tierLadderHeader")}</SectionHeader>
 			<TierLadder treasuryLp={treasuryLp} />
 
-			<SectionHeader>burn counter</SectionHeader>
+			<SectionHeader>{t("post.surface.burnCounterHeader")}</SectionHeader>
 			<BurnCounter tokenAddress={token} ticker={ticker} />
 
 			{/* Tax stream panel moved to AgentHomeV2 (feat/agent-page-dynamic-2026-05-22)
 			    so it surfaces for every wave-M launch, not just graduated ones,
 			    and pulls split metadata from the typed launch row instead of the
 			    untyped metadata blob. */}
-			<SectionHeader>claim</SectionHeader>
+			<SectionHeader>{t("post.surface.claimHeader")}</SectionHeader>
 			<ClaimWidget
 				vault={vault}
 				ticker={ticker}
@@ -79,7 +85,7 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 
 			{token ? (
 				<>
-					<SectionHeader>trade activity</SectionHeader>
+					<SectionHeader>{t("post.surface.tradeActivityHeader")}</SectionHeader>
 					<TradeActivityFeed market={market.data ?? null} tokenAddress={token} isLoading={market.isLoading} />
 				</>
 			) : null}

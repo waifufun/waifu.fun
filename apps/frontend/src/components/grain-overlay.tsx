@@ -1,6 +1,9 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
+
 export default function GrainOverlay() {
+	const { t } = useTranslation();
 	return (
 		<>
 			{/* SVG Noise Grain Overlay */}
@@ -8,7 +11,7 @@ export default function GrainOverlay() {
 				className="pointer-events-none fixed inset-0 z-[5] h-full w-full opacity-[0.07] mix-blend-overlay"
 				xmlns="http://www.w3.org/2000/svg"
 			>
-				<title>Decorative grain overlay</title>
+				<title>{t("layout.grainOverlayTitle")}</title>
 				<filter id="grain">
 					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />
 					<feColorMatrix type="saturate" values="0" />

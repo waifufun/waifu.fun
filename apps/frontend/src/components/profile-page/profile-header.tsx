@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { formatNumber } from "@/lib/utils";
 import type { AddressLike, TChain } from "@waifufun/types";
 import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
@@ -24,6 +25,7 @@ export default function ProfileHeader({
 		image: string;
 	};
 }) {
+	const { t } = useTranslation();
 	return (
 		<div className="bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm md:max-h-[182px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
 			<AvatarImage image={data?.image} address={data?.address} />
@@ -43,13 +45,13 @@ export default function ProfileHeader({
 					<div className="flex flex-col mt-1">
 						<div className="flex justify-between items-center w-full px-0 py-1">
 							<div className="flex items-center gap-1">
-								<span className="text-sm text-[#a1a1aa]">Total Points</span>
+								<span className="text-sm text-[#a1a1aa]">{t("profile.header.totalPoints")}</span>
 							</div>
 							<p className="font-semibold text-[#00ff87] text-base">{formatNumber(data.totalPoints, false, true)}</p>
 						</div>
 						<div className="flex justify-between items-center w-full px-0 py-1">
 							<div className="flex items-center gap-1">
-								<span className="text-sm text-[#a1a1aa]">Weekly Points</span>
+								<span className="text-sm text-[#a1a1aa]">{t("profile.header.weeklyPoints")}</span>
 							</div>
 							<p className="font-semibold text-yellow-400 text-base">{formatNumber(data.weeklyPoints, false, true)}</p>
 						</div>
@@ -59,10 +61,10 @@ export default function ProfileHeader({
 
 			<div className="h-full flex flex-col md:flex-col w-full space-y-2 place-self-start md:w-fit place-content-center ml-auto">
 				<div className="bg-[rgba(0,255,135,0.06)] text-xs text-[#00ff87] border border-[rgba(0,255,135,0.12)] px-2.5 py-1 rounded-sm text-center">
-					Tokens Created: <span className="font-bold">{data.tokensCreated}</span>
+					{t("profile.header.tokensCreated")} <span className="font-bold">{data.tokensCreated}</span>
 				</div>
 				<div className="bg-[rgba(0,255,135,0.06)] text-xs text-[#00ff87] border border-[rgba(0,255,135,0.12)] px-2.5 py-1 rounded-sm text-center">
-					Tokens Bought: <span className="font-bold">{data.tokensBought}</span>
+					{t("profile.header.tokensBought")} <span className="font-bold">{data.tokensBought}</span>
 				</div>
 			</div>
 		</div>

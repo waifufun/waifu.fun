@@ -134,13 +134,13 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												value="transactions"
 												className="normal-case text-xs px-3 select-none py-1.5 h-auto rounded-sm border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium data-[state=active]:bg-[rgba(0,255,135,0.08)] data-[state=active]:text-[#00ff87] data-[state=active]:border-[rgba(0,255,135,0.2)]"
 											>
-												Transactions
+												{t("profile.tabs.transactions")}
 											</TabsTrigger>
 											<TabsTrigger
 												value="tokens-created"
 												className="normal-case text-xs px-3 select-none py-1.5 h-auto rounded-sm border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium data-[state=active]:bg-[rgba(0,255,135,0.08)] data-[state=active]:text-[#00ff87] data-[state=active]:border-[rgba(0,255,135,0.2)]"
 											>
-												Tokens Created
+												{t("profile.tabs.tokensCreated")}
 											</TabsTrigger>
 										</TabsList>
 									</div>
@@ -164,9 +164,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											))
 										) : (
 											<div className="flex w-full p-4 h-full items-center justify-center">
-												<h1 className="text-[#71717a] text-base font-semibold">
-													No tokens have been created by this user
-												</h1>
+												<h1 className="text-[#71717a] text-base font-semibold">{t("profile.tabs.noTokensCreated")}</h1>
 											</div>
 										)}
 										<Pagination
@@ -207,7 +205,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											</div>
 										) : (
 											<div className="text-center my-6 text-[#71717a] text-base font-semibold">
-												No transactions found
+												{t("profile.tabs.noTransactions")}
 											</div>
 										)}
 										<Pagination
