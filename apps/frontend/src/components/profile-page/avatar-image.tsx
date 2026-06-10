@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import useAddress from "@/hooks/use-address";
 import { uploadAvatar } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/image-url";
@@ -9,6 +12,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function AvatarImage({ address, image }: { address: AddressLike; image: string }) {
+	const { t } = useTranslation();
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [preview, setPreview] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,11 +56,11 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 		onSuccess: () => {
 			setPreview(null);
 			setImageFile(null);
-			toast.success("Avatar image successfully changed");
+			toast.success(t("profile.header.avatarChanged"));
 			queryClient.invalidateQueries({ queryKey: ["user", address] });
 		},
 		onError: () => {
-			toast.error("Something went wrong");
+			toast.error(t("profile.header.avatarFailed"));
 		},
 	});
 
@@ -66,7 +70,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 		<div className="border border-[rgba(255,255,255,0.06)] rounded-sm h-fit relative w-[150px]">
 			<Image
 				src={preview ?? resolveImageUrl(image) ?? "/create/test-img.png"}
-				alt="Profile"
+				alt={t("profile.header.profileAlt")}
 				width={150}
 				height={150}
 				unoptimized
@@ -81,7 +85,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 							onClick={handleUploadClick}
 							className="cursor-pointer bg-[#08080a]/90 p-1 size-6 rounded-sm"
 						>
-							<Image src="/profile/upload.svg" alt="Upload" width={24} height={24} />
+							<Image src="/profile/upload.svg" alt={t("profile.header.uploadAlt")} width={24} height={24} />
 						</button>
 						{preview && preview !== image && (
 							<button

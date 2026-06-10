@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "@/contexts/locale-context";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
 import { sanitizeRedirectPath } from "@/lib/url-safety";
@@ -21,15 +22,20 @@ import { type FormEvent, type ReactNode, useCallback, useMemo, useState } from "
 // pass (static export safety).
 const WalletPanel = dynamic(() => import("./wallet-panel").then((mod) => ({ default: mod.WalletPanel })), {
 	ssr: false,
-	loading: () => (
+	loading: () => <WalletPanelLoading />,
+});
+
+function WalletPanelLoading() {
+	const { t } = useTranslation();
+	return (
 		<div
 			className="flex items-center justify-center border border-white/10 bg-[#0b0b0d] py-6 text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]"
 			data-testid="wallet-panel-loading"
 		>
-			loading wallets
+			{t("auth.connect.loadingWallets")}
 		</div>
-	),
-});
+	);
+}
 
 type WalletPhase = "idle" | "finalizing" | "error";
 type WalletPanel = null | "evm";
@@ -97,6 +103,7 @@ function DiscordGlyph() {
 	);
 }
 
+// Provider labels are brand names (Google, Discord, GitHub, X), never translated.
 const PROVIDERS: Array<{ id: ProviderId; label: string; glyph: ReactNode }> = [
 	{ id: "google", label: "google", glyph: <GoogleGlyph /> },
 	{ id: "discord", label: "discord", glyph: <DiscordGlyph /> },
@@ -109,6 +116,7 @@ function validEmail(email: string): boolean {
 }
 
 export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps) {
+	const { t } = useTranslation();
 	const { isAuthenticated } = useWaifuAuth();
 	const [email, setEmail] = useState("");
 	const [emailPhase, setEmailPhase] = useState<EmailPhase>("idle");
@@ -134,9 +142,6 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 		(providerId: ProviderId) => {
 			if (typeof window === "undefined") return;
 			// Backend route is `GET /auth/oauth/start?provider=<id>&return_to=<path>`.
-			// Both the path and the query-param names matter: `provider` not
-			// `providerId`, `return_to` not `returnTo` (sanitizeReturnTo reads
-			// `return_to`).
 			const next = new URL(`${API_URL}/auth/oauth/start`);
 			next.searchParams.set("provider", providerId);
 			next.searchParams.set("return_to", resolvedReturnTo);
@@ -151,7 +156,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 			const trimmed = email.trim();
 			if (!validEmail(trimmed)) {
 				setEmailPhase("error");
-				setEmailError("enter a valid email address");
+				setEmailError(t("auth.connect.invalidEmail"));
 				return;
 			}
 			setEmailError(null);
@@ -165,23 +170,23 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 				});
 				if (!response.ok) {
 					setEmailPhase("error");
-					setEmailError("could not send magic link");
+					setEmailError(t("auth.connect.magicLinkError"));
 					return;
 				}
 				setEmailPhase("sent");
 			} catch {
 				setEmailPhase("error");
-				setEmailError("could not send magic link");
+				setEmailError(t("auth.connect.magicLinkError"));
 			}
 		},
-		[email, resolvedReturnTo],
+		[email, resolvedReturnTo, t],
 	);
 
 	const handlePasskey = useCallback(async () => {
 		const trimmed = email.trim();
 		if (!validEmail(trimmed)) {
 			setPasskeyPhase("error");
-			setPasskeyError("enter your email above first");
+			setPasskeyError(t("auth.connect.passkeyNeedsEmail"));
 			return;
 		}
 		setPasskeyError(null);
@@ -205,9 +210,9 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 				return;
 			}
 			setPasskeyPhase("error");
-			setPasskeyError(err instanceof Error ? err.message : "passkey failed");
+			setPasskeyError(err instanceof Error ? err.message : t("auth.connect.passkeyFailed"));
 		}
-	}, [assignAfterAuth, email, resolvedReturnTo]);
+	}, [assignAfterAuth, email, resolvedReturnTo, t]);
 
 	const handleWalletSuccess = useCallback(
 		async (result: StewardAuthResult, kind: "evm" | "solana") => {
@@ -235,29 +240,30 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 				assignAfterAuth(resolvedReturnTo);
 			} catch (err) {
 				setWalletPhase("error");
-				setWalletError(err instanceof Error ? `${kind} sign-in failed: ${err.message}` : `${kind} sign-in failed`);
+				setWalletError(
+					err instanceof Error
+						? t("auth.connect.walletSignInFailedWith", { kind, message: err.message })
+						: t("auth.connect.walletSignInFailed", { kind }),
+				);
 			}
 		},
-		[assignAfterAuth, onOpenChange, resolvedReturnTo],
+		[assignAfterAuth, onOpenChange, resolvedReturnTo, t],
 	);
 
-	const handleWalletError = useCallback((err: Error, kind: "evm" | "solana") => {
-		setWalletPhase("error");
-		setWalletError(`${kind} sign-in failed: ${err.message}`);
-	}, []);
+	const handleWalletError = useCallback(
+		(err: Error, kind: "evm" | "solana") => {
+			setWalletPhase("error");
+			setWalletError(t("auth.connect.walletSignInFailedWith", { kind, message: err.message }));
+		},
+		[t],
+	);
 
 	// Reset wallet subpanel when modal closes via Esc / overlay click /
 	// parent onOpenChange(false), so reopening lands on the main screen
 	// instead of dropping the user back into the connector list.
-	// Declared BEFORE the isAuthenticated early return to keep hook
-	// ordering stable when auth state flips during a session.
 	const handleOpenChange = useCallback(
 		(next: boolean) => {
 			if (!next) {
-				// Reset all transient state so the modal opens fresh next time.
-				// Without this, an emailPhase='sent' or walletPanel='evm' from
-				// a prior session sticks across modal close (the component
-				// stays mounted in header / protected-shell).
 				setWalletPanel(null);
 				setWalletPhase("idle");
 				setWalletError(null);
@@ -293,19 +299,17 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 							className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-[#71717a] transition-colors hover:text-[#e4e4e7]"
 						>
 							<ArrowLeft className="size-3.5" aria-hidden="true" />
-							back
+							{t("auth.connect.back")}
 						</button>
 						<div className="mt-5">
-							<DialogTitle className="text-center text-[15px] font-medium text-white">connect your wallet</DialogTitle>
+							<DialogTitle className="text-center text-[15px] font-medium text-white">
+								{t("auth.connect.walletTitle")}
+							</DialogTitle>
 							<DialogDescription className="mt-1 text-center text-[12px] text-[#71717a]">
-								sign a message to prove ownership. no transaction, no gas.
+								{t("auth.connect.walletSubtitle")}
 							</DialogDescription>
 						</div>
 						<div className="mt-5" data-testid="wallet-panel" aria-busy={walletPhase === "finalizing"}>
-							{/* EVM only for now. Solana sign-in completes against Steward but
-							waifu's /v3/patron/me requires further patron-side support before
-							we expose a Solana connector here. W12 (now merged) handles the
-							patron model side; flipping this on is a follow-up. */}
 							<WalletPanel
 								onSuccess={(result, kind) => {
 									void handleWalletSuccess(result, kind);
@@ -319,7 +323,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 								aria-live="polite"
 							>
 								<Loader2 className="size-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
-								<span>finalizing session</span>
+								<span>{t("auth.connect.finalizing")}</span>
 							</output>
 						) : null}
 						{walletPhase === "error" && walletError ? (
@@ -331,20 +335,20 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 						<DialogHeader className="items-center text-center sm:text-center">
 							<img src="/icon-512.png" alt="waifu.fun" className="mb-3 size-11" />
 							<DialogTitle className="w-full text-center text-[15px] font-medium text-white">
-								sign in to waifu.fun
+								{t("auth.connect.title")}
 							</DialogTitle>
-							<DialogDescription className="sr-only">sign in with email, passkey, oauth, or wallet</DialogDescription>
+							<DialogDescription className="sr-only">{t("auth.connect.srDescription")}</DialogDescription>
 						</DialogHeader>
 
 						{/* Email + continue (primary CTA) */}
 						<form onSubmit={handleEmailSubmit} className="mt-5">
 							<label className="sr-only" htmlFor="connect-email">
-								email
+								{t("auth.connect.emailLabel")}
 							</label>
 							{emailPhase === "sent" ? (
 								<output className="flex items-start gap-2.5 border border-[#00ff87]/30 bg-[#00ff87]/5 px-3.5 py-3">
 									<CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[#00ff87]" />
-									<span className="text-[13px] text-[#e4e4e7]">check your inbox for a magic link</span>
+									<span className="text-[13px] text-[#e4e4e7]">{t("auth.connect.magicLinkSent")}</span>
 								</output>
 							) : (
 								<div className="flex gap-2">
@@ -353,21 +357,21 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 										type="email"
 										value={email}
 										onChange={(e) => setEmail(e.target.value)}
-										placeholder="your email"
+										placeholder={t("auth.connect.emailPlaceholder")}
 										autoComplete="email"
 										className="min-w-0 flex-1 border border-white/10 bg-[#0b0b0d] px-3 py-2.5 text-[13px] text-[#e4e4e7] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:border-[#00ff87]/50 focus-visible:ring-1 focus-visible:ring-[#00ff87]/30"
 									/>
 									<button
 										type="submit"
 										disabled={emailBusy}
-										aria-label="continue with email"
+										aria-label={t("auth.connect.continueEmailAria")}
 										className="flex shrink-0 items-center justify-center gap-1.5 bg-[#00ff87] px-4 text-[13px] font-medium text-[#08080a] transition-opacity hover:opacity-90 disabled:opacity-50"
 									>
 										{emailBusy ? (
 											<Loader2 className="size-4 animate-spin" />
 										) : (
 											<>
-												<span>continue</span>
+												<span>{t("auth.connect.continue")}</span>
 												<ArrowRight className="size-3.5" aria-hidden="true" />
 											</>
 										)}
@@ -389,14 +393,18 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 							) : (
 								<Fingerprint className="size-4 text-[#a1a1aa]" />
 							)}
-							<span>{passkeyPhase === "registering" ? "setting up passkey" : "use a passkey"}</span>
+							<span>
+								{passkeyPhase === "registering" ? t("auth.connect.passkeySettingUp") : t("auth.connect.passkeyUse")}
+							</span>
 						</button>
 						{passkeyError ? <p className="mt-2 text-[11px] text-[#f87171]">{passkeyError}</p> : null}
 
 						{/* Divider */}
 						<div className="mt-5 mb-4 flex items-center gap-3" aria-hidden="true">
 							<div className="h-px flex-1 bg-white/[0.06]" />
-							<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#52525b]">or</span>
+							<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#52525b]">
+								{t("auth.connect.orDivider")}
+							</span>
 							<div className="h-px flex-1 bg-white/[0.06]" />
 						</div>
 
@@ -407,7 +415,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 									key={provider.id}
 									type="button"
 									onClick={() => handleProvider(provider.id)}
-									aria-label={`continue with ${provider.label}`}
+									aria-label={t("auth.connect.continueWith", { provider: provider.label })}
 									className={cn(
 										"flex items-center justify-center gap-2 border border-white/10 bg-[#0b0b0d] px-3 py-2.5",
 										"text-[13px] text-[#e4e4e7] transition-colors hover:border-white/25 hover:bg-[#0e0e11]",
@@ -424,19 +432,19 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 									setWalletPhase("idle");
 									setWalletError(null);
 								}}
-								aria-label="continue with a wallet"
+								aria-label={t("auth.connect.continueWalletAria")}
 								className={cn(
 									"col-span-2 flex items-center justify-center gap-2 border border-white/10 bg-[#0b0b0d] px-3 py-2.5",
 									"text-[13px] text-[#e4e4e7] transition-colors hover:border-white/25 hover:bg-[#0e0e11]",
 								)}
 							>
 								<Wallet className="size-[18px] shrink-0 text-[#a1a1aa]" aria-hidden="true" />
-								<span>wallet</span>
+								<span>{t("auth.connect.walletButton")}</span>
 							</button>
 						</div>
 
 						<p className="mt-5 text-center text-[10px] font-mono uppercase tracking-[0.2em] text-[#52525b]">
-							secured by steward
+							{t("auth.connect.securedBy")}
 						</p>
 					</div>
 				)}

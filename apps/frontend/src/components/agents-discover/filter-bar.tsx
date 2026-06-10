@@ -1,22 +1,11 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { Check, ChevronDown } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AgentSort, AgentStatusFilter } from "./types";
-
-const STATUS_TABS: { key: AgentStatusFilter; label: string }[] = [
-	{ key: "all", label: "all" },
-	{ key: "active", label: "active" },
-	{ key: "graduated", label: "graduated" },
-];
-
-const SORTS: { key: AgentSort; label: string }[] = [
-	{ key: "newest", label: "newest" },
-	{ key: "volume_24h", label: "volume 24h" },
-	{ key: "market_cap", label: "market cap" },
-];
 
 export default function FilterBar({
 	status,
@@ -25,9 +14,28 @@ export default function FilterBar({
 	status: AgentStatusFilter;
 	sort: AgentSort;
 }) {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const pathname = usePathname() ?? "/agents";
 	const searchParams = useSearchParams();
+
+	const STATUS_TABS: { key: AgentStatusFilter; label: string }[] = useMemo(
+		() => [
+			{ key: "all", label: t("discover.filters.statusAll") },
+			{ key: "active", label: t("discover.filters.statusActive") },
+			{ key: "graduated", label: t("discover.filters.statusGraduated") },
+		],
+		[t],
+	);
+
+	const SORTS: { key: AgentSort; label: string }[] = useMemo(
+		() => [
+			{ key: "newest", label: t("discover.filters.sortNewest") },
+			{ key: "volume_24h", label: t("discover.filters.sortVolume24h") },
+			{ key: "market_cap", label: t("discover.filters.sortMarketCap") },
+		],
+		[t],
+	);
 
 	const updateParam = useCallback(
 		(key: string, value: string | null) => {
@@ -68,18 +76,25 @@ export default function FilterBar({
 			</div>
 
 			{/* sort dropdown */}
-			<SortDropdown value={sort} onChange={(value) => updateParam("sort", value === "newest" ? null : value)} />
+			<SortDropdown
+				value={sort}
+				sorts={SORTS}
+				onChange={(value) => updateParam("sort", value === "newest" ? null : value)}
+			/>
 		</div>
 	);
 }
 
 function SortDropdown({
 	value,
+	sorts,
 	onChange,
 }: {
 	value: AgentSort;
+	sorts: { key: AgentSort; label: string }[];
 	onChange: (value: AgentSort) => void;
 }) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
@@ -94,7 +109,7 @@ function SortDropdown({
 		return undefined;
 	}, [open]);
 
-	const current = SORTS.find((s) => s.key === value) ?? SORTS[0];
+	const current = sorts.find((s) => s.key === value) ?? sorts[0];
 
 	return (
 		<div ref={ref} className="relative">
@@ -106,7 +121,7 @@ function SortDropdown({
 					"border border-white/10 bg-[#08080a] text-white/70 hover:text-white hover:border-white/25 transition-colors",
 				)}
 			>
-				<span className="text-white/40">sort:</span>
+				<span className="text-white/40">{t("discover.filters.sortLabel")}</span>
 				<span>{current?.label}</span>
 				<ChevronDown
 					className={cn("w-3 h-3 transition-transform duration-200", open && "rotate-180")}
@@ -116,7 +131,7 @@ function SortDropdown({
 
 			{open && (
 				<div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] border border-white/10 bg-[#08080a] rounded-sm shadow-[0_8px_24px_rgba(0,0,0,0.4)] py-1">
-					{SORTS.map((s) => {
+					{sorts.map((s) => {
 						const active = s.key === value;
 						return (
 							<button

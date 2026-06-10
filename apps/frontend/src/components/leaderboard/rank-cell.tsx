@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 const ACCENTS: Record<number, string> = {
@@ -7,6 +10,7 @@ const ACCENTS: Record<number, string> = {
 };
 
 export default function RankCell({ rank }: { rank: number }) {
+	const { t } = useTranslation();
 	const accent = ACCENTS[rank];
 	return (
 		<span
@@ -14,7 +18,7 @@ export default function RankCell({ rank }: { rank: number }) {
 				"font-mono tabular-nums text-sm inline-block",
 				accent ? `${accent} underline decoration-2 underline-offset-4` : "text-neutral-400",
 			)}
-			aria-label={`Rank ${rank}`}
+			aria-label={t("leaderboard.rankAria", { rank: String(rank) })}
 		>
 			{rank}.
 		</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { LaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
 import { cn } from "@/lib/utils";
 
@@ -8,30 +9,30 @@ type Props = {
 	className?: string;
 };
 
-const COPY: Record<LaunchDisplayState, { title: string; body: string }> = {
+const COPY_KEYS: Record<LaunchDisplayState, { titleKey: string; bodyKey: string }> = {
 	created: {
-		title: "presale opens shortly",
-		body: "the agent is provisioned. once the round opens you can deposit bnb to claim your allocation.",
+		titleKey: "launch.stateBanner.createdTitle",
+		bodyKey: "launch.stateBanner.createdBody",
 	},
 	presale: {
-		title: "presale open",
-		body: "deposit bnb during the window. allocations are pro-rata at close.",
+		titleKey: "launch.stateBanner.presaleTitle",
+		bodyKey: "launch.stateBanner.presaleBody",
 	},
 	closed: {
-		title: "waiting for bundle bot",
-		body: "presale closed. the bundle is being prepared for the next puissant block. usually under a minute.",
+		titleKey: "launch.stateBanner.closedTitle",
+		bodyKey: "launch.stateBanner.closedBody",
 	},
 	bundling: {
-		title: "bundle bot working, eta ~30s",
-		body: "submitting deploy + buys atomically to puissant. token address surfaces once the block lands.",
+		titleKey: "launch.stateBanner.bundlingTitle",
+		bodyKey: "launch.stateBanner.bundlingBody",
 	},
 	launched: {
-		title: "launched. claim available",
-		body: "trading is live on pcs. claim your tokens below. vesting (if any) drips over the first 24h.",
+		titleKey: "launch.stateBanner.launchedTitle",
+		bodyKey: "launch.stateBanner.launchedBody",
 	},
 	refunding: {
-		title: "refunds open",
-		body: "the bundle didn't land or the cap wasn't met. you can pull your principal plus a share of the bonus pool.",
+		titleKey: "launch.stateBanner.refundingTitle",
+		bodyKey: "launch.stateBanner.refundingBody",
 	},
 };
 
@@ -54,7 +55,8 @@ const ICON_TONE: Record<LaunchDisplayState, string> = {
 };
 
 export function StateBanner({ state, className }: Props) {
-	const copy = COPY[state];
+	const { t } = useTranslation();
+	const keys = COPY_KEYS[state];
 	return (
 		<output
 			className={cn("flex items-start gap-3 border px-4 py-3", TONE[state], className)}
@@ -64,8 +66,8 @@ export function StateBanner({ state, className }: Props) {
 		>
 			<span className={cn("mt-1.5 inline-block w-1.5 h-1.5 rounded-full shrink-0", ICON_TONE[state])} aria-hidden />
 			<div className="flex flex-col gap-0.5 min-w-0">
-				<span className="text-sm font-medium leading-tight">{copy.title}</span>
-				<span className="text-[12px] leading-relaxed text-zinc-300/90">{copy.body}</span>
+				<span className="text-sm font-medium leading-tight">{t(keys.titleKey)}</span>
+				<span className="text-[12px] leading-relaxed text-zinc-300/90">{t(keys.bodyKey)}</span>
 			</div>
 		</output>
 	);

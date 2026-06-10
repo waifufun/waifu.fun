@@ -4,11 +4,15 @@
  *
  * Real shape, never a generic spinner or 'loading...' text.
  */
+"use client";
+
 import { ArrowLeft } from "lucide-react";
 
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 
 export default function Loading() {
+	const { t } = useTranslation();
 	return (
 		<main className="min-h-[100dvh] text-white">
 			<div className="mx-auto w-full max-w-6xl px-5 pb-24 pt-8 md:px-8">
@@ -16,9 +20,11 @@ export default function Loading() {
 				<div className="flex items-center justify-between">
 					<span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40">
 						<ArrowLeft className="h-3 w-3" strokeWidth={1.5} />
-						agents
+						{t("agent.loading.agents")}
 					</span>
-					<div className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/25">waifu.fun</div>
+					<div className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/25">
+						{t("agent.loading.brand")}
+					</div>
 				</div>
 
 				{/* hero */}
@@ -51,7 +57,7 @@ export default function Loading() {
 				</section>
 
 				{/* economics */}
-				<SectionShell title="economics">
+				<SectionShell title={t("agent.loading.economics")}>
 					<SurfaceCard padding="lg">
 						<div className="space-y-4">
 							<div className="h-4 w-32 rounded-sm bg-white/10" />
@@ -66,7 +72,7 @@ export default function Loading() {
 				</SectionShell>
 
 				{/* treasury */}
-				<SectionShell title="treasury">
+				<SectionShell title={t("agent.loading.treasury")}>
 					<SurfaceCard padding="none" className="divide-y divide-white/[0.06]">
 						{[0, 1, 2].map((i) => (
 							<div

@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/contexts/locale-context";
 import type { PatronAgent } from "@/lib/api/patron";
 import AgentCard from "./agent-card";
 
@@ -11,12 +12,13 @@ type Props = {
 };
 
 export default function AgentGrid({ agents, isLoading, error }: Props) {
+	const { t } = useTranslation();
 	if (isLoading) {
 		return (
 			<div
 				className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
 				aria-busy="true"
-				aria-label="Loading agents"
+				aria-label={t("patron.agentGrid.loadingAria")}
 			>
 				{[0, 1, 2].map((i) => (
 					<Skeleton key={i} className="h-[220px] rounded-sm" />
@@ -28,7 +30,7 @@ export default function AgentGrid({ agents, isLoading, error }: Props) {
 	if (error) {
 		return (
 			<div role="alert" className="p-6 rounded-sm border border-red-500/30 bg-red-500/5 text-sm text-red-300">
-				Couldn't load your agents. {error.message}
+				{t("patron.agentGrid.loadError", { message: error.message })}
 			</div>
 		);
 	}

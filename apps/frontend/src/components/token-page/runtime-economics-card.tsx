@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn, formatNumber, fromNow } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
@@ -15,32 +16,6 @@ type RuntimeToken = IToken & {
 
 function formatRuntimeStatus(status: RuntimeStatus) {
 	return status.replace(/_/g, " ");
-}
-
-function formatClaimStatus(status: ClaimStatus) {
-	switch (status) {
-		case "verified":
-			return "verified";
-		case "claimed":
-			return "claimed";
-		case "disputed":
-			return "disputed";
-		case "unclaimed":
-			return "unclaimed";
-		default:
-			return status;
-	}
-}
-
-function formatFundingMode(mode: BillingMode) {
-	switch (mode) {
-		case "owner_credits":
-			return "creator-funded";
-		case "waifu_treasury_subsidy":
-			return "platform";
-		case "hybrid":
-			return "shared";
-	}
 }
 
 function MetricTile({
@@ -66,13 +41,40 @@ function MetricTile({
 }
 
 export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
+	const { t } = useTranslation();
 	const runtimeToken = token as RuntimeToken;
+
+	const formatClaimStatus = (status: ClaimStatus) => {
+		switch (status) {
+			case "verified":
+				return t("token.economics.claim.verified");
+			case "claimed":
+				return t("token.economics.claim.claimed");
+			case "disputed":
+				return t("token.economics.claim.disputed");
+			case "unclaimed":
+				return t("token.economics.claim.unclaimed");
+			default:
+				return status;
+		}
+	};
+
+	const formatFundingMode = (mode: BillingMode) => {
+		switch (mode) {
+			case "owner_credits":
+				return t("token.economics.funding.creatorFunded");
+			case "waifu_treasury_subsidy":
+				return t("token.economics.funding.platform");
+			case "hybrid":
+				return t("token.economics.funding.shared");
+		}
+	};
 
 	const metrics: Array<{ label: string; value: string; icon: typeof Zap; muted?: boolean }> = [];
 
 	if (token.agentStatus) {
 		metrics.push({
-			label: "runtime",
+			label: t("token.economics.runtime"),
 			value: formatRuntimeStatus(token.agentStatus),
 			icon: Gauge,
 		});
@@ -80,7 +82,7 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 
 	if (runtimeToken.lastHeartbeatAt) {
 		metrics.push({
-			label: "heartbeat",
+			label: t("token.economics.pulse"),
 			value: fromNow(runtimeToken.lastHeartbeatAt),
 			icon: Clock,
 		});
@@ -88,7 +90,7 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 
 	if (token.ownerClaimStatus) {
 		metrics.push({
-			label: "ownership",
+			label: t("token.economics.ownership"),
 			value: formatClaimStatus(token.ownerClaimStatus),
 			icon: Zap,
 		});
@@ -96,7 +98,7 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 
 	if (token.billingMode) {
 		metrics.push({
-			label: "funding",
+			label: t("token.economics.funding.label"),
 			value: formatFundingMode(token.billingMode),
 			icon: Banknote,
 		});
@@ -104,7 +106,7 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 
 	if (typeof token.infraReserveUsd === "number" && Number.isFinite(token.infraReserveUsd)) {
 		metrics.push({
-			label: "reserve",
+			label: t("token.economics.reserve"),
 			value: formatNumber(token.infraReserveUsd, true),
 			icon: Banknote,
 		});
@@ -124,7 +126,9 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		>
 			<div className="flex items-center gap-2 mb-2">
 				<Gauge className="size-3 text-zinc-700" />
-				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-700">runtime</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-700">
+					{t("token.economics.runtime")}
+				</span>
 			</div>
 
 			<div className="divide-y divide-white/[0.03]">

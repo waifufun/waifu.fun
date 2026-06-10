@@ -1,7 +1,11 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import { ExternalLink } from "lucide-react";
 import type { AgentData } from "./types";
 
 export default function CurveProgress({ agent }: { agent: AgentData }) {
+	const { t } = useTranslation();
 	const graduated = agent.status === "graduated";
 
 	if (graduated) {
@@ -9,8 +13,8 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 			<div className="border border-white/10 bg-[#08080a] rounded-sm p-5">
 				<div className="flex items-center justify-between gap-4 flex-wrap">
 					<div>
-						<div className="text-sm text-white/80">graduated to pancakeswap</div>
-						<div className="text-[11px] font-mono text-white/40 mt-1">curve filled. liquidity live.</div>
+						<div className="text-sm text-white/80">{t("agent.curve.graduatedTitle")}</div>
+						<div className="text-[11px] font-mono text-white/40 mt-1">{t("agent.curve.graduatedBody")}</div>
 					</div>
 					{agent.pancakeSwapUrl && (
 						<a
@@ -19,7 +23,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 h-9 px-4 rounded-sm border border-[#00ff87]/40 text-[#00ff87] hover:bg-[#00ff87]/5 text-[11px] font-mono uppercase tracking-[0.18em] transition-colors"
 						>
-							trade on pancakeswap
+							{t("agent.curve.tradeOnPancakeswap")}
 							<ExternalLink className="w-3 h-3" />
 						</a>
 					)}
@@ -40,7 +44,9 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 	return (
 		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5">
 			<div className="flex items-baseline justify-between gap-3 mb-3">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">bonded</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+					{t("agent.curve.bondedLabel")}
+				</div>
 				<div className="font-mono text-sm text-white">
 					<span className="text-white">{formatNum(bonded)}</span>
 					<span className="text-white/30"> / </span>
@@ -54,7 +60,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 			</div>
 
 			<div className="flex items-center justify-between mt-2.5 text-[10px] font-mono text-white/30">
-				<span>graduates to pancakeswap at 100%</span>
+				<span>{t("agent.curve.graduatesAt100")}</span>
 				<span className="text-[#00ff87]/70">{pct.toFixed(1)}%</span>
 			</div>
 		</div>

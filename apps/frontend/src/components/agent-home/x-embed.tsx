@@ -1,6 +1,7 @@
 "use client";
 
 import { usePatronAuth } from "@/contexts/auth-context";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
 import Script from "next/script";
@@ -43,6 +44,7 @@ export default function XEmbed({
 	/** pre-fetched handle from the agent detail payload, if any. used while the /x endpoint loads. */
 	fallbackHandle?: string | undefined;
 }) {
+	const { t } = useTranslation();
 	const { patronUser } = usePatronAuth();
 	const demo = isDemoAgentId(agentId);
 	const [status, setStatus] = useState<XStatus>(
@@ -101,16 +103,18 @@ export default function XEmbed({
 	return (
 		<Shell>
 			<div className="p-6 flex flex-col gap-3 items-start">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">[ no x connected ]</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">
+					{t("agent.xEmbed.noXConnected")}
+				</div>
 				{isPatron ? (
 					<>
 						<p className="text-xs text-white/60 leading-relaxed">
-							connect x to let {agentName} tweet. the agent posts through its own handle, not yours.
+							{t("agent.xEmbed.patronPrompt", { name: agentName })}
 						</p>
 						<ConnectButton agentId={agentId} />
 					</>
 				) : (
-					<p className="text-xs text-white/40 leading-relaxed">this agent hasn't connected an x account yet.</p>
+					<p className="text-xs text-white/40 leading-relaxed">{t("agent.xEmbed.anonPrompt")}</p>
 				)}
 			</div>
 		</Shell>
@@ -118,6 +122,7 @@ export default function XEmbed({
 }
 
 function ConnectButton({ agentId }: { agentId: string }) {
+	const { t } = useTranslation();
 	const [busy, setBusy] = useState(false);
 	const start = async () => {
 		setBusy(true);
@@ -150,13 +155,14 @@ function ConnectButton({ agentId }: { agentId: string }) {
 			disabled={busy}
 			className="inline-flex items-center gap-2 h-9 px-4 rounded-sm border border-white/15 text-[11px] font-mono uppercase tracking-[0.18em] text-white/70 hover:text-white hover:border-white/30 transition-colors disabled:opacity-50"
 		>
-			{busy ? "..." : "connect x"}
+			{busy ? "..." : t("agent.xEmbed.connectX")}
 			<ArrowUpRight className="w-3 h-3" />
 		</button>
 	);
 }
 
 function TimelineEmbed({ handle }: { handle: string }) {
+	const { t } = useTranslation();
 	const clean = handle.replace(/^@/, "");
 	return (
 		<Shell className="overflow-hidden">
@@ -169,7 +175,7 @@ function TimelineEmbed({ handle }: { handle: string }) {
 					rel="noopener noreferrer"
 					className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-[#00ff87] inline-flex items-center gap-1"
 				>
-					view on x
+					{t("agent.xEmbed.viewOnX")}
 					<ArrowUpRight className="w-3 h-3" />
 				</a>
 			</div>
@@ -181,7 +187,7 @@ function TimelineEmbed({ handle }: { handle: string }) {
 					data-height="500"
 					href={`https://twitter.com/${clean}`}
 				>
-					tweets by @{clean}
+					{t("agent.xEmbed.tweetsByPrefix")} @{clean}
 				</a>
 			</div>
 		</Shell>

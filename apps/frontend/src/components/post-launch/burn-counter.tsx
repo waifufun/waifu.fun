@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Address } from "viem";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { useBurnStats } from "@/hooks/use-post-launch";
 
 import { burnedPercent, formatTokenAmount } from "./__lib/format";
@@ -23,6 +24,7 @@ const ANIMATION_MS = 900;
  * the read updates so the page feels alive when buybacks fire.
  */
 export function BurnCounter({ tokenAddress, ticker }: Props) {
+	const { t } = useTranslation();
 	const stats = useBurnStats(tokenAddress);
 
 	const target = stats.data?.burned ?? 0n;
@@ -30,7 +32,7 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 	const display = useEasingBigint(target);
 
 	if (!tokenAddress) {
-		return <Wrapper>token not deployed</Wrapper>;
+		return <Wrapper>{t("post.burn.notDeployed")}</Wrapper>;
 	}
 
 	if (stats.isLoading || !stats.data) {
@@ -39,7 +41,7 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 				<div
 					className="h-10 w-48 animate-pulse rounded-sm bg-white/[0.04]"
 					role="status"
-					aria-label={`loading ${ticker} burn stats`}
+					aria-label={t("post.burn.loadingAria", { ticker })}
 				/>
 			</Wrapper>
 		);
@@ -51,7 +53,10 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 
 	return (
 		<Wrapper>
-			<output className="flex items-baseline gap-3 flex-wrap" aria-label={`${targetFormatted} ${ticker} burned`}>
+			<output
+				className="flex items-baseline gap-3 flex-wrap"
+				aria-label={t("post.burn.totalAria", { amount: targetFormatted, ticker })}
+			>
 				<span
 					className="text-2xl md:text-3xl tracking-tight tabular-nums text-[#ff5d4a]"
 					aria-live="polite"
@@ -59,21 +64,24 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 				>
 					{formatted}
 				</span>
-				<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/55">${ticker} burned</span>
+				<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/55">
+					{t("post.burn.tokenBurnedSuffix", { ticker })}
+				</span>
 			</output>
 			<div
 				className="mt-2 text-[11px] font-mono text-white/45"
-				aria-label={`${burnedPct.toFixed(2)} percent of supply`}
+				aria-label={t("post.burn.percentAria", { pct: burnedPct.toFixed(2) })}
 			>
-				<span className="tabular-nums text-white/75">{burnedPct.toFixed(2)}%</span> of supply
+				<span className="tabular-nums text-white/75">{burnedPct.toFixed(2)}%</span> {t("post.burn.ofSupply")}
 			</div>
 		</Wrapper>
 	);
 }
 
 function Wrapper({ children }: { children: React.ReactNode }) {
+	const { t } = useTranslation();
 	return (
-		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label="burn counter">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label={t("post.burn.sectionAria")}>
 			{children}
 		</section>
 	);

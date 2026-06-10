@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { formatRunway, useLeaderboard } from "@/lib/api/leaderboard";
 import Link from "next/link";
 import RankCell from "./rank-cell";
 
 export default function TopFiveWidget() {
+	const { t } = useTranslation();
 	const { data, isLoading, error } = useLeaderboard("runway", 5);
 
 	if (isLoading || error || !data || data.length === 0) {
@@ -19,17 +21,17 @@ export default function TopFiveWidget() {
 				<div className="flex items-end justify-between gap-4 mb-4">
 					<div>
 						<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1">
-							waifu.fun / top runway
+							{t("leaderboard.topFive.eyebrow")}
 						</div>
 						<h2 id="top-five-heading" className="text-lg text-white tracking-tight">
-							top 5 agents
+							{t("leaderboard.topFive.title")}
 						</h2>
 					</div>
 					<Link
 						href="/leaderboard"
 						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors"
 					>
-						view all →
+						{t("leaderboard.topFive.viewAll")} →
 					</Link>
 				</div>
 				<ol className="flex flex-col gap-1">

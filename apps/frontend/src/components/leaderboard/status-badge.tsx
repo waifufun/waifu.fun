@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import type { LeaderboardStatus } from "@/lib/api/leaderboard";
 import { cn } from "@/lib/utils";
 
@@ -8,13 +11,6 @@ const STYLES: Record<LeaderboardStatus, string> = {
 	graduated: "bg-blue-500/10 text-blue-400 border-blue-500/30",
 };
 
-const LABELS: Record<LeaderboardStatus, string> = {
-	active: "Active",
-	dormant: "Dormant",
-	killed: "Killed",
-	graduated: "Graduated",
-};
-
 const DOTS: Record<LeaderboardStatus, string> = {
 	active: "bg-green-400",
 	dormant: "bg-amber-400",
@@ -23,6 +19,7 @@ const DOTS: Record<LeaderboardStatus, string> = {
 };
 
 export default function StatusBadge({ status }: { status: LeaderboardStatus }) {
+	const { t } = useTranslation();
 	return (
 		<span
 			className={cn(
@@ -31,7 +28,7 @@ export default function StatusBadge({ status }: { status: LeaderboardStatus }) {
 			)}
 		>
 			<span className={cn("w-1.5 h-1.5 rounded-full", DOTS[status] ?? DOTS.dormant)} aria-hidden />
-			{LABELS[status] ?? status}
+			{t(`leaderboard.badgeStatus.${status}`)}
 		</span>
 	);
 }

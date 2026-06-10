@@ -1,36 +1,39 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/contexts/locale-context";
 
 type Props = {
 	penaltyBps: bigint | null;
 };
 
 export function LaunchTerms({ penaltyBps }: Props) {
+	const { t } = useTranslation();
 	const penaltyPct = penaltyBps !== null ? Number(penaltyBps) / 100 : 5;
+	const pctStr = String(penaltyPct);
 	const items: { title: string; body: string }[] = [
 		{
-			title: "24h round, first-come-first-served",
-			body: "deposits accepted until cap hits or window closes, whichever comes first. allocations are pro-rata across all backers at the close snapshot.",
+			title: t("launch.terms.fcfsTitle"),
+			body: t("launch.terms.fcfsBody"),
 		},
 		{
-			title: `${penaltyPct}% withdraw penalty`,
-			body: `withdraw any time during the open window. ${penaltyPct}% of the withdrawn amount stays in the bonus pool and gets added to the bundle at launch.`,
+			title: t("launch.terms.penaltyTitle", { pct: pctStr }),
+			body: t("launch.terms.penaltyBody", { pct: pctStr }),
 		},
 		{
-			title: "full refund if cap not hit",
-			body: "if the round closes and the floor isn't reached, your deposit is refundable in full. no penalty.",
+			title: t("launch.terms.fullRefundTitle"),
+			body: t("launch.terms.fullRefundBody"),
 		},
 		{
-			title: "risk",
-			body: "agent tokens are risky. presale rounds depend on the on-chain launch flow executing cleanly. do your own research. never deposit more than you can lose.",
+			title: t("launch.terms.riskTitle"),
+			body: t("launch.terms.riskBody"),
 		},
 	];
 
 	return (
 		<Card className="border-white/10 bg-[#08080a] py-0">
 			<CardHeader className="border-b border-white/10 px-6 py-5">
-				<CardTitle className="text-base font-semibold text-zinc-100">terms</CardTitle>
+				<CardTitle className="text-base font-semibold text-zinc-100">{t("launch.terms.title")}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-5 px-6 py-6">
 				{items.map((item) => (

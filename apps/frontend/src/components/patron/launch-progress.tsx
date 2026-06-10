@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { type LaunchStatus, useLaunchState } from "@/lib/api/launches";
 import { EASE_HERO, EASE_OUT_EXPO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -27,26 +28,26 @@ type Props = {
 
 const STAGE_ORDER: Stage[] = ["authorizing", "submitting", "confirming", "live"];
 
-const STAGE_COPY: Record<Stage, { title: string; subtitle: string }> = {
+const STAGE_COPY: Record<Stage, { titleKey: string; subtitleKey: string }> = {
 	authorizing: {
-		title: "authorizing launch",
-		subtitle: "verifying your signature",
+		titleKey: "patron.launchProgress.stageAuthorizingTitle",
+		subtitleKey: "patron.launchProgress.stageAuthorizingSubtitle",
 	},
 	submitting: {
-		title: "submitting FLAP launch transaction",
-		subtitle: "the AgentSafe is signing the create-token call",
+		titleKey: "patron.launchProgress.stageSubmittingTitle",
+		subtitleKey: "patron.launchProgress.stageSubmittingSubtitle",
 	},
 	confirming: {
-		title: "waiting for confirmation",
-		subtitle: "block producers are picking up the transaction",
+		titleKey: "patron.launchProgress.stageConfirmingTitle",
+		subtitleKey: "patron.launchProgress.stageConfirmingSubtitle",
 	},
 	live: {
-		title: "live on the curve.",
-		subtitle: "your agent is born. taking you home.",
+		titleKey: "patron.launchProgress.stageLiveTitle",
+		subtitleKey: "patron.launchProgress.stageLiveSubtitle",
 	},
 	failed: {
-		title: "launch failed.",
-		subtitle: "something went wrong on the way to the curve.",
+		titleKey: "patron.launchProgress.stageFailedTitle",
+		subtitleKey: "patron.launchProgress.stageFailedSubtitle",
 	},
 };
 
@@ -106,6 +107,7 @@ function StageRow({
 	stage: Stage;
 	state: "pending" | "active" | "done" | "failed" | "live";
 }) {
+	const { t } = useTranslation();
 	const copy = STAGE_COPY[stage];
 	return (
 		<motion.div
@@ -142,8 +144,8 @@ function StageRow({
 				)}
 			</div>
 			<div className="flex-1 min-w-0">
-				<div className="text-sm font-medium leading-tight">{copy.title}</div>
-				<div className="text-xs text-neutral-500 mt-1 leading-relaxed">{copy.subtitle}</div>
+				<div className="text-sm font-medium leading-tight">{t(copy.titleKey)}</div>
+				<div className="text-xs text-neutral-500 mt-1 leading-relaxed">{t(copy.subtitleKey)}</div>
 			</div>
 		</motion.div>
 	);
@@ -159,6 +161,7 @@ export default function LaunchProgress({
 	onLive,
 	onRetry,
 }: Props) {
+	const { t } = useTranslation();
 	const { data: launch, error: pollError } = useLaunchState(launchId, {
 		pollMs: 2000,
 		enabled: open && Boolean(launchId),
@@ -177,15 +180,16 @@ export default function LaunchProgress({
 		if (stage === "live" && !celebrated) {
 			setCelebrated(true);
 			// Small dramatic pause before parent redirects.
-			const t = setTimeout(() => {
+			const timer = setTimeout(() => {
 				onLive?.(launch?.tokenAddress ?? null);
 			}, 2000);
-			return () => clearTimeout(t);
+			return () => clearTimeout(timer);
 		}
 		return undefined;
 	}, [stage, celebrated, onLive, launch?.tokenAddress, open]);
 
-	const errorMessage = errorOverride ?? (stage === "failed" ? (launch?.error ?? "Launch did not complete.") : null);
+	const errorMessage =
+		errorOverride ?? (stage === "failed" ? (launch?.error ?? t("patron.launchProgress.launchDidNotComplete")) : null);
 
 	const stageStates = useMemo(() => {
 		const currentIndex = stage === "failed" ? -1 : STAGE_ORDER.indexOf(stage);
@@ -213,7 +217,7 @@ export default function LaunchProgress({
 					// biome-ignore lint/a11y/useSemanticElements: motion.div with role=dialog; native <dialog> conflicts with framer-motion animation wrapping
 					role="dialog"
 					aria-modal="true"
-					aria-label="Launching token"
+					aria-label={t("patron.launchProgress.ariaLabel")}
 					className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
@@ -239,12 +243,16 @@ export default function LaunchProgress({
 								exit={{ opacity: 0 }}
 								transition={{ duration: 0.6, ease: EASE_HERO }}
 							>
-								<p className="text-xs uppercase tracking-[0.3em] text-accent mb-4">live</p>
+								<p className="text-xs uppercase tracking-[0.3em] text-accent mb-4">
+									{t("patron.launchProgress.liveBadge")}
+								</p>
 								<h2 className="text-5xl md:text-7xl text-white tracking-tight font-medium leading-[1.05]">
-									<span className="font-mono">${(ticker ?? "token").replace(/^\$/, "")}</span>
-									<span className="text-accent"> is alive.</span>
+									<span className="font-mono">
+										${(ticker ?? t("patron.launchProgress.fallbackTicker")).replace(/^\$/, "")}
+									</span>
+									<span className="text-accent">{t("patron.launchProgress.isAlive")}</span>
 								</h2>
-								<p className="text-sm text-neutral-400 mt-6">taking you home…</p>
+								<p className="text-sm text-neutral-400 mt-6">{t("patron.launchProgress.takingHome")}</p>
 							</motion.div>
 						) : (
 							<motion.div
@@ -269,10 +277,10 @@ export default function LaunchProgress({
 
 								<header className="relative px-6 pt-7 pb-4 border-b border-stroke">
 									<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">
-										{errorMessage ? "[interrupted]" : "[launching]"}
+										{errorMessage ? t("patron.launchProgress.interruptedTag") : t("patron.launchProgress.launchingTag")}
 									</p>
 									<h2 className="mt-1 text-lg text-white tracking-tight">
-										{errorMessage ? "we hit a snag." : STAGE_COPY[stage].title}
+										{errorMessage ? t("patron.launchProgress.snagTitle") : t(STAGE_COPY[stage].titleKey)}
 									</h2>
 								</header>
 
@@ -294,7 +302,7 @@ export default function LaunchProgress({
 													onClick={onRetry}
 													className="h-9 bg-red-500/10 hover:bg-red-500/20 text-red-200 border border-red-500/40"
 												>
-													try again
+													{t("patron.launchProgress.tryAgain")}
 												</Button>
 											) : null}
 											<button
@@ -302,13 +310,13 @@ export default function LaunchProgress({
 												onClick={onClose}
 												className="text-xs text-neutral-400 hover:text-white underline-offset-4 hover:underline"
 											>
-												close
+												{t("patron.launchProgress.close")}
 											</button>
 										</div>
 									</div>
 								) : pollError ? (
 									<div className="relative px-6 py-3 text-[11px] text-[#a1a1aa] border-t border-stroke">
-										network blip while polling. retrying…
+										{t("patron.launchProgress.networkBlip")}
 									</div>
 								) : null}
 							</motion.div>

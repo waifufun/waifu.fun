@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
+import { useTranslation } from "@/contexts/locale-context";
 import { sanitizeExternalUrl } from "@/lib/url-safety";
 import { cn, shortenAddress } from "@/lib/utils";
 import { EvmChainIds, type IToken } from "@waifufun/types";
@@ -20,16 +21,16 @@ function formatCreatedAt(
 	return date.toLocaleDateString("en-US", options).toLowerCase();
 }
 
-function getChainLabel(token: IToken) {
+function getChainLabel(token: IToken, t: (k: string) => string): string {
 	switch (token.chainId) {
 		case EvmChainIds.BaseMainnet:
-			return "base";
+			return t("token.skills.chains.base");
 		case EvmChainIds.BaseSepolia:
-			return "base sepolia";
+			return t("token.skills.chains.baseSepolia");
 		case EvmChainIds.EthereumMainnet:
-			return "ethereum";
+			return t("token.skills.chains.ethereum");
 		case EvmChainIds.EthereumSepolia:
-			return "ethereum sepolia";
+			return t("token.skills.chains.ethereumSepolia");
 		default:
 			return token.chain;
 	}
@@ -63,7 +64,8 @@ function InfoRow({ label, value, muted = false }: { label: string; value: string
 }
 
 export function AgentInfo({ token }: { token: IToken }) {
-	const chainLabel = getChainLabel(token);
+	const { t } = useTranslation();
+	const chainLabel = getChainLabel(token, t);
 	const hasAggregateHolders = hasAggregateHolderCount(token);
 	const character = getCharacterData(token);
 
@@ -80,7 +82,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 					{hasAdjectives && (
 						<div className="mb-4">
 							<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 block mb-2">
-								personality
+								{t("token.skills.personality")}
 							</span>
 							<div className="flex flex-wrap gap-1.5">
 								{character.adjectives!.slice(0, 8).map((adj) => (
@@ -98,7 +100,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 					{hasTopics && (
 						<div className="mb-4">
 							<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 block mb-2">
-								talks about
+								{t("token.skills.talksAbout")}
 							</span>
 							<div className="flex flex-wrap gap-1.5">
 								{character.topics!.slice(0, 6).map((topic) => (
@@ -115,7 +117,9 @@ export function AgentInfo({ token }: { token: IToken }) {
 
 					{hasStyle && (
 						<div>
-							<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 block mb-2">voice</span>
+							<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 block mb-2">
+								{t("token.skills.voice")}
+							</span>
 							<p className="text-[11px] leading-relaxed text-zinc-500 max-w-md">
 								{character.style!.all!.slice(0, 3).join(". ")}.
 							</p>
@@ -128,11 +132,13 @@ export function AgentInfo({ token }: { token: IToken }) {
 
 			{/* Core info: minimal, divided rows */}
 			<div className="divide-y divide-white/[0.03]">
-				<InfoRow label="chain" value={chainLabel} />
-				<InfoRow label="created" value={formatCreatedAt(token.createdAt)} />
-				{hasAggregateHolders && <InfoRow label="holders" value={getHolderCountDisplay(token)} />}
+				<InfoRow label={t("token.skills.chain")} value={chainLabel} />
+				<InfoRow label={t("token.skills.created")} value={formatCreatedAt(token.createdAt)} />
+				{hasAggregateHolders && <InfoRow label={t("token.skills.holders")} value={getHolderCountDisplay(token)} />}
 				<div className="flex items-center justify-between gap-3 py-1.5">
-					<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 shrink-0">contract</span>
+					<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 shrink-0">
+						{t("token.skills.contract")}
+					</span>
 					<div className="flex items-center gap-1.5">
 						<span className="text-[11px] font-mono text-zinc-500 truncate">
 							{shortenAddress(token.contractAddress)}
@@ -153,6 +159,7 @@ const PLATFORM_COLORS: Record<string, string> = {
 };
 
 export function SidebarSocials({ token }: { token: IToken }) {
+	const { t } = useTranslation();
 	const socials = [
 		{ title: "website", href: sanitizeExternalUrl(token?.socials?.website), icon: "/socials/website.svg" },
 		{ title: "twitter", href: sanitizeExternalUrl(token?.socials?.twitter), icon: "/socials/twitter.svg" },
@@ -163,7 +170,7 @@ export function SidebarSocials({ token }: { token: IToken }) {
 		<div className="relative rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4">
 			<div className="flex items-center gap-2 mb-3">
 				<Globe className="size-3.5 text-zinc-600" />
-				<span className="text-[10px] text-zinc-700 font-mono uppercase tracking-wider">links</span>
+				<span className="text-[10px] text-zinc-700 font-mono uppercase tracking-wider">{t("token.skills.links")}</span>
 			</div>
 			<div className="flex items-center gap-2">
 				{socials.map((social) => {
@@ -195,7 +202,9 @@ export function SidebarSocials({ token }: { token: IToken }) {
 				})}
 			</div>
 			<div className="mt-3 pt-3 border-t border-white/[0.03]">
-				<div className="text-[9px] text-zinc-700 font-mono uppercase tracking-wider mb-1.5">contract</div>
+				<div className="text-[9px] text-zinc-700 font-mono uppercase tracking-wider mb-1.5">
+					{t("token.skills.contract")}
+				</div>
 				<div className="flex items-center justify-between bg-[#08080a] p-2 border border-white/[0.04] rounded-sm group">
 					<span className="text-xs text-zinc-500 font-mono truncate group-hover:text-zinc-400 transition-colors">
 						{shortenAddress(token.contractAddress)}

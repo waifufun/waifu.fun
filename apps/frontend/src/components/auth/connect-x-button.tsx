@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { usePatronAuth } from "@/contexts/auth-context";
+import { useTranslation } from "@/contexts/locale-context";
 
 /**
  * ConnectXButton
@@ -15,6 +16,7 @@ import { usePatronAuth } from "@/contexts/auth-context";
  * - Logged in → avatar + @handle pill with a logout dropdown
  */
 export function ConnectXButton() {
+	const { t } = useTranslation();
 	const { patronUser, isLoading, loginWithX, logout } = usePatronAuth();
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -23,10 +25,10 @@ export function ConnectXButton() {
 			<Button
 				className="h-[38px] min-h-[38px] max-h-[38px] px-4 py-2 font-medium rounded-sm bg-[#1d9bf0]/20 text-[#1d9bf0] border border-[#1d9bf0]/30 shadow-sm opacity-50 pointer-events-none"
 				disabled
-				aria-label="Loading X auth"
+				aria-label={t("auth.connectX.loadingAria")}
 			>
 				<XLogo className="size-4 mr-1.5 opacity-70" />
-				connect x
+				{t("auth.connectX.connectLabel")}
 			</Button>
 		);
 	}
@@ -36,10 +38,10 @@ export function ConnectXButton() {
 			<Button
 				className="h-[38px] min-h-[38px] max-h-[38px] px-4 py-2 font-medium rounded-sm bg-[#1d9bf0]/10 text-[#1d9bf0] hover:bg-[#1d9bf0]/20 border border-[#1d9bf0]/30 shadow-sm text-sm"
 				onClick={loginWithX}
-				aria-label="Sign in with X"
+				aria-label={t("auth.connectX.signInAria")}
 			>
 				<XLogo className="size-4 mr-1.5" />
-				connect x
+				{t("auth.connectX.connectLabel")}
 			</Button>
 		);
 	}
@@ -53,7 +55,7 @@ export function ConnectXButton() {
 			<PopoverTrigger asChild>
 				<Button
 					className="h-[38px] min-h-[38px] max-h-[38px] px-3 py-2 font-medium rounded-sm bg-[#1d9bf0]/10 text-[#1d9bf0] hover:bg-[#1d9bf0]/20 border border-[#1d9bf0]/30 shadow-sm text-sm font-mono"
-					aria-label={`Signed in as @${patronUser.xHandle}`}
+					aria-label={t("auth.connectX.signedInAria", { handle: patronUser.xHandle })}
 					type="button"
 				>
 					<span className="relative flex size-5 shrink-0 rounded-full overflow-hidden mr-2">
@@ -91,7 +93,7 @@ export function ConnectXButton() {
 					className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-400 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
 				>
 					<LogOut className="size-4" />
-					Sign out
+					{t("auth.connectX.signOut")}
 				</button>
 			</PopoverContent>
 		</Popover>

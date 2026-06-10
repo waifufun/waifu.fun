@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { type AgentDetail, formatUsd } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +9,7 @@ type Props = {
 	isLoading: boolean;
 };
 
-function Sparkline({ series }: { series: { ts: string; valueUsd: number }[] }) {
+function Sparkline({ series, ariaLabel }: { series: { ts: string; valueUsd: number }[]; ariaLabel: string }) {
 	if (!series || series.length < 2) {
 		return <div className="h-16 w-full rounded bg-[#141414]" aria-hidden />;
 	}
@@ -33,7 +34,7 @@ function Sparkline({ series }: { series: { ts: string; valueUsd: number }[] }) {
 			preserveAspectRatio="none"
 			className="w-full h-16"
 			role="img"
-			aria-label="Treasury value over time"
+			aria-label={ariaLabel}
 		>
 			<polyline
 				fill="none"
@@ -49,22 +50,30 @@ function Sparkline({ series }: { series: { ts: string; valueUsd: number }[] }) {
 }
 
 export default function TreasuryCard({ agent, isLoading }: Props) {
+	const { t } = useTranslation();
 	const treasury = agent?.treasuryUsd ?? 0;
 	const delta = agent?.treasuryDelta7d ?? 0;
 	const runway = agent?.runwayDays ?? 0;
 	const deltaPositive = delta >= 0;
 
 	return (
-		<section aria-label="treasury" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
+		<section
+			aria-label={t("patron.treasury.ariaLabel")}
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
+		>
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>
-					<h2 className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">treasury</h2>
+					<h2 className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+						{t("patron.treasury.label")}
+					</h2>
 					<div className="text-3xl font-medium text-white mt-1 tabular-nums">
 						{isLoading ? "..." : formatUsd(treasury)}
 					</div>
 				</div>
 				<div className="text-right">
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">7d delta</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+						{t("patron.treasury.delta7d")}
+					</div>
 					<div
 						className={cn("text-lg font-medium mt-1 tabular-nums", deltaPositive ? "text-[#00ff87]" : "text-red-400")}
 					>
@@ -74,18 +83,22 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 			</div>
 
 			<div className="mb-4">
-				<Sparkline series={agent?.treasurySeries ?? []} />
+				<Sparkline series={agent?.treasurySeries ?? []} ariaLabel={t("patron.treasury.label")} />
 			</div>
 
 			<div className="grid grid-cols-2 gap-4 pt-4 border-t border-stroke">
 				<div>
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">runway</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+						{t("patron.treasury.runway")}
+					</div>
 					<div className="text-white font-medium mt-1 tabular-nums">
 						{isLoading ? "..." : Number.isFinite(runway) && runway > 0 ? `${Math.round(runway)}d` : "-"}
 					</div>
 				</div>
 				<div>
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">daily burn</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+						{t("patron.treasury.dailyBurn")}
+					</div>
 					<div className="text-white font-medium mt-1 tabular-nums">
 						{isLoading ? "..." : formatUsd(agent?.dailyBurnUsd ?? 0)}
 					</div>
@@ -93,10 +106,10 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 			</div>
 
 			<div className="mt-4 pt-4 border-t border-stroke">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 mb-2">tax stream</div>
-				<p className="text-[11px] leading-relaxed text-neutral-400">
-					3% buy + sell tax on graduated trades. TaxSplitter routes 65% here, 25% to the patron, 10% to the platform.
-				</p>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 mb-2">
+					{t("patron.treasury.taxStream")}
+				</div>
+				<p className="text-[11px] leading-relaxed text-neutral-400">{t("patron.treasury.taxStreamBody")}</p>
 			</div>
 		</section>
 	);

@@ -21,12 +21,14 @@ import NotificationSettings from "@/components/portfolio/notification-settings";
 import PortfolioStats from "@/components/portfolio/portfolio-stats";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { useTranslation } from "@/contexts/locale-context";
 import useAddress from "@/hooks/use-address";
 import { isActive, isClaimable, isHistorical, usePortfolioLaunches } from "@/lib/api/portfolio";
 import { aggregatePortfolio } from "@/lib/portfolio/aggregate";
 import { Coins, Plug } from "lucide-react";
 
 export default function PortfolioPage() {
+	const { t } = useTranslation();
 	const address = useAddress();
 	const { data: entries, isLoading, error, refetch } = usePortfolioLaunches(address);
 
@@ -44,18 +46,18 @@ export default function PortfolioPage() {
 	return (
 		<main className="py-6">
 			<PatronHeader
-				title="portfolio"
-				subtitle="every launch you've backed. claimable balances, realized p&l."
+				title={t("patron.portfolioPage.title")}
+				subtitle={t("patron.portfolioPage.subtitle")}
 				backHref="/patron"
 			/>
 
 			{!address ? (
 				<EmptyState
 					icon={Plug}
-					title="connect a wallet first."
-					body="link a wallet, then come back here for your positions."
+					title={t("patron.portfolioPage.connectFirstTitle")}
+					body={t("patron.portfolioPage.connectFirstBody")}
 					ctaHref="/patron/wallets"
-					ctaLabel="link a wallet"
+					ctaLabel={t("patron.portfolioPage.linkWalletCta")}
 				/>
 			) : null}
 
@@ -63,7 +65,7 @@ export default function PortfolioPage() {
 
 			{address && error ? (
 				<ErrorState
-					title="couldn't load your portfolio."
+					title={t("patron.portfolioPage.loadError")}
 					message={(error as Error).message}
 					onRetry={() => void refetch()}
 				/>
@@ -72,10 +74,10 @@ export default function PortfolioPage() {
 			{address && !isLoading && !error && list.length === 0 ? (
 				<EmptyState
 					icon={Coins}
-					title="no positions yet."
-					body="deposit bnb on a live round, your positions will show here."
+					title={t("patron.portfolioPage.noPositionsTitle")}
+					body={t("patron.portfolioPage.noPositionsBody")}
 					ctaHref="/launches"
-					ctaLabel="browse rounds"
+					ctaLabel={t("patron.portfolioPage.browseRoundsCta")}
 				/>
 			) : null}
 
@@ -93,11 +95,11 @@ export default function PortfolioPage() {
 
 					<section className="mb-8">
 						<h2 className="text-sm font-mono uppercase tracking-[0.2em] text-neutral-400 mb-3">
-							active ({active.length + claimableEntries.length})
+							{t("patron.portfolioPage.activeHeading", { count: String(active.length + claimableEntries.length) })}
 						</h2>
 						{active.length + claimableEntries.length === 0 ? (
 							<div className="rounded-sm border border-stroke-strong bg-[#0C0C0C] px-4 py-6 text-center text-sm text-neutral-500">
-								no active positions. everything has settled.
+								{t("patron.portfolioPage.noActivePositions")}
 							</div>
 						) : (
 							<div className="border border-stroke-strong rounded-sm overflow-hidden">
@@ -110,7 +112,7 @@ export default function PortfolioPage() {
 
 					<section className="mb-8">
 						<h2 className="text-sm font-mono uppercase tracking-[0.2em] text-neutral-400 mb-3">
-							history ({history.length})
+							{t("patron.portfolioPage.historyHeading", { count: String(history.length) })}
 						</h2>
 						<HistoryTable entries={history} />
 					</section>

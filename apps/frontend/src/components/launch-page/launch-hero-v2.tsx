@@ -31,6 +31,7 @@ import Link from "next/link";
 import { formatEther } from "viem";
 
 import { Pulse, StatPill } from "@/components/agent-home/wave-t/_primitives";
+import { useTranslation } from "@/contexts/locale-context";
 import { resolveImageUrl } from "@/lib/image-url";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
 import {
@@ -79,8 +80,9 @@ const STATE_TONE_TO_PILL: Record<
 };
 
 export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state, bonusPool }: Props) {
-	const name = meta?.tokenName ?? "agent launch";
-	const symbol = meta?.tokenTicker ?? "—";
+	const { t } = useTranslation();
+	const name = meta?.tokenName ?? t("launch.hero.agentLaunchFallback");
+	const symbol = meta?.tokenTicker ?? "-";
 	const image = resolveImageUrl(meta?.tokenImageUrl ?? null);
 
 	const displayState = deriveLaunchDisplayState({
@@ -111,20 +113,20 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 
 	const countdownLabel =
 		displayState === "presale"
-			? "closes in"
+			? t("launch.countdown.closesIn")
 			: displayState === "closed"
-				? "awaiting bundle"
+				? t("launch.countdown.awaitingBundle")
 				: displayState === "bundling"
-					? "bundling now"
+					? t("launch.countdown.bundlingNow")
 					: displayState === "launched"
-						? "live on dex"
+						? t("launch.countdown.liveOnDex")
 						: displayState === "refunding"
-							? "refunds open"
-							: "status";
+							? t("launch.countdown.refundsOpen")
+							: t("launch.countdown.status");
 
 	return (
 		<section
-			aria-label="Launch summary"
+			aria-label={t("launch.hero.summaryAriaLabel")}
 			className={cn(
 				"relative grid gap-0 border-b border-[var(--border-soft)] bg-[var(--bg-base)]",
 				"grid-cols-1 md:grid-cols-[1.4fr_1fr] lg:grid-cols-[1.5fr_1fr_1.1fr]",
@@ -136,7 +138,7 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 					{image ? (
 						// eslint-disable-next-line @next/next/no-img-element
 						<img
-							alt={`${name} logo`}
+							alt={t("launch.hero.logoAlt", { name })}
 							className="relative h-[120px] w-[120px] rounded-md border border-[var(--border-mid)] object-cover md:h-[132px] md:w-[132px]"
 							height={132}
 							src={image}
@@ -144,7 +146,7 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 						/>
 					) : (
 						<div className="flex h-[120px] w-[120px] items-center justify-center rounded-md border border-[var(--border-mid)] bg-[var(--bg-panel)] font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)] md:h-[132px] md:w-[132px]">
-							no logo
+							{t("launch.hero.noLogo")}
 						</div>
 					)}
 				</div>
@@ -156,20 +158,26 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 						</h1>
 					</div>
 					<div className="mt-1 flex flex-wrap items-center gap-1.5">
-						{symbol && symbol !== "—" ? <StatPill tone="accent">${symbol.toUpperCase()}</StatPill> : null}
+						{symbol && symbol !== "-" ? <StatPill tone="accent">${symbol.toUpperCase()}</StatPill> : null}
 						<StatPill tone="neutral">{tier.label.toLowerCase()}</StatPill>
 						<span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-							<Users className="size-3" /> {depositorCount.toString()} backer{depositorCount === 1n ? "" : "s"}
+							<Users className="size-3" />{" "}
+							{t("launch.hero.backerCount", {
+								count: depositorCount.toString(),
+								noun: depositorCount === 1n ? t("launch.hero.backerSingular") : t("launch.hero.backerPlural"),
+							})}
 						</span>
 					</div>
 					{showVanity && displayAddress ? (
 						<div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em]">
-							<span className="text-[var(--text-tertiary)]">token</span>
+							<span className="text-[var(--text-tertiary)]">{t("launch.hero.tokenLabelTerse")}</span>
 							<span className="tabular-nums text-[var(--text-secondary)]" data-testid="launch-token-address">
 								{formatVanityAddress(displayAddress)}
 							</span>
 							{displayState === "bundling" && !tokenAddress ? (
-								<span className="italic text-[var(--text-tertiary)] normal-case tracking-normal">mining…</span>
+								<span className="italic text-[var(--text-tertiary)] normal-case tracking-normal">
+									{t("launch.hero.miningLabel")}
+								</span>
 							) : null}
 							{tokenAddress ? (
 								<span className="flex items-center gap-2 text-[var(--accent)] normal-case tracking-normal">
@@ -179,22 +187,22 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 											data-testid="launch-hero-trade-link"
 											href={tradeHref}
 										>
-											trade on waifu →
+											{t("launch.hero.tradeOnWaifu")}
 										</Link>
 									) : null}
 									{bscscan ? (
 										<a className="hover:opacity-80" href={bscscan} rel="noopener noreferrer" target="_blank">
-											bscscan ↗
+											{t("launch.hero.bscscanLink")}
 										</a>
 									) : null}
 									{flap ? (
 										<a className="hover:opacity-80" href={flap} rel="noopener noreferrer" target="_blank">
-											flap ↗
+											{t("launch.hero.flapLink")}
 										</a>
 									) : null}
 									{pcs ? (
 										<a className="hover:opacity-80" href={pcs} rel="noopener noreferrer" target="_blank">
-											pcs v2 ↗
+											{t("launch.hero.pcsV2Link")}
 										</a>
 									) : null}
 								</span>
@@ -207,11 +215,13 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 			{/* presale progress */}
 			<div className="flex flex-col justify-center gap-2 border-t border-[var(--border-soft)] px-5 py-5 md:border-l md:border-t-0 md:py-6">
 				<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-					presale progress
+					{t("launch.hero.presaleProgressLabel")}
 				</span>
 				<div className="flex items-baseline gap-2 font-mono leading-none tracking-tight">
 					<span className="text-[24px] tabular-nums text-[var(--text-primary)] md:text-[28px]">{totalBnb}</span>
-					<span className="text-[12px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">/ {capBnb} bnb</span>
+					<span className="text-[12px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+						{t("launch.hero.presaleProgressCap", { cap: capBnb })}
+					</span>
 				</div>
 				<div className="h-1 w-full overflow-hidden rounded-sm bg-white/[0.04]">
 					<div
@@ -221,9 +231,13 @@ export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, close
 					/>
 				</div>
 				<div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em]">
-					<span className="text-[var(--text-tertiary)]">{pct.toFixed(2)}% filled</span>
+					<span className="text-[var(--text-tertiary)]">
+						{t("launch.hero.presaleProgressFilled", { pct: pct.toFixed(2) })}
+					</span>
 					{bonusPool && bonusPool > 0n ? (
-						<span className="text-[var(--accent)]">+{formatBnb(bonusPool)} bnb bonus pool</span>
+						<span className="text-[var(--accent)]">
+							{t("launch.hero.presaleProgressBonus", { bonus: formatBnb(bonusPool) })}
+						</span>
 					) : null}
 				</div>
 			</div>
