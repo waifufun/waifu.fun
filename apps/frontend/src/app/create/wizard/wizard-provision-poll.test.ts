@@ -76,6 +76,65 @@ describe("pollUntilProvisioned", () => {
 		expect(labels[0]).toBe("eliza cloud: provisioning");
 	});
 
+	it("resolves 'aborted' immediately when the signal is already aborted (no fetch)", async () => {
+		const controller = new AbortController();
+		controller.abort();
+		const fetchStatus = vi.fn(async () => snapshot({ cloudStatus: "pending" }));
+		const labels: Array<string | null> = [];
+		const outcome = await pollUntilProvisioned("agt_6", (l) => labels.push(l), {
+			intervalMs: 0,
+			sleep: async () => {},
+			fetchStatus,
+			signal: controller.signal,
+		});
+
+		expect(outcome).toBe("aborted");
+		expect(fetchStatus).not.toHaveBeenCalled();
+		expect(labels).toEqual([]);
+	});
+
+	it("stops the loop and resolves 'aborted' when the signal aborts mid-poll", async () => {
+		const controller = new AbortController();
+		let call = 0;
+		const labels: Array<string | null> = [];
+		// Abort during the inter-poll sleep after the first fetch. The loop must not
+		// fetch again or push another label once aborted.
+		const outcome = await pollUntilProvisioned("agt_7", (l) => labels.push(l), {
+			intervalMs: 10,
+			sleep: async () => {
+				controller.abort();
+			},
+			fetchStatus: async () => {
+				call++;
+				return snapshot({ cloudStatus: "pending" });
+			},
+			signal: controller.signal,
+		});
+
+		expect(outcome).toBe("aborted");
+		expect(call).toBe(1);
+		// Only the single pre-abort label was emitted.
+		expect(labels).toEqual(["eliza cloud: pending"]);
+	});
+
+	it("interrupts an in-flight sleep the moment the signal aborts (real-timer sleep)", async () => {
+		const controller = new AbortController();
+		// A long real-timer sleep would hang the test if abort did not short-circuit it.
+		const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+		const promise = pollUntilProvisioned("agt_8", () => {}, {
+			intervalMs: 60_000,
+			sleep,
+			fetchStatus: async () => snapshot({ cloudStatus: "pending" }),
+			signal: controller.signal,
+		});
+		// Let the first fetch + sleep start, then abort. The aborting sleep resolves
+		// without waiting the full 60s.
+		await Promise.resolve();
+		controller.abort();
+		const outcome = await promise;
+		expect(outcome).toBe("aborted");
+	});
+
 	it("keeps polling through transient null snapshots until ready", async () => {
 		const statuses = [snapshot({}), snapshot({}), snapshot({ cloudStatus: "running", webUiUrl: "u", ready: true })];
 		let call = 0;

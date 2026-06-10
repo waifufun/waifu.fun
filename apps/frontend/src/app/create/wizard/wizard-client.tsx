@@ -20,11 +20,11 @@ import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/l
 import { type CreateLaunchResult, createLaunch, requestLaunchNonce } from "@/lib/api/launches";
 import { buildLaunchSiweMessage } from "@/lib/siwe";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAccount, useSignMessage } from "wagmi";
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
-import { pollUntilProvisioned } from "./wizard-provision-poll";
+import { type ProvisioningPollOutcome, pollUntilProvisioned } from "./wizard-provision-poll";
 import {
 	provisionCloudStorageKey,
 	provisionSuccessRoute,
@@ -69,6 +69,15 @@ function WizardInner() {
 	const [provisionStatusLabel, setProvisionStatusLabel] = useState<string | null>(null);
 	const provisionPromise = useRef<Promise<ProvisionResult> | null>(null);
 	const launchPromise = useRef<Promise<CreateLaunchResult> | null>(null);
+	// Aborts the up-to-10-min provisioning poll if the wizard unmounts mid-flight,
+	// so the loop stops fetching and never calls a setState/router on a dead tree.
+	const provisionAbort = useRef<AbortController | null>(null);
+
+	useEffect(() => {
+		return () => {
+			provisionAbort.current?.abort();
+		};
+	}, []);
 
 	const startProvisioning = useCallback(() => {
 		if (provisionPromise.current) return;
@@ -212,15 +221,23 @@ function WizardInner() {
 		// launch) — never a dead-end error. The token + agent exist regardless.
 		if (result?.ok && result.asyncProvisioning) {
 			setAwaitingProvisionResponse(true);
-			let outcome: "ready" | "failed" | "timeout" = "timeout";
+			const controller = new AbortController();
+			provisionAbort.current = controller;
+			let outcome: ProvisioningPollOutcome = "timeout";
 			try {
-				outcome = await pollUntilProvisioned(result.agentId, setProvisionStatusLabel);
+				outcome = await pollUntilProvisioned(result.agentId, setProvisionStatusLabel, { signal: controller.signal });
 			} catch {
 				outcome = "timeout";
 			} finally {
-				setAwaitingProvisionResponse(false);
-				setProvisionStatusLabel(null);
+				provisionAbort.current = null;
 			}
+			// Unmounted mid-poll: do NOT touch component state (the cleanup already
+			// aborted) and do NOT route — the wizard is gone.
+			if (outcome === "aborted") {
+				return;
+			}
+			setAwaitingProvisionResponse(false);
+			setProvisionStatusLabel(null);
 			if (outcome === "failed") {
 				toast.error("provisioning failed. your agent launched, check its patron page for details.");
 			} else if (outcome === "timeout") {
