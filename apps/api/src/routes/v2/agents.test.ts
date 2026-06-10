@@ -800,7 +800,8 @@ test("POST /v2/agents/provision enqueues hosted provisioning async and returns 2
 	assert.equal(db.__inviteState.invite.usedCount, 1);
 	// An honest 'provisioning' status is seeded so GET /v2/agents/:id shows progress.
 	const seeded = db.__updates.find(
-		(values) => (values.metadata as { provisioning?: { status?: string } } | undefined)?.provisioning?.status === "provisioning",
+		(values) =>
+			(values.metadata as { provisioning?: { status?: string } } | undefined)?.provisioning?.status === "provisioning",
 	);
 	assert.ok(seeded, "expected metadata.provisioning.status='provisioning' to be seeded");
 	assert.equal(launches.length, 1);

@@ -686,8 +686,7 @@ async function enqueueHostedRuntimeProvisioning(
 				? { agentWalletAddress: result.walletAddress, primaryWalletAddress: result.walletAddress }
 				: {}),
 			adminWallets: body.safe.owners,
-			elizaCloudBaseUrl:
-				process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
+			elizaCloudBaseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
 		},
 	};
 	const enqueue = await resolveAddAgentProvisioningJob();
