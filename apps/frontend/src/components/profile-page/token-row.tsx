@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
 import type { TChain } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
@@ -33,6 +36,7 @@ export default function TokenRow({
 	mode?: "activity" | "wallet" | "points";
 	verified?: boolean;
 }) {
+	const { t } = useTranslation();
 	const dollarWorth = (data?.amountHeld ?? 0) * (data?.dollarWorth ?? 0);
 
 	// Token detail route is /token/[chain]/[chainId]/[contractAddress]; fall back
@@ -56,7 +60,7 @@ export default function TokenRow({
 							src={data.image}
 							unoptimized
 							priority
-							alt="Token Image"
+							alt={t("profile.tokenRow.imageAlt")}
 							width={30}
 							height={30}
 							className="object-contain md:w-[40px] md:h-[40px] rounded-sm"
@@ -105,7 +109,7 @@ export default function TokenRow({
 											data.direction === 0 ? "text-green-500" : "text-red-500"
 										}`}
 									>
-										{data.direction === 0 ? "bought" : "sold"}
+										{data.direction === 0 ? t("profile.tokenRow.bought") : t("profile.tokenRow.sold")}
 									</p>
 									<p className="text-[9px] sm:text-xs uppercase font-semibold text-[#e4e4e7] inline truncate">
 										{data.direction === 0 ? (

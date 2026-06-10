@@ -2,6 +2,7 @@
 
 import { CopyButton } from "@/components/copy-button";
 import Verified from "@/components/verified";
+import { useTranslation } from "@/contexts/locale-context";
 import { getExplorerAddressUrl } from "@/lib/explorer";
 import { resolveImageUrl } from "@/lib/image-url";
 import { getSocialLinkEntries } from "@/lib/url-safety";
@@ -188,13 +189,13 @@ export function getAgentDisplayStatus(token: IToken, status: AgentLifecycleStatu
 	return "asleep";
 }
 
-/** Presence status labels for the agent page. */
-const presenceLabels: Record<AgentLifecycleState, string> = {
-	bonding: "emerging",
-	active: "online",
-	dormant: "idle",
-	imported: "tracked",
-	migrated: "graduated",
+/** Presence status label translation keys for the agent page. */
+const presenceLabelKeys: Record<AgentLifecycleState, string> = {
+	bonding: "token.presence.bonding.label",
+	active: "token.presence.active.label",
+	dormant: "token.presence.dormant.label",
+	imported: "token.presence.imported.label",
+	migrated: "token.presence.migrated.label",
 };
 
 /** Accent color per presence state for the breathing dot. */
@@ -244,6 +245,7 @@ export default function AgentProfile({
 	marketDataSource?: "dexscreener" | null;
 	headerAccessory?: ReactNode;
 }) {
+	const { t } = useTranslation();
 	const isLive = status.state === "active" || (status.isExternalMarket && status.hasRecentActivity);
 	const runtimeToken = token as RuntimeToken;
 	const lastActivity = runtimeToken.lastActivityAt ? fromNow(runtimeToken.lastActivityAt) : null;
@@ -333,7 +335,7 @@ export default function AgentProfile({
 						{/* Status text + last seen */}
 						<div className="flex items-center gap-3 text-[11px] font-mono">
 							<span className={cn("lowercase tracking-wide", presenceLabelColor[status.state])}>
-								{presenceLabels[status.state]}
+								{t(presenceLabelKeys[status.state])}
 							</span>
 							{recentTimeLabel && (
 								<>
@@ -351,7 +353,7 @@ export default function AgentProfile({
 					<div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] mt-auto">
 						{token?.creator && (
 							<div className="flex items-center gap-1.5">
-								<span className="font-mono uppercase tracking-wider text-zinc-700">by</span>
+								<span className="font-mono uppercase tracking-wider text-zinc-700">{t("token.profile.byLabel")}</span>
 								<Link
 									href={`/profile/${token.creator}`}
 									className="font-mono text-zinc-500 hover:text-[#00ff87] transition-colors"
