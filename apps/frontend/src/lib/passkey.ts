@@ -137,6 +137,9 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 			ok?: boolean;
 			error?: string;
 			message?: string;
+			// Steward's one-time WebAuthn challenge handle. login/verify REQUIRES
+			// it back (it keys the server-side challenge store).
+			challengeId?: string;
 		} & PublicKeyCredentialRequestOptionsJSON
 	>("/auth/passkey/login/options", {
 		email,
@@ -180,13 +183,18 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 		throw new PasskeyError("UNKNOWN", err instanceof Error ? err.message : "passkey failed");
 	}
 
+	const challengeId = optionsRes.body.challengeId;
+	if (!challengeId) {
+		throw new PasskeyError("STEWARD_ERROR", "passkey login options did not include a challengeId");
+	}
+
 	const verifyRes = await postSteward<{
 		ok?: boolean;
 		token?: string;
 		refreshToken?: string;
 		error?: string;
 		message?: string;
-	}>("/auth/passkey/login/verify", { email, response: assertion });
+	}>("/auth/passkey/login/verify", { email, response: assertion, challengeId });
 
 	if (verifyRes.status >= 400 || !verifyRes.body || !verifyRes.body.token) {
 		throw new PasskeyError(
