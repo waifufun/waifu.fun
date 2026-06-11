@@ -213,11 +213,16 @@ async function exchangeStewardCode(opts: {
 		body: JSON.stringify({
 			grant_type: "authorization_code",
 			code: opts.code,
-			// Steward's token endpoint keys on `redirectUri` (camelCase); send
-			// snake_case too for forward/back compat.
+			// Steward's token endpoint reads camelCase keys (`redirectUri`,
+			// `codeVerifier`, `tenantId`). Snake_case is kept as belt-and-suspenders
+			// for any older Steward deploy, but camelCase is what prod parses —
+			// sending only snake_case made Steward treat the exchange as tenantless
+			// AND verifier-less (502 STEWARD_EXCHANGE_FAILED on every login).
 			redirectUri: opts.redirectUri,
 			redirect_uri: opts.redirectUri,
+			codeVerifier: opts.codeVerifier,
 			code_verifier: opts.codeVerifier,
+			tenantId: tenant,
 			tenant_id: tenant,
 		}),
 	});
