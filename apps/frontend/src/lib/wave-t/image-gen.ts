@@ -41,6 +41,17 @@ export const IMAGE_GEN_ASPECTS = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4
 
 export type ImageGenAspect = (typeof IMAGE_GEN_ASPECTS)[number];
 
+export const IMAGE_GEN_MODELS = [
+	{ id: "openai/gpt-image-2/text-to-image", label: "GPT Image 2" },
+	{ id: "bytedance/seedream-v5.0-lite", label: "Seedream 5" },
+	{ id: "google/nano-banana-2/text-to-image", label: "Nano Banana 2" },
+	{ id: "qwen/qwen-image-2.0/text-to-image", label: "Qwen Image" },
+] as const;
+
+export type ImageGenModelId = (typeof IMAGE_GEN_MODELS)[number]["id"];
+
+export const DEFAULT_IMAGE_GEN_MODEL_ID: ImageGenModelId = "openai/gpt-image-2/text-to-image";
+
 export const IMAGE_GEN_PROMPT_MIN = 3;
 export const IMAGE_GEN_PROMPT_MAX = 1800;
 
@@ -75,6 +86,7 @@ export type ImageGenInvokeInput = {
 	tokenAddress: string;
 	prompt: string;
 	aspect?: ImageGenAspect;
+	model?: ImageGenModelId;
 	style?: string;
 	idempotencyKey?: string;
 };
@@ -126,6 +138,7 @@ export async function invokeImageGen(input: ImageGenInvokeInput): Promise<ImageG
 		prompt: input.prompt,
 		aspect,
 	};
+	if (input.model) body.model = input.model;
 	if (input.style?.trim()) body.style = input.style.trim();
 	if (input.idempotencyKey) body.idempotencyKey = input.idempotencyKey;
 
