@@ -5,6 +5,7 @@ import { SiweMessage } from "siwe";
 import { getAddress, isAddress } from "viem";
 import { z } from "zod";
 
+import { normalizeHexSignature } from "../../lib/auth-service.js";
 import type { WalletChain } from "../../lib/patron-wallet.js";
 import { type RequirePatronBindings, requirePatron } from "../../middleware/patron-auth.js";
 
@@ -155,7 +156,7 @@ function consumeIssuedNonce(patronId: string, address: string, nonce: string): b
 async function verifyLinkedSiwe(messageText: string, signature: string): Promise<LinkedSiweResult> {
 	if (verifierForTest) return verifierForTest(messageText, signature);
 	const message = new SiweMessage(messageText);
-	const result = await message.verify({ signature });
+	const result = await message.verify({ signature: normalizeHexSignature(signature) });
 	if (!result.success) throw new Error(result.error?.type ?? "SIWE verification failed");
 	return {
 		address: result.data.address as `0x${string}`,
