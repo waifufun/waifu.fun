@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
-import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
+import { PasskeyError, loginWithPasskey } from "@/lib/passkey";
 import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { cn } from "@/lib/utils";
 import type { StewardAuthResult } from "@stwd/sdk";
@@ -186,42 +186,48 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 		}
 		setPasskeyError(null);
 		setPasskeyPhase("prompting");
+		// Creating a NEW passkey requires an authenticated Steward session
+		// (register/options is session-gated server-side), so a signed-out user
+		// can never register from this modal. Every "can't use a passkey here"
+		// outcome — no passkey at all, none on this device, or a credential
+		// bound to another site — funnels to the same frictionless path:
+		// magic link now, add a fresh passkey for this site after sign-in.
+		const sendMagicLinkFallback = async () => {
+			const response = await fetch(`${API_URL}/auth/email/start`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ email: trimmed, return_to: resolvedReturnTo }),
+			});
+			if (!response.ok) {
+				throw new PasskeyError(
+					"STEWARD_ERROR",
+					"no usable passkey for this site and the magic-link fallback failed — try email sign-in",
+				);
+			}
+			setPasskeyPhase("fallback-sent");
+		};
 		try {
 			let nextPath: string;
 			try {
 				nextPath = await loginWithPasskey(trimmed, resolvedReturnTo);
 			} catch (err) {
-				if (err instanceof PasskeyError && (err.code === "NO_PASSKEY" || err.code === "NO_LOCAL_CREDENTIAL")) {
-					setPasskeyPhase("registering");
-					nextPath = await registerPasskey(trimmed, resolvedReturnTo);
-				} else if (err instanceof PasskeyError && err.code === "AUTH_FAILED") {
-					// The passkey exists but can't verify for THIS site (usually a
-					// credential registered on a different domain, e.g. elizacloud.ai).
-					// Frictionless recovery: send a magic link instead of dead-ending.
-					// After they're signed in, the patron UI can offer to add a fresh
-					// passkey for this domain.
-					const response = await fetch(`${API_URL}/auth/email/start`, {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						credentials: "include",
-						body: JSON.stringify({ email: trimmed, return_to: resolvedReturnTo }),
-					});
-					if (!response.ok) {
-						throw new PasskeyError(
-							"STEWARD_ERROR",
-							"that passkey belongs to a different site and the magic-link fallback failed — try email sign-in",
-						);
-					}
-					setPasskeyPhase("fallback-sent");
+				if (
+					err instanceof PasskeyError &&
+					(err.code === "NO_PASSKEY" || err.code === "NO_LOCAL_CREDENTIAL" || err.code === "AUTH_FAILED")
+				) {
+					await sendMagicLinkFallback();
 					return;
-				} else {
-					throw err;
 				}
+				throw err;
 			}
 			assignAfterAuth(nextPath);
 		} catch (err) {
 			if (err instanceof PasskeyError && err.code === "USER_CANCELLED") {
-				setPasskeyPhase("idle");
+				// They saw the browser's picker but had nothing usable on this
+				// device (e.g. only the QR / other-device option) and bailed.
+				setPasskeyPhase("error");
+				setPasskeyError("cancelled — no passkey for this site on this device? use email sign-in above");
 				return;
 			}
 			setPasskeyPhase("error");
