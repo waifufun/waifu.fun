@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
-import { PasskeyError, loginWithPasskey } from "@/lib/passkey";
+import { PasskeyError, loginWithPasskey, registerPasskey, sendOtpCode, verifyOtpCode } from "@/lib/passkey";
 import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { cn } from "@/lib/utils";
 import type { StewardAuthResult } from "@stwd/sdk";
@@ -42,7 +42,7 @@ interface ConnectModalProps {
 
 type ProviderId = "github" | "google" | "twitter" | "discord";
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
-type PasskeyPhase = "idle" | "prompting" | "registering" | "fallback-sent" | "error";
+type PasskeyPhase = "idle" | "prompting" | "registering" | "code-sent" | "code-verifying" | "fallback-sent" | "error";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
@@ -115,6 +115,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 	const [emailError, setEmailError] = useState<string | null>(null);
 	const [passkeyPhase, setPasskeyPhase] = useState<PasskeyPhase>("idle");
 	const [passkeyError, setPasskeyError] = useState<string | null>(null);
+	const [otpCode, setOtpCode] = useState("");
 	const [walletPhase, setWalletPhase] = useState<WalletPhase>("idle");
 	const [walletError, setWalletError] = useState<string | null>(null);
 	const [walletPanel, setWalletPanel] = useState<WalletPanel>(null);
@@ -186,27 +187,13 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 		}
 		setPasskeyError(null);
 		setPasskeyPhase("prompting");
-		// Creating a NEW passkey requires an authenticated Steward session
-		// (register/options is session-gated server-side), so a signed-out user
-		// can never register from this modal. Every "can't use a passkey here"
-		// outcome — no passkey at all, none on this device, or a credential
-		// bound to another site — funnels to the same frictionless path:
-		// magic link now, add a fresh passkey for this site after sign-in.
-		const sendMagicLinkFallback = async () => {
-			const response = await fetch(`${API_URL}/auth/email/start`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ email: trimmed, return_to: resolvedReturnTo }),
-			});
-			if (!response.ok) {
-				throw new PasskeyError(
-					"STEWARD_ERROR",
-					"no usable passkey for this site and the magic-link fallback failed — try email sign-in",
-				);
-			}
-			setPasskeyPhase("fallback-sent");
-		};
+		// Privy-style canonical flow. Try a passkey login first (one tap for
+		// returning users). Any "can't use a passkey here" outcome — no passkey,
+		// none on this device, credential bound to another site — falls through
+		// to email verification: we send a 6-digit code, the user types it, the
+		// resulting verified-email grant lets Steward register a FRESH passkey
+		// for this site without a session (pre-hijack stays impossible because
+		// the code proves address ownership).
 		try {
 			let nextPath: string;
 			try {
@@ -216,7 +203,9 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 					err instanceof PasskeyError &&
 					(err.code === "NO_PASSKEY" || err.code === "NO_LOCAL_CREDENTIAL" || err.code === "AUTH_FAILED")
 				) {
-					await sendMagicLinkFallback();
+					await sendOtpCode(trimmed);
+					setOtpCode("");
+					setPasskeyPhase("code-sent");
 					return;
 				}
 				throw err;
@@ -226,14 +215,48 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 			if (err instanceof PasskeyError && err.code === "USER_CANCELLED") {
 				// They saw the browser's picker but had nothing usable on this
 				// device (e.g. only the QR / other-device option) and bailed.
-				setPasskeyPhase("error");
-				setPasskeyError("cancelled — no passkey for this site on this device? use email sign-in above");
+				// Offer the code path instead of dead-ending.
+				try {
+					await sendOtpCode(trimmed);
+					setOtpCode("");
+					setPasskeyPhase("code-sent");
+				} catch {
+					setPasskeyPhase("error");
+					setPasskeyError("cancelled — use email sign-in above");
+				}
 				return;
 			}
 			setPasskeyPhase("error");
 			setPasskeyError(err instanceof Error ? err.message : "passkey failed");
 		}
 	}, [assignAfterAuth, email, resolvedReturnTo]);
+
+	const handleOtpSubmit = useCallback(async () => {
+		const trimmed = email.trim();
+		const code = otpCode.trim();
+		if (!/^\d{6}$/.test(code)) {
+			setPasskeyError("enter the 6-digit code from your email");
+			return;
+		}
+		setPasskeyError(null);
+		setPasskeyPhase("code-verifying");
+		try {
+			const grant = await verifyOtpCode(trimmed, code);
+			setPasskeyPhase("registering");
+			const nextPath = await registerPasskey(trimmed, resolvedReturnTo, grant);
+			assignAfterAuth(nextPath);
+		} catch (err) {
+			if (err instanceof PasskeyError && err.code === "USER_CANCELLED") {
+				// Touch ID cancelled. The grant peeks (not consumed) at options, so
+				// they can tap again within the grant TTL — keep the code screen.
+				setPasskeyPhase("code-sent");
+				setPasskeyError("passkey prompt cancelled — try again");
+				return;
+			}
+			setPasskeyPhase("code-sent");
+			setPasskeyError(err instanceof Error ? err.message : "verification failed");
+		}
+	}, [assignAfterAuth, email, otpCode, resolvedReturnTo]);
 
 	const handleWalletSuccess = useCallback(
 		async (result: StewardAuthResult, kind: "evm" | "solana") => {
@@ -299,7 +322,9 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 
 	if (isAuthenticated) return null;
 
-	const passkeyBusy = passkeyPhase === "prompting" || passkeyPhase === "registering";
+	const passkeyBusy =
+		passkeyPhase === "prompting" || passkeyPhase === "registering" || passkeyPhase === "code-verifying";
+	const otpVisible = passkeyPhase === "code-sent" || passkeyPhase === "code-verifying";
 	const emailBusy = emailPhase === "submitting";
 
 	const inSubPanel = walletPanel !== null;
@@ -404,19 +429,58 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 						</form>
 
 						{/* Passkey secondary CTA */}
-						<button
-							type="button"
-							onClick={handlePasskey}
-							disabled={passkeyBusy}
-							className="mt-2 flex w-full items-center justify-center gap-2 border border-white/10 bg-transparent px-4 py-2.5 text-[13px] text-[#e4e4e7] transition-colors hover:border-white/25 hover:bg-[#0e0e11] disabled:opacity-50"
-						>
-							{passkeyBusy ? (
-								<Loader2 className="size-4 animate-spin" />
-							) : (
-								<Fingerprint className="size-4 text-[#a1a1aa]" />
-							)}
-							<span>{passkeyPhase === "registering" ? "setting up passkey" : "use a passkey"}</span>
-						</button>
+						{!otpVisible ? (
+							<button
+								type="button"
+								onClick={handlePasskey}
+								disabled={passkeyBusy}
+								className="mt-2 flex w-full items-center justify-center gap-2 border border-white/10 bg-transparent px-4 py-2.5 text-[13px] text-[#e4e4e7] transition-colors hover:border-white/25 hover:bg-[#0e0e11] disabled:opacity-50"
+							>
+								{passkeyBusy ? (
+									<Loader2 className="size-4 animate-spin" />
+								) : (
+									<Fingerprint className="size-4 text-[#a1a1aa]" />
+								)}
+								<span>{passkeyPhase === "registering" ? "setting up passkey" : "use a passkey"}</span>
+							</button>
+						) : (
+							<div className="mt-2 border border-white/10 bg-[#0e0e11] p-3">
+								<p className="text-[11px] text-[#a1a1aa]">
+									we emailed a 6-digit code to <span className="text-[#e4e4e7]">{email.trim()}</span>
+								</p>
+								<div className="mt-2 flex gap-2">
+									<input
+										value={otpCode}
+										onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+										onKeyDown={(e) => {
+											if (e.key === "Enter") {
+												e.preventDefault();
+												void handleOtpSubmit();
+											}
+										}}
+										inputMode="numeric"
+										autoComplete="one-time-code"
+										placeholder="000000"
+										maxLength={6}
+										disabled={passkeyBusy}
+										className="w-full border border-white/10 bg-transparent px-3 py-2 text-center font-mono text-[18px] tracking-[0.4em] text-[#e4e4e7] placeholder:text-[#3f3f46] focus:border-white/25 focus:outline-none disabled:opacity-50"
+										// eslint-disable-next-line jsx-a11y/no-autofocus -- the code field is the only actionable input in this phase
+										autoFocus
+									/>
+									<button
+										type="button"
+										onClick={() => void handleOtpSubmit()}
+										disabled={passkeyBusy || otpCode.length !== 6}
+										className="flex items-center justify-center border border-white/10 bg-transparent px-4 text-[13px] text-[#e4e4e7] transition-colors hover:border-white/25 disabled:opacity-50"
+									>
+										{passkeyBusy ? <Loader2 className="size-4 animate-spin" /> : "verify"}
+									</button>
+								</div>
+								<p className="mt-2 text-[10px] text-[#52525b]">
+									after the code checks out you'll set up a passkey with touch id — next time it's one tap
+								</p>
+							</div>
+						)}
 						{passkeyPhase === "fallback-sent" ? (
 							<p className="mt-2 text-[11px] text-[#a1e3b5]">
 								no usable passkey for this site — we emailed you a sign-in link instead. you can add a passkey here
