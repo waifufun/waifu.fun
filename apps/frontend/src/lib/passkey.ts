@@ -220,10 +220,48 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 }
 
 /**
+ * OTP helpers (Privy-style verified signup).
+ *
+ * sendOtpCode  — POST /auth/email/otp/send: emails a 6-digit code.
+ * verifyOtpCode — POST /auth/email/otp/verify: exchanges the code for a
+ *   short-lived single-use verified-email GRANT, which registerPasskey can
+ *   pass to Steward so a brand-new user can register WITHOUT a session.
+ */
+export async function sendOtpCode(email: string): Promise<void> {
+	const res = await postSteward<{ ok?: boolean; error?: string; message?: string }>("/auth/email/otp/send", { email });
+	if (res.status === 429) {
+		throw new PasskeyError("RATE_LIMITED", "too many codes requested, wait a minute");
+	}
+	if (res.status >= 400) {
+		throw new PasskeyError("STEWARD_ERROR", res.body?.message ?? res.body?.error ?? "could not send the code");
+	}
+}
+
+export async function verifyOtpCode(email: string, code: string): Promise<string> {
+	const res = await postSteward<{
+		ok?: boolean;
+		data?: { emailGrant?: string };
+		error?: string;
+		message?: string;
+	}>("/auth/email/otp/verify", { email, code });
+	if (res.status === 429) {
+		throw new PasskeyError("RATE_LIMITED", "too many attempts, wait a few minutes");
+	}
+	const grant = res.body?.data?.emailGrant;
+	if (res.status >= 400 || !grant) {
+		throw new PasskeyError("AUTH_FAILED", res.body?.message ?? res.body?.error ?? "wrong or expired code");
+	}
+	return grant;
+}
+
+/**
  * Register a new passkey for the given email. Returns the redirect path on success.
  * Throws PasskeyError on failure or cancellation.
+ *
+ * `emailGrant` (from verifyOtpCode) lets a signed-out user register: Steward
+ * accepts the grant as proof of email ownership in place of a session.
  */
-export async function registerPasskey(email: string, returnTo?: string): Promise<string> {
+export async function registerPasskey(email: string, returnTo?: string, emailGrant?: string): Promise<string> {
 	if (typeof window === "undefined" || !window.PublicKeyCredential) {
 		throw new PasskeyError("NOT_SUPPORTED", "your browser does not support passkeys");
 	}
@@ -241,6 +279,7 @@ export async function registerPasskey(email: string, returnTo?: string): Promise
 		// picker. Requires Steward >= 0.3.6 (PR #30).
 		authenticatorAttachment: PLATFORM_AUTHENTICATOR_ATTACHMENT,
 		hints: [PLATFORM_HINT],
+		...(emailGrant ? { emailGrant } : {}),
 	});
 
 	if (optionsRes.status === 429) {
@@ -269,7 +308,11 @@ export async function registerPasskey(email: string, returnTo?: string): Promise
 		refreshToken?: string;
 		error?: string;
 		message?: string;
-	}>("/auth/passkey/register/verify", { email, response: attestation });
+	}>("/auth/passkey/register/verify", {
+		email,
+		response: attestation,
+		...(emailGrant ? { emailGrant } : {}),
+	});
 
 	if (verifyRes.status >= 400 || !verifyRes.body || !verifyRes.body.token) {
 		throw new PasskeyError(
