@@ -205,24 +205,22 @@ async function exchangeStewardCode(opts: {
 }): Promise<{ token: string; refreshToken: string | null }> {
 	const stewardBase = process.env.STEWARD_API_URL ?? "https://eliza.steward.fi";
 	const tenant = process.env.STEWARD_TENANT_ID ?? "waifu";
-	const tokenUrl = new URL(`/auth/oauth/${opts.provider}/token`, stewardBase);
+	// Steward's response_type=code flow mints a one-time NONCE code bound to
+	// {redirectUri, tenantId, codeChallenge} at /authorize-callback time, and
+	// that code is redeemable ONLY at POST /auth/oauth/exchange
+	// (provider-agnostic). The provider-scoped /auth/oauth/:provider/token
+	// route is for unbound provider codes and is DISABLED in prod
+	// ("Unbound OAuth provider code exchange is disabled") — calling it was
+	// the 502 STEWARD_EXCHANGE_FAILED on every login.
+	const tokenUrl = new URL("/auth/oauth/exchange", stewardBase);
 
 	const res = await fetch(tokenUrl.toString(), {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
-			grant_type: "authorization_code",
 			code: opts.code,
-			// Steward's token endpoint reads camelCase keys (`redirectUri`,
-			// `codeVerifier`, `tenantId`). Snake_case is kept as belt-and-suspenders
-			// for any older Steward deploy, but camelCase is what prod parses —
-			// sending only snake_case made Steward treat the exchange as tenantless
-			// AND verifier-less (502 STEWARD_EXCHANGE_FAILED on every login).
-			redirectUri: opts.redirectUri,
 			redirect_uri: opts.redirectUri,
-			codeVerifier: opts.codeVerifier,
 			code_verifier: opts.codeVerifier,
-			tenantId: tenant,
 			tenant_id: tenant,
 		}),
 	});
