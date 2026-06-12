@@ -413,8 +413,8 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 						</button>
 						{passkeyPhase === "fallback-sent" ? (
 							<p className="mt-2 text-[11px] text-[#a1e3b5]">
-								that passkey was made on another site — we emailed you a sign-in link instead. you can add a passkey for
-								this site after.
+								no usable passkey for this site — we emailed you a sign-in link instead. you can add a passkey here
+								after.
 							</p>
 						) : null}
 						{passkeyError ? <p className="mt-2 text-[11px] text-[#f87171]">{passkeyError}</p> : null}
