@@ -35,6 +35,7 @@ export class PasskeyError extends Error {
 		| "NO_PASSKEY"
 		| "NO_LOCAL_CREDENTIAL"
 		| "RATE_LIMITED"
+		| "AUTH_FAILED"
 		| "STEWARD_ERROR"
 		| "UNKNOWN";
 	constructor(code: PasskeyError["code"], message: string) {
@@ -197,6 +198,18 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 	}>("/auth/passkey/login/verify", { email, response: assertion, challengeId });
 
 	if (verifyRes.status >= 400 || !verifyRes.body || !verifyRes.body.token) {
+		// 401 here usually means the credential can't be verified for THIS
+		// site — most commonly a passkey registered under a different rpID
+		// (e.g. created on elizacloud.ai, presented on waifu.fun). WebAuthn
+		// scopes credentials to the domain, so the right UX is a graceful
+		// fallback (magic link + offer to create a fresh passkey here), not a
+		// dead-end error.
+		if (verifyRes.status === 401) {
+			throw new PasskeyError(
+				"AUTH_FAILED",
+				verifyRes.body?.message ?? verifyRes.body?.error ?? "passkey verification failed",
+			);
+		}
 		throw new PasskeyError(
 			"STEWARD_ERROR",
 			verifyRes.body?.message ?? verifyRes.body?.error ?? "passkey verification failed",

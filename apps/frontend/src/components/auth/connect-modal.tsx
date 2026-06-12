@@ -42,7 +42,7 @@ interface ConnectModalProps {
 
 type ProviderId = "github" | "google" | "twitter" | "discord";
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
-type PasskeyPhase = "idle" | "prompting" | "registering" | "error";
+type PasskeyPhase = "idle" | "prompting" | "registering" | "fallback-sent" | "error";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
@@ -194,6 +194,26 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 				if (err instanceof PasskeyError && (err.code === "NO_PASSKEY" || err.code === "NO_LOCAL_CREDENTIAL")) {
 					setPasskeyPhase("registering");
 					nextPath = await registerPasskey(trimmed, resolvedReturnTo);
+				} else if (err instanceof PasskeyError && err.code === "AUTH_FAILED") {
+					// The passkey exists but can't verify for THIS site (usually a
+					// credential registered on a different domain, e.g. elizacloud.ai).
+					// Frictionless recovery: send a magic link instead of dead-ending.
+					// After they're signed in, the patron UI can offer to add a fresh
+					// passkey for this domain.
+					const response = await fetch(`${API_URL}/auth/email/start`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({ email: trimmed, return_to: resolvedReturnTo }),
+					});
+					if (!response.ok) {
+						throw new PasskeyError(
+							"STEWARD_ERROR",
+							"that passkey belongs to a different site and the magic-link fallback failed — try email sign-in",
+						);
+					}
+					setPasskeyPhase("fallback-sent");
+					return;
 				} else {
 					throw err;
 				}
@@ -391,6 +411,12 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 							)}
 							<span>{passkeyPhase === "registering" ? "setting up passkey" : "use a passkey"}</span>
 						</button>
+						{passkeyPhase === "fallback-sent" ? (
+							<p className="mt-2 text-[11px] text-[#a1e3b5]">
+								that passkey was made on another site — we emailed you a sign-in link instead. you can add a passkey for
+								this site after.
+							</p>
+						) : null}
 						{passkeyError ? <p className="mt-2 text-[11px] text-[#f87171]">{passkeyError}</p> : null}
 
 						{/* Divider */}
