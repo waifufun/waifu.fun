@@ -281,11 +281,31 @@ test("normalizePrompt rejects short and over-long prompts", () => {
 });
 
 test("normalizePrompt trims, defaults aspect to 1:1, and clamps style", () => {
-	const ok = normalizePrompt({ prompt: "  a sunlit kitchen  ", style: "  watercolor  ", aspect: "16:9" });
-	assert.deepEqual(ok, { prompt: "a sunlit kitchen", style: "watercolor", aspect: "16:9" });
+	const previousModel = process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL;
+	delete process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL;
+	try {
+		const ok = normalizePrompt({ prompt: "  a sunlit kitchen  ", style: "  watercolor  ", aspect: "16:9" });
+		assert.deepEqual(ok, {
+			prompt: "a sunlit kitchen",
+			style: "watercolor",
+			aspect: "16:9",
+			model: "google/gemini-2.5-flash-image",
+		});
 
-	const noStyle = normalizePrompt({ prompt: "a cat", aspect: "not-an-aspect" });
-	assert.deepEqual(noStyle, { prompt: "a cat", style: null, aspect: "1:1" });
+		const noStyle = normalizePrompt({ prompt: "a cat", aspect: "not-an-aspect" });
+		assert.deepEqual(noStyle, {
+			prompt: "a cat",
+			style: null,
+			aspect: "1:1",
+			model: "google/gemini-2.5-flash-image",
+		});
+	} finally {
+		if (previousModel === undefined) {
+			delete process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL;
+		} else {
+			process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL = previousModel;
+		}
+	}
 });
 
 test("composePrompt appends style only when present", () => {
