@@ -130,7 +130,13 @@ export async function enumerateHyperliquid(
 				}),
 			),
 		];
-		return { holdings, stale: [] };
+		return {
+			holdings,
+			stale: state.failedDexs.map((dex) => ({
+				source: `hyperliquid:builder-dex:${dex}`,
+				reason: "empty-builder-dex-state",
+			})),
+		};
 	} catch (err) {
 		return {
 			holdings: [],

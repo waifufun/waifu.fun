@@ -81,9 +81,16 @@ export async function fetchAllHlState(
 ): Promise<{
 	core: HlClearinghouseState | null;
 	builderDexs: HlDexState[];
+	failedDexs: string[];
 	mergedPositions: HlMergedPosition[];
+	coreAccountValue: number;
+	builderDexAccountValue: number;
 	totalAccountValue: number;
+	coreUnrealizedPnl: number;
+	builderDexUnrealizedPnl: number;
 	totalUnrealizedPnl: number;
+	coreWithdrawable: number;
+	builderDexWithdrawable: number;
 	totalWithdrawable: number;
 }> {
 	const baseUrl = options.baseUrl ?? HL_BASE_URL;
@@ -102,7 +109,7 @@ export async function fetchAllHlState(
 	});
 
 	const builderStates = await Promise.all(
-		builderDexs.map(async (dex): Promise<HlDexState | null> => {
+		builderDexs.map(async (dex): Promise<HlDexState | { dex: string; failed: true }> => {
 			try {
 				const state = await postInfo<HlClearinghouseState>(
 					{ type: "clearinghouseState", user: wallet, dex },
@@ -115,7 +122,7 @@ export async function fetchAllHlState(
 						dex,
 						error: "empty-or-non-ok-response",
 					});
-					return null;
+					return { dex, failed: true };
 				}
 				return { dex, state };
 			} catch (err) {
@@ -124,26 +131,43 @@ export async function fetchAllHlState(
 					dex,
 					error: err instanceof Error ? err.message : String(err),
 				});
-				return null;
+				return { dex, failed: true };
 			}
 		}),
 	);
 
-	const builderDexStates = builderStates.filter((entry): entry is HlDexState => entry !== null);
+	const builderDexStates = builderStates.filter((entry): entry is HlDexState => !("failed" in entry));
+	const failedDexs = builderStates
+		.filter((entry): entry is { dex: string; failed: true } => "failed" in entry)
+		.map((entry) => entry.dex);
 	const mergedPositions: HlMergedPosition[] = [
 		...(core?.assetPositions ?? []).map((entry) => ({ ...entry, builderPerp: false })),
 		...builderDexStates.flatMap(({ dex, state }) =>
 			(state.assetPositions ?? []).map((entry) => ({ ...entry, dex, builderPerp: true })),
 		),
 	];
-	const allStates = [core, ...builderDexStates.map(({ state }) => state)];
+	const builderOnlyStates = builderDexStates.map(({ state }) => state);
+	const allStates = [core, ...builderOnlyStates];
+	const coreAccountValue = accountValueOf(core);
+	const builderDexAccountValue = builderOnlyStates.reduce((sum, state) => sum + accountValueOf(state), 0);
+	const coreUnrealizedPnl = unrealizedPnlOf(core);
+	const builderDexUnrealizedPnl = builderOnlyStates.reduce((sum, state) => sum + unrealizedPnlOf(state), 0);
+	const coreWithdrawable = withdrawableOf(core);
+	const builderDexWithdrawable = builderOnlyStates.reduce((sum, state) => sum + withdrawableOf(state), 0);
 
 	return {
 		core,
 		builderDexs: builderDexStates,
+		failedDexs,
 		mergedPositions,
+		coreAccountValue,
+		builderDexAccountValue,
 		totalAccountValue: allStates.reduce((sum, state) => sum + accountValueOf(state), 0),
+		coreUnrealizedPnl,
+		builderDexUnrealizedPnl,
 		totalUnrealizedPnl: allStates.reduce((sum, state) => sum + unrealizedPnlOf(state), 0),
+		coreWithdrawable,
+		builderDexWithdrawable,
 		totalWithdrawable: allStates.reduce((sum, state) => sum + withdrawableOf(state), 0),
 	};
 }

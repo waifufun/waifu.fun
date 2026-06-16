@@ -202,7 +202,7 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
  *   {
  *     wallet, priorWallets, window,
  *     series: [{ t, pnl }],                       // deposit-excluded, baseline-anchored
- *     tradingPnl: { realized, unrealized, total, currentWallet, priorWallets },
+ *     tradingPnl: { realized, unrealized, builderDexUnrealized, total, currentWallet, priorWallets },
  *     accountValue, withdrawable,
  *     winLoss: { wins, losses } | null,
  *     taxIncome: { amountWei, source },           // SEPARATE stream, not in tradingPnl
@@ -224,7 +224,7 @@ app.get("/:agentId/hyperliquid/pnl", async (c) => {
 			priorWallets: [],
 			window,
 			series: [],
-			tradingPnl: { realized: 0, unrealized: 0, total: 0, currentWallet: 0, priorWallets: 0 },
+			tradingPnl: { realized: 0, unrealized: 0, builderDexUnrealized: 0, total: 0, currentWallet: 0, priorWallets: 0 },
 			accountValue: 0,
 			withdrawable: 0,
 			winLoss: null,

@@ -109,14 +109,28 @@ export function anchorBaseline(series: PnlPoint[]): PnlPoint[] {
 	return anchored.map((p) => ({ t: p.t, pnl: p.pnl - base }));
 }
 
-/** Live unrealized pnl + account value from clearinghouseState. */
+/**
+ * Live pnl + account value from clearinghouseState.
+ *
+ * HL portfolio/pnlHistory is core-scoped today. Keep the unrealized number
+ * used for `currentRealized = currentTotal - unrealized` core-scoped too,
+ * then add builder-dex unrealized separately to the display total.
+ */
 export async function fetchWalletLive(
 	wallet: string,
 	fetchImpl: typeof fetch = fetch,
-): Promise<{ accountValue: number; unrealizedPnl: number; withdrawable: number }> {
+): Promise<{
+	accountValue: number;
+	coreUnrealizedPnl: number;
+	builderDexUnrealizedPnl: number;
+	unrealizedPnl: number;
+	withdrawable: number;
+}> {
 	const state = await fetchAllHlState(wallet, fetchImpl);
 	return {
 		accountValue: state.totalAccountValue,
+		coreUnrealizedPnl: state.coreUnrealizedPnl,
+		builderDexUnrealizedPnl: state.builderDexUnrealizedPnl,
 		unrealizedPnl: state.totalUnrealizedPnl,
 		withdrawable: state.totalWithdrawable,
 	};
@@ -149,6 +163,7 @@ export type HlPnlResult = {
 	tradingPnl: {
 		realized: number;
 		unrealized: number;
+		builderDexUnrealized: number;
 		total: number;
 		currentWallet: number;
 		priorWallets: number;
@@ -188,13 +203,19 @@ export async function buildHlPnl(
 		window === "allTime" ? currentSeriesRaw : await fetchWalletPnlSeries(currentWallet, "allTime", fetchImpl);
 	const currentTotal = currentAllTime.at(-1)?.pnl ?? 0;
 
-	const unrealized = live.unrealizedPnl;
-	const currentRealized = currentTotal - unrealized;
+	const coreUnrealized = live.coreUnrealizedPnl;
+	const builderDexUnrealized = live.builderDexUnrealizedPnl;
+	const unrealized = coreUnrealized + builderDexUnrealized;
+	const currentRealized = currentTotal - coreUnrealized;
 
 	// prior wallets: account closed -> entire pnl is realized.
 	const priorRealized = priorSeriesAll.reduce((sum, s) => sum + (s.at(-1)?.pnl ?? 0), 0);
 
-	const total = currentTotal + priorRealized;
+	// `currentTotal` and chart series come from the core HL portfolio endpoint.
+	// Builder-dex portfolio history is not fetched here, so only the live
+	// builder-dex unrealized snapshot is additive in the displayed total.
+	const currentWalletDisplayTotal = currentTotal + builderDexUnrealized;
+	const total = currentWalletDisplayTotal + priorRealized;
 
 	return {
 		wallet: currentWallet,
@@ -204,8 +225,9 @@ export async function buildHlPnl(
 		tradingPnl: {
 			realized: currentRealized + priorRealized,
 			unrealized,
+			builderDexUnrealized,
 			total,
-			currentWallet: currentTotal,
+			currentWallet: currentWalletDisplayTotal,
 			priorWallets: priorRealized,
 		},
 		accountValue: live.accountValue,

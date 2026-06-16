@@ -100,6 +100,7 @@ test("buildHlPnl: deposit-excluded total, realized = total − unrealized, prior
 	// current-wallet lifetime trading pnl = allTime tail (deposit-excluded), NOT accountValue.
 	assert.equal(r.tradingPnl.currentWallet, 150);
 	assert.equal(r.tradingPnl.unrealized, 40);
+	assert.equal(r.tradingPnl.builderDexUnrealized, 0);
 	assert.equal(r.tradingPnl.priorWallets, 60); // closed account → fully realized
 	assert.equal(r.tradingPnl.total, 210); // 150 + 60
 	assert.equal(r.tradingPnl.realized, 170); // (150 − 40) + 60
@@ -129,6 +130,7 @@ test("buildHlPnl: never-traded wallet yields zeros and a null winLoss", async ()
 	assert.equal(r.tradingPnl.total, 0);
 	assert.equal(r.tradingPnl.realized, 0);
 	assert.equal(r.tradingPnl.unrealized, 0);
+	assert.equal(r.tradingPnl.builderDexUnrealized, 0);
 	assert.equal(r.winLoss, null);
 	assert.deepEqual(r.series, [{ t: 2, pnl: 0 }]); // flat-zero, not a fabricated history
 });
@@ -189,9 +191,14 @@ test("buildHlPnl: live account value and unrealized pnl include builder-dex isol
 
 	assert.equal(r.accountValue, 3000);
 	assert.equal(r.withdrawable, 2400);
+	// The portfolio pnl series is core-scoped, so realized uses matching core
+	// unrealized (80 - 20 = 60). Builder-dex unrealized is a separate live
+	// additive display component, not subtracted from the core-only total.
 	assert.equal(r.tradingPnl.unrealized, 50);
-	assert.equal(r.tradingPnl.realized, 30);
-	assert.equal(r.tradingPnl.total, 80);
+	assert.equal(r.tradingPnl.builderDexUnrealized, 30);
+	assert.equal(r.tradingPnl.realized, 60);
+	assert.equal(r.tradingPnl.currentWallet, 110);
+	assert.equal(r.tradingPnl.total, 110);
 });
 
 test("fetchAllHlState: failed builder-dex query is resilient", async () => {
@@ -219,6 +226,7 @@ test("fetchAllHlState: failed builder-dex query is resilient", async () => {
 		state.builderDexs.map((entry) => entry.dex),
 		["xyz"],
 	);
+	assert.deepEqual(state.failedDexs, ["bad"]);
 	assert.deepEqual(
 		state.mergedPositions.map((entry) => entry.position?.coin),
 		["BTC", "xyz:SPCX"],
