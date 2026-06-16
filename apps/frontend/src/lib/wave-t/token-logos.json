@@ -11,15 +11,5 @@
 	"symbol:NEAR": "/token-logos/near.svg",
 	"symbol:HYPE": "/token-logos/hype.svg",
 	"symbol:ZEC": "/token-logos/zec.svg",
-	"symbol:SPCX": "https://assets.parqet.com/logos/symbol/SPCX",
-	"symbol:AAPL": "https://assets.parqet.com/logos/symbol/AAPL",
-	"symbol:TSLA": "https://assets.parqet.com/logos/symbol/TSLA",
-	"symbol:NVDA": "https://assets.parqet.com/logos/symbol/NVDA",
-	"symbol:AMZN": "https://assets.parqet.com/logos/symbol/AMZN",
-	"symbol:GOOGL": "https://assets.parqet.com/logos/symbol/GOOGL",
-	"symbol:META": "https://assets.parqet.com/logos/symbol/META",
-	"symbol:MSFT": "https://assets.parqet.com/logos/symbol/MSFT",
-	"symbol:HOOD": "https://assets.parqet.com/logos/symbol/HOOD",
-	"symbol:AMD": "https://assets.parqet.com/logos/symbol/AMD",
-	"symbol:ARM": "https://assets.parqet.com/logos/symbol/ARM"
+	"symbol:SPCX": "/token-logos/spcx.svg"
 }
