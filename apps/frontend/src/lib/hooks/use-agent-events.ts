@@ -88,7 +88,10 @@ export function useAgentEvents(
 			}
 			inFlight = true;
 			try {
-				const data = await apiFetch<AgentEventsResponse>(path);
+				// `cache: "no-store"` so the activity feed never re-renders with a
+				// stale events page served by the browser HTTP cache or a CDN edge in
+				// front of api.waifu.fun. Mirrors useLiveAgentTrades (lib/wave-t/pnl.ts).
+				const data = await apiFetch<AgentEventsResponse>(path, { cache: "no-store" });
 				if (!cancelled) {
 					setEvents(Array.isArray(data.events) ? data.events : []);
 					setError(null);

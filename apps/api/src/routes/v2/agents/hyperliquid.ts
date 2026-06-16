@@ -28,6 +28,7 @@ import { Hono } from "hono";
 
 import { agentPersonas, agentWalletRegistry, feeDistributions, getDatabase } from "@waifufun/db";
 
+import { configuredBuilderDexs, fetchAllHlState } from "../../../services/hyperliquid/builder-dexs.js";
 import { type HlWindow, buildHlPnl } from "../../../services/hyperliquid/pnl.js";
 
 const app = new Hono();
@@ -69,14 +70,6 @@ type HlPosition = {
 	positionValue?: string | number;
 	returnOnEquity?: string | number;
 	marginUsed?: string | number;
-};
-
-type HlState = {
-	marginSummary?: { accountValue?: string | number };
-	crossMarginSummary?: { accountValue?: string | number };
-	withdrawable?: string | number;
-	assetPositions?: Array<{ position?: HlPosition }>;
-	time?: number;
 };
 
 function num(value: unknown, fallback: number | null = null): number | null {
@@ -139,6 +132,9 @@ async function resolveHyperliquidWallet(
 }
 
 app.get("/:agentId/hyperliquid/positions", async (c) => {
+	// Live-polled (5s) by the agent page; never serve a cached snapshot or the
+	// positions panel looks frozen. Mirrors the events feed cache policy.
+	c.header("Cache-Control", "no-store");
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 	const agentId = c.req.param("agentId");
@@ -146,18 +142,30 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 	const resolved = await resolveHyperliquidWallet(db, agentId);
 	if (!resolved) return c.json({ wallet: null, accountValueUsd: 0, positions: [], ts: Date.now() });
 
-	const [state, mids] = await Promise.all([
-		postInfo<HlState>({ type: "clearinghouseState", user: resolved.address }),
+	// HIP-3 builder-dex mids are dex-scoped; the core allMids payload does NOT
+	// contain builder markets (e.g. xyz:SPCX). Fetch core + each configured
+	// builder dex's mids and merge so builder positions get a mark price (and
+	// thus liquidation-distance) instead of null. Builder allMids keys are
+	// dex-prefixed (xyz:SPCX), matching pos.coin.
+	const builderDexs = configuredBuilderDexs();
+	const [state, coreMids, ...builderMids] = await Promise.all([
+		fetchAllHlState(resolved.address),
 		postInfo<Record<string, string>>({ type: "allMids" }),
+		...builderDexs.map((dex) =>
+			postInfo<Record<string, string>>({ type: "allMids", dex }).catch(() => ({}) as Record<string, string>),
+		),
 	]);
+	const mids: Record<string, string> = Object.assign(
+		{},
+		coreMids ?? {},
+		...builderMids.map((m) => m ?? {}),
+	);
 
-	const accountValue = num(state?.marginSummary?.accountValue) ?? num(state?.crossMarginSummary?.accountValue) ?? 0;
-	const withdrawable = num(state?.withdrawable) ?? 0;
-
-	const positions = (state?.assetPositions ?? [])
-		.map(({ position }) => position)
-		.filter((p): p is HlPosition => Boolean(p?.coin))
-		.map((pos) => {
+	const positions = state.mergedPositions
+		.filter((entry): entry is { position: HlPosition; dex?: string; builderPerp?: boolean } =>
+			Boolean(entry.position?.coin),
+		)
+		.map(({ position: pos, dex, builderPerp }) => {
 			const szi = num(pos.szi) ?? 0;
 			if (szi === 0) return null;
 			const entryPx = num(pos.entryPx);
@@ -180,14 +188,16 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 				unrealizedPnlUsd: unrealized,
 				unrealizedPnlPct: unrealizedPct,
 				roe: num(pos.returnOnEquity),
+				dex,
+				builderPerp: builderPerp || undefined,
 			};
 		})
 		.filter((p): p is NonNullable<typeof p> => p !== null);
 
 	return c.json({
 		wallet: resolved.address,
-		accountValueUsd: accountValue,
-		withdrawableUsd: withdrawable,
+		accountValueUsd: state.totalAccountValue,
+		withdrawableUsd: state.totalWithdrawable,
 		positions,
 		ts: Date.now(),
 	});
@@ -209,7 +219,7 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
  *   {
  *     wallet, priorWallets, window,
  *     series: [{ t, pnl }],                       // deposit-excluded, baseline-anchored
- *     tradingPnl: { realized, unrealized, total, currentWallet, priorWallets },
+ *     tradingPnl: { realized, unrealized, builderDexUnrealized, total, currentWallet, priorWallets },
  *     accountValue, withdrawable,
  *     winLoss: { wins, losses } | null,
  *     taxIncome: { amountWei, source },           // SEPARATE stream, not in tradingPnl
@@ -231,7 +241,7 @@ app.get("/:agentId/hyperliquid/pnl", async (c) => {
 			priorWallets: [],
 			window,
 			series: [],
-			tradingPnl: { realized: 0, unrealized: 0, total: 0, currentWallet: 0, priorWallets: 0 },
+			tradingPnl: { realized: 0, unrealized: 0, builderDexUnrealized: 0, total: 0, currentWallet: 0, priorWallets: 0 },
 			accountValue: 0,
 			withdrawable: 0,
 			winLoss: null,

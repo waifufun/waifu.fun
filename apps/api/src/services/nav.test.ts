@@ -163,6 +163,8 @@ test("EVM ERC20 enumerator handles scanner discovery and 429 manual fallback", a
 });
 
 test("HyperLiquid enumerator values the account line at full equity, not free collateral", async () => {
+	const previousDexs = process.env.HL_BUILDER_DEXS;
+	process.env.HL_BUILDER_DEXS = "";
 	const wallet = {
 		walletId: "hl1",
 		walletAddress: WALLET,
@@ -194,6 +196,8 @@ test("HyperLiquid enumerator values the account line at full equity, not free co
 				}),
 			) as any,
 	});
+	if (previousDexs === undefined) delete process.env.HL_BUILDER_DEXS;
+	else process.env.HL_BUILDER_DEXS = previousDexs;
 	assert.equal(result.holdings.length, 2);
 	// The account line carries full equity (accountValue), NOT withdrawable.
 	const account = result.holdings[0]!;
@@ -216,6 +220,40 @@ test("HyperLiquid enumerator values the account line at full equity, not free co
 	assert.equal(result.holdings[1]?.entryPriceUsd, 65000);
 	assert.equal(result.holdings[1]?.unrealizedPnlUsd, 123.45);
 	assert.equal(result.holdings[1]?.liquidationPriceUsd, 50000);
+});
+
+test("HyperLiquid enumerator marks failed builder-dex fetches stale", async () => {
+	const previousDexs = process.env.HL_BUILDER_DEXS;
+	process.env.HL_BUILDER_DEXS = "xyz,bad";
+	try {
+		const wallet = {
+			walletId: "hl1",
+			walletAddress: WALLET,
+			walletLabel: "hl",
+			walletRole: "agent-hot",
+			chain: "bsc",
+		} as const;
+		const result = await enumerateHyperliquid(wallet, {
+			fetch: async (_url, init) => {
+				const body = JSON.parse(String((init as { body?: string } | undefined)?.body ?? "{}")) as { dex?: string };
+				if (body.dex === "bad") return new Response("bad dex", { status: 500 }) as any;
+				const state = body.dex
+					? {
+							marginSummary: { accountValue: "25" },
+							assetPositions: [{ position: { coin: "xyz:SPCX", szi: "1", unrealizedPnl: "2" } }],
+						}
+					: { marginSummary: { accountValue: "100" }, assetPositions: [] };
+				return new Response(JSON.stringify(state)) as any;
+			},
+		});
+		assert.equal(result.holdings.some((holding) => holding.asset === "xyz:USDC"), true);
+		assert.deepEqual(result.stale, [
+			{ source: "hyperliquid:builder-dex:bad", reason: "empty-builder-dex-state" },
+		]);
+	} finally {
+		if (previousDexs === undefined) delete process.env.HL_BUILDER_DEXS;
+		else process.env.HL_BUILDER_DEXS = previousDexs;
+	}
 });
 
 test("PCS V3 LP enumerator skips empty wallets and emits one holding per NFT", async () => {
