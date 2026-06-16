@@ -131,9 +131,15 @@ export interface HyperliquidListenerOptions {
 	fundingBackfillWindowMs?: number;
 	requestTimeoutMs?: number;
 	tickWatchdogMs?: number;
+	builderDexs?: string[];
 	fetch?: typeof fetch;
 	baseUrl?: string;
 }
+
+type HyperliquidDexScope = {
+	dex: string | null;
+	label: string;
+};
 
 interface ListenerHandle {
 	stop: () => Promise<void>;
@@ -169,6 +175,53 @@ function errorDetails(err: unknown): Record<string, unknown> {
 function boundedWindow(value: number | undefined, fallback: number, max: number): number {
 	if (!Number.isFinite(value) || value === undefined || value <= 0) return fallback;
 	return Math.min(value, max);
+}
+
+export function configuredBuilderDexs(envValue = process.env.HL_BUILDER_DEXS): string[] {
+	if (envValue !== undefined) {
+		return envValue
+			.split(",")
+			.map((dex) => dex.trim())
+			.filter((dex, index, all) => dex.length > 0 && all.indexOf(dex) === index);
+	}
+	return ["xyz"];
+}
+
+function hyperliquidDexScopes(builderDexs?: string[]): HyperliquidDexScope[] {
+	const configured = builderDexs ?? configuredBuilderDexs();
+	const deduped = configured
+		.map((dex) => dex.trim())
+		.filter((dex, index, all) => dex.length > 0 && all.indexOf(dex) === index);
+	return [{ dex: null, label: "core" }, ...deduped.map((dex) => ({ dex, label: dex }))];
+}
+
+function scopedInfoBody(body: Record<string, unknown>, scope: HyperliquidDexScope): Record<string, unknown> {
+	return scope.dex ? { ...body, dex: scope.dex } : body;
+}
+
+function scopedSourceEventId(prefix: string, scope: HyperliquidDexScope, id: string | number): string {
+	return scope.dex ? `${prefix}:${scope.dex}:${id}` : `${prefix}:${id}`;
+}
+
+function normalizeBuilderCoin(coin: string, scope: HyperliquidDexScope): string {
+	if (!scope.dex) return coin;
+	return coin.includes(":") ? coin : `${scope.dex}:${coin}`;
+}
+
+function scopeMatchesCoin(scope: HyperliquidDexScope, coin: string | undefined): boolean {
+	if (!scope.dex) return !coin?.includes(":");
+	return coin?.toLowerCase().startsWith(`${scope.dex.toLowerCase()}:`) ?? false;
+}
+
+function preferScopedFill(
+	current: { scope: HyperliquidDexScope; fill: HyperliquidFill },
+	candidate: { scope: HyperliquidDexScope; fill: HyperliquidFill },
+): { scope: HyperliquidDexScope; fill: HyperliquidFill } {
+	const currentMatches = scopeMatchesCoin(current.scope, current.fill.coin);
+	const candidateMatches = scopeMatchesCoin(candidate.scope, candidate.fill.coin);
+	if (candidateMatches && !currentMatches) return candidate;
+	if (candidate.scope.dex && !current.scope.dex && candidate.fill.coin?.includes(":")) return candidate;
+	return current;
 }
 
 function numberOr(value: unknown, fallback: number | null = null): number | null {
@@ -477,7 +530,7 @@ async function insertTradeEvent(
 	}
 }
 
-async function processFills(
+export async function processFills(
 	context: WorkerContext,
 	wallet: WalletTarget,
 	deps: HyperliquidListenerOptions,
@@ -490,16 +543,40 @@ async function processFills(
 		Date.now() -
 		boundedWindow(deps.fillsBackfillWindowMs, DEFAULT_FILLS_BACKFILL_WINDOW_MS, MAX_FILLS_BACKFILL_WINDOW_MS);
 
-	const fills = await postInfo<HyperliquidFill[]>(
-		baseUrl,
-		{ type: "userFillsByTime", user: wallet.address, startTime: sinceMs },
-		fetchImpl,
-		requestTimeoutMs,
-	);
-	if (!Array.isArray(fills)) throw new Error("Hyperliquid userFillsByTime returned a non-array response");
+	const scopedFills: Array<{ scope: HyperliquidDexScope; fill: HyperliquidFill }> = [];
+	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+		try {
+			const fills = await postInfo<HyperliquidFill[]>(
+				baseUrl,
+				scopedInfoBody({ type: "userFillsByTime", user: wallet.address, startTime: sinceMs }, scope),
+				fetchImpl,
+				requestTimeoutMs,
+			);
+			if (!Array.isArray(fills)) throw new Error("Hyperliquid userFillsByTime returned a non-array response");
+			for (const fill of fills) scopedFills.push({ scope, fill });
+		} catch (err) {
+			if (!scope.dex) throw err;
+			context.logger.warn(
+				{ err: errorDetails(err), wallet: wallet.address, dex: scope.dex },
+				"hl-listener builder-dex userFillsByTime poll failed; continuing",
+			);
+		}
+	}
 
-	const metrics = { fillsFetched: fills.length, fillsSkipped: 0, fillsEmitted: 0 };
-	const maxFetchedTid = fills.reduce<number | null>((max, fill) => {
+	const fillsByTid = new Map<number, { scope: HyperliquidDexScope; fill: HyperliquidFill }>();
+	const unkeyedFills: Array<{ scope: HyperliquidDexScope; fill: HyperliquidFill }> = [];
+	for (const item of scopedFills) {
+		if (typeof item.fill.tid !== "number") {
+			unkeyedFills.push(item);
+			continue;
+		}
+		const existing = fillsByTid.get(item.fill.tid);
+		fillsByTid.set(item.fill.tid, existing ? preferScopedFill(existing, item) : item);
+	}
+	const mergedFills = [...fillsByTid.values(), ...unkeyedFills];
+
+	const metrics = { fillsFetched: mergedFills.length, fillsSkipped: 0, fillsEmitted: 0 };
+	const maxFetchedTid = mergedFills.reduce<number | null>((max, { fill }) => {
 		if (typeof fill.tid !== "number") return max;
 		return max === null ? fill.tid : Math.max(max, fill.tid);
 	}, null);
@@ -511,21 +588,21 @@ async function processFills(
 		);
 	}
 
-	// Sort ascending by tid to preserve insertion order
-	const sorted = [...fills].sort((a, b) => (a.tid ?? 0) - (b.tid ?? 0));
-	for (const fill of sorted) {
+	// Sort by exchange time to preserve feed order across core and builder-dex fills.
+	const sorted = [...mergedFills].sort((a, b) => (a.fill.time ?? a.fill.tid ?? 0) - (b.fill.time ?? b.fill.tid ?? 0));
+	for (const { scope, fill } of sorted) {
 		const tid = fill.tid;
 		if (typeof tid !== "number") {
 			metrics.fillsSkipped += 1;
 			context.logger.warn({ wallet: wallet.address, fill }, "hl-listener skipped fill without numeric tid");
 			continue;
 		}
-		if (!ignoreLastTid && lastTid !== null && tid <= lastTid) {
+		if (!scope.dex && !ignoreLastTid && lastTid !== null && tid <= lastTid) {
 			metrics.fillsSkipped += 1;
 			continue;
 		}
 
-		const coin = fill.coin ?? "";
+		const coin = normalizeBuilderCoin(fill.coin ?? "", scope);
 		const px = numberOr(fill.px) ?? 0;
 		const sz = numberOr(fill.sz) ?? 0;
 		const fee = numberOr(fill.fee) ?? 0;
@@ -563,7 +640,7 @@ async function processFills(
 			payload,
 			data,
 			txHash: fill.hash ?? null,
-			sourceEventId: `hl:${tid}`,
+			sourceEventId: scopedSourceEventId("hl", scope, tid),
 			occurredAt: typeof fill.time === "number" ? new Date(fill.time) : undefined,
 		});
 		if (inserted) metrics.fillsEmitted += 1;
@@ -610,24 +687,36 @@ async function processFunding(
 		forceBackfill || cursorLooksCorrupt || lastFundingTime === null
 			? boundedSinceMs
 			: Math.max(boundedSinceMs, lastFundingTime + 1);
-	const funding = await postInfo<HyperliquidFunding[]>(
-		baseUrl,
-		{ type: "userFunding", user: wallet.address, startTime },
-		fetchImpl,
-		requestTimeoutMs,
-	);
-	if (!Array.isArray(funding)) throw new Error("Hyperliquid userFunding returned a non-array response");
+	const scopedFunding: Array<{ scope: HyperliquidDexScope; entry: HyperliquidFunding }> = [];
+	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+		try {
+			const funding = await postInfo<HyperliquidFunding[]>(
+				baseUrl,
+				scopedInfoBody({ type: "userFunding", user: wallet.address, startTime }, scope),
+				fetchImpl,
+				requestTimeoutMs,
+			);
+			if (!Array.isArray(funding)) throw new Error("Hyperliquid userFunding returned a non-array response");
+			for (const entry of funding) scopedFunding.push({ scope, entry });
+		} catch (err) {
+			if (!scope.dex) throw err;
+			context.logger.warn(
+				{ err: errorDetails(err), wallet: wallet.address, dex: scope.dex },
+				"hl-listener builder-dex userFunding poll failed; continuing",
+			);
+		}
+	}
 
-	const metrics = { fundingFetched: funding.length, fundingSkipped: 0, fundingEmitted: 0 };
-	const sorted = [...funding].sort((a, b) => (a.time ?? 0) - (b.time ?? 0));
-	for (const entry of sorted) {
+	const metrics = { fundingFetched: scopedFunding.length, fundingSkipped: 0, fundingEmitted: 0 };
+	const sorted = [...scopedFunding].sort((a, b) => (a.entry.time ?? 0) - (b.entry.time ?? 0));
+	for (const { scope, entry } of sorted) {
 		const delta = fundingDelta(entry);
 		if (typeof entry.time !== "number" || !delta.coin) {
 			metrics.fundingSkipped += 1;
 			context.logger.warn({ wallet: wallet.address, entry }, "hl-listener skipped malformed funding row");
 			continue;
 		}
-		const coin = delta.coin;
+		const coin = normalizeBuilderCoin(delta.coin, scope);
 		const usdc = numberOr(delta.usdc) ?? 0;
 		const szi = numberOr(delta.szi) ?? 0;
 		const fundingRate = numberOr(delta.fundingRate) ?? 0;
@@ -653,7 +742,7 @@ async function processFunding(
 			payload,
 			data,
 			txHash: entry.hash && !/^0x0+$/.test(entry.hash) ? entry.hash : null,
-			sourceEventId: `hl:funding:${wallet.address.toLowerCase()}:${coin}:${entry.time}`,
+			sourceEventId: scopedSourceEventId(`hl:funding:${wallet.address.toLowerCase()}:${coin}`, scope, entry.time),
 			occurredAt: new Date(entry.time),
 		});
 		if (inserted) metrics.fundingEmitted += 1;
@@ -676,26 +765,41 @@ async function processPositions(
 	const fetchImpl = deps.fetch ?? fetch;
 	const baseUrl = deps.baseUrl ?? HL_BASE_URL;
 	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-	const state = await postInfo<HyperliquidClearinghouseState>(
-		baseUrl,
-		{ type: "clearinghouseState", user: wallet.address },
-		fetchImpl,
-		requestTimeoutMs,
-	);
-	if (!state) return { next: previous, emitted: 0 };
+	const scopedStates: Array<{ scope: HyperliquidDexScope; state: HyperliquidClearinghouseState }> = [];
+	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+		try {
+			const state = await postInfo<HyperliquidClearinghouseState>(
+				baseUrl,
+				scopedInfoBody({ type: "clearinghouseState", user: wallet.address }, scope),
+				fetchImpl,
+				requestTimeoutMs,
+			);
+			if (state) scopedStates.push({ scope, state });
+		} catch (err) {
+			if (!scope.dex) throw err;
+			context.logger.warn(
+				{ err: errorDetails(err), wallet: wallet.address, dex: scope.dex },
+				"hl-listener builder-dex clearinghouseState poll failed; continuing",
+			);
+		}
+	}
+	if (scopedStates.length === 0) return { next: previous, emitted: 0 };
 
 	const next = new Map<string, PositionSnapshot>();
-	for (const entry of state.assetPositions ?? []) {
-		const pos = entry.position;
-		if (!pos?.coin) continue;
-		const szi = numberOr(pos.szi);
-		if (szi === null || szi === 0) continue;
-		next.set(pos.coin, {
-			coin: pos.coin,
-			szi,
-			entryPx: numberOr(pos.entryPx),
-			leverage: leverageValue(pos.leverage),
-		});
+	for (const { scope, state } of scopedStates) {
+		for (const entry of state.assetPositions ?? []) {
+			const pos = entry.position;
+			if (!pos?.coin) continue;
+			const coin = normalizeBuilderCoin(pos.coin, scope);
+			const szi = numberOr(pos.szi);
+			if (szi === null || szi === 0) continue;
+			next.set(coin, {
+				coin,
+				szi,
+				entryPx: numberOr(pos.entryPx),
+				leverage: leverageValue(pos.leverage),
+			});
+		}
 	}
 
 	// First poll seeds; do not emit synthetic events.
