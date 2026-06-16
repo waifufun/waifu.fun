@@ -28,7 +28,7 @@ import { Hono } from "hono";
 
 import { agentPersonas, agentWalletRegistry, feeDistributions, getDatabase } from "@waifufun/db";
 
-import { fetchAllHlState } from "../../../services/hyperliquid/builder-dexs.js";
+import { configuredBuilderDexs, fetchAllHlState } from "../../../services/hyperliquid/builder-dexs.js";
 import { type HlWindow, buildHlPnl } from "../../../services/hyperliquid/pnl.js";
 
 const app = new Hono();
@@ -142,10 +142,24 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 	const resolved = await resolveHyperliquidWallet(db, agentId);
 	if (!resolved) return c.json({ wallet: null, accountValueUsd: 0, positions: [], ts: Date.now() });
 
-	const [state, mids] = await Promise.all([
+	// HIP-3 builder-dex mids are dex-scoped; the core allMids payload does NOT
+	// contain builder markets (e.g. xyz:SPCX). Fetch core + each configured
+	// builder dex's mids and merge so builder positions get a mark price (and
+	// thus liquidation-distance) instead of null. Builder allMids keys are
+	// dex-prefixed (xyz:SPCX), matching pos.coin.
+	const builderDexs = configuredBuilderDexs();
+	const [state, coreMids, ...builderMids] = await Promise.all([
 		fetchAllHlState(resolved.address),
 		postInfo<Record<string, string>>({ type: "allMids" }),
+		...builderDexs.map((dex) =>
+			postInfo<Record<string, string>>({ type: "allMids", dex }).catch(() => ({}) as Record<string, string>),
+		),
 	]);
+	const mids: Record<string, string> = Object.assign(
+		{},
+		coreMids ?? {},
+		...builderMids.map((m) => m ?? {}),
+	);
 
 	const positions = state.mergedPositions
 		.filter((entry): entry is { position: HlPosition; dex?: string; builderPerp?: boolean } =>
