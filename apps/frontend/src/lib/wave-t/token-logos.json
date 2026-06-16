@@ -10,5 +10,6 @@
 	"symbol:USDC": "/token-logos/usdc.svg",
 	"symbol:NEAR": "/token-logos/near.svg",
 	"symbol:HYPE": "/token-logos/hype.svg",
-	"symbol:ZEC": "/token-logos/zec.svg"
+	"symbol:ZEC": "/token-logos/zec.svg",
+	"symbol:SPCX": "/token-logos/spcx.svg"
 }

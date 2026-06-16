@@ -7,6 +7,9 @@ import {
 	findTradeRationale,
 	insertEnrichedTradeEvent,
 	isLiquidation,
+	processFills,
+	processFunding,
+	processPositions,
 	renderClose,
 	renderFill,
 	renderFunding,
@@ -247,4 +250,290 @@ test("insertEnrichedTradeEvent does not consume rationale on replayed duplicate 
 	assert.equal(insertedEvents[0]?.data.reason, "custom algo flagged local bottom");
 	assert.match(String(insertedEvents[0]?.data.renderedText), /custom algo flagged local bottom/);
 	assert.equal(consumed.length, 0);
+});
+
+function fillListenerContext(existingRows: Array<Record<string, unknown>> = []) {
+	const logger = testLogger();
+	const insertedEvents: Array<Record<string, unknown>> = [];
+	const db = {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return this;
+						},
+						orderBy() {
+							return this;
+						},
+						limit() {
+							return Promise.resolve(existingRows);
+						},
+					};
+				},
+			};
+		},
+		insert() {
+			return {
+				values(value: Record<string, unknown>) {
+					insertedEvents.push(value);
+					return this;
+				},
+				onConflictDoNothing() {
+					return this;
+				},
+				returning() {
+					return Promise.resolve([{ id: `event-${insertedEvents.length}` }]);
+				},
+			};
+		},
+	};
+	return { context: { db, logger } as never, insertedEvents, logger };
+}
+
+function jsonResponse(body: unknown, init?: ResponseInit): Response {
+	return new Response(JSON.stringify(body), {
+		status: 200,
+		headers: { "content-type": "application/json" },
+		...init,
+	});
+}
+
+test("processFills fetches core and configured builder-dex fills", async () => {
+	const { context, insertedEvents } = fillListenerContext();
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		const rows = [
+			{
+				coin: "HYPE",
+				px: "38",
+				sz: "1",
+				side: "B",
+				dir: "Close Short",
+				closedPnl: "3.4",
+				tid: 100,
+				time: 1781600000100,
+			},
+			{
+				coin: "xyz:SPCX",
+				px: "1.25",
+				sz: "40",
+				side: "A",
+				dir: "Open Short",
+				closedPnl: "0",
+				tid: 7,
+				time: 1781600000007,
+			},
+		];
+		return jsonResponse(rows);
+	};
+
+	const metrics = await processFills(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+			fillsBackfillWindowMs: 60_000,
+		},
+	);
+
+	assert.equal(metrics.fillsFetched, 2);
+	assert.equal(metrics.fillsEmitted, 2);
+	assert.equal(requests.length, 2);
+	assert.equal(requests[0]?.dex, undefined);
+	assert.equal(requests[1]?.dex, "xyz");
+	assert.deepEqual(
+		insertedEvents.map((event) => (event.payload as Record<string, unknown>).coin),
+		["xyz:SPCX", "HYPE"],
+	);
+	assert.deepEqual(
+		insertedEvents.map((event) => event.sourceEventId),
+		["hl:xyz:7", "hl:100"],
+	);
+});
+
+test("processFills continues when a builder-dex fill poll fails", async () => {
+	const { context, insertedEvents, logger } = fillListenerContext();
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		if (body.dex === "xyz") return new Response("builder down", { status: 500, statusText: "nope" });
+		return jsonResponse([
+			{
+				coin: "HYPE",
+				px: "38",
+				sz: "1",
+				side: "B",
+				dir: "Close Short",
+				closedPnl: "3.4",
+				tid: 100,
+				time: 1781600000100,
+			},
+		]);
+	};
+
+	const metrics = await processFills(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+			fillsBackfillWindowMs: 60_000,
+		},
+	);
+
+	assert.equal(metrics.fillsFetched, 1);
+	assert.equal(metrics.fillsEmitted, 1);
+	assert.equal(insertedEvents.length, 1);
+	assert.equal((insertedEvents[0]?.payload as Record<string, unknown>).coin, "HYPE");
+	assert.equal(logger.warns.length, 1);
+});
+
+test("processFills derives the core cursor only from unscoped core fills", async () => {
+	const { context, insertedEvents } = fillListenerContext([
+		{
+			data: { tid: 9_999 },
+			sourceEventId: "hl:xyz:9999",
+		},
+	]);
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		if (body.dex === "xyz") return jsonResponse([]);
+		return jsonResponse([
+			{
+				coin: "HYPE",
+				px: "38",
+				sz: "1",
+				side: "B",
+				dir: "Open Long",
+				closedPnl: "0",
+				tid: 100,
+				time: Date.now() - 1_000,
+			},
+		]);
+	};
+
+	const metrics = await processFills(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+			fillsBackfillWindowMs: 60_000,
+		},
+	);
+
+	assert.equal(requests.length, 2);
+	assert.equal(metrics.fillsSkipped, 0);
+	assert.equal(metrics.fillsEmitted, 1);
+	assert.equal(insertedEvents[0]?.sourceEventId, "hl:100");
+});
+
+test("processFunding keeps independent cursors per dex scope", async () => {
+	const now = Date.now();
+	const coreLast = now - 10_000;
+	const builderLast = now - 30_000;
+	const { context } = fillListenerContext([
+		{
+			data: { coin: "HYPE", time: coreLast },
+			occurredAt: new Date(coreLast),
+		},
+		{
+			data: { coin: "xyz:SPCX", time: builderLast },
+			occurredAt: new Date(builderLast),
+		},
+	]);
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		return jsonResponse([]);
+	};
+
+	await processFunding(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+			fundingBackfillWindowMs: 60_000,
+		},
+		false,
+	);
+
+	assert.equal(requests.length, 2);
+	assert.equal(requests[0]?.dex, undefined);
+	assert.equal(requests[0]?.startTime, coreLast + 1);
+	assert.equal(requests[1]?.dex, "xyz");
+	assert.equal(requests[1]?.startTime, builderLast + 1);
+});
+
+test("processPositions skips the wallet diff when a builder-dex state poll fails", async () => {
+	const previous = new Map<string, PositionSnapshot>([
+		["HYPE", { coin: "HYPE", szi: 1, entryPx: 38, leverage: 3 }],
+		["xyz:SPCX", { coin: "xyz:SPCX", szi: -40, entryPx: 1.25, leverage: 2 }],
+	]);
+	const { context, insertedEvents, logger } = fillListenerContext();
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		if (body.dex === "xyz") return new Response("builder down", { status: 500, statusText: "nope" });
+		return jsonResponse({
+			assetPositions: [
+				{ position: { coin: "HYPE", szi: "2", entryPx: "39", leverage: { value: "3" } } },
+			],
+		});
+	};
+
+	const result = await processPositions(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		previous,
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+		},
+	);
+
+	assert.equal(requests.length, 2);
+	assert.equal(result.emitted, 0);
+	assert.equal(result.next, previous);
+	assert.equal(insertedEvents.length, 0);
+	assert.equal(logger.warns.length, 1);
+	assert.deepEqual([...result.next.entries()], [...previous.entries()]);
 });
