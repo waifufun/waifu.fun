@@ -18,6 +18,8 @@
  * stream and must never be summed into trading pnl.
  */
 
+import { fetchAllHlState } from "./builder-dexs.js";
+
 const HL_BASE_URL = "https://api.hyperliquid.xyz";
 
 export type HlWindow = "day" | "week" | "month" | "allTime";
@@ -30,13 +32,6 @@ export type HlPortfolioWindow = {
 };
 
 type HlPortfolioResponse = Array<[string, HlPortfolioWindow]>;
-
-type HlClearinghouse = {
-	marginSummary?: { accountValue?: string | number };
-	crossMarginSummary?: { accountValue?: string | number };
-	withdrawable?: string | number;
-	assetPositions?: Array<{ position?: { unrealizedPnl?: string | number; szi?: string | number } }>;
-};
 
 type HlFill = { closedPnl?: string | number };
 
@@ -119,11 +114,12 @@ export async function fetchWalletLive(
 	wallet: string,
 	fetchImpl: typeof fetch = fetch,
 ): Promise<{ accountValue: number; unrealizedPnl: number; withdrawable: number }> {
-	const state = await postInfo<HlClearinghouse>({ type: "clearinghouseState", user: wallet }, fetchImpl);
-	const accountValue = num(state?.marginSummary?.accountValue) || num(state?.crossMarginSummary?.accountValue) || 0;
-	const withdrawable = num(state?.withdrawable);
-	const unrealizedPnl = (state?.assetPositions ?? []).reduce((sum, ap) => sum + num(ap?.position?.unrealizedPnl), 0);
-	return { accountValue, unrealizedPnl, withdrawable };
+	const state = await fetchAllHlState(wallet, fetchImpl);
+	return {
+		accountValue: state.totalAccountValue,
+		unrealizedPnl: state.totalUnrealizedPnl,
+		withdrawable: state.totalWithdrawable,
+	};
 }
 
 /** Win/loss tally from closed fills. null when no fills returned. */

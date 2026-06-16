@@ -28,6 +28,7 @@ import { Hono } from "hono";
 
 import { agentPersonas, agentWalletRegistry, feeDistributions, getDatabase } from "@waifufun/db";
 
+import { fetchAllHlState } from "../../../services/hyperliquid/builder-dexs.js";
 import { type HlWindow, buildHlPnl } from "../../../services/hyperliquid/pnl.js";
 
 const app = new Hono();
@@ -69,14 +70,6 @@ type HlPosition = {
 	positionValue?: string | number;
 	returnOnEquity?: string | number;
 	marginUsed?: string | number;
-};
-
-type HlState = {
-	marginSummary?: { accountValue?: string | number };
-	crossMarginSummary?: { accountValue?: string | number };
-	withdrawable?: string | number;
-	assetPositions?: Array<{ position?: HlPosition }>;
-	time?: number;
 };
 
 function num(value: unknown, fallback: number | null = null): number | null {
@@ -147,17 +140,15 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 	if (!resolved) return c.json({ wallet: null, accountValueUsd: 0, positions: [], ts: Date.now() });
 
 	const [state, mids] = await Promise.all([
-		postInfo<HlState>({ type: "clearinghouseState", user: resolved.address }),
+		fetchAllHlState(resolved.address),
 		postInfo<Record<string, string>>({ type: "allMids" }),
 	]);
 
-	const accountValue = num(state?.marginSummary?.accountValue) ?? num(state?.crossMarginSummary?.accountValue) ?? 0;
-	const withdrawable = num(state?.withdrawable) ?? 0;
-
-	const positions = (state?.assetPositions ?? [])
-		.map(({ position }) => position)
-		.filter((p): p is HlPosition => Boolean(p?.coin))
-		.map((pos) => {
+	const positions = state.mergedPositions
+		.filter((entry): entry is { position: HlPosition; dex?: string; builderPerp?: boolean } =>
+			Boolean(entry.position?.coin),
+		)
+		.map(({ position: pos, dex, builderPerp }) => {
 			const szi = num(pos.szi) ?? 0;
 			if (szi === 0) return null;
 			const entryPx = num(pos.entryPx);
@@ -180,14 +171,16 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 				unrealizedPnlUsd: unrealized,
 				unrealizedPnlPct: unrealizedPct,
 				roe: num(pos.returnOnEquity),
+				dex,
+				builderPerp: builderPerp || undefined,
 			};
 		})
 		.filter((p): p is NonNullable<typeof p> => p !== null);
 
 	return c.json({
 		wallet: resolved.address,
-		accountValueUsd: accountValue,
-		withdrawableUsd: withdrawable,
+		accountValueUsd: state.totalAccountValue,
+		withdrawableUsd: state.totalWithdrawable,
 		positions,
 		ts: Date.now(),
 	});

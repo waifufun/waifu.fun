@@ -1,3 +1,4 @@
+import { type HlClearinghouseState, type HlPosition, fetchAllHlState } from "../../hyperliquid/builder-dexs.js";
 import type { EnumerationResult, Holding } from "../types.js";
 
 type HyperliquidWallet = Pick<Holding, "walletId" | "walletAddress" | "walletLabel" | "walletRole" | "chain">;
@@ -5,23 +6,6 @@ type HyperliquidWallet = Pick<Holding, "walletId" | "walletAddress" | "walletLab
 export type HyperliquidEnumeratorDeps = {
 	fetch?: typeof fetch;
 	baseUrl?: string;
-};
-
-type HyperliquidPosition = {
-	coin?: string;
-	szi?: string | number;
-	entryPx?: string | number;
-	unrealizedPnl?: string | number;
-	liquidationPx?: string | number | null;
-	leverage?: { value?: string | number } | string | number;
-	positionValue?: string | number;
-};
-
-type HyperliquidClearinghouseState = {
-	marginSummary?: { accountValue?: string | number };
-	crossMarginSummary?: { accountValue?: string | number };
-	withdrawable?: string | number;
-	assetPositions?: Array<{ position?: HyperliquidPosition }>;
 };
 
 const DEFAULT_BASE_URL = "https://api.hyperliquid.xyz";
@@ -36,14 +20,15 @@ function numberOrNull(value: unknown): number | null {
 	return numberOrUndefined(value) ?? null;
 }
 
-function leverageValue(value: HyperliquidPosition["leverage"]): number | undefined {
+function leverageValue(value: HlPosition["leverage"]): number | undefined {
 	if (typeof value === "object" && value) return numberOrUndefined(value.value);
 	return numberOrUndefined(value);
 }
 
 export function normalizeHyperliquidHoldings(
 	wallet: HyperliquidWallet,
-	state: HyperliquidClearinghouseState,
+	state: HlClearinghouseState,
+	options: { dex?: string; builderPerp?: boolean; accountAsset?: string } = {},
 ): Holding[] {
 	const holdings: Holding[] = [];
 	// HL account equity. marginSummary.accountValue is the FULL equity of the
@@ -67,7 +52,7 @@ export function normalizeHyperliquidHoldings(
 	if (accountValue > 0) {
 		const account: Holding = {
 			...wallet,
-			asset: "USDC",
+			asset: options.accountAsset ?? "USDC",
 			contract: null,
 			balance: accountValue,
 			priceUsd: 1,
@@ -81,6 +66,8 @@ export function normalizeHyperliquidHoldings(
 				// folded into accountValue. The FE reads this off the account line
 				// to render "withdrawable" without a second endpoint round-trip.
 				withdrawableUsd: withdrawable,
+				dex: options.dex,
+				builderPerp: options.builderPerp || undefined,
 			},
 		};
 		holdings.push(account);
@@ -107,6 +94,8 @@ export function normalizeHyperliquidHoldings(
 			metadata: {
 				szi: String(position.szi ?? signedSize),
 				positionValue: position.positionValue === undefined ? undefined : String(position.positionValue),
+				dex: options.dex,
+				builderPerp: options.builderPerp || undefined,
 			},
 		};
 		const leverage = leverageValue(position.leverage);
@@ -127,16 +116,21 @@ export async function enumerateHyperliquid(
 	try {
 		const fetchImpl = deps.fetch ?? fetch;
 		const baseUrl = deps.baseUrl ?? DEFAULT_BASE_URL;
-		const response = await fetchImpl(`${baseUrl}/info`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ type: "clearinghouseState", user: wallet.walletAddress }),
-		});
-		if (!response.ok) {
-			return { holdings: [], stale: [{ source: "hyperliquid:info", reason: `http-${response.status}` }] };
+		const state = await fetchAllHlState(wallet.walletAddress, fetchImpl, { baseUrl });
+		if (!state.core) {
+			return { holdings: [], stale: [{ source: "hyperliquid:info", reason: "empty-core-state" }] };
 		}
-		const state = (await response.json()) as HyperliquidClearinghouseState;
-		return { holdings: normalizeHyperliquidHoldings(wallet, state), stale: [] };
+		const holdings = [
+			...normalizeHyperliquidHoldings(wallet, state.core),
+			...state.builderDexs.flatMap(({ dex, state: dexState }) =>
+				normalizeHyperliquidHoldings(wallet, dexState, {
+					dex,
+					builderPerp: true,
+					accountAsset: `${dex}:USDC`,
+				}),
+			),
+		];
+		return { holdings, stale: [] };
 	} catch (err) {
 		return {
 			holdings: [],
