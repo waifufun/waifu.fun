@@ -132,6 +132,9 @@ async function resolveHyperliquidWallet(
 }
 
 app.get("/:agentId/hyperliquid/positions", async (c) => {
+	// Live-polled (5s) by the agent page; never serve a cached snapshot or the
+	// positions panel looks frozen. Mirrors the events feed cache policy.
+	c.header("Cache-Control", "no-store");
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 	const agentId = c.req.param("agentId");
