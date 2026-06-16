@@ -361,29 +361,43 @@ async function listHyperliquidWallets(context: WorkerContext): Promise<WalletTar
 	}));
 }
 
-async function readLastFillTid(context: WorkerContext, agentTokenAddress: string): Promise<number | null> {
-	const [row] = await context.db
-		.select({ data: agentEvents.data })
+async function readLastCoreFillTid(context: WorkerContext, agentTokenAddress: string): Promise<number | null> {
+	const rows = await context.db
+		.select({ data: agentEvents.data, sourceEventId: agentEvents.sourceEventId })
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "trade.fill")))
 		.orderBy(desc(agentEvents.occurredAt))
-		.limit(1);
-	if (!row) return null;
-	const tid = (row.data as Record<string, unknown>)?.tid;
-	return typeof tid === "number" ? tid : null;
+		.limit(100);
+	for (const row of rows) {
+		// Core fills are stored as hl:<tid>. Builder-dex fills are stored as
+		// hl:<dex>:<tid>, so never let a builder tid advance the core cursor.
+		if (typeof row.sourceEventId === "string" && !/^hl:\d+$/.test(row.sourceEventId)) continue;
+		const tid = (row.data as Record<string, unknown>)?.tid;
+		if (typeof tid === "number") return tid;
+	}
+	return null;
 }
 
-async function readLastFundingTime(context: WorkerContext, agentTokenAddress: string): Promise<number | null> {
-	const [row] = await context.db
+async function readLastFundingTime(
+	context: WorkerContext,
+	agentTokenAddress: string,
+	scope: HyperliquidDexScope,
+): Promise<number | null> {
+	const rows = await context.db
 		.select({ data: agentEvents.data, occurredAt: agentEvents.occurredAt })
 		.from(agentEvents)
 		.where(and(eq(agentEvents.tokenAddress, agentTokenAddress), eq(agentEvents.eventType, "hl_funding")))
 		.orderBy(desc(agentEvents.occurredAt))
-		.limit(1);
-	if (!row) return null;
-	const time = (row.data as Record<string, unknown>)?.time;
-	if (typeof time === "number" && Number.isFinite(time)) return time;
-	return row.occurredAt?.getTime() ?? null;
+		.limit(100);
+	for (const row of rows) {
+		const data = row.data as Record<string, unknown>;
+		if (!scopeMatchesCoin(scope, typeof data.coin === "string" ? data.coin : undefined)) continue;
+		const time = data.time;
+		if (typeof time === "number" && Number.isFinite(time)) return time;
+		const occurredAt = row.occurredAt?.getTime() ?? null;
+		if (occurredAt !== null) return occurredAt;
+	}
+	return null;
 }
 
 type TradeRationaleAction = "open" | "close";
@@ -538,7 +552,7 @@ export async function processFills(
 	const fetchImpl = deps.fetch ?? fetch;
 	const baseUrl = deps.baseUrl ?? HL_BASE_URL;
 	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-	const lastTid = await readLastFillTid(context, wallet.agentTokenAddress);
+	const lastTid = await readLastCoreFillTid(context, wallet.agentTokenAddress);
 	const sinceMs =
 		Date.now() -
 		boundedWindow(deps.fillsBackfillWindowMs, DEFAULT_FILLS_BACKFILL_WINDOW_MS, MAX_FILLS_BACKFILL_WINDOW_MS);
@@ -654,7 +668,7 @@ export async function processFills(
 	return metrics;
 }
 
-async function processFunding(
+export async function processFunding(
 	context: WorkerContext,
 	wallet: WalletTarget,
 	deps: HyperliquidListenerOptions,
@@ -669,26 +683,26 @@ async function processFunding(
 		MAX_FUNDING_BACKFILL_WINDOW_MS,
 	);
 	const boundedSinceMs = Date.now() - backfillWindowMs;
-	const lastFundingTime = await readLastFundingTime(context, wallet.agentTokenAddress);
-	const cursorLooksCorrupt = lastFundingTime !== null && lastFundingTime > Date.now() + CURSOR_FUTURE_SKEW_MS;
-	if (cursorLooksCorrupt) {
-		context.logger.error(
-			{ wallet: wallet.address, lastFundingTime, boundedSinceMs },
-			"hl-listener funding cursor is in the future; replaying bounded window with idempotency",
-		);
-	}
-	if (forceBackfill) {
-		context.logger.info(
-			{ wallet: wallet.address, lastFundingTime, boundedSinceMs },
-			"hl-listener running one-shot funding backfill window",
-		);
-	}
-	const startTime =
-		forceBackfill || cursorLooksCorrupt || lastFundingTime === null
-			? boundedSinceMs
-			: Math.max(boundedSinceMs, lastFundingTime + 1);
 	const scopedFunding: Array<{ scope: HyperliquidDexScope; entry: HyperliquidFunding }> = [];
 	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+		const lastFundingTime = await readLastFundingTime(context, wallet.agentTokenAddress, scope);
+		const cursorLooksCorrupt = lastFundingTime !== null && lastFundingTime > Date.now() + CURSOR_FUTURE_SKEW_MS;
+		if (cursorLooksCorrupt) {
+			context.logger.error(
+				{ wallet: wallet.address, dex: scope.dex, lastFundingTime, boundedSinceMs },
+				"hl-listener funding cursor is in the future; replaying bounded window with idempotency",
+			);
+		}
+		if (forceBackfill) {
+			context.logger.info(
+				{ wallet: wallet.address, dex: scope.dex, lastFundingTime, boundedSinceMs },
+				"hl-listener running one-shot funding backfill window",
+			);
+		}
+		const startTime =
+			forceBackfill || cursorLooksCorrupt || lastFundingTime === null
+				? boundedSinceMs
+				: Math.max(boundedSinceMs, lastFundingTime + 1);
 		try {
 			const funding = await postInfo<HyperliquidFunding[]>(
 				baseUrl,
@@ -749,14 +763,14 @@ async function processFunding(
 	}
 	if (metrics.fundingSkipped > 0) {
 		context.logger.info(
-			{ wallet: wallet.address, skipped: metrics.fundingSkipped, fetched: metrics.fundingFetched, startTime },
+			{ wallet: wallet.address, skipped: metrics.fundingSkipped, fetched: metrics.fundingFetched },
 			"hl-listener skipped funding rows",
 		);
 	}
 	return metrics;
 }
 
-async function processPositions(
+export async function processPositions(
 	context: WorkerContext,
 	wallet: WalletTarget,
 	previous: Map<string, PositionSnapshot>,
@@ -766,6 +780,7 @@ async function processPositions(
 	const baseUrl = deps.baseUrl ?? HL_BASE_URL;
 	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 	const scopedStates: Array<{ scope: HyperliquidDexScope; state: HyperliquidClearinghouseState }> = [];
+	let scopedFailure = false;
 	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
 		try {
 			const state = await postInfo<HyperliquidClearinghouseState>(
@@ -777,13 +792,14 @@ async function processPositions(
 			if (state) scopedStates.push({ scope, state });
 		} catch (err) {
 			if (!scope.dex) throw err;
+			scopedFailure = true;
 			context.logger.warn(
 				{ err: errorDetails(err), wallet: wallet.address, dex: scope.dex },
-				"hl-listener builder-dex clearinghouseState poll failed; continuing",
+				"hl-listener builder-dex clearinghouseState poll failed; skipping position diff for wallet",
 			);
 		}
 	}
-	if (scopedStates.length === 0) return { next: previous, emitted: 0 };
+	if (scopedFailure || scopedStates.length === 0) return { next: previous, emitted: 0 };
 
 	const next = new Map<string, PositionSnapshot>();
 	for (const { scope, state } of scopedStates) {

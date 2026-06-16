@@ -8,6 +8,8 @@ import {
 	insertEnrichedTradeEvent,
 	isLiquidation,
 	processFills,
+	processFunding,
+	processPositions,
 	renderClose,
 	renderFill,
 	renderFunding,
@@ -250,7 +252,7 @@ test("insertEnrichedTradeEvent does not consume rationale on replayed duplicate 
 	assert.equal(consumed.length, 0);
 });
 
-function fillListenerContext() {
+function fillListenerContext(existingRows: Array<Record<string, unknown>> = []) {
 	const logger = testLogger();
 	const insertedEvents: Array<Record<string, unknown>> = [];
 	const db = {
@@ -265,7 +267,7 @@ function fillListenerContext() {
 							return this;
 						},
 						limit() {
-							return Promise.resolve([]);
+							return Promise.resolve(existingRows);
 						},
 					};
 				},
@@ -399,4 +401,139 @@ test("processFills continues when a builder-dex fill poll fails", async () => {
 	assert.equal(insertedEvents.length, 1);
 	assert.equal((insertedEvents[0]?.payload as Record<string, unknown>).coin, "HYPE");
 	assert.equal(logger.warns.length, 1);
+});
+
+test("processFills derives the core cursor only from unscoped core fills", async () => {
+	const { context, insertedEvents } = fillListenerContext([
+		{
+			data: { tid: 9_999 },
+			sourceEventId: "hl:xyz:9999",
+		},
+	]);
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		if (body.dex === "xyz") return jsonResponse([]);
+		return jsonResponse([
+			{
+				coin: "HYPE",
+				px: "38",
+				sz: "1",
+				side: "B",
+				dir: "Open Long",
+				closedPnl: "0",
+				tid: 100,
+				time: Date.now() - 1_000,
+			},
+		]);
+	};
+
+	const metrics = await processFills(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+			fillsBackfillWindowMs: 60_000,
+		},
+	);
+
+	assert.equal(requests.length, 2);
+	assert.equal(metrics.fillsSkipped, 0);
+	assert.equal(metrics.fillsEmitted, 1);
+	assert.equal(insertedEvents[0]?.sourceEventId, "hl:100");
+});
+
+test("processFunding keeps independent cursors per dex scope", async () => {
+	const now = Date.now();
+	const coreLast = now - 10_000;
+	const builderLast = now - 30_000;
+	const { context } = fillListenerContext([
+		{
+			data: { coin: "HYPE", time: coreLast },
+			occurredAt: new Date(coreLast),
+		},
+		{
+			data: { coin: "xyz:SPCX", time: builderLast },
+			occurredAt: new Date(builderLast),
+		},
+	]);
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		return jsonResponse([]);
+	};
+
+	await processFunding(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+			fundingBackfillWindowMs: 60_000,
+		},
+		false,
+	);
+
+	assert.equal(requests.length, 2);
+	assert.equal(requests[0]?.dex, undefined);
+	assert.equal(requests[0]?.startTime, coreLast + 1);
+	assert.equal(requests[1]?.dex, "xyz");
+	assert.equal(requests[1]?.startTime, builderLast + 1);
+});
+
+test("processPositions skips the wallet diff when a builder-dex state poll fails", async () => {
+	const previous = new Map<string, PositionSnapshot>([
+		["HYPE", { coin: "HYPE", szi: 1, entryPx: 38, leverage: 3 }],
+		["xyz:SPCX", { coin: "xyz:SPCX", szi: -40, entryPx: 1.25, leverage: 2 }],
+	]);
+	const { context, insertedEvents, logger } = fillListenerContext();
+	const requests: Array<Record<string, unknown>> = [];
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		requests.push(body);
+		if (body.dex === "xyz") return new Response("builder down", { status: 500, statusText: "nope" });
+		return jsonResponse({
+			assetPositions: [
+				{ position: { coin: "HYPE", szi: "2", entryPx: "39", leverage: { value: "3" } } },
+			],
+		});
+	};
+
+	const result = await processPositions(
+		context,
+		{
+			walletId: "wallet-1",
+			address: "0xabc",
+			agentTokenAddress: "0xtoken",
+			agentId: "agent-1",
+		},
+		previous,
+		{
+			fetch: fetchImpl as typeof fetch,
+			baseUrl: "https://hl.test",
+			builderDexs: ["xyz"],
+		},
+	);
+
+	assert.equal(requests.length, 2);
+	assert.equal(result.emitted, 0);
+	assert.equal(result.next, previous);
+	assert.equal(insertedEvents.length, 0);
+	assert.equal(logger.warns.length, 1);
+	assert.deepEqual([...result.next.entries()], [...previous.entries()]);
 });
