@@ -298,7 +298,14 @@ function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPositi
 						>
 							<td className="py-3 pr-2">
 								<div className="flex items-center gap-2">
-									<TokenIcon address="" chain={chainOfVenue("hyperliquid")} size={18} symbol={primaryAssetOf(p.coin)} />
+									{/* HL perp asset: resolve by ticker (incl. xyz: equities), not chain:address. */}
+									<TokenIcon
+										address=""
+										chain={chainOfVenue("hyperliquid")}
+										hlAsset={p.coin}
+										size={18}
+										symbol={primaryAssetOf(p.coin)}
+									/>
 									<div className="flex flex-col gap-0.5 leading-none">
 										<span className="text-[12px] text-[var(--text-primary)]">{p.coin}</span>
 										<span className="flex items-center gap-1">

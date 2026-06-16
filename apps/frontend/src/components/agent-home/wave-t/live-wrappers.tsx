@@ -271,7 +271,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-group-${event.id}`,
 				type: "githubGroup",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				eventType: event.eventType,
 				repo: githubRepoLabel(event),
 				count: event.count ?? items.length,
@@ -290,7 +290,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "convert",
 				from: asString(payload.fromLabel, asString(payload.from, "agentsafe")),
 				to: asString(payload.toLabel, asString(payload.to, "steward wallet")),
@@ -304,7 +304,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "deposit",
 				from: asString(payload.fromAsset, "bnb"),
 				to: `${asString(payload.provider, "eliza cloud")} credit`,
@@ -318,7 +318,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "wallet",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				walletType: asString(payload.walletType, "steward-managed"),
 				walletAddress: asString(payload.walletAddress, "wallet"),
 				chainId: event.chainId,
@@ -333,7 +333,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: policies.length || asNumber(payload.n, 0),
 				walletAddress: asString(payload.walletAddress, "wallet"),
 				summary: policies
@@ -354,7 +354,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "tradeSession",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				venue: asString(payload.venue, "trading"),
 				dailyCapUsd: asNumber(payload.dailyCapUsd, 0),
 				perOrderCapUsd: asNumber(payload.perOrderCapUsd, 0),
@@ -373,7 +373,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "app",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "updated",
 				appName: text ?? asString(payload.repoLabel, asString(payload.repo, "github")),
 				version: asString(payload.sha).slice(0, 7),
@@ -389,7 +389,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "pr",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				title:
 					text ??
 					asString(payload.title, event.eventType.includes("opened") ? "opened pull request" : "merged pull request"),
@@ -474,7 +474,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "revenue",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				source: "tax",
 				usd,
 			};
@@ -488,7 +488,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "deposit",
 				from: asString(payload.fromLabel, "tax stream"),
 				to: asString(payload.toLabel, "treasury"),
@@ -556,7 +556,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "convert",
 				from: `${fromAmount} ${fromAsset}`,
 				to: `${toAmount} ${toAsset}`,
@@ -571,7 +571,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "deposit",
 				from: `arbitrum ${asset}`,
 				to: "hyperliquid",
@@ -594,7 +594,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: direction,
 				from: direction === "deposit" ? counterparty : "agent",
 				to: direction === "deposit" ? "agent" : counterparty,
@@ -619,7 +619,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: asNumber(payload.signaturesCount, 0),
 				walletAddress: asString(payload.safeAddress, "safe"),
 				summary: `safe tx ${stage} · ${summary}`,
@@ -642,7 +642,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: 1,
 				walletAddress: asString(payload.walletAddress, "steward"),
 				summary: `${kind === "denied" ? "denied" : "manual review"} · ${reason}`,
@@ -661,7 +661,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "withdraw",
 				from: "agent",
 				to: asString(payload.provider, "inference"),
@@ -678,7 +678,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: 1,
 				walletAddress: asString(payload.registry, "erc-8004"),
 				summary:
