@@ -1,14 +1,22 @@
-import { closeRedisConnection } from "@waifufun/queue";
+import { createHash } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 import { processFourMemeEvent } from "../handlers/fourmeme-index.js";
-import { createFourMemeEventSource } from "../lib/fourmeme-source.js";
+import { type FourMemeEventSource, createFourMemeEventSource } from "../lib/fourmeme-source.js";
 import { logger } from "../lib/logger.js";
-import { createIndexerRuntime } from "../lib/runtime.js";
+import { type IndexerRuntime, createIndexerRuntime } from "../lib/runtime.js";
 
-const DEFAULT_TOKEN_MANAGER_2 = "0x5c952063c7fc8610FFDB798152D69F0B9550762b" as const;
-const DEFAULT_AGENT_IDENTIFIER = "0x09B44A633de9F9EBF6FB9Bdd5b5629d3DD2cef13" as const;
-const DEFAULT_EIP8004_IDENTITY_REGISTRY = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as const;
-const CHUNK_SIZE = 500n;
+export const DEFAULT_TOKEN_MANAGER_2 = "0x5c952063c7fc8610FFDB798152D69F0B9550762b" as const;
+export const DEFAULT_AGENT_IDENTIFIER = "0x09B44A633de9F9EBF6FB9Bdd5b5629d3DD2cef13" as const;
+export const DEFAULT_EIP8004_IDENTITY_REGISTRY = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as const;
+const DEFAULT_CHUNK_SIZE = 500n;
+
+export interface FourMemeBackfillOptions {
+	fromBlock: bigint;
+	toBlock: bigint;
+	chunkSize?: bigint;
+	cursorId?: string;
+}
 
 function parseArgs(argv: string[]): { from: bigint; to: bigint; contract: `0x${string}` } {
 	const args = new Map<string, string>();
@@ -37,9 +45,102 @@ function minBigInt(left: bigint, right: bigint): bigint {
 	return left < right ? left : right;
 }
 
+function cursorKeyDigest(source: FourMemeEventSource, fromBlock: bigint): string {
+	return createHash("sha256")
+		.update(
+			[
+				"fourmeme-backfill",
+				source.contracts.tokenManager2.toLowerCase(),
+				source.contracts.agentIdentifier.toLowerCase(),
+				source.contracts.erc8004IdentityRegistry.toLowerCase(),
+				`from:${fromBlock.toString()}`,
+			].join(":"),
+		)
+		.digest("hex");
+}
+
+function cursorContractAddress(source: FourMemeEventSource, fromBlock: bigint): `0x${string}` {
+	return `0x${cursorKeyDigest(source, fromBlock).slice(0, 40)}`;
+}
+
+export async function runFourMemeBackfill(
+	runtime: IndexerRuntime,
+	source: FourMemeEventSource,
+	options: FourMemeBackfillOptions,
+): Promise<{ totalEvents: number; fromBlock: bigint; toBlock: bigint; cursorId: string }> {
+	if (options.fromBlock > options.toBlock) throw new Error("fromBlock must be <= toBlock");
+
+	const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
+	if (chunkSize <= 0n) throw new Error("chunkSize must be positive");
+
+	const cursorId =
+		options.cursorId ?? `fourmeme:bsc:${runtime.config.chainId}:${cursorKeyDigest(source, options.fromBlock)}:backfill`;
+	const initialBlock = options.fromBlock === 0n ? 0n : options.fromBlock - 1n;
+	const cursor = await runtime.cursors.ensure({
+		id: cursorId,
+		mode: "backfill",
+		initialBlock,
+		contractAddress: cursorContractAddress(source, options.fromBlock),
+	});
+
+	let nextFrom = cursor.lastBlock >= options.fromBlock ? cursor.lastBlock + 1n : options.fromBlock;
+	let totalEvents = 0;
+
+	while (nextFrom <= options.toBlock) {
+		const nextTo = minBigInt(nextFrom + chunkSize - 1n, options.toBlock);
+		const events = await source.getBackfillEvents({ fromBlock: nextFrom, toBlock: nextTo });
+
+		for (const event of events) {
+			try {
+				await processFourMemeEvent(runtime, event);
+			} catch (handlerError: unknown) {
+				runtime.logger.warn(
+					{
+						eventName: event.eventName,
+						blockNumber: event.blockNumber.toString(),
+						txHash: event.txHash,
+						error: handlerError instanceof Error ? handlerError.message : String(handlerError),
+					},
+					"four.meme backfill handler failed; cursor will retry this chunk",
+				);
+				throw handlerError;
+			}
+		}
+
+		totalEvents += events.length;
+		await runtime.cursors.advance(cursorId, { blockNumber: nextTo, logIndex: 0 });
+
+		runtime.logger.info(
+			{
+				contract: source.contracts.tokenManager2,
+				fromBlock: nextFrom.toString(),
+				toBlock: nextTo.toString(),
+				eventCount: events.length,
+				totalEvents,
+				cursorId,
+			},
+			"four.meme backfill chunk processed",
+		);
+
+		nextFrom = nextTo + 1n;
+	}
+
+	runtime.logger.info(
+		{
+			contract: source.contracts.tokenManager2,
+			from: options.fromBlock.toString(),
+			to: options.toBlock.toString(),
+			totalEvents,
+			cursorId,
+		},
+		"four.meme backfill complete",
+	);
+
+	return { totalEvents, fromBlock: options.fromBlock, toBlock: options.toBlock, cursorId };
+}
+
 async function main(): Promise<void> {
 	const { from, to, contract } = parseArgs(process.argv.slice(2));
-	if (from > to) throw new Error("--from must be <= --to");
 
 	const runtime = createIndexerRuntime();
 	const source = createFourMemeEventSource({
@@ -54,41 +155,21 @@ async function main(): Promise<void> {
 		},
 	});
 
-	let nextFrom = from;
-	let totalEvents = 0;
-
-	while (nextFrom <= to) {
-		const nextTo = minBigInt(nextFrom + CHUNK_SIZE - 1n, to);
-		const events = await source.getBackfillEvents({ fromBlock: nextFrom, toBlock: nextTo });
-
-		for (const event of events) {
-			await processFourMemeEvent(runtime, event);
-		}
-
-		totalEvents += events.length;
-		runtime.logger.info(
-			{
-				contract,
-				fromBlock: nextFrom.toString(),
-				toBlock: nextTo.toString(),
-				eventCount: events.length,
-				totalEvents,
-			},
-			"four.meme backfill chunk processed",
-		);
-
-		nextFrom = nextTo + 1n;
-	}
-
-	runtime.logger.info(
-		{ contract, from: from.toString(), to: to.toString(), totalEvents },
-		"four.meme backfill complete",
-	);
+	await runFourMemeBackfill(runtime, source, {
+		fromBlock: from,
+		toBlock: to,
+		chunkSize: BigInt(process.env.FOURMEME_BACKFILL_CHUNK_SIZE ?? DEFAULT_CHUNK_SIZE.toString()),
+	});
+	const { closeRedisConnection } = await import("@waifufun/queue");
 	await closeRedisConnection();
 }
 
-void main().catch(async (error: unknown) => {
-	logger.error({ error }, "four.meme backfill failed");
-	await closeRedisConnection();
-	process.exit(1);
-});
+const isCli = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+if (isCli) {
+	void main().catch(async (error: unknown) => {
+		logger.error({ error }, "four.meme backfill failed");
+		const { closeRedisConnection } = await import("@waifufun/queue");
+		await closeRedisConnection();
+		process.exit(1);
+	});
+}
