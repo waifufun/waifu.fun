@@ -304,6 +304,9 @@ test("processFills fetches core and configured builder-dex fills", async () => {
 	const requests: Array<Record<string, unknown>> = [];
 	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
 		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		if (body.type === "meta") {
+			return jsonResponse({ universe: [{ name: "SPCX" }] });
+		}
 		requests.push(body);
 		const rows = [
 			{
@@ -361,10 +364,48 @@ test("processFills fetches core and configured builder-dex fills", async () => {
 	);
 });
 
+test("processFills only prefixes genuine builder-dex coins, not core coins under dex scope", async () => {
+	const { context, insertedEvents } = fillListenerContext();
+	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		// Builder-dex universe meta: only SPCX belongs to the "xyz" dex.
+		if (body.type === "meta") {
+			return jsonResponse({ universe: [{ name: "SPCX" }] });
+		}
+		// Both core and xyz-scoped fill queries return BARE coin names. BTC is a
+		// core coin that leaks into the xyz-scoped response; SPCX is genuine.
+		if (body.dex === "xyz") {
+			return jsonResponse([
+				{ coin: "SPCX", px: "1.25", sz: "40", side: "A", dir: "Open Short", closedPnl: "0", tid: 7, time: 1781600000007 },
+				{ coin: "BTC", px: "64000", sz: "0.001", side: "B", dir: "Open Long", closedPnl: "0", tid: 8, time: 1781600000008 },
+			]);
+		}
+		return jsonResponse([
+			{ coin: "BTC", px: "64000", sz: "0.001", side: "B", dir: "Open Long", closedPnl: "0", tid: 8, time: 1781600000008 },
+		]);
+	};
+
+	await processFills(
+		context,
+		{ walletId: "wallet-1", address: "0xabc", agentTokenAddress: "0xtoken", agentId: "agent-1" },
+		{ fetch: fetchImpl as typeof fetch, baseUrl: "https://hl.test", builderDexs: ["xyz"], fillsBackfillWindowMs: 60_000 },
+	);
+
+	const coins = insertedEvents.map((event) => (event.payload as Record<string, unknown>).coin);
+	// SPCX (genuine xyz member) IS prefixed; BTC (core) is NOT prefixed even
+	// though it surfaced under the xyz-scoped query.
+	assert.ok(coins.includes("xyz:SPCX"), `expected xyz:SPCX in ${JSON.stringify(coins)}`);
+	assert.ok(coins.includes("BTC"), `expected bare BTC in ${JSON.stringify(coins)}`);
+	assert.ok(!coins.includes("xyz:BTC"), `BTC must NOT be prefixed: ${JSON.stringify(coins)}`);
+});
+
 test("processFills continues when a builder-dex fill poll fails", async () => {
 	const { context, insertedEvents, logger } = fillListenerContext();
 	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
 		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		if (body.type === "meta") {
+			return jsonResponse({ universe: [{ name: "SPCX" }] });
+		}
 		if (body.dex === "xyz") return new Response("builder down", { status: 500, statusText: "nope" });
 		return jsonResponse([
 			{
@@ -413,6 +454,9 @@ test("processFills derives the core cursor only from unscoped core fills", async
 	const requests: Array<Record<string, unknown>> = [];
 	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
 		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		if (body.type === "meta") {
+			return jsonResponse({ universe: [{ name: "SPCX" }] });
+		}
 		requests.push(body);
 		if (body.dex === "xyz") return jsonResponse([]);
 		return jsonResponse([
@@ -468,6 +512,9 @@ test("processFunding keeps independent cursors per dex scope", async () => {
 	const requests: Array<Record<string, unknown>> = [];
 	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
 		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		if (body.type === "meta") {
+			return jsonResponse({ universe: [{ name: "SPCX" }] });
+		}
 		requests.push(body);
 		return jsonResponse([]);
 	};
@@ -505,6 +552,9 @@ test("processPositions skips the wallet diff when a builder-dex state poll fails
 	const requests: Array<Record<string, unknown>> = [];
 	const fetchImpl = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
 		const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+		if (body.type === "meta") {
+			return jsonResponse({ universe: [{ name: "SPCX" }] });
+		}
 		requests.push(body);
 		if (body.dex === "xyz") return new Response("builder down", { status: 500, statusText: "nope" });
 		return jsonResponse({
