@@ -246,10 +246,11 @@ test("HyperLiquid enumerator marks failed builder-dex fetches stale", async () =
 				return new Response(JSON.stringify(state)) as any;
 			},
 		});
-		assert.equal(result.holdings.some((holding) => holding.asset === "xyz:USDC"), true);
-		assert.deepEqual(result.stale, [
-			{ source: "hyperliquid:builder-dex:bad", reason: "empty-builder-dex-state" },
-		]);
+		assert.equal(
+			result.holdings.some((holding) => holding.asset === "xyz:USDC"),
+			true,
+		);
+		assert.deepEqual(result.stale, [{ source: "hyperliquid:builder-dex:bad", reason: "empty-builder-dex-state" }]);
 	} finally {
 		if (previousDexs === undefined) delete process.env.HL_BUILDER_DEXS;
 		else process.env.HL_BUILDER_DEXS = previousDexs;

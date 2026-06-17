@@ -233,9 +233,7 @@ async function resolveDexUniverses(
 					requestTimeoutMs,
 				);
 				const coins = new Set(
-					(meta?.universe ?? [])
-						.map((u) => u?.name)
-						.filter((n): n is string => typeof n === "string" && n.length > 0),
+					(meta?.universe ?? []).map((u) => u?.name).filter((n): n is string => typeof n === "string" && n.length > 0),
 				);
 				if (coins.size > 0) {
 					builderDexUniverseCache.set(scope.dex, coins);
