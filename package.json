@@ -27,7 +27,10 @@
 			[
 				"@semantic-release/git",
 				{
-					"assets": ["CHANGELOG.md", "package.json"],
+					"assets": [
+						"CHANGELOG.md",
+						"package.json"
+					],
 					"message": "chore(release): ${nextRelease.version}"
 				}
 			]
@@ -38,6 +41,7 @@
 		"build:docker": "docker build -t waifufun-frontend -f apps/frontend/Dockerfile.frontend .",
 		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations --filter=!@waifufun/frontend --filter=!@waifufun/contracts-solana-audit",
 		"check": "bun run lint && bun run typecheck && bun run test",
+		"check:agent-skill": "tsx scripts/gen-agent-skill.ts --check",
 		"clean": "bunx turbo run clean --continue; rm -rf .turbo apps/api/dist apps/brain/dist apps/evm-indexer/dist apps/mcp/dist apps/worker/dist apps/sol-indexer/dist apps/frontend/out apps/frontend/.next packages/*/dist 2>/dev/null; find apps packages -type f -name '*.tsbuildinfo' -delete 2>/dev/null; true",
 		"db:generate": "bun --env-file-if-exists=.env run --filter @waifufun/db db:generate",
 		"db:migrate": "bun --env-file-if-exists=.env run --filter @waifufun/db db:migrate",
@@ -54,6 +58,7 @@
 		"docker:kill": "docker compose -f docker/docker-compose.local.yml down -v",
 		"docker:up": "docker compose -f docker/docker-compose.local.yml up -d && exit 0",
 		"evm-indexer:backfill": "dotenv -e .env -- bun apps/evm-indexer/src/backfill/fourmeme-backfill.ts",
+		"gen:agent-skill": "tsx scripts/gen-agent-skill.ts",
 		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" node scripts/check-tenant-id.mjs && biome check package.json turbo.json tsconfig.base.json tsconfig.eslint.json tsconfig.node.base.json tsconfig.shared.json biome.json && bunx turbo run lint",
 		"lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& node scripts/check-tenant-id.mjs && biome check package.json turbo.json tsconfig.base.json tsconfig.eslint.json tsconfig.node.base.json tsconfig.shared.json biome.json && bunx turbo run lint",
 		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter @waifufun/migrations build",
@@ -64,11 +69,11 @@
 		"start:sol-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/sol-indexer' start",
 		"sync": "dotenv -e .env -- bun run --filter @waifufun/sync -- sync tokens",
 		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test --continue --filter=@waifufun/api --filter=@waifufun/brain --filter=@waifufun/frontend --filter=@waifufun/bundle-bot --filter=@waifufun/evm-indexer --filter=@waifufun/launch-indexer --filter=@waifufun/nav-snapshotter --filter=@waifufun/agent-actions --filter=@waifufun/db --filter=@waifufun/launchpad --filter=@waifufun/worker && bun run test:eliza-cloud:smoke",
+		"test-migration": "bun run --filter @waifufun/migrations test",
+		"test:contracts": "node ./scripts/run-local-contract-tests.mjs",
 		"test:e2e": "bun run test:contracts",
 		"test:eliza-cloud:live": "node scripts/eliza-cloud-live-smoke.mjs",
 		"test:eliza-cloud:smoke": "node --test scripts/eliza-cloud-live-smoke.test.mjs scripts/eliza-cloud-live-smoke.integration.test.mjs",
-		"test-migration": "bun run --filter @waifufun/migrations test",
-		"test:contracts": "node ./scripts/run-local-contract-tests.mjs",
 		"typecheck": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run check"
 	},
 	"devDependencies": {
@@ -78,6 +83,7 @@
 		"@semantic-release/github": "^11.0.2",
 		"@types/bun": "^1.2.19",
 		"@types/node": "^22.13.10",
+		"@waifufun/agent-actions": "workspace:*",
 		"cross-env": "^7.0.3",
 		"dotenv-cli": "^8.0.0",
 		"semantic-release": "^24.2.3",
@@ -89,7 +95,11 @@
 	"overrides": {
 		"graphql-ws": "^6.0.8"
 	},
-	"workspaces": ["apps/*", "packages/*", "packages/contracts-solana/*"],
+	"workspaces": [
+		"apps/*",
+		"packages/*",
+		"packages/contracts-solana/*"
+	],
 	"patchedDependencies": {
 		"@stwd/react@0.7.2": "patches/@stwd%2Freact@0.7.2.patch"
 	}
