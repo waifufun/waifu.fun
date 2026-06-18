@@ -1,9 +1,22 @@
 import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+import test, { beforeEach, mock } from "node:test";
 
 import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 
-import { adaptivePollDelayMs, createAgentProvisioningProcessor } from "./agent-provisioning.js";
+import {
+	__resetProvisioningBreakersForTest,
+	adaptivePollDelayMs,
+	createAgentProvisioningProcessor,
+} from "./agent-provisioning.js";
+
+// The provisioning circuit breaker is a module-level singleton keyed by base URL.
+// Several tests below share "https://cloud.test" and a few trigger POST failures;
+// without a reset, leftover breaker state could accumulate across tests and make
+// an unrelated test flake (mirrors the api eliza-client.test.ts reset the
+// regression audit flagged). Reset before every test so each starts closed.
+beforeEach(() => {
+	__resetProvisioningBreakersForTest();
+});
 
 type UpdateRecord = { table: unknown; values: Record<string, unknown> };
 type InsertRecord = { table: unknown; values: Record<string, unknown> };
@@ -1819,4 +1832,268 @@ test("two concurrent provisions for the same persona result in exactly one /api/
 
 	// Blocker 4: only one container POST regardless of the two concurrent jobs.
 	assert.equal(postCount, 1);
+});
+
+// ─── Circuit breaker (task #12) ───────────────────────────────────────
+
+/**
+ * Minimal db that always loses no claim (single-worker happy path) and accepts
+ * the claim/release/overlay writes the provisioning path makes. Tuned for the
+ * breaker tests where we only care about the POST outcome, not overlay assertions.
+ */
+function breakerTestDb(metadata: Record<string, unknown> = {}) {
+	const persona = {
+		id: "persona-breaker",
+		agentId: "waifu-breaker-01",
+		name: "Breaker Waifu",
+		bio: null,
+		avatarUrl: null,
+		ownerAddress: "0x0000000000000000000000000000000000000002",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		prelaunchParams: { name: "Breaker Waifu", symbol: "BRK" },
+		metadata,
+		runtimeKind: "webhook",
+	};
+	const tokenRow = { id: "token-breaker", agentId: null };
+	return {
+		select(fields?: Record<string, unknown>) {
+			return {
+				from() {
+					return {
+						leftJoin() {
+							return this;
+						},
+						where() {
+							return {
+								limit() {
+									if (!fields) return Promise.resolve([persona]);
+									if ("walletAddress" in fields) {
+										return Promise.resolve([{ walletAddress: "0x0000000000000000000000000000000000000009" }]);
+									}
+									if ("token" in fields) return Promise.resolve([{ token: tokenRow, agent: null }]);
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+		update() {
+			return { set: () => ({ where: () => updateResult([{ agentId: persona.agentId }]) }) };
+		},
+		insert() {
+			return { values: () => ({ returning: () => Promise.resolve([{ id: "row-breaker" }]) }) };
+		},
+	} as never;
+}
+
+const breakerPayload: AgentProvisioningJob = {
+	agentId: "waifu-breaker-01",
+	source: "token.migrated",
+	data: {
+		tokenContractAddress: "0x0000000000000000000000000000000000000004",
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		chainId: 56,
+		tokenName: "Breaker Waifu",
+		tokenTicker: "BRK",
+		launchType: "native",
+	},
+};
+
+const breakerEnv = {
+	ELIZA_CLOUD_BASE_URL: "https://breaker.test",
+	ELIZA_CLOUD_SERVICE_KEY: "svc_breaker",
+	ELIZA_CLOUD_WAIFU_AGENT_IMAGE_URI: "ecr.test/waifu-agent:latest",
+	WAIFU_ELIZA_PROVISION_STATUS_POLL_INTERVAL_MS: "0",
+};
+
+test("provisioning breaker opens after 5 consecutive POST failures and fast-fails the 6th without a fetch", async () => {
+	__resetProvisioningBreakersForTest();
+	let postAttempts = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		if (String(url).endsWith("/api/v1/agents")) {
+			postAttempts += 1;
+			return new Response("upstream down", { status: 503 });
+		}
+		throw new Error(`unexpected fetch ${url}`);
+	});
+
+	await withEnv(breakerEnv, async () => {
+		const processor = createAgentProvisioningProcessor({
+			db: breakerTestDb(),
+			logger: console as never,
+			startedAt: new Date("2026-05-27T00:00:00Z"),
+			chainId: 56,
+		});
+		// 5 failing jobs trip the circuit (503 POST counts as a breaker failure).
+		for (let i = 0; i < 5; i++) {
+			await assert.rejects(
+				() => processor({ id: `job-breaker-${i}`, data: breakerPayload, attemptsMade: 0 } as never),
+				/503/,
+			);
+		}
+		assert.equal(postAttempts, 5);
+
+		// 6th job: circuit is open → fast-fail with ElizaCloudUnavailableError and NO
+		// new POST. The error carries the 503/ELIZA_CLOUD_UNAVAILABLE contract so the
+		// job-queue retry fires.
+		await assert.rejects(
+			() => processor({ id: "job-breaker-open", data: breakerPayload, attemptsMade: 0 } as never),
+			(err: unknown) => {
+				assert.ok(err instanceof Error && err.name === "ElizaCloudUnavailableError");
+				const typed = err as { httpStatus?: number; code?: string };
+				assert.equal(typed.httpStatus, 503);
+				assert.equal(typed.code, "ELIZA_CLOUD_UNAVAILABLE");
+				return true;
+			},
+		);
+		assert.equal(postAttempts, 5, "open circuit must not issue a 6th POST");
+	});
+
+	mock.restoreAll();
+	__resetProvisioningBreakersForTest();
+});
+
+test("provisioning breaker does NOT count 409 adoption as a failure (circuit stays closed)", async () => {
+	__resetProvisioningBreakersForTest();
+	let postAttempts = 0;
+	let statusPolls = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		const target = String(url);
+		if (target.endsWith("/api/v1/agents")) {
+			postAttempts += 1;
+			return Response.json(
+				{
+					error: "An agent is already linked to token 0x...4 on bsc",
+					existingAgentId: "cloud-adopt-1",
+				},
+				{ status: 409 },
+			);
+		}
+		if (target.endsWith("/api/v1/agents/cloud-adopt-1/status")) {
+			statusPolls += 1;
+			return Response.json({
+				success: true,
+				data: {
+					cloudAgentId: "cloud-adopt-1",
+					containerId: "container-adopt-1",
+					webUiUrl: "https://adopt-agent.example",
+					status: "running",
+				},
+			});
+		}
+		throw new Error(`unexpected fetch ${target}`);
+	});
+
+	await withEnv(breakerEnv, async () => {
+		const processor = createAgentProvisioningProcessor({
+			db: breakerTestDb(),
+			logger: console as never,
+			startedAt: new Date("2026-05-27T00:00:00Z"),
+			chainId: 56,
+		});
+		// Run 6 adoption jobs. If 409 counted as a breaker failure, the 6th would
+		// fast-fail with ElizaCloudUnavailableError. Instead every one adopts.
+		for (let i = 0; i < 6; i++) {
+			const result = (await processor({
+				id: `job-adopt-${i}`,
+				data: breakerPayload,
+				attemptsMade: 0,
+			} as never)) as { cloudAgentId: string };
+			assert.equal(result.cloudAgentId, "cloud-adopt-1");
+		}
+	});
+
+	assert.equal(postAttempts, 6, "all 6 POSTs ran — circuit never opened on 409");
+	assert.equal(statusPolls, 6);
+
+	mock.restoreAll();
+	__resetProvisioningBreakersForTest();
+});
+
+test("WAIFU_DISABLE_ELIZA_RESILIENCE=true bypasses the breaker (every POST hits upstream)", async () => {
+	__resetProvisioningBreakersForTest();
+	let postAttempts = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		if (String(url).endsWith("/api/v1/agents")) {
+			postAttempts += 1;
+			return new Response("upstream down", { status: 503 });
+		}
+		throw new Error(`unexpected fetch ${url}`);
+	});
+
+	await withEnv({ ...breakerEnv, WAIFU_DISABLE_ELIZA_RESILIENCE: "true" }, async () => {
+		const processor = createAgentProvisioningProcessor({
+			db: breakerTestDb(),
+			logger: console as never,
+			startedAt: new Date("2026-05-27T00:00:00Z"),
+			chainId: 56,
+		});
+		// 7 failing jobs: with resilience disabled there is no breaker, so every job
+		// reaches upstream and fails with the raw 503 (never ElizaCloudUnavailableError).
+		for (let i = 0; i < 7; i++) {
+			await assert.rejects(
+				() => processor({ id: `job-disabled-${i}`, data: breakerPayload, attemptsMade: 0 } as never),
+				(err: unknown) => {
+					assert.ok(!(err instanceof Error && err.name === "ElizaCloudUnavailableError"));
+					assert.match(String(err), /503/);
+					return true;
+				},
+			);
+		}
+		assert.equal(postAttempts, 7, "no breaker → all 7 POSTs reach upstream");
+	});
+
+	mock.restoreAll();
+	__resetProvisioningBreakersForTest();
+});
+
+test("provisioning breaker is NOT applied to status-poll GETs (transient status 5xx never trips the POST circuit)", async () => {
+	__resetProvisioningBreakersForTest();
+	let postAttempts = 0;
+	let statusPolls = 0;
+	mock.method(globalThis, "fetch", async (url: string | URL | Request) => {
+		const target = String(url);
+		if (target.endsWith("/api/v1/agents")) {
+			postAttempts += 1;
+			return Response.json({ success: true, data: { cloudAgentId: "cloud-poll-brk", status: "pending" } });
+		}
+		if (target.includes("/status")) {
+			statusPolls += 1;
+			// Many consecutive status 5xx during boot — far more than the breaker's
+			// failure threshold. These must NOT be counted by the POST breaker.
+			if (statusPolls <= 8) return new Response("status booting", { status: 503 });
+			return Response.json({
+				success: true,
+				data: { cloudAgentId: "cloud-poll-brk", status: "running", webUiUrl: "https://poll-brk.example" },
+			});
+		}
+		throw new Error(`unexpected fetch ${target}`);
+	});
+
+	await withEnv({ ...breakerEnv, WAIFU_ELIZA_PROVISION_STATUS_POLL_ATTEMPTS: "18" }, async () => {
+		const processor = createAgentProvisioningProcessor({
+			db: breakerTestDb(),
+			logger: console as never,
+			startedAt: new Date("2026-05-27T00:00:00Z"),
+			chainId: 56,
+		});
+		const result = (await processor({
+			id: "job-poll-brk",
+			data: breakerPayload,
+			attemptsMade: 0,
+		} as never)) as { webUiUrl?: string };
+		assert.equal(result.webUiUrl, "https://poll-brk.example");
+	});
+
+	// One POST, 9 status polls (8 transient 5xx + 1 success). Circuit stayed closed
+	// because status GETs bypass the breaker entirely.
+	assert.equal(postAttempts, 1);
+	assert.equal(statusPolls, 9);
+
+	mock.restoreAll();
+	__resetProvisioningBreakersForTest();
 });

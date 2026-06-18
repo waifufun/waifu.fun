@@ -37,6 +37,7 @@
         "@waifufun/metrics": "workspace:*",
         "@waifufun/queue": "workspace:*",
         "@waifufun/redis": "workspace:*",
+        "@waifufun/resilience": "workspace:*",
         "@waifufun/s3-uploader": "workspace:*",
         "@waifufun/types": "workspace:*",
         "drizzle-orm": "^0.36.4",
@@ -277,6 +278,7 @@
         "@waifufun/logger": "workspace:*",
         "@waifufun/metrics": "workspace:*",
         "@waifufun/queue": "workspace:*",
+        "@waifufun/resilience": "workspace:*",
         "bullmq": "^5.61.0",
         "drizzle-orm": "^0.36.4",
         "jose": "^6.2.0",
@@ -595,6 +597,15 @@
         "ioredis": "^5.6.1",
       },
       "devDependencies": {
+        "typescript": "^5.4.5",
+      },
+    },
+    "packages/resilience": {
+      "name": "@waifufun/resilience",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/node": "^22.13.10",
+        "tsx": "^4.19.2",
         "typescript": "^5.4.5",
       },
     },
@@ -2610,6 +2621,8 @@
     "@waifufun/queue": ["@waifufun/queue@workspace:packages/queue"],
 
     "@waifufun/redis": ["@waifufun/redis@workspace:packages/redis"],
+
+    "@waifufun/resilience": ["@waifufun/resilience@workspace:packages/resilience"],
 
     "@waifufun/rpc": ["@waifufun/rpc@workspace:packages/rpc"],
 

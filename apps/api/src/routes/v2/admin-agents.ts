@@ -322,6 +322,7 @@ function configuredElizaCloudClient() {
 		...(serviceKey ? { serviceKey } : {}),
 		...(apiKey ? { apiKey } : {}),
 		logger: console,
+		resilient: true,
 	});
 }
 
