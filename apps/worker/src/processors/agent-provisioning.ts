@@ -536,11 +536,21 @@ async function claimProvisioning(context: WorkerContext, agentId: string): Promi
 	const rows = await context.db
 		.update(agentPersonas)
 		.set({
+			// Set the claim AND surface a top-level provisioning.status the GET
+			// /v2/agents/:id detail endpoint (normalizeAgentDetail) exposes, so the
+			// wizard's async poll sees 'provisioning' the instant the worker starts —
+			// before the /api/v1/agents POST returns. Nested jsonb_set: inner sets
+			// the claim, outer sets status; both under one atomic conditional UPDATE.
 			metadata: sql`
 				jsonb_set(
-					coalesce(${agentPersonas.metadata}, '{}'::jsonb),
-					'{provisioning,claim}',
-					jsonb_build_object('status', 'in_progress', 'claimedAt', ${claimedAt}::text),
+					jsonb_set(
+						coalesce(${agentPersonas.metadata}, '{}'::jsonb),
+						'{provisioning,claim}',
+						jsonb_build_object('status', 'in_progress', 'claimedAt', ${claimedAt}::text),
+						true
+					),
+					'{provisioning,status}',
+					'"provisioning"'::jsonb,
 					true
 				)
 			`,
