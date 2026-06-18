@@ -5,10 +5,7 @@ import { normalizeHexSignature } from "./auth-service.js";
 
 describe("normalizeHexSignature", () => {
 	it("collapses a doubled 0x0x prefix to a single 0x", () => {
-		assert.equal(
-			normalizeHexSignature("0x0xabcdef"),
-			"0xabcdef",
-		);
+		assert.equal(normalizeHexSignature("0x0xabcdef"), "0xabcdef");
 	});
 
 	it("leaves a single 0x-prefixed signature unchanged", () => {
