@@ -9,6 +9,7 @@
 
 import type { ChainId, LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
 import { type ApiError, apiFetch, isApiError } from "./_fetcher";
+import { normalizeAgentDetail } from "./patron";
 
 export type ProvisionRequest = {
 	/**
@@ -59,6 +60,14 @@ export type ProvisionResult =
 			provisioningJobId?: string;
 			webUiUrl?: string;
 			logsUrl?: string;
+			/**
+			 * True when the backend returned 202 + `status: 'provisioning'` — the
+			 * hosted runtime is being provisioned ASYNC by the worker and the caller
+			 * should poll `fetchProvisioningStatus(agentId)` for readiness. Absent
+			 * (or false) for the synchronous 200 duplicate-recovery path, which
+			 * already carries a final cloud status.
+			 */
+			asyncProvisioning?: boolean;
 	  }
 	| {
 			ok: false;
@@ -187,6 +196,11 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 		return { ok: false, reason: "server", message: "no agentId in response" };
 	}
 
+	// The 202 async path sets a top-level `status: 'provisioning'`. The 200
+	// duplicate-recovery path never does (it returns a final cloud status under
+	// `cloudStatus`/`cloud.status`). Use the top-level field as the discriminator.
+	const asyncProvisioning = obj.status === "provisioning";
+
 	const tokenAddress = typeof obj.tokenAddress === "string" ? obj.tokenAddress : undefined;
 	const safeAddress = typeof obj.safeAddress === "string" ? obj.safeAddress : undefined;
 	const pullApiKey = typeof obj.pullApiKey === "string" ? obj.pullApiKey : obj.pullApiKey === null ? null : undefined;
@@ -218,6 +232,55 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 		...(provisioningJobId !== undefined ? { provisioningJobId } : {}),
 		...(webUiUrl !== undefined ? { webUiUrl } : {}),
 		...(logsUrl !== undefined ? { logsUrl } : {}),
+		...(asyncProvisioning ? { asyncProvisioning } : {}),
 	};
 	return result;
+}
+
+/** A single read of the hosted runtime's provisioning state, used by the
+ * wizard's post-202 poll loop. `cloudStatus` is the raw Eliza Cloud status the
+ * worker writes into `metadata.provisioning.status` (e.g. 'provisioning',
+ * 'pending', 'queued', 'running', 'failed'). */
+export type ProvisioningStatusSnapshot = {
+	cloudStatus: string | null;
+	webUiUrl: string | null;
+	/** Terminal-ready: the hosted container is up and chat-reachable. */
+	ready: boolean;
+	/** Terminal-failed: Eliza Cloud reported a non-recoverable failure. */
+	failed: boolean;
+};
+
+const RUNTIME_READY_STATUSES = new Set(["running", "ready", "online", "active", "started"]);
+const RUNTIME_FAILED_STATUSES = new Set(["failed", "error", "errored", "dead", "crashed"]);
+
+/**
+ * Poll `GET /v2/agents/:id` once and read the hosted runtime status via the
+ * canonical `normalizeAgentDetail` adapter (same field path the patron page
+ * uses). Returns a snapshot the wizard maps to its loader stages.
+ *
+ * Never throws: a transient 404/5xx during the worker's container boot is
+ * expected, so a failed fetch yields a null/non-terminal snapshot and the
+ * caller keeps polling until its own timeout.
+ */
+export async function fetchProvisioningStatus(
+	agentId: string,
+	signal?: AbortSignal,
+): Promise<ProvisioningStatusSnapshot> {
+	try {
+		const init: RequestInit = {};
+		if (signal) init.signal = signal;
+		const raw = await apiFetch<unknown>(`/v2/agents/${encodeURIComponent(agentId)}`, init);
+		const detail = normalizeAgentDetail(raw);
+		const cloudStatus = detail.runtime?.cloudStatus ?? null;
+		const webUiUrl = detail.runtime?.webUiUrl ?? null;
+		const lowered = cloudStatus?.toLowerCase() ?? "";
+		// Ready requires BOTH a running status AND a reachable chat URL — the
+		// backend's syncTokenRuntimeOverlay holds agentStatus at 'provisioning'
+		// until webUiUrl exists, so we mirror that bar before declaring success.
+		const ready = RUNTIME_READY_STATUSES.has(lowered) && Boolean(webUiUrl);
+		const failed = RUNTIME_FAILED_STATUSES.has(lowered);
+		return { cloudStatus, webUiUrl, ready, failed };
+	} catch {
+		return { cloudStatus: null, webUiUrl: null, ready: false, failed: false };
+	}
 }
