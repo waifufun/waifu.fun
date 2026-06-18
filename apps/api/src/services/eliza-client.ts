@@ -10,6 +10,8 @@
 import * as jose from "jose";
 import { type Address, isAddress } from "viem";
 
+import { wrapElizaClientWithResilience } from "./eliza-client-resilient.js";
+
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface ElizaAvailability {
@@ -1053,6 +1055,30 @@ export class ElizaCloudNotConfiguredError extends Error {
 
 let _instance: ElizaClient | null = null;
 
+/**
+ * Whether the Eliza Cloud resilience wrapper (circuit breaker + selective retry)
+ * is disabled. Set `WAIFU_DISABLE_ELIZA_RESILIENCE=true` to fall back to the raw
+ * client for debugging — logged WARN by callers so it's never silently left on.
+ */
+export function isElizaResilienceDisabled(): boolean {
+	return (process.env.WAIFU_DISABLE_ELIZA_RESILIENCE ?? "").trim().toLowerCase() === "true";
+}
+
+/**
+ * Wrap a raw ElizaClient with the resilience layer unless the kill switch is set.
+ * The circuit name is the base URL so every client built against the same Eliza
+ * Cloud endpoint (singleton + per-route clients) shares one breaker.
+ */
+function applyResilience(client: ElizaClient, baseUrl: string): ElizaClient {
+	if (isElizaResilienceDisabled()) {
+		console.warn(
+			"[eliza-client] WAIFU_DISABLE_ELIZA_RESILIENCE=true — circuit breaker + retry are OFF; raw Eliza Cloud client in use",
+		);
+		return client;
+	}
+	return wrapElizaClientWithResilience(client, baseUrl);
+}
+
 export function getElizaClient(): ElizaClient {
 	if (!_instance) {
 		const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai";
@@ -1071,7 +1097,8 @@ export function getElizaClient(): ElizaClient {
 		const stewardSessionSecret = resolveElizaCloudStewardSecret();
 		const platformStewardUserId = resolveElizaCloudPlatformStewardUserId();
 		const platformStewardTenantId = nonEmpty(process.env.ELIZA_CLOUD_PLATFORM_STEWARD_TENANT_ID);
-		_instance = new ElizaClient({
+		const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
+		const raw = new ElizaClient({
 			baseUrl,
 			serviceKey,
 			apiKey,
@@ -1082,6 +1109,7 @@ export function getElizaClient(): ElizaClient {
 			platformStewardUserId,
 			platformStewardTenantId,
 		});
+		_instance = applyResilience(raw, normalizedBaseUrl);
 	}
 
 	return _instance;
@@ -1096,9 +1124,19 @@ export function createElizaCloudClient(opts: {
 	platformStewardUserId?: string;
 	platformStewardTenantId?: string;
 	logger: Logger;
+	/**
+	 * Opt INTO the resilience layer (circuit breaker + selective retry). Defaults
+	 * to false so this raw constructor stays a transparent ElizaClient factory for
+	 * unit tests and non-route callers that assert on raw upstream behaviour. The
+	 * request-handling routes pass `resilient: true` so a patron-facing call gets
+	 * the breaker + the 503/ElizaCloudUnavailableError translation. Honors the
+	 * WAIFU_DISABLE_ELIZA_RESILIENCE kill switch even when opted in.
+	 */
+	resilient?: boolean;
 }): ElizaCloudClient {
-	return new ElizaClient({
-		baseUrl: opts.baseUrl.trim().replace(/\/+$/, ""),
+	const normalizedBaseUrl = opts.baseUrl.trim().replace(/\/+$/, "");
+	const raw = new ElizaClient({
+		baseUrl: normalizedBaseUrl,
 		apiKey: nonEmpty(opts.apiKey),
 		serviceKey: nonEmpty(opts.serviceKey),
 		sessionToken: nonEmpty(opts.sessionToken),
@@ -1107,6 +1145,7 @@ export function createElizaCloudClient(opts: {
 		platformStewardTenantId: nonEmpty(opts.platformStewardTenantId),
 		logger: opts.logger,
 	});
+	return opts.resilient ? applyResilience(raw, normalizedBaseUrl) : raw;
 }
 
 /** Read the platform Eliza Cloud session token override (for the crypto off-ramp). */

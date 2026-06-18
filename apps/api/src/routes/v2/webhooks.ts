@@ -86,6 +86,7 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 					apiKey: resolveElizaCloudApiKey() ?? "",
 					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
+					resilient: true,
 				});
 
 			try {
@@ -283,6 +284,7 @@ async function receiveDirectAgentEvent(
 					apiKey: resolveElizaCloudApiKey() ?? "",
 					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
+					resilient: true,
 				});
 			await (options.dispatch ?? dispatchEvent)(
 				{

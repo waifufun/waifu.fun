@@ -50,3 +50,17 @@ export const agentRunwayDays = new Gauge({
 	labelNames: ["agentId"] as const,
 	registers: [metricsRegistry],
 });
+
+export const elizaCloudCircuitBreakerState = new Gauge({
+	name: "eliza_cloud_circuit_breaker_state",
+	help: "Eliza Cloud circuit breaker state per circuit: 0=closed, 1=open, 2=half-open.",
+	labelNames: ["circuit"] as const,
+	registers: [metricsRegistry],
+});
+
+export const elizaCloudOutstandingRequests = new Gauge({
+	name: "eliza_cloud_outstanding_requests",
+	help: "In-flight Eliza Cloud requests by static operation name.",
+	labelNames: ["operation"] as const,
+	registers: [metricsRegistry],
+});
