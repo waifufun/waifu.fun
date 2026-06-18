@@ -155,11 +155,7 @@ app.get("/:agentId/hyperliquid/positions", async (c) => {
 			postInfo<Record<string, string>>({ type: "allMids", dex }).catch(() => ({}) as Record<string, string>),
 		),
 	]);
-	const mids: Record<string, string> = Object.assign(
-		{},
-		coreMids ?? {},
-		...builderMids.map((m) => m ?? {}),
-	);
+	const mids: Record<string, string> = Object.assign({}, coreMids ?? {}, ...builderMids.map((m) => m ?? {}));
 
 	const positions = state.mergedPositions
 		.filter((entry): entry is { position: HlPosition; dex?: string; builderPerp?: boolean } =>
