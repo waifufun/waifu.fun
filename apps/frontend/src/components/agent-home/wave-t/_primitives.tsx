@@ -14,7 +14,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-import { type TokenChain, resolveTokenLogo } from "@/lib/wave-t/token-logo";
+import { type TokenChain, hlTicker, isHlEquity, resolveHlAssetLogo, resolveTokenLogo } from "@/lib/wave-t/token-logo";
 import { getVenueLogo, getVenueMeta } from "@/lib/wave-t/venues";
 
 // ── theme tokens (consumed via CSS vars, set in dashboard.tsx root) ─
@@ -179,6 +179,12 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 //
 // VenueIcon is sync (mapped to a local SVG) and falls back to the venue's
 // primary brand color in a tinted circle when the SVG fails to load.
+//
+// HL assets (Hyperliquid core coins + HIP-3 builder synthetic equities like
+// "xyz:SPCX") have no contract address, so the chain:address cascade can't
+// resolve them. Pass `hlAsset` (the raw coin name) to route TokenIcon through
+// the symbol/ticker resolver instead. Equities get a premium monogram
+// fallback; crypto coins get the neutral gradient one. Nothing renders broken.
 
 function hashHue(input: string): number {
 	let h = 0;
@@ -215,45 +221,107 @@ function GradientCircle({
 	);
 }
 
+/**
+ * Monogram avatar for assets with no resolvable logo. Equities read premium
+ * (rounded square, slate gradient, the bare ticker), crypto/other read as a
+ * neutral round gradient circle. Both are intentional brand marks, never a
+ * broken-image glyph.
+ */
+function Monogram({
+	label,
+	seed,
+	size,
+	equity = false,
+}: {
+	label: string;
+	seed: string;
+	size: number;
+	equity?: boolean;
+}) {
+	if (!equity) return <GradientCircle seed={seed} label={label} size={size} />;
+	// Equity mark: ticker initials on a cool slate gradient with a hairline
+	// ring. Square-rounded to read as a "stock" tile rather than a coin.
+	const initials =
+		(label || "?")
+			.replace(/[^A-Z0-9]/gi, "")
+			.slice(0, 2)
+			.toUpperCase() || "?";
+	const hue = hashHue(seed || label || "x");
+	const bg = `linear-gradient(150deg, hsl(${hue} 18% 24%), hsl(${(hue + 24) % 360} 22% 14%))`;
+	return (
+		<span
+			aria-hidden
+			className="inline-flex shrink-0 items-center justify-center font-mono font-medium uppercase text-white/90"
+			style={{
+				width: size,
+				height: size,
+				fontSize: Math.max(7, Math.round(size * (initials.length > 1 ? 0.36 : 0.46))),
+				letterSpacing: "0.02em",
+				background: bg,
+				borderRadius: Math.max(4, Math.round(size * 0.28)),
+				boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10), 0 1px 2px rgba(0,0,0,0.35)",
+			}}
+		>
+			{initials}
+		</span>
+	);
+}
+
 export type TokenIconProps = {
 	chain: TokenChain;
 	address: string;
 	symbol?: string;
 	size?: number;
 	className?: string;
+	/**
+	 * Raw Hyperliquid asset name (e.g. "xyz:SPCX", "BTC"). When set, the icon
+	 * resolves by ticker through the HL resolver instead of chain:address, and
+	 * falls back to a ticker monogram (premium for equities, gradient for
+	 * coins). Use for any Hyperliquid perp / HIP-3 builder asset.
+	 */
+	hlAsset?: string;
 };
 
-export function TokenIcon({ chain, address, symbol, size = 16, className }: TokenIconProps) {
+export function TokenIcon({ chain, address, symbol, size = 16, className, hlAsset }: TokenIconProps) {
 	const [src, setSrc] = React.useState<string | null>(null);
 	const [failed, setFailed] = React.useState(false);
+
+	const isHl = typeof hlAsset === "string" && hlAsset.length > 0;
+	const ticker = isHl ? hlTicker(hlAsset) : (symbol ?? "");
+	const equity = isHl ? isHlEquity(hlAsset) : false;
 
 	React.useEffect(() => {
 		let alive = true;
 		setFailed(false);
-		resolveTokenLogo({ chain, address, ...(symbol ? { symbol } : {}) })
-			.then((url) => {
-				if (alive) setSrc(url);
-			})
-			.catch(() => {
-				if (alive) setSrc(null);
-			});
+		setSrc(null);
+		const p = isHl
+			? resolveHlAssetLogo(hlAsset as string)
+			: resolveTokenLogo({ chain, address, ...(symbol ? { symbol } : {}) });
+		p.then((url) => {
+			if (alive) setSrc(url);
+		}).catch(() => {
+			if (alive) setSrc(null);
+		});
 		return () => {
 			alive = false;
 		};
-	}, [chain, address, symbol]);
+	}, [chain, address, symbol, hlAsset, isHl]);
 
 	if (!src || failed) {
+		const label = isHl ? ticker : (symbol ?? "?");
+		const seed = isHl ? `hl:${ticker}` : `${chain}:${address}`;
 		return (
 			<span className={className}>
-				<GradientCircle seed={`${chain}:${address}`} label={symbol ?? "?"} size={size} />
+				<Monogram seed={seed} label={label || "?"} size={size} equity={equity} />
 			</span>
 		);
 	}
 
+	const altLabel = isHl ? ticker : symbol;
 	return (
 		// eslint-disable-next-line @next/next/no-img-element
 		<img
-			alt={symbol ? `${symbol} logo` : "token logo"}
+			alt={altLabel ? `${altLabel} logo` : "token logo"}
 			className={cn("inline-block shrink-0 rounded-full bg-black/20", className)}
 			height={size}
 			onError={() => setFailed(true)}

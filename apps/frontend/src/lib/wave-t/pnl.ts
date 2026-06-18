@@ -37,7 +37,9 @@ export type HlPnlData = {
 	tradingPnl: {
 		realized: number;
 		unrealized: number;
-		/** lifetime total = current wallet + prior wallet(s), deposit-excluded. */
+		/** live builder-dex unrealized pnl added to display totals, not to core realized derivation. */
+		builderDexUnrealized: number;
+		/** lifetime total = current wallet + prior wallet(s), deposit-excluded, plus live builder-dex unrealized. */
 		total: number;
 		currentWallet: number;
 		priorWallets: number;
@@ -162,6 +164,7 @@ export function parseHlPnl(json: Record<string, unknown>, fallbackWindow: HlPnlW
 		tradingPnl: {
 			realized: num(tp.realized),
 			unrealized: num(tp.unrealized),
+			builderDexUnrealized: num(tp.builderDexUnrealized),
 			total: num(tp.total),
 			currentWallet: num(tp.currentWallet),
 			priorWallets: num(tp.priorWallets),

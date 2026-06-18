@@ -118,6 +118,53 @@ async function handleFinalize(request, env, host) {
 	return out;
 }
 
+async function handleExchange(request, env, host) {
+	// Same-origin PKCE code→token exchange proxy.
+	//
+	// Steward now requires PKCE for OAuth. After Steward redirects back to the
+	// frontend callback with ?code=, the SPA POSTs { code } here. We forward to
+	// the API's /auth/oauth/exchange (server-to-server, carrying the user's
+	// HttpOnly wf_oauth_pkce cookie set at /auth/oauth/start), then mirror the
+	// resulting wf_session Set-Cookie back as a first-party cookie. Same
+	// rationale as handleFinalize: avoids cross-origin / WebView cookie-storage
+	// failures.
+	let body;
+	try {
+		body = await request.json();
+	} catch {
+		return json({ ok: false, error: "BAD_JSON", message: "expected JSON body" }, { status: 400 });
+	}
+	if (!body || typeof body !== "object" || typeof body.code !== "string") {
+		return json({ ok: false, error: "BAD_REQUEST", message: "expected { code: string }" }, { status: 400 });
+	}
+
+	const upstream = await fetch(`${getApiUrl(env)}/auth/oauth/exchange`, {
+		method: "POST",
+		headers: {
+			"content-type": "application/json",
+			...(request.headers.get("cookie") ? { cookie: request.headers.get("cookie") } : {}),
+		},
+		body: JSON.stringify(body),
+	});
+
+	const text = await upstream.text();
+	let parsed;
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		parsed = { ok: false, raw: text };
+	}
+
+	const out = json(parsed, { status: upstream.status });
+	appendUpstreamCookies(out, upstream, host);
+	if (upstream.ok) {
+		const useWaifuDomain = host.endsWith(".waifu.fun") || host === "waifu.fun";
+		const domain = useWaifuDomain ? "; Domain=.waifu.fun" : "";
+		out.headers.append("Set-Cookie", `wf_authed=1; Max-Age=2592000; Path=/; SameSite=Lax${domain}; Secure`);
+	}
+	return out;
+}
+
 async function handleLogout(request, env, host) {
 	const cookie = request.headers.get("cookie") ?? "";
 	const headers = { "content-type": "application/json", ...(cookie ? { cookie } : {}) };
@@ -241,6 +288,7 @@ export async function onRequest(context) {
 	if (!host) host = hostHeader.split(":")[0] || url.hostname;
 
 	if (url.pathname === "/api/auth/finalize" && request.method === "POST") return handleFinalize(request, env, host);
+	if (url.pathname === "/api/auth/exchange" && request.method === "POST") return handleExchange(request, env, host);
 	if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleLogout(request, env, host);
 	if (url.pathname === "/auth/twitter/login" && request.method === "GET") return handleTwitterLogin(request, env);
 	if (url.pathname.startsWith("/api/v1/")) return handleApiV1Proxy(request, env);

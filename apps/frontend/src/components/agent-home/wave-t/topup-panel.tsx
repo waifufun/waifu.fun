@@ -178,7 +178,7 @@ function apiUrl(path: string): string {
 	return `${API_BASE}${path}`;
 }
 
-function fmtUsd(value: number | null | undefined, fallback = "—"): string {
+function fmtUsd(value: number | null | undefined, fallback = "·"): string {
 	if (value === null || value === undefined || !Number.isFinite(value)) return fallback;
 	if (value < 0.01 && value > 0) return "<$0.01";
 	if (value < 1) return `$${value.toFixed(3)}`;
@@ -187,7 +187,7 @@ function fmtUsd(value: number | null | undefined, fallback = "—"): string {
 }
 
 function fmtSeconds(s: number): string {
-	if (!Number.isFinite(s) || s <= 0) return "—";
+	if (!Number.isFinite(s) || s <= 0) return "·";
 	if (s < 60) return `${Math.round(s)}s`;
 	if (s < 3_600) return `${Math.round(s / 60)}m`;
 	return `${(s / 3_600).toFixed(1)}h`;
@@ -609,7 +609,7 @@ function QuoteSummary({
 			</div>
 			<div className="flex items-center justify-between">
 				<dt>fee + gas</dt>
-				<dd className="tabular-nums text-[var(--text-secondary)]">{fmtUsd((q.feeUsd ?? 0) + (q.gasUsd ?? 0), "—")}</dd>
+				<dd className="tabular-nums text-[var(--text-secondary)]">{fmtUsd((q.feeUsd ?? 0) + (q.gasUsd ?? 0), "·")}</dd>
 			</div>
 			<div className="flex items-center justify-between">
 				<dt>destination</dt>

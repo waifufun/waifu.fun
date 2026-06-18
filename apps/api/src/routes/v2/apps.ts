@@ -22,7 +22,25 @@ const app = new Hono();
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 const DEFAULT_IMAGE_GEN_MARKUP_PERCENTAGE = 100;
 const DEFAULT_IMAGE_GEN_MODEL = "google/gemini-2.5-flash-image";
+export const SUPPORTED_IMAGE_GEN_MODELS = [
+	"openai/gpt-image-2/text-to-image",
+	"bytedance/seedream-v5.0-lite",
+	"google/nano-banana-2/text-to-image",
+	"qwen/qwen-image-2.0/text-to-image",
+] as const;
 const DEFAULT_AUTO_ESCROW_THRESHOLD_USD = 1;
+
+/**
+ * Resolve a requested image model against the curated allowlist. A valid
+ * requested id is returned as-is; anything invalid or missing falls back to the
+ * configured default so an unknown model never errors the request.
+ */
+function resolveImageModel(requested: unknown): string {
+	if (typeof requested === "string" && (SUPPORTED_IMAGE_GEN_MODELS as readonly string[]).includes(requested)) {
+		return requested;
+	}
+	return process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL;
+}
 const VALID_ASPECTS = new Set(["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]);
 
 type JsonRecord = Record<string, unknown>;
@@ -35,6 +53,7 @@ export type ImageGenBody = {
 	prompt?: unknown;
 	style?: unknown;
 	aspect?: unknown;
+	model?: unknown;
 	idempotencyKey?: unknown;
 };
 
@@ -192,12 +211,13 @@ async function settleViaEscrow(_input: EscrowSettlementInput): Promise<never> {
 
 export function normalizePrompt(
 	body: ImageGenBody,
-): { prompt: string; style: string | null; aspect: string } | { error: string } {
+): { prompt: string; style: string | null; aspect: string; model: string } | { error: string } {
 	const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
 	if (prompt.length < 3 || prompt.length > 1800) return { error: "prompt must be 3 to 1800 characters" };
 	const style = typeof body.style === "string" && body.style.trim() ? body.style.trim().slice(0, 240) : null;
 	const aspect = typeof body.aspect === "string" && VALID_ASPECTS.has(body.aspect) ? body.aspect : "1:1";
-	return { prompt, style, aspect };
+	const model = resolveImageModel(body.model);
+	return { prompt, style, aspect, model };
 }
 
 export function composePrompt(input: { prompt: string; style: string | null }): string {
@@ -315,6 +335,7 @@ async function generateImageThroughEliza(input: {
 	elizaCloudAppId: string;
 	prompt: string;
 	aspect: string;
+	model: string;
 }): Promise<ElizaImageResponse> {
 	const response = await elizaJson<ElizaImageResponse>(
 		`/api/v1/apps/${input.elizaCloudAppId}/generate-image`,
@@ -323,7 +344,7 @@ async function generateImageThroughEliza(input: {
 			method: "POST",
 			body: JSON.stringify({
 				prompt: input.prompt,
-				model: process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
+				model: input.model,
 				numImages: 1,
 				aspectRatio: input.aspect,
 			}),
@@ -586,6 +607,7 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 			elizaCloudAppId,
 			prompt: composePrompt(normalized),
 			aspect: normalized.aspect,
+			model: normalized.model,
 		});
 	} catch (err) {
 		// Release the idempotency reservation so the caller can retry once the
@@ -634,7 +656,7 @@ app.post("/agents/:token/apps/image-gen/invoke", async (c) => {
 		billingReality: "eliza_cloud_metered",
 		unit: "image",
 		provider: "eliza-cloud",
-		model: generated.model ?? process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
+		model: generated.model ?? normalized.model ?? process.env.WAIFU_IMAGE_GEN_ELIZA_MODEL ?? DEFAULT_IMAGE_GEN_MODEL,
 		cloudCallable: true,
 		readCacheSource: "eliza-cloud-earnings",
 		settlementMode,

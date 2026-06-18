@@ -63,9 +63,23 @@ export interface SiweContextOptions {
 export const LEGACY_LOGIN_SIWE_STATEMENT = "Sign in to waifu.fun.";
 export const LEGACY_LOGIN_SIWE_URI_PATH = "/auth/siwe";
 
+/**
+ * Normalise a hex signature before handing it to siwe/ethers. Some wallet
+ * stacks (and a few of our own call paths) end up double-prefixing the hex
+ * string, producing values like `0x0x<hex>`. ethers' `recoverAddress` then
+ * throws `invalid BytesLike value (argument="signature", value="0x0x...")`
+ * and the login silently fails. Collapse any repeated leading `0x` and
+ * guarantee a single `0x` prefix.
+ */
+export function normalizeHexSignature(signature: string): string {
+	const trimmed = signature.trim();
+	const body = trimmed.replace(/^(?:0x)+/i, "");
+	return `0x${body}`;
+}
+
 export async function verifySiweMessage(messageStr: string, signature: string): Promise<SiweVerifyResult> {
 	const message = new SiweMessage(messageStr);
-	const result = await message.verify({ signature });
+	const result = await message.verify({ signature: normalizeHexSignature(signature) });
 
 	if (!result.success) {
 		throw new Error(result.error?.type ?? "SIWE verification failed");

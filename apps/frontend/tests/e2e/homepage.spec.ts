@@ -12,14 +12,19 @@ test.describe("homepage", () => {
 		await page.waitForLoadState("domcontentloaded");
 
 		// Hero CTAs render inside `<a>` elements but the text lives in
-		// `<motion.div>` reveal wrappers. The header also links to
-		// /give-skill ("launch agent") and /agents ("browse agents"), so
-		// we filter on the hero's exact CTA copy and accept >=1 match.
-		const heroGiveSkill = page.locator('a[href="/give-skill"]').filter({ hasText: /give.*skill/i });
-		await expect(heroGiveSkill.first()).toBeAttached({ timeout: 15_000 });
+		// `<motion.div>` reveal wrappers. Primary CTA = launch (/create/wizard),
+		// secondary = browse (/agents). The curated-lane text link points at
+		// /give-skill but its copy changed ("invite-only · bring your own agent"),
+		// so we no longer match on "give skill" text.
+		const heroLaunch = page.locator('a[href="/create/wizard"]').filter({ hasText: /launch.*agent/i });
+		await expect(heroLaunch.first()).toBeAttached({ timeout: 15_000 });
 
 		const heroBrowse = page.locator('a[href="/agents"]').filter({ hasText: /browse agents/i });
 		await expect(heroBrowse.first()).toBeAttached();
+
+		// The curated-lane link still routes to /give-skill (text-only, copy changed).
+		const heroCuratedLane = page.locator('a[href="/give-skill"]');
+		await expect(heroCuratedLane.first()).toBeAttached();
 	});
 
 	test("footer links resolve to internal pages", async ({ page }) => {

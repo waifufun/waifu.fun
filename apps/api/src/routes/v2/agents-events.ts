@@ -15,6 +15,57 @@ import { groupGithubAgentEvents } from "./agent-event-groups.js";
 
 const app = new Hono();
 
+// The activity feed polls these endpoints every 15s. They must never be served
+// from the browser HTTP cache or a CDN edge in front of api.waifu.fun, or the
+// feed re-renders with identical (stale) data and looks frozen. Mirrors the
+// frontend hook which fetches with `cache: "no-store"`.
+const FEED_CACHE_CONTROL = "no-store";
+
+/**
+ * Event types that are pure on-chain / source-of-truth activity records and
+ * are ALSO enqueued (`status: "pending"`) for the brain worker to optionally
+ * turn into a tweet. Their feed visibility must NOT depend on the brain worker
+ * having processed them: a buy/sell/launch/bond happened on-chain regardless of
+ * whether a tweet was generated, rate-limited (`skipped`) or had no persona
+ * (`failed`). We surface these in the feed at ANY status. Queue-only / operator
+ * event types (provisioning, system.*, reindex, etc.) stay gated on
+ * `status IN ('done','completed')` so genuinely-unprocessed work is not leaked.
+ *
+ * Canonical names (post `canonicalAgentEventType`) AND the legacy brain-bus
+ * aliases the indexers still write are both listed so the filter matches the
+ * row's stored `event_type` either way.
+ */
+const DISPLAY_ONLY_EVENT_TYPES: AgentEventType[] = [
+	"token.created",
+	"token.purchased",
+	"token.sold",
+	"agent.bonded",
+	"agent.graduated",
+	"launch.confirmed",
+	// legacy brain-bus aliases written by the evm-indexer / launch-indexer
+	"agent.created",
+	"agent.trade.buy",
+	"agent.trade.sell",
+];
+
+/**
+ * Build the status/visibility filter for the public feed.
+ *
+ * A row is feed-visible when it is public AND either:
+ *   - terminal-success (`done`/`completed`), OR
+ *   - a display-only on-chain event type (any status), so the feed stays live
+ *     even if the brain worker lags, dies, rate-limits, or fails persona lookup.
+ */
+function feedVisibilityFilter() {
+	return and(
+		eq(agentEventsTable.visibility, "public"),
+		or(
+			inArray(agentEventsTable.status, ["done", "completed"]),
+			inArray(agentEventsTable.eventType, DISPLAY_ONLY_EVENT_TYPES),
+		),
+	);
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
@@ -73,6 +124,7 @@ async function resolveEventAgentIdentity(
  * Counts grouped by canonical event type.
  */
 app.get("/:agentId/events/stats", async (c) => {
+	c.header("Cache-Control", FEED_CACHE_CONTROL);
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 
@@ -92,8 +144,7 @@ app.get("/:agentId/events/stats", async (c) => {
 			: eventAgentIds.length === 1
 				? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
 				: inArray(agentEventsTable.agentId, eventAgentIds),
-		inArray(agentEventsTable.status, ["done", "completed"]),
-		eq(agentEventsTable.visibility, "public"),
+		feedVisibilityFilter(),
 	];
 	if (source) filters.push(eq(agentEventsTable.source, source));
 
@@ -118,6 +169,7 @@ app.get("/:agentId/events/stats", async (c) => {
  * Public chronological activity feed, newest first.
  */
 app.get("/:agentId/events", async (c) => {
+	c.header("Cache-Control", FEED_CACHE_CONTROL);
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 
@@ -186,8 +238,7 @@ app.get("/:agentId/events", async (c) => {
 			: eventAgentIds.length === 1
 				? eq(agentEventsTable.agentId, eventAgentIds[0] as string)
 				: inArray(agentEventsTable.agentId, eventAgentIds),
-		inArray(agentEventsTable.status, ["done", "completed"]),
-		eq(agentEventsTable.visibility, "public"),
+		feedVisibilityFilter(),
 	];
 	if (cursorDate) filters.push(lt(agentEventsTable.createdAt, cursorDate));
 	if (types.length > 0) filters.push(inArray(agentEventsTable.eventType, types));

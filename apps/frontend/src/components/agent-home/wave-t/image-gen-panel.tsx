@@ -34,12 +34,15 @@ import { useCallback, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { App } from "@/lib/wave-t/apps";
 import {
+	DEFAULT_IMAGE_GEN_MODEL_ID,
 	IMAGE_GEN_APP_ID,
 	IMAGE_GEN_ASPECTS,
+	IMAGE_GEN_MODELS,
 	IMAGE_GEN_PROMPT_MAX,
 	IMAGE_GEN_PROMPT_MIN,
 	type ImageGenAspect,
 	type ImageGenError,
+	type ImageGenModelId,
 	type ImageGenResult,
 	imageGenMarkupPct,
 	imageGenModel,
@@ -94,6 +97,7 @@ export function ImageGenInvokeBody({ agentTokenAddress, app, onUnavailable }: Im
 
 	const [prompt, setPrompt] = useState("");
 	const [aspect, setAspect] = useState<ImageGenAspect>("1:1");
+	const [selectedModel, setSelectedModel] = useState<ImageGenModelId>(DEFAULT_IMAGE_GEN_MODEL_ID);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<ImageGenError | null>(null);
 	const [result, setResult] = useState<ImageGenResult | null>(null);
@@ -116,6 +120,7 @@ export function ImageGenInvokeBody({ agentTokenAddress, app, onUnavailable }: Im
 				tokenAddress: agentTokenAddress,
 				prompt: trimmed,
 				aspect,
+				model: selectedModel,
 				// Fresh key per attempt so retries after an error are not
 				// rejected as duplicates by the backend idempotency guard.
 				idempotencyKey: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`,
@@ -134,7 +139,7 @@ export function ImageGenInvokeBody({ agentTokenAddress, app, onUnavailable }: Im
 		} finally {
 			setBusy(false);
 		}
-	}, [busy, promptValid, agentTokenAddress, trimmed, aspect, onUnavailable]);
+	}, [busy, promptValid, agentTokenAddress, trimmed, aspect, selectedModel, onUnavailable]);
 
 	const settledTotal = formatUsd6(result?.charge?.totalCost);
 
@@ -208,6 +213,27 @@ export function ImageGenInvokeBody({ agentTokenAddress, app, onUnavailable }: Im
 						)}
 					>
 						{a}
+					</button>
+				))}
+			</div>
+
+			<div className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">model</div>
+			<div className="mt-1.5 flex flex-wrap gap-1.5">
+				{IMAGE_GEN_MODELS.map((m) => (
+					<button
+						key={m.id}
+						type="button"
+						disabled={busy}
+						onClick={() => setSelectedModel(m.id)}
+						className={cn(
+							"rounded-md border px-2 py-1 font-mono text-[10px] tabular-nums transition-colors",
+							m.id === selectedModel
+								? "border-[var(--accent)]/50 bg-[var(--accent-soft)] text-[var(--accent)]"
+								: "border-[var(--border-soft)] text-[var(--text-tertiary)] hover:border-[var(--border-mid)] hover:text-[var(--text-secondary)]",
+							busy && "opacity-60",
+						)}
+					>
+						{m.label}
 					</button>
 				))}
 			</div>

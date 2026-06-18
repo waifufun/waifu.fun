@@ -32,10 +32,12 @@
  * is the real authn at /finalize.
  */
 
+import { createHash, randomBytes } from "node:crypto";
+
 import { patronUsers } from "@waifufun/db";
 import { getDatabase } from "@waifufun/db";
 import { eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 
 import type { AppBindings } from "../lib/bindings.js";
 import { respondOk } from "../lib/http.js";
@@ -70,7 +72,27 @@ function isProvider(value: string | undefined): value is Provider {
 // ─── Cookie naming + helpers ──────────────────────────────────────
 
 export const OAUTH_RETURN_COOKIE = "wf_oauth_return";
+// PKCE: Steward requires `response_type=code` + a code_challenge. We generate
+// the verifier server-side at /start, stash it in this short-lived HttpOnly
+// cookie, and read it back at /exchange to complete the code→token swap.
+export const OAUTH_PKCE_COOKIE = "wf_oauth_pkce";
+// Stashes the OAuth provider chosen at /start so /exchange knows which
+// provider-scoped Steward token endpoint to hit (the callback URL is the
+// same for every provider, so the frontend can't infer it).
+export const OAUTH_PROVIDER_COOKIE = "wf_oauth_provider";
 const OAUTH_TEMP_TTL_SECONDS = 600; // 10 minutes — enough for the round-trip
+
+// ─── PKCE helpers (RFC 7636) ──────────────────────────────────────
+
+/** Random base64url code_verifier (43 chars from 32 bytes). */
+function generateCodeVerifier(): string {
+	return randomBytes(32).toString("base64url");
+}
+
+/** S256 challenge: base64url(SHA-256(verifier)). */
+function deriveCodeChallenge(verifier: string): string {
+	return createHash("sha256").update(verifier).digest("base64url");
+}
 
 function buildTempCookie(name: string, value: string, secure: boolean): string {
 	const parts = [`${name}=${value}`, `Max-Age=${OAUTH_TEMP_TTL_SECONDS}`, "Path=/", "HttpOnly", "SameSite=Lax"];
@@ -134,7 +156,7 @@ interface BuiltStartUrl {
 	redirectUri: string;
 }
 
-function buildStewardStartUrl(provider: Provider): BuiltStartUrl {
+function buildStewardStartUrl(provider: Provider, pkce?: { codeChallenge: string }): BuiltStartUrl {
 	const stewardBase = process.env.STEWARD_API_URL ?? "https://eliza.steward.fi";
 	const tenant = process.env.STEWARD_TENANT_ID ?? "waifu";
 	const frontendBase = process.env.FRONTEND_URL ?? "https://waifu.fun";
@@ -156,7 +178,69 @@ function buildStewardStartUrl(provider: Provider): BuiltStartUrl {
 	if (!isOAuth) {
 		url.searchParams.set("return_to", redirectUri);
 	}
+	// PKCE is mandatory on Steward's OAuth authorize endpoint. The implicit
+	// (`response_type=token`) flow was disabled, so without these params
+	// Steward replies `code_challenge is required for response_type=code`.
+	if (isOAuth && pkce) {
+		url.searchParams.set("response_type", "code");
+		url.searchParams.set("code_challenge", pkce.codeChallenge);
+		url.searchParams.set("code_challenge_method", "S256");
+	}
 	return { url, redirectUri };
+}
+
+// ─── PKCE code→token exchange ─────────────────────────────────────
+
+/**
+ * Exchange a Steward authorization `code` for a session JWT using the stashed
+ * PKCE `code_verifier`. Hits Steward's token endpoint
+ * (`/auth/oauth/<provider>/token`) which expects `{ code, redirectUri,
+ * code_verifier }` and returns the issued token.
+ */
+async function exchangeStewardCode(opts: {
+	provider: OAuthProvider;
+	code: string;
+	codeVerifier: string;
+	redirectUri: string;
+}): Promise<{ token: string; refreshToken: string | null }> {
+	const stewardBase = process.env.STEWARD_API_URL ?? "https://eliza.steward.fi";
+	const tenant = process.env.STEWARD_TENANT_ID ?? "waifu";
+	// Steward's response_type=code flow mints a one-time NONCE code bound to
+	// {redirectUri, tenantId, codeChallenge} at /authorize-callback time, and
+	// that code is redeemable ONLY at POST /auth/oauth/exchange
+	// (provider-agnostic). The provider-scoped /auth/oauth/:provider/token
+	// route is for unbound provider codes and is DISABLED in prod
+	// ("Unbound OAuth provider code exchange is disabled") — calling it was
+	// the 502 STEWARD_EXCHANGE_FAILED on every login.
+	const tokenUrl = new URL("/auth/oauth/exchange", stewardBase);
+
+	const res = await fetch(tokenUrl.toString(), {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			code: opts.code,
+			redirect_uri: opts.redirectUri,
+			code_verifier: opts.codeVerifier,
+			tenant_id: tenant,
+		}),
+	});
+
+	const json = (await res.json().catch(() => null)) as {
+		token?: string;
+		accessToken?: string;
+		refreshToken?: string;
+		error?: string;
+		message?: string;
+	} | null;
+
+	if (!res.ok || !json) {
+		throw new Error(json?.message ?? json?.error ?? `steward token exchange failed (http ${res.status})`);
+	}
+	const token = json.token ?? json.accessToken;
+	if (!token) {
+		throw new Error("steward token exchange returned no token");
+	}
+	return { token, refreshToken: json.refreshToken ?? null };
 }
 
 // ─── Router ───────────────────────────────────────────────────────
@@ -188,7 +272,24 @@ export function createOAuthRoutes() {
 		const returnTo = sanitizeAuthReturnTo(c.req.query("return_to")) ?? "/patron";
 		const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
 
-		const { url } = buildStewardStartUrl(provider);
+		const isOAuth = (OAUTH_PROVIDERS as readonly string[]).includes(provider);
+
+		// Generate PKCE for OAuth providers (Steward requires it). Stash the
+		// verifier in a short-lived HttpOnly cookie so /exchange can complete
+		// the code→token swap after Steward redirects back with ?code=.
+		let pkce: { codeChallenge: string } | undefined;
+		if (isOAuth) {
+			const codeVerifier = generateCodeVerifier();
+			pkce = { codeChallenge: deriveCodeChallenge(codeVerifier) };
+			c.header("Set-Cookie", buildTempCookie(OAUTH_PKCE_COOKIE, codeVerifier, secure), {
+				append: true,
+			});
+			c.header("Set-Cookie", buildTempCookie(OAUTH_PROVIDER_COOKIE, provider, secure), {
+				append: true,
+			});
+		}
+
+		const { url } = buildStewardStartUrl(provider, pkce);
 
 		// Use c.header(append:true) for Set-Cookie. See /finalize for why
 		// raw Response.headers.append doesn't survive Hono on Node 22 in prod.
@@ -224,102 +325,81 @@ export function createOAuthRoutes() {
 			);
 		}
 		const { token, primaryChain } = parsed;
+		return finalizeStewardToken(c, { token, primaryChain });
+	});
 
+	/**
+	 * POST /auth/oauth/exchange { code, state? }
+	 *
+	 * PKCE code→token exchange. After Steward redirects the user back to the
+	 * frontend callback with `?code=`, the frontend POSTs the code here. We
+	 * read the PKCE `code_verifier` stashed in the HttpOnly `wf_oauth_pkce`
+	 * cookie at /start, swap it with Steward for a session JWT, then run the
+	 * same patron-provisioning + session-cookie logic as /finalize.
+	 */
+	app.post("/exchange", async (c) => {
+		let body: unknown;
+		try {
+			body = await c.req.json();
+		} catch {
+			return c.json({ ok: false, error: "BAD_JSON", message: "expected JSON body" }, 400);
+		}
+
+		const v = (body ?? {}) as Record<string, unknown>;
+		const code = typeof v.code === "string" ? v.code : null;
+		if (!code || code.length === 0 || code.length > 4096) {
+			return c.json({ ok: false, error: "BAD_REQUEST", message: "expected { code: string }" }, 400);
+		}
 		const cookies = parseCookies(c.req.header("cookie") ?? "");
-
-		const principal = await getVerifier()(token);
-		if (!principal || !principal.userId) {
+		// Steward's token endpoint is provider-scoped. Prefer the provider stashed
+		// at /start (cookie), fall back to the body if the frontend echoes it.
+		const providerRaw = cookies[OAUTH_PROVIDER_COOKIE] ?? (typeof v.provider === "string" ? v.provider : "");
+		const provider = (OAUTH_PROVIDERS as readonly string[]).includes(providerRaw)
+			? (providerRaw as OAuthProvider)
+			: null;
+		if (!provider) {
 			return c.json(
-				{
-					ok: false,
-					error: "INVALID_STEWARD_TOKEN",
-					message: "could not verify steward jwt for tenant=waifu",
-				},
-				401,
+				{ ok: false, error: "BAD_REQUEST", message: `provider must be one of: ${OAUTH_PROVIDERS.join(", ")}` },
+				400,
 			);
 		}
 
-		// Look up or auto-provision the patron row. Mirrors the requirePatron()
-		// logic in middleware/patron-auth.ts so the cookie path and the bearer
-		// path stay identical.
-		const db = getDb();
-		const existing = await db
-			.select()
-			.from(patronUsers)
-			.where(eq(patronUsers.stewardUserId, principal.userId))
-			.limit(1);
-
-		let row = existing[0];
-		if (!row) {
-			const placeholder = `steward:${principal.userId}`;
-			const inserted = await db
-				.insert(patronUsers)
-				.values({
-					xUserId: placeholder,
-					xHandle: placeholder,
-					stewardUserId: principal.userId,
-					primaryEmail: principal.email ?? null,
-				})
-				.returning();
-			row = inserted[0];
-		}
-		if (!row) {
+		const codeVerifier = cookies[OAUTH_PKCE_COOKIE];
+		if (!codeVerifier) {
 			return c.json(
 				{
 					ok: false,
-					error: "PATRON_PROVISION_FAILED",
-					message: "could not load patron row after sign-in",
+					error: "MISSING_PKCE_VERIFIER",
+					message: "pkce verifier cookie missing or expired — start sign-in again",
 				},
-				500,
+				400,
 			);
 		}
 
-		const primaryWallet = pickPrimaryWallet(principal, primaryChain);
-		if (primaryWallet) {
-			// Best-effort: a first-time wallet sign-in racing with itself can
-			// hit the unique constraint on patron_wallets.address. The session
-			// is still valid in that case, so don't fail the whole finalize.
-			// Matches the pattern in the auth middleware path.
-			try {
-				await ensurePrimaryPatronWallet(db, row.id, primaryWallet);
-			} catch (err) {
-				console.warn("[oauth/finalize] ensurePrimaryPatronWallet failed (best-effort)", err);
-			}
+		const frontendBase = process.env.FRONTEND_URL ?? "https://waifu.fun";
+		const redirectUri = `${frontendBase}/auth/oauth/callback`;
+
+		let exchanged: { token: string; refreshToken: string | null };
+		try {
+			exchanged = await exchangeStewardCode({ provider, code, codeVerifier, redirectUri });
+		} catch (err) {
+			console.warn("[oauth/exchange] steward token exchange failed", err);
+			return c.json(
+				{
+					ok: false,
+					error: "STEWARD_EXCHANGE_FAILED",
+					message: err instanceof Error ? err.message : "steward token exchange failed",
+				},
+				502,
+			);
 		}
 
-		// Sanitize return_to from cookie (frontend can't be trusted).
-		const rawReturn = cookies[OAUTH_RETURN_COOKIE];
-		const decodedReturn = rawReturn ? safeDecode(rawReturn) : null;
-		const returnTo = sanitizeAuthReturnTo(decodedReturn) ?? "/patron";
-
+		// Clear the one-time PKCE + provider cookies now that they've been consumed.
 		const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
-		const cookieOpts = getCookieOptions();
+		c.header("Set-Cookie", clearTempCookie(OAUTH_PKCE_COOKIE, secure), { append: true });
+		c.header("Set-Cookie", clearTempCookie(OAUTH_PROVIDER_COOKIE, secure), { append: true });
 
-		// The session cookie carries the Steward JWT directly. `requirePatron()`
-		// and the auth middleware both verify it on every request.
-		const sessionCookie = buildSessionCookieHeader(token, cookieOpts);
-
-		// Use c.header(append:true) for Set-Cookie. Returning a raw Response
-		// with res.headers.append("Set-Cookie", ...) ends up dropping the
-		// header on Node 22 + Hono 4.12 in production (works locally on Node
-		// 24, breaks on Railway). Going through Hono's context plumbing fixes
-		// it because the cors middleware materializes c.res first, and the
-		// assignment-back path strips raw-response Set-Cookie entries.
-		c.header("Set-Cookie", sessionCookie, { append: true });
-		c.header("Set-Cookie", clearTempCookie(OAUTH_RETURN_COOKIE, secure), { append: true });
-		return c.json({
-			ok: true,
-			data: {
-				return_to: returnTo,
-				patron: {
-					stewardUserId: row.stewardUserId ?? principal.userId,
-					email: row.primaryEmail ?? principal.email ?? null,
-					primaryAddress: primaryWallet?.address ?? null,
-					primaryChain: primaryWallet?.chain ?? null,
-				},
-			},
-			requestId: c.get("requestId"),
-		});
+		return finalizeStewardToken(c, { token: exchanged.token, primaryChain: normalizeWalletChain(undefined) });
 	});
 
 	/**
@@ -347,6 +427,110 @@ export function createOAuthRoutes() {
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────
+
+/**
+ * Shared post-token finalize: verify the Steward JWT, upsert/provision the
+ * patron row, bind the wf_session cookie, and return the sanitized
+ * return_to + patron summary. Used by BOTH /finalize (token-based wallet /
+ * legacy flow) and /exchange (PKCE code-based OAuth flow).
+ */
+async function finalizeStewardToken(
+	c: Context<AppBindings>,
+	opts: { token: string; primaryChain: ReturnType<typeof normalizeWalletChain> },
+): Promise<Response> {
+	const { token, primaryChain } = opts;
+	const cookies = parseCookies(c.req.header("cookie") ?? "");
+
+	const principal = await getVerifier()(token);
+	if (!principal || !principal.userId) {
+		return c.json(
+			{
+				ok: false,
+				error: "INVALID_STEWARD_TOKEN",
+				message: "could not verify steward jwt for tenant=waifu",
+			},
+			401,
+		);
+	}
+
+	// Look up or auto-provision the patron row. Mirrors the requirePatron()
+	// logic in middleware/patron-auth.ts so the cookie path and the bearer
+	// path stay identical.
+	const db = getDb();
+	const existing = await db.select().from(patronUsers).where(eq(patronUsers.stewardUserId, principal.userId)).limit(1);
+
+	let row = existing[0];
+	if (!row) {
+		const placeholder = `steward:${principal.userId}`;
+		const inserted = await db
+			.insert(patronUsers)
+			.values({
+				xUserId: placeholder,
+				xHandle: placeholder,
+				stewardUserId: principal.userId,
+				primaryEmail: principal.email ?? null,
+			})
+			.returning();
+		row = inserted[0];
+	}
+	if (!row) {
+		return c.json(
+			{
+				ok: false,
+				error: "PATRON_PROVISION_FAILED",
+				message: "could not load patron row after sign-in",
+			},
+			500,
+		);
+	}
+
+	const primaryWallet = pickPrimaryWallet(principal, primaryChain);
+	if (primaryWallet) {
+		// Best-effort: a first-time wallet sign-in racing with itself can
+		// hit the unique constraint on patron_wallets.address. The session
+		// is still valid in that case, so don't fail the whole finalize.
+		// Matches the pattern in the auth middleware path.
+		try {
+			await ensurePrimaryPatronWallet(db, row.id, primaryWallet);
+		} catch (err) {
+			console.warn("[oauth/finalize] ensurePrimaryPatronWallet failed (best-effort)", err);
+		}
+	}
+
+	// Sanitize return_to from cookie (frontend can't be trusted).
+	const rawReturn = cookies[OAUTH_RETURN_COOKIE];
+	const decodedReturn = rawReturn ? safeDecode(rawReturn) : null;
+	const returnTo = sanitizeAuthReturnTo(decodedReturn) ?? "/patron";
+
+	const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
+	const cookieOpts = getCookieOptions();
+
+	// The session cookie carries the Steward JWT directly. `requirePatron()`
+	// and the auth middleware both verify it on every request.
+	const sessionCookie = buildSessionCookieHeader(token, cookieOpts);
+
+	// Use c.header(append:true) for Set-Cookie. Returning a raw Response
+	// with res.headers.append("Set-Cookie", ...) ends up dropping the
+	// header on Node 22 + Hono 4.12 in production (works locally on Node
+	// 24, breaks on Railway). Going through Hono's context plumbing fixes
+	// it because the cors middleware materializes c.res first, and the
+	// assignment-back path strips raw-response Set-Cookie entries.
+	c.header("Set-Cookie", sessionCookie, { append: true });
+	c.header("Set-Cookie", clearTempCookie(OAUTH_RETURN_COOKIE, secure), { append: true });
+	return c.json({
+		ok: true,
+		data: {
+			return_to: returnTo,
+			patron: {
+				stewardUserId: row.stewardUserId ?? principal.userId,
+				email: row.primaryEmail ?? principal.email ?? null,
+				primaryAddress: primaryWallet?.address ?? null,
+				primaryChain: primaryWallet?.chain ?? null,
+			},
+		},
+		requestId: c.get("requestId"),
+	});
+}
 
 function parseFinalizeBody(
 	value: unknown,

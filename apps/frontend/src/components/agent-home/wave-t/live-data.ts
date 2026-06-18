@@ -139,12 +139,15 @@ export function useLiveHoldings(
  * summary instead of summing per-position notional. The `/holdings`
  * snapshot does NOT carry perp account state, so this is the source of
  * truth. Seeds from the SSG-prefetched positions so the first paint has
- * data, then refreshes on the given cadence (30s by default).
+ * data, then refreshes on the given cadence (5s by default, matching the
+ * standalone useHyperliquidPositions hook so the agent page's marks, liq
+ * distance and unrealized pnl stay in step with the rest of the page
+ * instead of lagging by up to 30s).
  */
 export function useLivePerpPositions(
 	address: string,
 	initialPositions: HyperliquidPosition[],
-	intervalMs = 30_000,
+	intervalMs = 5_000,
 ): HyperliquidPositionsSnapshot {
 	const [snapshot, setSnapshot] = useState<HyperliquidPositionsSnapshot>({
 		wallet: null,

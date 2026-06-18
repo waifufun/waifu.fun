@@ -26,6 +26,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
+import type * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -270,9 +271,109 @@ function MarkCell({ value, decimals }: { value: number | null; decimals: number 
 	);
 }
 
+/**
+ * Mobile reflow of the Hyperliquid book. Below sm an 8-column table can't
+ * breathe at 375px, so each position becomes a stacked card: the
+ * asset/side/leverage header on top, then a 3-up micro-grid of the numbers
+ * a trader scans (size, notional, entry, mark, liq dist, u-pnl). Same data,
+ * no horizontal scroll, every value legible. Shown only below sm; sm+ keeps
+ * the dense cockpit table.
+ */
+function HyperliquidPositionsCards({ positions }: { positions: HyperliquidPosition[] }) {
+	return (
+		<ul className="flex flex-col gap-2 sm:hidden">
+			{positions.map((p) => {
+				const tone = toneOfPnl(p.unrealizedPnlUsd);
+				const sideCls = p.side === "long" ? "text-[var(--positive)]" : "text-[var(--negative)]";
+				const distPct = liqDistancePct(p);
+				const distTone = liqTone(distPct);
+				return (
+					<li
+						className="rounded-md border border-[var(--border-soft)] bg-white/[0.012] p-3"
+						key={`${p.coin}-${p.side}`}
+					>
+						{/* Header: asset identity + side/leverage, pnl on the right. */}
+						<div className="flex items-center justify-between gap-2">
+							<div className="flex min-w-0 items-center gap-2">
+								<TokenIcon
+									address=""
+									chain={chainOfVenue("hyperliquid")}
+									hlAsset={p.coin}
+									size={20}
+									symbol={primaryAssetOf(p.coin)}
+								/>
+								<div className="flex min-w-0 flex-col gap-0.5 leading-none">
+									<span className="truncate font-mono text-[13px] text-[var(--text-primary)]">{p.coin}</span>
+									<span className="flex items-center gap-1">
+										<span className={cn("font-mono text-[9px] uppercase tracking-[0.1em]", sideCls)}>{p.side}</span>
+										{p.leverage ? (
+											<span className="rounded-sm bg-white/[0.04] px-1 font-mono text-[9px] tabular-nums text-[var(--text-secondary)]">
+												{p.leverage}x
+											</span>
+										) : null}
+									</span>
+								</div>
+							</div>
+							<div className={cn("shrink-0 text-right font-mono tabular-nums", toneClass(tone))}>
+								<span className="block text-[13px]">{fmtUsd(p.unrealizedPnlUsd, { withSign: true })}</span>
+								{p.unrealizedPnlPct !== null ? (
+									<span className={cn("block text-[10px]", toneClass(tone), "opacity-70")}>
+										{fmtPct(p.unrealizedPnlPct)}
+									</span>
+								) : null}
+							</div>
+						</div>
+
+						{/* Numbers grid: 3-up, label over value, mono tabular. */}
+						<div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2.5 border-t border-[var(--border-soft)] pt-3">
+							<CardStat label="size" value={fmtSize(p.coin, p.size)} />
+							<CardStat label="notional" value={fmtUsd(p.notionalUsd)} />
+							<CardStat
+								label="entry"
+								value={
+									p.entryPrice === null ? EMPTY_CELL : fmtUsd(p.entryPrice, { decimals: p.entryPrice >= 1000 ? 1 : 3 })
+								}
+							/>
+							<CardStat
+								label="mark"
+								value={<MarkCell value={p.currentPrice} decimals={p.currentPrice && p.currentPrice >= 1000 ? 1 : 3} />}
+							/>
+							<CardStat
+								label="liq dist"
+								value={
+									distPct === null ? (
+										<span className="text-[var(--text-tertiary)]">{EMPTY_CELL}</span>
+									) : (
+										<span className={distTone === "negative" ? "text-[var(--negative)]" : undefined}>
+											{distPct.toFixed(0)}%
+										</span>
+									)
+								}
+							/>
+							<div className="flex items-end justify-end">
+								<ClosePositionButton coin={p.coin} side={p.side} />
+							</div>
+						</div>
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
+
+/** Label-over-value cell for the mobile position cards. */
+function CardStat({ label, value }: { label: string; value: React.ReactNode }) {
+	return (
+		<div className="flex flex-col gap-1">
+			<span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{label}</span>
+			<span className="font-mono text-[12px] tabular-nums text-[var(--text-primary)]">{value}</span>
+		</div>
+	);
+}
+
 function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPosition[] }) {
 	return (
-		<table className="w-full border-collapse font-mono text-[11px]">
+		<table className="hidden w-full border-collapse font-mono text-[11px] sm:table">
 			<thead>
 				<tr className="text-left text-[8.5px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 					<th className="pb-2.5 pr-2 font-normal">asset</th>
@@ -298,7 +399,14 @@ function HyperliquidPositionsTable({ positions }: { positions: HyperliquidPositi
 						>
 							<td className="py-3 pr-2">
 								<div className="flex items-center gap-2">
-									<TokenIcon address="" chain={chainOfVenue("hyperliquid")} size={18} symbol={primaryAssetOf(p.coin)} />
+									{/* HL perp asset: resolve by ticker (incl. xyz: equities), not chain:address. */}
+									<TokenIcon
+										address=""
+										chain={chainOfVenue("hyperliquid")}
+										hlAsset={p.coin}
+										size={18}
+										symbol={primaryAssetOf(p.coin)}
+									/>
 									<div className="flex flex-col gap-0.5 leading-none">
 										<span className="text-[12px] text-[var(--text-primary)]">{p.coin}</span>
 										<span className="flex items-center gap-1">
@@ -371,7 +479,7 @@ function ClosePositionButton({ coin, side }: { coin: string; side: "long" | "sho
 			disabled
 			title={`close ${side} ${coin} (steward submit pending)`}
 			className={cn(
-				"inline-flex h-6 items-center justify-center gap-1 rounded-sm px-2",
+				"inline-flex h-7 items-center justify-center gap-1 rounded-sm px-2.5 sm:h-6 sm:px-2",
 				"border border-[var(--border-mid)] bg-white/[0.02]",
 				"font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--text-secondary)]",
 				"cursor-not-allowed opacity-50",
@@ -428,11 +536,11 @@ export function ActivePositions({
 				active positions
 			</Label>
 
-			<div className="flex-1 overflow-x-auto">
+			<div className="flex-1 sm:overflow-x-auto">
 				{hasHl ? (
 					<div className="mb-3">
 						{/* Venue header: which book, how much working capital. */}
-						<div className="mb-3 flex items-center justify-between gap-2">
+						<div className="mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
 							<div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 								<VenueIcon size={13} venue="hyperliquid" />
 								<span>hyperliquid perp</span>
@@ -451,6 +559,7 @@ export function ActivePositions({
 							totalUnrealizedUsd={hlTotalUnrealized}
 						/>
 
+						<HyperliquidPositionsCards positions={hlPositions} />
 						<HyperliquidPositionsTable positions={hlPositions} />
 					</div>
 				) : null}
@@ -476,7 +585,48 @@ export function ActivePositions({
 								</div>
 							</>
 						) : null}
-						<table className="w-full border-collapse font-mono text-[11px]">
+						{/* Mobile: each cross-venue position as a stacked row. */}
+						<ul className="flex flex-col gap-2 sm:hidden">
+							{live.map((p) => {
+								const rowTone = toneOfPnl(p.pnl24h);
+								return (
+									<li className="rounded-md border border-[var(--border-soft)] bg-white/[0.012] p-3" key={p.id}>
+										<div className="flex items-center justify-between gap-2">
+											<span className="inline-flex min-w-0 items-center gap-1.5">
+												<TokenIcon
+													address=""
+													chain={chainOfVenue(p.venue)}
+													size={16}
+													symbol={primaryAssetOf(p.asset)}
+												/>
+												<span className="truncate font-mono text-[12px] text-[var(--text-primary)]">{p.asset}</span>
+											</span>
+											<span className="shrink-0 font-mono text-[12px] tabular-nums text-[var(--text-primary)]">
+												{fmtUsd(p.valueUsd)}
+											</span>
+										</div>
+										<div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-2.5">
+											<span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-secondary)]">
+												<VenueIcon size={13} venue={p.venue} />
+												<span>{p.venue}</span>
+											</span>
+											<span
+												className={cn(
+													"inline-flex items-baseline gap-2 font-mono text-[12px] tabular-nums",
+													toneClass(rowTone),
+												)}
+											>
+												<span>{p.pnl24h === 0 ? EMPTY_CELL : fmtUsd(p.pnl24h, { withSign: true })}</span>
+												<span className="text-[10px] opacity-80">
+													{p.pnl24hPct === 0 ? EMPTY_CELL : fmtPct(p.pnl24hPct)}
+												</span>
+											</span>
+										</div>
+									</li>
+								);
+							})}
+						</ul>
+						<table className="hidden w-full border-collapse font-mono text-[11px] sm:table">
 							<thead>
 								<tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 									<th className="pb-2 pr-2 font-normal">asset</th>

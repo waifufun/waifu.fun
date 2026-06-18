@@ -33,6 +33,7 @@ import type { TokenMetrics } from "@/lib/wave-t/token";
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
 import type { Position } from "@/lib/wave-t/positions";
 import { ActivePositions } from "./active-positions";
+import { filterAgentEventsForActivity } from "./activity-event-filter";
 import { ActivityFeed, type ActivityFeedAuthor, type ActivityRowInput } from "./activity-feed";
 import type { HeroIdentity, HeroProps, HeroTreasuryOverride } from "./hero";
 import { HeroV2 } from "./hero-v2";
@@ -271,7 +272,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-group-${event.id}`,
 				type: "githubGroup",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				eventType: event.eventType,
 				repo: githubRepoLabel(event),
 				count: event.count ?? items.length,
@@ -290,7 +291,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "convert",
 				from: asString(payload.fromLabel, asString(payload.from, "agentsafe")),
 				to: asString(payload.toLabel, asString(payload.to, "steward wallet")),
@@ -304,7 +305,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "deposit",
 				from: asString(payload.fromAsset, "bnb"),
 				to: `${asString(payload.provider, "eliza cloud")} credit`,
@@ -318,7 +319,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "wallet",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				walletType: asString(payload.walletType, "steward-managed"),
 				walletAddress: asString(payload.walletAddress, "wallet"),
 				chainId: event.chainId,
@@ -333,7 +334,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: policies.length || asNumber(payload.n, 0),
 				walletAddress: asString(payload.walletAddress, "wallet"),
 				summary: policies
@@ -354,7 +355,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "tradeSession",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				venue: asString(payload.venue, "trading"),
 				dailyCapUsd: asNumber(payload.dailyCapUsd, 0),
 				perOrderCapUsd: asNumber(payload.perOrderCapUsd, 0),
@@ -373,7 +374,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "app",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "updated",
 				appName: text ?? asString(payload.repoLabel, asString(payload.repo, "github")),
 				version: asString(payload.sha).slice(0, 7),
@@ -389,7 +390,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "pr",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				title:
 					text ??
 					asString(payload.title, event.eventType.includes("opened") ? "opened pull request" : "merged pull request"),
@@ -474,7 +475,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "revenue",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				source: "tax",
 				usd,
 			};
@@ -488,7 +489,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "deposit",
 				from: asString(payload.fromLabel, "tax stream"),
 				to: asString(payload.toLabel, "treasury"),
@@ -556,7 +557,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "convert",
 				from: `${fromAmount} ${fromAsset}`,
 				to: `${toAmount} ${toAsset}`,
@@ -571,7 +572,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "deposit",
 				from: `arbitrum ${asset}`,
 				to: "hyperliquid",
@@ -594,7 +595,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: direction,
 				from: direction === "deposit" ? counterparty : "agent",
 				to: direction === "deposit" ? "agent" : counterparty,
@@ -619,7 +620,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: asNumber(payload.signaturesCount, 0),
 				walletAddress: asString(payload.safeAddress, "safe"),
 				summary: `safe tx ${stage} · ${summary}`,
@@ -642,7 +643,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: 1,
 				walletAddress: asString(payload.walletAddress, "steward"),
 				summary: `${kind === "denied" ? "denied" : "manual review"} · ${reason}`,
@@ -661,7 +662,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "treasury",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				action: "withdraw",
 				from: "agent",
 				to: asString(payload.provider, "inference"),
@@ -678,7 +679,7 @@ function eventToActivityRow(event: AgentEvent): ActivityRowInput | null {
 			return {
 				id: `agent-event-${event.id}`,
 				type: "policy",
-				timestamp: event.createdAt,
+				timestamp: eventTimestamp(event),
 				count: 1,
 				walletAddress: asString(payload.registry, "erc-8004"),
 				summary:
@@ -764,6 +765,8 @@ export function LiveActivityFeed({
 	// PR rows. Before the first live github event lands we keep the seed so
 	// the panel is not empty on first paint, but that seed is already scoped
 	// to this agent's own github identity at build time.
+	const visibleAgentEvents = useMemo(() => filterAgentEventsForActivity(agentEvents.events), [agentEvents.events]);
+
 	const hasLiveGithub = useMemo(() => {
 		const githubEventTypes = new Set([
 			"pr.merged",
@@ -773,8 +776,8 @@ export function LiveActivityFeed({
 			"gh_pr_opened",
 			"gh_commit_pushed",
 		]);
-		return agentEvents.events.some((e) => githubEventTypes.has(e.eventType));
-	}, [agentEvents.events]);
+		return visibleAgentEvents.some((e) => githubEventTypes.has(e.eventType));
+	}, [visibleAgentEvents]);
 
 	// Merge: replace tweet rows in initialActivity with the live set; keep
 	// non-github seed rows (txs, etc). Github seed rows (pr / githubGroup)
@@ -803,7 +806,7 @@ export function LiveActivityFeed({
 		// same org/repo). pr.merged is canonical.
 		const prMergedShas = new Set<string>();
 		const prMergedRepoTimes: Array<{ repo: string; t: number }> = [];
-		for (const e of agentEvents.events) {
+		for (const e of visibleAgentEvents) {
 			if (e.eventType !== "pr.merged") continue;
 			const p = e.payload ?? {};
 			const sha = (p as Record<string, unknown>).mergeCommitSha;
@@ -825,7 +828,7 @@ export function LiveActivityFeed({
 			const t = new Date(e.createdAt).getTime();
 			return !prMergedRepoTimes.some((p2) => p2.repo === orgRepo && Math.abs(p2.t - t) < 60_000);
 		};
-		const filteredEvents = agentEvents.events
+		const filteredEvents = visibleAgentEvents
 			.map((e) => {
 				if (!e.grouped || !e.items || (e.eventType !== "commit.pushed" && e.eventType !== "gh_commit_pushed")) return e;
 				const items = e.items.filter(shouldKeepCommit);
@@ -839,7 +842,7 @@ export function LiveActivityFeed({
 		const merged = [...nonTweet, ...tweetRows, ...eventRows];
 		merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 		return mergeActivityWithTrades({ activity: merged, trades, ticker });
-	}, [initialActivity, hasLiveGithub, tweets, agentEvents.events, trades, ticker]);
+	}, [initialActivity, hasLiveGithub, tweets, visibleAgentEvents, trades, ticker]);
 
 	return <ActivityFeed rows={rows} max={max} {...(author ? { author } : {})} live />;
 }

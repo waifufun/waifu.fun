@@ -13,7 +13,24 @@ import { LIFI_BRIDGE_ALLOWLIST } from "./allowlist.js";
 const LIFI_BASE_URL = "https://li.quest";
 const INTEGRATOR_NAME = "waifu";
 const SLIPPAGE_CAP = 0.005; // 0.5%
-const INTEGRATOR_FEE = 0; // 0% in MVP; revisit at Phase 4
+// Default integrator fee fraction. 0 = no fee (inert) unless overridden by the
+// LIFI_INTEGRATOR_FEE env var. Turning this on monetizes LI.FI swaps/top-ups:
+// the fee accrues to the wallet registered for the integrator key in the LI.FI
+// Partner Portal (FeeForwarder forwards it directly at execution). Set that
+// receiver to the platform Safe 0x0985cCC0fD7C568d493874D845471D5F4B1D9c3c.
+const DEFAULT_INTEGRATOR_FEE = 0;
+// Hard ceiling so a fat-fingered env can't charge an absurd fee.
+const MAX_INTEGRATOR_FEE = 0.01; // 1%
+
+function clampIntegratorFee(value: number | undefined): number {
+	if (value === undefined || !Number.isFinite(value) || value < 0) return DEFAULT_INTEGRATOR_FEE;
+	return Math.min(value, MAX_INTEGRATOR_FEE);
+}
+
+function parseIntegratorFeeEnv(raw: string | undefined): number {
+	if (!raw || raw.trim() === "") return DEFAULT_INTEGRATOR_FEE;
+	return clampIntegratorFee(Number(raw));
+}
 
 export interface LifiQuoteInput {
 	fromChain: number;
@@ -99,6 +116,8 @@ export interface LifiClientConfig {
 	integrator?: string;
 	baseUrl?: string;
 	fetchImpl?: typeof fetch;
+	// Integrator fee fraction (e.g. 0.002 = 20bps). Defaults to 0 (no fee).
+	integratorFee?: number;
 }
 
 export class LifiClient {
@@ -106,12 +125,14 @@ export class LifiClient {
 	private readonly integrator: string;
 	private readonly baseUrl: string;
 	private readonly fetchImpl: typeof fetch;
+	private readonly integratorFee: number;
 
 	constructor(cfg: LifiClientConfig) {
 		this.apiKey = cfg.apiKey;
 		this.integrator = cfg.integrator ?? INTEGRATOR_NAME;
 		this.baseUrl = cfg.baseUrl ?? LIFI_BASE_URL;
 		this.fetchImpl = cfg.fetchImpl ?? fetch;
+		this.integratorFee = clampIntegratorFee(cfg.integratorFee);
 	}
 
 	async getQuote(input: LifiQuoteInput): Promise<LifiQuoteResponse> {
@@ -124,7 +145,7 @@ export class LifiClient {
 			fromAddress: input.fromAddress,
 			toAddress: input.toAddress,
 			integrator: this.integrator,
-			fee: String(INTEGRATOR_FEE),
+			fee: String(this.integratorFee),
 			slippage: String(SLIPPAGE_CAP),
 			order: "RECOMMENDED",
 			allowDestinationCall: "false",
@@ -204,8 +225,14 @@ export function tryCreateLifiClient(env: NodeJS.ProcessEnv = process.env): LifiC
 	const apiKey = env.LIFI_INTEGRATOR_KEY?.trim();
 	if (!apiKey) return null;
 	const integrator = env.LIFI_INTEGRATOR?.trim() || INTEGRATOR_NAME;
-	return new LifiClient({ apiKey, integrator });
+	const integratorFee = parseIntegratorFeeEnv(env.LIFI_INTEGRATOR_FEE);
+	return new LifiClient({ apiKey, integrator, integratorFee });
 }
 
 export const LIFI_SLIPPAGE_CAP = SLIPPAGE_CAP;
-export const LIFI_INTEGRATOR_FEE = INTEGRATOR_FEE;
+// Resolved from env at read time so callers/tests reflect the configured fee.
+export function resolveLifiIntegratorFee(env: NodeJS.ProcessEnv = process.env): number {
+	return parseIntegratorFeeEnv(env.LIFI_INTEGRATOR_FEE);
+}
+// Back-compat: the legacy constant export now reflects the env-resolved fee.
+export const LIFI_INTEGRATOR_FEE = parseIntegratorFeeEnv(process.env.LIFI_INTEGRATOR_FEE);

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { fetchAllHlState } from "./builder-dexs.js";
 import { type HlPortfolioWindow, type PnlPoint, anchorBaseline, buildHlPnl } from "./pnl.js";
 
 // ── anchorBaseline (pure) ──────────────────────────────────────────────
@@ -63,11 +64,13 @@ function mockFetch(spec: {
 	fills: Record<string, unknown>;
 }): typeof fetch {
 	return (async (_url: string | URL, init?: { body?: string | null }) => {
-		const body = JSON.parse(String(init?.body ?? "{}")) as { type: string; user: string };
+		const body = JSON.parse(String(init?.body ?? "{}")) as { type: string; user: string; dex?: string };
 		let data: unknown;
 		if (body.type === "portfolio") data = spec.portfolios[body.user];
-		else if (body.type === "clearinghouseState") data = spec.clearinghouse[body.user];
-		else if (body.type === "userFills") data = spec.fills[body.user];
+		else if (body.type === "clearinghouseState") {
+			const key = body.dex ? `${body.user}:${body.dex}` : body.user;
+			data = spec.clearinghouse[key];
+		} else if (body.type === "userFills") data = spec.fills[body.user];
 		return { ok: data !== undefined, json: async () => data } as Response;
 	}) as unknown as typeof fetch;
 }
@@ -97,6 +100,7 @@ test("buildHlPnl: deposit-excluded total, realized = total − unrealized, prior
 	// current-wallet lifetime trading pnl = allTime tail (deposit-excluded), NOT accountValue.
 	assert.equal(r.tradingPnl.currentWallet, 150);
 	assert.equal(r.tradingPnl.unrealized, 40);
+	assert.equal(r.tradingPnl.builderDexUnrealized, 0);
 	assert.equal(r.tradingPnl.priorWallets, 60); // closed account → fully realized
 	assert.equal(r.tradingPnl.total, 210); // 150 + 60
 	assert.equal(r.tradingPnl.realized, 170); // (150 − 40) + 60
@@ -126,6 +130,105 @@ test("buildHlPnl: never-traded wallet yields zeros and a null winLoss", async ()
 	assert.equal(r.tradingPnl.total, 0);
 	assert.equal(r.tradingPnl.realized, 0);
 	assert.equal(r.tradingPnl.unrealized, 0);
+	assert.equal(r.tradingPnl.builderDexUnrealized, 0);
 	assert.equal(r.winLoss, null);
 	assert.deepEqual(r.series, [{ t: 2, pnl: 0 }]); // flat-zero, not a fabricated history
+});
+
+test("fetchAllHlState: merges configured builder-dex positions and sums isolated totals", async () => {
+	const WALLET = "0xwallet";
+	const fetchImpl = mockFetch({
+		portfolios: {},
+		clearinghouse: {
+			[WALLET]: {
+				marginSummary: { accountValue: "1000" },
+				withdrawable: "700",
+				assetPositions: [{ position: { coin: "ETH", szi: "1", unrealizedPnl: "10" } }],
+			},
+			[`${WALLET}:xyz`]: {
+				marginSummary: { accountValue: "2000" },
+				withdrawable: "1500",
+				assetPositions: [{ position: { coin: "xyz:SPCX", szi: "-4.68", unrealizedPnl: "25" } }],
+			},
+		},
+		fills: {},
+	});
+
+	const state = await fetchAllHlState(WALLET, fetchImpl, { builderDexs: ["xyz"] });
+
+	assert.equal(state.totalAccountValue, 3000);
+	assert.equal(state.totalWithdrawable, 2200);
+	assert.equal(state.totalUnrealizedPnl, 35);
+	assert.equal(state.builderDexs.length, 1);
+	assert.equal(state.mergedPositions.length, 2);
+	assert.equal(state.mergedPositions[0]?.position?.coin, "ETH");
+	assert.equal(state.mergedPositions[0]?.builderPerp, false);
+	assert.equal(state.mergedPositions[1]?.position?.coin, "xyz:SPCX");
+	assert.equal(state.mergedPositions[1]?.dex, "xyz");
+	assert.equal(state.mergedPositions[1]?.builderPerp, true);
+});
+
+test("buildHlPnl: live account value and unrealized pnl include builder-dex isolated margin", async () => {
+	const WALLET = "0xwallet";
+	const fetchImpl = mockFetch({
+		portfolios: { [WALLET]: makePortfolio({ day: [0, 80], allTime: [0, 80] }) },
+		clearinghouse: {
+			[WALLET]: {
+				marginSummary: { accountValue: "1000" },
+				withdrawable: "900",
+				assetPositions: [{ position: { coin: "ETH", szi: "1", unrealizedPnl: "20" } }],
+			},
+			[`${WALLET}:xyz`]: {
+				marginSummary: { accountValue: "2000" },
+				withdrawable: "1500",
+				assetPositions: [{ position: { coin: "xyz:SPCX", szi: "-4.68", unrealizedPnl: "30" } }],
+			},
+		},
+		fills: { [WALLET]: [] },
+	});
+
+	const r = await buildHlPnl(WALLET, [], "day", fetchImpl);
+
+	assert.equal(r.accountValue, 3000);
+	assert.equal(r.withdrawable, 2400);
+	// The portfolio pnl series is core-scoped, so realized uses matching core
+	// unrealized (80 - 20 = 60). Builder-dex unrealized is a separate live
+	// additive display component, not subtracted from the core-only total.
+	assert.equal(r.tradingPnl.unrealized, 50);
+	assert.equal(r.tradingPnl.builderDexUnrealized, 30);
+	assert.equal(r.tradingPnl.realized, 60);
+	assert.equal(r.tradingPnl.currentWallet, 110);
+	assert.equal(r.tradingPnl.total, 110);
+});
+
+test("fetchAllHlState: failed builder-dex query is resilient", async () => {
+	const WALLET = "0xwallet";
+	const fetchImpl = mockFetch({
+		portfolios: {},
+		clearinghouse: {
+			[WALLET]: {
+				marginSummary: { accountValue: "1000" },
+				assetPositions: [{ position: { coin: "BTC", szi: "0.1", unrealizedPnl: "5" } }],
+			},
+			[`${WALLET}:xyz`]: {
+				marginSummary: { accountValue: "2000" },
+				assetPositions: [{ position: { coin: "xyz:SPCX", szi: "-4.68", unrealizedPnl: "15" } }],
+			},
+			// no 0xwallet:bad entry, so the mock returns !ok for that builder dex
+		},
+		fills: {},
+	});
+
+	const state = await fetchAllHlState(WALLET, fetchImpl, { builderDexs: ["xyz", "bad"] });
+
+	assert.equal(state.totalAccountValue, 3000);
+	assert.deepEqual(
+		state.builderDexs.map((entry) => entry.dex),
+		["xyz"],
+	);
+	assert.deepEqual(state.failedDexs, ["bad"]);
+	assert.deepEqual(
+		state.mergedPositions.map((entry) => entry.position?.coin),
+		["BTC", "xyz:SPCX"],
+	);
 });
