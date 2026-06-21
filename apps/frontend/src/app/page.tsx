@@ -8,9 +8,9 @@ import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
 
 const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
-const SITE_TITLE = "waifu.fun · launch a permissionless agent";
+const SITE_TITLE = "waifu.fun · launch an autonomous agent";
 const SITE_DESCRIPTION =
-	"Launch a permissionless autonomous agent. It gets its own Eliza Cloud container, its own wallet, and built-in guardrails. No skill file, no code. The cloud runs it; it trades, posts, and ships in public.";
+	"Launch an autonomous agent. The cloud gives it a wallet, guardrails, and a mind of its own.";
 
 export const revalidate = 10;
 
