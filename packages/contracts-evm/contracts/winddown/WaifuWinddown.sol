@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 interface IPancakeRouter02 {
     function WETH() external pure returns (address);
@@ -19,43 +20,36 @@ interface IPancakeRouter02 {
 
 /**
  * @title WaifuWinddown
- * @notice Honest wind-down of an immutable, ownership-renounced memecoin whose
- *         LP is permanently burned (liquidity can't be removed, only sold into).
+ * @notice Honest wind-down of $WAIFU (FlapTaxTokenV3: immutable, ownership
+ *         renounced, LP permanently burned, 3% buy/3% sell tax on pool trades,
+ *         wallet->wallet transfers untaxed). Liquidity can't be removed, only
+ *         sold into.
  *
- * Two-window, deposit-funded design (the pot GROWS with participation):
+ * Two-window, deposit-funded model (the pot GROWS with participation):
+ *   A. seed + sell AGENT tokens FIRST (before deposits) -> base BNB pot, crashes
+ *      the float so depositing is the rational exit. openDeposits() is a one-way
+ *      gate; after it, sellAgent is disabled so depositor tokens can never be
+ *      sold as "agent".
+ *   B. ~1wk DEPOSIT WINDOW: holders deposit() WAIFU (deposit->contract is
+ *      wallet-to-wallet = UNTAXED, so the contract receives exactly `amount`;
+ *      we still credit by measured balance-delta to be fee-on-transfer-safe).
+ *   C. closeDeposits() -> sellRelinquished() sells ALL deposited WAIFU into the
+ *      LP (3% sell tax skimmed by the token; we measure BNB by balance-delta so
+ *      the pot reflects ACTUAL proceeds) -> finalize() locks pot + total.
+ *   D. ~30d CLAIM WINDOW: claim() pays pot * yourDeposit / totalDeposited (BNB).
+ *   E. sweep() after window: unclaimed BNB + dust -> treasury.
  *
- *   PHASE A  seed + agent sell (owner, BEFORE deposits open)
- *     Owner seeds the agent's controlled WAIFU and sells it into BNB. This
- *     loss-leader sale funds the base pot and crashes the float, so depositing
- *     becomes the rational exit for everyone else. openDeposits() is a one-way
- *     gate; once open, sellAgent is disabled so depositor tokens can never be
- *     sold as "agent" tokens.
- *
- *   PHASE B  DEPOSIT WINDOW (~1 week)
- *     Any holder calls deposit(amount): WAIFU escrowed, pro-rata weight recorded.
- *     Pooling everyone's selling power beats 100+ wallets dumping individually.
- *
- *   PHASE C  close + sell relinquished + finalize (owner)
- *     After the window, owner sells ALL deposited WAIFU into the LP (metered,
- *     slippage-guarded), growing the pot, then finalize() locks
- *     pot = contract BNB balance and total = total deposited.
- *
- *   PHASE D  CLAIM WINDOW (~30 days)
- *     Each depositor claims pot * theirDeposit / totalDeposited (BNB).
- *
- *   PHASE E  SWEEP
- *     After the claim window, owner sweeps unclaimed BNB + dust to treasury.
- *
- * Pro-rata is by DEPOSITED amount (no snapshot, no Merkle): you only share the
- * pot if you actually relinquished your tokens. Non-participants get nothing.
- *
- * Owner powers bounded: seed, sellAgent (pre-open, slippage-guarded),
- * openDeposits-once, closeDeposits-once, sellRelinquished (slippage-guarded),
- * finalize-once, sweep-after-window. Owner CANNOT withdraw BNB before finalize,
- * CANNOT alter pro-rata weights, and CANNOT sell depositor tokens as agent
- * (the openDeposits gate prevents it). No upgradeability.
+ * Hardening:
+ *   - Pausable: owner can pause deposit/claim if something is wrong mid-flight.
+ *   - Sell proceeds + deposit credit measured by BALANCE DELTA (tax/FoT-safe).
+ *   - Per-call swap deadline must be in the future (stale-tx guard).
+ *   - emergencyRefund(): if a sale path breaks and the wind-down is abandoned
+ *     BEFORE finalize, owner can flip to a refund mode so depositors reclaim
+ *     their WAIFU 1:1 (no funds trapped). Mutually exclusive with finalize.
+ *   - Owner cannot withdraw the BNB pot before finalize, cannot alter weights,
+ *     cannot sell depositor tokens as agent. No upgradeability. CEI + nonReentrant.
  */
-contract WaifuWinddown is Ownable, ReentrancyGuard {
+contract WaifuWinddown is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable waifu;
@@ -64,8 +58,10 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     bool public depositsOpen;
     bool public depositsClosed;
     bool public finalized;
+    bool public refundMode; // emergency: depositors reclaim WAIFU 1:1 instead of BNB
+    bool public relinquishedSold; // true once any deposited WAIFU has been sold
 
-    uint256 public totalDeposited; // pro-rata denominator
+    uint256 public totalDeposited; // pro-rata denominator (measured credits)
     mapping(address => uint256) public deposited;
     mapping(address => bool) public claimed;
 
@@ -76,11 +72,13 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     event AgentSeeded(uint256 amount);
     event AgentSold(uint256 amountIn, uint256 bnbOut);
     event DepositsOpened();
-    event Deposited(address indexed user, uint256 amount, uint256 newTotal);
+    event Deposited(address indexed user, uint256 credited, uint256 newTotal);
     event DepositsClosed(uint256 totalDeposited);
     event RelinquishedSold(uint256 amountIn, uint256 bnbOut);
     event Finalized(uint256 potWei, uint256 totalDeposited, uint256 claimDeadline);
     event Claimed(address indexed user, uint256 deposit, uint256 bnbOut);
+    event RefundModeEnabled();
+    event Refunded(address indexed user, uint256 amount);
     event Swept(uint256 bnbWei, uint256 waifuAmount, address to);
 
     error DepositsAreClosed();
@@ -92,10 +90,17 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     error AlreadyClaimed();
     error NothingDeposited();
     error ZeroAmount();
+    error NoTokensReceived();
     error TransferFailed();
     error SweepTooEarly();
+    error BadDeadline();
+    error RefundActive();
+    error RefundNotActive();
+    error AlreadySoldDeposits();
+    error ZeroAddress();
 
     constructor(IERC20 _waifu, IPancakeRouter02 _router, uint256 _claimWindow) Ownable() {
+        if (address(_waifu) == address(0) || address(_router) == address(0)) revert ZeroAddress();
         waifu = _waifu;
         router = _router;
         claimWindow = _claimWindow;
@@ -106,6 +111,7 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     // ----- Phase A: agent seed + sell (before deposits open) ------------
     function seedAgent(uint256 amount) external onlyOwner {
         if (depositsOpen) revert DepositsAlreadyOpen();
+        if (amount == 0) revert ZeroAmount();
         waifu.safeTransferFrom(msg.sender, address(this), amount);
         emit AgentSeeded(amount);
     }
@@ -129,14 +135,23 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     }
 
     // ----- Phase B: deposit window --------------------------------------
-    function deposit(uint256 amount) external nonReentrant {
+    /// @notice Deposit WAIFU to participate. Credited by MEASURED balance delta
+    ///         (tax/fee-on-transfer-safe). WAIFU deposit is wallet->contract =
+    ///         untaxed on FlapTaxTokenV3, so credit == amount in practice.
+    function deposit(uint256 amount) external nonReentrant whenNotPaused {
         if (!depositsOpen) revert DepositsNotOpen();
         if (depositsClosed) revert DepositsAreClosed();
+        if (refundMode) revert RefundActive();
         if (amount == 0) revert ZeroAmount();
-        deposited[msg.sender] += amount;
-        totalDeposited += amount;
+
+        uint256 before = waifu.balanceOf(address(this));
         waifu.safeTransferFrom(msg.sender, address(this), amount);
-        emit Deposited(msg.sender, amount, totalDeposited);
+        uint256 credited = waifu.balanceOf(address(this)) - before;
+        if (credited == 0) revert NoTokensReceived();
+
+        deposited[msg.sender] += credited;
+        totalDeposited += credited;
+        emit Deposited(msg.sender, credited, totalDeposited);
     }
 
     // ----- Phase C: close + sell relinquished + finalize ----------------
@@ -147,6 +162,8 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
         emit DepositsClosed(totalDeposited);
     }
 
+    /// @notice Sell deposited WAIFU into BNB after the window. Meter across calls
+    ///         (TWAP) to limit price impact. BNB proceeds measured by delta.
     function sellRelinquished(uint256 amountIn, uint256 amountOutMin, uint256 deadline)
         external
         onlyOwner
@@ -154,6 +171,8 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     {
         if (!depositsClosed) revert DepositsNotClosed();
         if (finalized) revert AlreadyFinalized();
+        if (refundMode) revert RefundActive();
+        relinquishedSold = true;
         uint256 got = _swapToBnb(amountIn, amountOutMin, deadline);
         emit RelinquishedSold(amountIn, got);
     }
@@ -161,6 +180,7 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     function finalize() external onlyOwner {
         if (!depositsClosed) revert DepositsNotClosed();
         if (finalized) revert AlreadyFinalized();
+        if (refundMode) revert RefundActive();
         if (totalDeposited == 0) revert NothingDeposited();
         finalized = true;
         potWei = address(this).balance;
@@ -169,7 +189,7 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
     }
 
     // ----- Phase D: claim (pro-rata by deposit) -------------------------
-    function claim() external nonReentrant {
+    function claim() external nonReentrant whenNotPaused {
         if (!finalized) revert NotFinalized();
         if (claimed[msg.sender]) revert AlreadyClaimed();
         uint256 dep = deposited[msg.sender];
@@ -183,8 +203,33 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
         emit Claimed(msg.sender, dep, payout);
     }
 
+    // ----- Emergency: refund mode (before finalize only) ----------------
+    /// @notice If the wind-down must be abandoned BEFORE finalize (e.g. sell
+    ///         path broken), enable refund mode so depositors reclaim their
+    ///         WAIFU 1:1. Mutually exclusive with finalize -> no double payout.
+    function enableRefundMode() external onlyOwner {
+        if (finalized) revert AlreadyFinalized();
+        if (relinquishedSold) revert AlreadySoldDeposits();
+        refundMode = true;
+        emit RefundModeEnabled();
+    }
+
+    /// @notice Reclaim your deposited WAIFU 1:1 when refund mode is active.
+    /// @dev Only safe because no relinquished tokens have been sold once we
+    ///      commit to refund (owner must enable refund BEFORE selling deposits).
+    function refund() external nonReentrant {
+        if (!refundMode) revert RefundNotActive();
+        uint256 dep = deposited[msg.sender];
+        if (dep == 0) revert NothingDeposited();
+        deposited[msg.sender] = 0;
+        totalDeposited -= dep;
+        waifu.safeTransfer(msg.sender, dep);
+        emit Refunded(msg.sender, dep);
+    }
+
     // ----- Phase E: sweep -----------------------------------------------
     function sweep(address to) external onlyOwner nonReentrant {
+        if (to == address(0)) revert ZeroAddress();
         if (!finalized) revert NotFinalized();
         if (block.timestamp < claimDeadline) revert SweepTooEarly();
         uint256 bnb = address(this).balance;
@@ -197,11 +242,22 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
         emit Swept(bnb, wf, to);
     }
 
+    // ----- pause controls ------------------------------------------------
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     // ----- internal ------------------------------------------------------
     function _swapToBnb(uint256 amountIn, uint256 amountOutMin, uint256 deadline)
         internal
         returns (uint256 got)
     {
+        if (amountIn == 0) revert ZeroAmount();
+        if (deadline < block.timestamp) revert BadDeadline();
         uint256 bnbBefore = address(this).balance;
         waifu.forceApprove(address(router), amountIn);
         address[] memory path = new address[](2);
@@ -210,6 +266,8 @@ contract WaifuWinddown is Ownable, ReentrancyGuard {
         router.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amountIn, amountOutMin, path, address(this), deadline
         );
+        // reset approval to 0 (defensive: no lingering allowance to the router)
+        waifu.forceApprove(address(router), 0);
         got = address(this).balance - bnbBefore;
     }
 

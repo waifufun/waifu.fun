@@ -66,3 +66,13 @@ Replaces the snapshot+Merkle claim-by-surrender with a deposit-funded flow:
 - GAME THEORY: agent sale crashes LP (claim pays 1.64x post-crash LP price); pooling deposits sells collectively for better price than individual dumping. Full participation → ~72 BNB pot ($42.7k): presale ~53 BNB, retail ~5 BNB.
 - 8/8 Foundry tests pass (full lifecycle pot-grows, sellAgent-disabled-after-open, deposit-before-open/after-close reverts, non-depositor-cant-claim, double-claim, finalize-before-close, sweep-window).
 - Merkle artifacts (snapshot/presale ledger/rogue-exclusion) RETAINED for the announcement + eligibility comms, but the contract no longer needs the root.
+
+## HARDENING PASS (2026-06-22)
+Adversarial review of $WAIFU = FlapTaxTokenV3 (verified on-chain): state=TaxEnforced, 3% buy / 3% sell tax on POOL trades, wallet->wallet UNTAXED, tax active until ~Sept 2027, ownership renounced, LP burned. Hardening added:
+- **Tax/fee-on-transfer-safe accounting:** deposit() credits by MEASURED balance-delta (not the passed amount); sell proceeds measured by BNB balance-delta. So the 3% sell tax (and any FoT) is reflected in the real pot, never over-credited. Test: feeOnTransferDeposit_creditsActualReceived (3% mock → credits 97).
+- **Pausable:** owner can pause deposit/claim mid-flight if something's wrong.
+- **emergencyRefund mode:** if the wind-down must be abandoned BEFORE finalize, owner enableRefundMode() → depositors refund() their WAIFU 1:1. Mutually exclusive with finalize (no double-payout). Owner must enable refund BEFORE selling deposits.
+- **Swap deadline guard** (reject past deadlines), **zero-address guards** (constructor + sweep), **zero-amount guards**, **approval reset to 0** after each swap (no lingering router allowance).
+- Owner powers still bounded: cannot withdraw pot pre-finalize, cannot alter weights, cannot sell depositor tokens as agent (openDeposits gate). CEI + nonReentrant on all value-moving fns. No upgradeability.
+- **15/15 Foundry tests pass** (8 lifecycle/guard + 7 hardening: FoT-credit, badDeadline, pause, refundMode+blocks-finalize, refund-without-mode, sweepToZero, onlyOwner-guards).
+- STILL UNAUDITED → BSC testnet dry-run → codex → professional audit → mainnet. The audit is non-negotiable (real money, 144 recipients).
