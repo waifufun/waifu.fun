@@ -54,3 +54,15 @@ Minimal, auditable, no admin surprises. Two-phase: SELL then CLAIM (pull-based, 
 - **Snapshot**: block 105784660. 128 holders, sum=1B (verified). retail 123 holders (1.78%), presale custody 0xfff9b678 (19.72%), agent safe (10%).
 - Tests: 8/8 pass (seed/sell/finalize/claim-by-surrender/sold-after-snapshot-cant-claim/double-claim/bad-proof/sweep-window).
 - STATUS: UNAUDITED, testnet-first. → BSC testnet → codex review → audit → mainnet.
+
+## REVISED DESIGN (2026-06-22, Shadow) — two-window, pot-GROWS-with-participation
+Replaces the snapshot+Merkle claim-by-surrender with a deposit-funded flow:
+1. Agent 100M seeded + sold FIRST (before deposits) → ~58 BNB base pot. openDeposits() one-way gate disables sellAgent after.
+2. ~1 WEEK DEPOSIT WINDOW: holders deposit() their WAIFU (escrowed, pro-rata weight by deposit).
+3. closeDeposits() → sellRelinquished() sells ALL deposited WAIFU into LP → pot GROWS to ~71-72 BNB → finalize() locks pot + total.
+4. ~30 DAY CLAIM WINDOW: claim() pays pot * yourDeposit / totalDeposited.
+5. sweep(to) after window → unclaimed → Sol treasury.
+- Pro-rata by DEPOSITED amount (no snapshot/Merkle needed). Only depositors share pot. Non-participants get nothing.
+- GAME THEORY: agent sale crashes LP (claim pays 1.64x post-crash LP price); pooling deposits sells collectively for better price than individual dumping. Full participation → ~72 BNB pot ($42.7k): presale ~53 BNB, retail ~5 BNB.
+- 8/8 Foundry tests pass (full lifecycle pot-grows, sellAgent-disabled-after-open, deposit-before-open/after-close reverts, non-depositor-cant-claim, double-claim, finalize-before-close, sweep-window).
+- Merkle artifacts (snapshot/presale ledger/rogue-exclusion) RETAINED for the announcement + eligibility comms, but the contract no longer needs the root.
