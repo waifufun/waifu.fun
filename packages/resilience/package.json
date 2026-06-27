@@ -1,0 +1,28 @@
+{
+	"name": "@waifufun/resilience",
+	"type": "module",
+	"version": "0.0.0",
+	"license": "MIT",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"clean": "rm -rf dist",
+		"check": "tsc -p tsconfig.json --noEmit",
+		"test": "node --import tsx --test $(find test -name '*.test.ts' -type f | sort)",
+		"lint": "biome check src test package.json tsconfig.json"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"devDependencies": {
+		"@types/node": "^22.13.10",
+		"tsx": "^4.19.2",
+		"typescript": "^5.4.5"
+	}
+}

@@ -67,7 +67,11 @@ describe("passkey platform hints", () => {
 			"fetch",
 			vi
 				.fn()
-				.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, ...requestOptions }) })
+				.mockResolvedValueOnce({
+					ok: true,
+					status: 200,
+					json: async () => ({ ok: true, challengeId: "login-challenge-id", ...requestOptions }),
+				})
 				.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, token: "session-token" }) })
 				.mockResolvedValueOnce({
 					ok: true,

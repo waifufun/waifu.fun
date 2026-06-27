@@ -33,6 +33,7 @@ import type { TokenMetrics } from "@/lib/wave-t/token";
 import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions";
 import type { Position } from "@/lib/wave-t/positions";
 import { ActivePositions } from "./active-positions";
+import { filterAgentEventsForActivity } from "./activity-event-filter";
 import { ActivityFeed, type ActivityFeedAuthor, type ActivityRowInput } from "./activity-feed";
 import type { HeroIdentity, HeroProps, HeroTreasuryOverride } from "./hero";
 import { HeroV2 } from "./hero-v2";
@@ -764,6 +765,8 @@ export function LiveActivityFeed({
 	// PR rows. Before the first live github event lands we keep the seed so
 	// the panel is not empty on first paint, but that seed is already scoped
 	// to this agent's own github identity at build time.
+	const visibleAgentEvents = useMemo(() => filterAgentEventsForActivity(agentEvents.events), [agentEvents.events]);
+
 	const hasLiveGithub = useMemo(() => {
 		const githubEventTypes = new Set([
 			"pr.merged",
@@ -773,8 +776,8 @@ export function LiveActivityFeed({
 			"gh_pr_opened",
 			"gh_commit_pushed",
 		]);
-		return agentEvents.events.some((e) => githubEventTypes.has(e.eventType));
-	}, [agentEvents.events]);
+		return visibleAgentEvents.some((e) => githubEventTypes.has(e.eventType));
+	}, [visibleAgentEvents]);
 
 	// Merge: replace tweet rows in initialActivity with the live set; keep
 	// non-github seed rows (txs, etc). Github seed rows (pr / githubGroup)
@@ -803,7 +806,7 @@ export function LiveActivityFeed({
 		// same org/repo). pr.merged is canonical.
 		const prMergedShas = new Set<string>();
 		const prMergedRepoTimes: Array<{ repo: string; t: number }> = [];
-		for (const e of agentEvents.events) {
+		for (const e of visibleAgentEvents) {
 			if (e.eventType !== "pr.merged") continue;
 			const p = e.payload ?? {};
 			const sha = (p as Record<string, unknown>).mergeCommitSha;
@@ -825,7 +828,7 @@ export function LiveActivityFeed({
 			const t = new Date(e.createdAt).getTime();
 			return !prMergedRepoTimes.some((p2) => p2.repo === orgRepo && Math.abs(p2.t - t) < 60_000);
 		};
-		const filteredEvents = agentEvents.events
+		const filteredEvents = visibleAgentEvents
 			.map((e) => {
 				if (!e.grouped || !e.items || (e.eventType !== "commit.pushed" && e.eventType !== "gh_commit_pushed")) return e;
 				const items = e.items.filter(shouldKeepCommit);
@@ -839,7 +842,7 @@ export function LiveActivityFeed({
 		const merged = [...nonTweet, ...tweetRows, ...eventRows];
 		merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 		return mergeActivityWithTrades({ activity: merged, trades, ticker });
-	}, [initialActivity, hasLiveGithub, tweets, agentEvents.events, trades, ticker]);
+	}, [initialActivity, hasLiveGithub, tweets, visibleAgentEvents, trades, ticker]);
 
 	return <ActivityFeed rows={rows} max={max} {...(author ? { author } : {})} live />;
 }

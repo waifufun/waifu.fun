@@ -6,8 +6,14 @@ import type { Database } from "@waifufun/db/client";
 
 import { generateRuntimeApiKey, hashRuntimeApiKey } from "../../middleware/agent-pull-auth.js";
 import { requireAgentOwnership, requirePatron } from "../../middleware/patron-auth.js";
-import { type ElizaCloudClient, createElizaCloudClient, resolveElizaCloudApiKey } from "../../services/eliza-client.js";
+import {
+	ElizaApiError,
+	type ElizaCloudClient,
+	createElizaCloudClient,
+	resolveElizaCloudApiKey,
+} from "../../services/eliza-client.js";
 import { getAgentRuntimeState } from "../../services/provisioning.js";
+import { elizaUnavailableBody, isElizaCloudUnavailable } from "./eliza-unavailable.js";
 
 export type AgentRuntimeState = {
 	state: "pending" | "provisioning" | "live" | "failed" | "dormant";
@@ -119,13 +125,18 @@ export function createAgentRuntimeRoutes(
 				: null;
 			return c.json({ ok: true, action: normalized, cloudAgentId, result: controlResult, status, runtime: state });
 		} catch (err) {
+			if (isElizaCloudUnavailable(err)) {
+				return c.json(elizaUnavailableBody("RUNTIME_CONTROL_UNAVAILABLE"), 503);
+			}
+			// Preserve an upstream 409 (conflict / adoption) instead of masking it as 502.
+			const status = err instanceof ElizaApiError && err.status === 409 ? 409 : 502;
 			return c.json(
 				{
 					ok: false,
 					error: "RUNTIME_CONTROL_FAILED",
 					message: err instanceof Error ? err.message : String(err),
 				},
-				502,
+				status,
 			);
 		}
 	});
@@ -159,7 +170,15 @@ export function createAgentRuntimeRoutes(
 				503,
 			);
 		}
-		const status = await client.getAgentRuntimeStatus(cloudAgentId);
+		let status: Awaited<ReturnType<NonNullable<typeof client.getAgentRuntimeStatus>>>;
+		try {
+			status = await client.getAgentRuntimeStatus(cloudAgentId);
+		} catch (err) {
+			if (isElizaCloudUnavailable(err)) {
+				return c.json(elizaUnavailableBody("RUNTIME_CONTROL_UNAVAILABLE"), 503);
+			}
+			throw err;
+		}
 		const webUiUrl = status.webUiUrl ?? state.webUiUrl ?? null;
 		return c.json({
 			ok: isHostedRuntimeRunning(status.status),
@@ -222,6 +241,7 @@ function createDefaultElizaCloudClient(): ElizaCloudClient {
 		...(apiKey ? { apiKey } : {}),
 		...(serviceKey ? { serviceKey } : {}),
 		logger: console,
+		resilient: true,
 	});
 }
 

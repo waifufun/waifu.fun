@@ -48,7 +48,7 @@ import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
 import SunsetBanner from "./sunset-banner";
 import type { AgentData, AgentTrade } from "./types";
-import { THEME_TOKENS } from "./wave-t/_primitives";
+import { Label, Panel, THEME_TOKENS } from "./wave-t/_primitives";
 import type { ActivityRowInput } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
 import { BurnRatePanel } from "./wave-t/burn-rate-panel";
@@ -358,10 +358,14 @@ export default function AgentHomeV2({
 					</div>
 				) : null}
 
-				{/* Patron top-up widget. */}
-				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="topup">
-					<div className="hidden lg:block" aria-hidden />
-					<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
+				{/* Patron top-up widget. Full width on mobile (where funding from a
+				    phone is the common path); on lg it sits as a constrained card on
+				    the right rail, aligned to the 360px column the rest of the page
+				    uses, without an empty spacer cell. */}
+				<div className="mt-4 flex justify-end" id="topup">
+					<div className="w-full lg:max-w-[360px]">
+						<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
+					</div>
 				</div>
 
 				<footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -418,12 +422,13 @@ function TopBar() {
 }
 
 function EmptyAside({ copy }: { copy: string }) {
+	// Reuse the shared Panel + Label primitives so the empty aside matches
+	// every other panel's chrome byte-for-byte (border, radius, header
+	// tracking) instead of hand-rolling a near-but-not-quite header.
 	return (
-		<aside className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel)] p-4 md:p-5">
-			<div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)] mb-3">
-				top apps
-			</div>
+		<Panel>
+			<Label>top apps by revenue 7d</Label>
 			<div className="py-4 font-mono text-[11px] text-[var(--text-tertiary)]">{copy}</div>
-		</aside>
+		</Panel>
 	);
 }

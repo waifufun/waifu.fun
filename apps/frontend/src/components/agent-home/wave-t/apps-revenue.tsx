@@ -227,8 +227,10 @@ function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
 							</span>
 							<div className="min-w-0">
 								<div className="flex items-center gap-2">
-									<span className="truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
-									<StatusBadge status={app.status} />
+									<span className="min-w-0 truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
+									<span className="shrink-0">
+										<StatusBadge status={app.status} />
+									</span>
 								</div>
 								<div className="mt-0.5 truncate font-mono text-[10.5px] text-[var(--text-secondary)]">
 									{app.description ?? `${app.shippedAt ? "shipped" : "first seen"} ${formatAppDate(app)}`}

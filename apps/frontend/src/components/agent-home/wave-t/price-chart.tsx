@@ -379,7 +379,7 @@ export function PriceChart({
 			<header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-soft)] p-4">
 				<div className="min-w-0">
 					<div className="flex items-baseline gap-2.5">
-						<span className="font-mono text-[15px] text-[var(--text-primary)]">{token.symbol || "–"}</span>
+						<span className="font-mono text-[15px] text-[var(--text-primary)]">{token.symbol || "TOKEN"}</span>
 						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">/ usd</span>
 					</div>
 					<div className="mt-1.5 flex flex-wrap items-end gap-3">

@@ -139,7 +139,15 @@ export interface HyperliquidListenerOptions {
 type HyperliquidDexScope = {
 	dex: string | null;
 	label: string;
+	// The set of coin names that genuinely belong to this builder perp dex
+	// (from HL `meta` with the dex filter). Undefined until resolved. Used to
+	// gate the `dex:` prefix so that ONLY real builder-dex markets get prefixed
+	// and core markets (BTC/ETH/...) that may surface under a dex-scoped query
+	// keep their plain name. Empty/undefined => fall back to no-prefix (safe).
+	coins?: Set<string>;
 };
+
+type HyperliquidDexMeta = { universe?: Array<{ name?: string }> };
 
 interface ListenerHandle {
 	stop: () => Promise<void>;
@@ -195,6 +203,57 @@ function hyperliquidDexScopes(builderDexs?: string[]): HyperliquidDexScope[] {
 	return [{ dex: null, label: "core" }, ...deduped.map((dex) => ({ dex, label: dex }))];
 }
 
+// Last-known coin universe per builder dex, kept across ticks. A transient
+// `meta` failure on one tick must NOT drop the universe to undefined, that
+// would re-key open builder positions from `xyz:SPCX` back to bare `SPCX` and
+// emit a spurious close+open. We reuse the cached universe until a fresh,
+// non-empty meta response replaces it.
+const builderDexUniverseCache = new Map<string, Set<string>>();
+
+// Resolve the genuine coin universe for each builder dex scope from HL `meta`
+// (type:"meta", dex:"<name>"). Populates `scope.coins` so normalizeBuilderCoin
+// only prefixes real builder-dex markets. Core scope (dex:null) is untouched.
+// On a failed/empty meta fetch we fall back to the cached universe (if any) so
+// membership stays stable across transient failures.
+async function resolveDexUniverses(
+	scopes: HyperliquidDexScope[],
+	baseUrl: string,
+	fetchImpl: typeof fetch,
+	requestTimeoutMs: number,
+	logger: { warn: (obj: unknown, msg: string) => void },
+): Promise<HyperliquidDexScope[]> {
+	return Promise.all(
+		scopes.map(async (scope) => {
+			if (!scope.dex) return scope;
+			try {
+				const meta = await postInfo<HyperliquidDexMeta>(
+					baseUrl,
+					{ type: "meta", dex: scope.dex },
+					fetchImpl,
+					requestTimeoutMs,
+				);
+				const coins = new Set(
+					(meta?.universe ?? []).map((u) => u?.name).filter((n): n is string => typeof n === "string" && n.length > 0),
+				);
+				if (coins.size > 0) {
+					builderDexUniverseCache.set(scope.dex, coins);
+					return { ...scope, coins };
+				}
+				// Empty meta: fall back to the last-known universe if we have one.
+				const cachedEmpty = builderDexUniverseCache.get(scope.dex);
+				return cachedEmpty ? { ...scope, coins: cachedEmpty } : scope;
+			} catch (err) {
+				logger.warn(
+					{ err: errorDetails(err), dex: scope.dex },
+					"hl-listener builder-dex meta fetch failed; reusing cached universe if available",
+				);
+				const cachedErr = builderDexUniverseCache.get(scope.dex);
+				return cachedErr ? { ...scope, coins: cachedErr } : scope;
+			}
+		}),
+	);
+}
+
 function scopedInfoBody(body: Record<string, unknown>, scope: HyperliquidDexScope): Record<string, unknown> {
 	return scope.dex ? { ...body, dex: scope.dex } : body;
 }
@@ -203,14 +262,33 @@ function scopedSourceEventId(prefix: string, scope: HyperliquidDexScope, id: str
 	return scope.dex ? `${prefix}:${scope.dex}:${id}` : `${prefix}:${id}`;
 }
 
+// A coin genuinely belongs to a builder dex only if it is in that dex's
+// universe (resolved from HL `meta`). If the universe is unknown (resolver
+// failed) we conservatively treat NOTHING as a member, so we never
+// mis-prefix a core coin like BTC as `xyz:BTC`.
+function coinBelongsToBuilderDex(coin: string, scope: HyperliquidDexScope): boolean {
+	if (!scope.dex) return false;
+	const prefix = `${scope.dex}:`;
+	// An already-namespaced coin belongs to THIS scope only if it carries THIS
+	// dex's prefix (not some other configured dex's, e.g. "abc:FOO").
+	if (coin.includes(":")) return coin.startsWith(prefix);
+	return scope.coins?.has(coin) ?? false;
+}
+
 function normalizeBuilderCoin(coin: string, scope: HyperliquidDexScope): string {
 	if (!scope.dex) return coin;
-	return coin.includes(":") ? coin : `${scope.dex}:${coin}`;
+	if (coin.includes(":")) return coin;
+	// Only prefix coins that are genuine members of this builder dex. Core
+	// markets that leak into a dex-scoped response keep their plain name.
+	if (!coinBelongsToBuilderDex(coin, scope)) return coin;
+	return `${scope.dex}:${coin}`;
 }
 
 function scopeMatchesCoin(scope: HyperliquidDexScope, coin: string | undefined): boolean {
 	if (!scope.dex) return !coin?.includes(":");
-	return coin?.toLowerCase().startsWith(`${scope.dex.toLowerCase()}:`) ?? false;
+	if (coin?.toLowerCase().startsWith(`${scope.dex.toLowerCase()}:`)) return true;
+	// Bare coin matches this builder scope only if it's a real member of the dex.
+	return coin ? coinBelongsToBuilderDex(coin, scope) : false;
 }
 
 function preferScopedFill(
@@ -558,7 +636,14 @@ export async function processFills(
 		boundedWindow(deps.fillsBackfillWindowMs, DEFAULT_FILLS_BACKFILL_WINDOW_MS, MAX_FILLS_BACKFILL_WINDOW_MS);
 
 	const scopedFills: Array<{ scope: HyperliquidDexScope; fill: HyperliquidFill }> = [];
-	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+	const resolvedDexScopes = await resolveDexUniverses(
+		hyperliquidDexScopes(deps.builderDexs),
+		baseUrl,
+		fetchImpl,
+		requestTimeoutMs,
+		context.logger,
+	);
+	for (const scope of resolvedDexScopes) {
 		try {
 			const fills = await postInfo<HyperliquidFill[]>(
 				baseUrl,
@@ -684,7 +769,14 @@ export async function processFunding(
 	);
 	const boundedSinceMs = Date.now() - backfillWindowMs;
 	const scopedFunding: Array<{ scope: HyperliquidDexScope; entry: HyperliquidFunding }> = [];
-	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+	const resolvedDexScopes = await resolveDexUniverses(
+		hyperliquidDexScopes(deps.builderDexs),
+		baseUrl,
+		fetchImpl,
+		requestTimeoutMs,
+		context.logger,
+	);
+	for (const scope of resolvedDexScopes) {
 		const lastFundingTime = await readLastFundingTime(context, wallet.agentTokenAddress, scope);
 		const cursorLooksCorrupt = lastFundingTime !== null && lastFundingTime > Date.now() + CURSOR_FUTURE_SKEW_MS;
 		if (cursorLooksCorrupt) {
@@ -781,7 +873,14 @@ export async function processPositions(
 	const requestTimeoutMs = deps.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 	const scopedStates: Array<{ scope: HyperliquidDexScope; state: HyperliquidClearinghouseState }> = [];
 	let scopedFailure = false;
-	for (const scope of hyperliquidDexScopes(deps.builderDexs)) {
+	const resolvedDexScopes = await resolveDexUniverses(
+		hyperliquidDexScopes(deps.builderDexs),
+		baseUrl,
+		fetchImpl,
+		requestTimeoutMs,
+		context.logger,
+	);
+	for (const scope of resolvedDexScopes) {
 		try {
 			const state = await postInfo<HyperliquidClearinghouseState>(
 				baseUrl,

@@ -28,6 +28,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # tier-cron is operationally useful but must not block the API/worker/brain
+    # image gate or downstream deploys when GHCR rejects only that package push.
+    continue-on-error: ${{ matrix.non_blocking == true }}
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +49,7 @@ jobs:
             service_name: nav-snapshotter
           - service: tier-cron
             service_name: tier-cron
+            non_blocking: true
           - service: brain
             service_name: brain
 

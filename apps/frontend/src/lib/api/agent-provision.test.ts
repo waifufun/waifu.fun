@@ -1,7 +1,12 @@
 import { DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
 import type { ChainId, LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
-import { describe, expect, it } from "vitest";
-import { buildProvisionPayload } from "./agent-provision";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	type ProvisionRequest,
+	buildProvisionPayload,
+	fetchProvisioningStatus,
+	provisionAgent,
+} from "./agent-provision";
 
 type TestProvisionState = {
 	inviteCode: string;
@@ -103,5 +108,153 @@ describe("buildProvisionPayload", () => {
 		const payload = buildProvisionPayload(stateWithLaunchpad(), { launchpadPickerEnabled: false });
 
 		expect(payload.runtime).toEqual({ kind: "hosted" });
+	});
+});
+
+function jsonResponse(body: unknown, status: number): Response {
+	return new Response(JSON.stringify(body), {
+		status,
+		headers: { "content-type": "application/json" },
+	});
+}
+
+const MINIMAL_PROVISION_REQUEST: ProvisionRequest = {
+	inviteCode: "WF-TEST",
+	persona: {
+		name: "Mika",
+		ticker: "MIKA",
+		bio: "bio",
+		personaPrompt: "prompt",
+		avatarTemplateId: "tessera",
+		hasAvatarUpload: false,
+	},
+	runtime: { kind: "hosted" },
+	safe: {
+		taxAgentBps: 8000,
+		taxPatronBps: 2000,
+		owners: ["0x1111111111111111111111111111111111111111"],
+		threshold: 1,
+		firstBuyFundingSource: null,
+		adapters: [{ slug: "pancake", enabled: true }],
+	},
+};
+
+describe("provisionAgent 202 async handling", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("treats a 202 with status='provisioning' as ok and flags asyncProvisioning", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(
+			jsonResponse(
+				{
+					agentId: "agt_async",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					safeAddress: "0x0000000000000000000000000000000000000003",
+					agentApiKey: "agk_key",
+					status: "provisioning",
+					cloudStatus: "provisioning",
+					provisioningJobId: "provision:agt_async:agent-provisioning",
+				},
+				202,
+			),
+		);
+
+		const result = await provisionAgent(MINIMAL_PROVISION_REQUEST);
+		expect(result.ok).toBe(true);
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.asyncProvisioning).toBe(true);
+		expect(result.cloudStatus).toBe("provisioning");
+		expect(result.provisioningJobId).toBe("provision:agt_async:agent-provisioning");
+		expect(result.agentApiKey).toBe("agk_key");
+	});
+
+	it("does NOT flag asyncProvisioning for a 200 duplicate-recovery response", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(
+			jsonResponse(
+				{
+					agentId: "agt_dup",
+					tokenAddress: "0x0000000000000000000000000000000000000004",
+					safeAddress: "0x0000000000000000000000000000000000000003",
+					agentApiKey: "agk_rotated",
+					cloudAgentId: "cloud-existing",
+					cloudStatus: "running",
+					webUiUrl: "https://agent.example",
+				},
+				200,
+			),
+		);
+
+		const result = await provisionAgent(MINIMAL_PROVISION_REQUEST);
+		expect(result.ok).toBe(true);
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.asyncProvisioning).toBeUndefined();
+		expect(result.cloudStatus).toBe("running");
+		expect(result.webUiUrl).toBe("https://agent.example");
+	});
+});
+
+describe("fetchProvisioningStatus", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("reports ready when the runtime is running AND has a reachable chat URL", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(
+			jsonResponse(
+				{
+					agentId: "agt_ready",
+					elizaCloudAgentId: "cloud-1",
+					metadata: { provisioning: { status: "running", webUiUrl: "https://agent.example" } },
+				},
+				200,
+			),
+		);
+
+		const snap = await fetchProvisioningStatus("agt_ready");
+		expect(snap.ready).toBe(true);
+		expect(snap.failed).toBe(false);
+		expect(snap.cloudStatus).toBe("running");
+		expect(snap.webUiUrl).toBe("https://agent.example");
+	});
+
+	it("is NOT ready when running but the chat URL is missing (mirrors backend overlay gate)", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(
+			jsonResponse(
+				{
+					agentId: "agt_no_url",
+					elizaCloudAgentId: "cloud-1",
+					metadata: { provisioning: { status: "running" } },
+				},
+				200,
+			),
+		);
+
+		const snap = await fetchProvisioningStatus("agt_no_url");
+		expect(snap.ready).toBe(false);
+		expect(snap.cloudStatus).toBe("running");
+	});
+
+	it("reports failed on a terminal failed status", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(
+			jsonResponse(
+				{
+					agentId: "agt_failed",
+					elizaCloudAgentId: "cloud-1",
+					metadata: { provisioning: { status: "failed" } },
+				},
+				200,
+			),
+		);
+
+		const snap = await fetchProvisioningStatus("agt_failed");
+		expect(snap.failed).toBe(true);
+		expect(snap.ready).toBe(false);
+	});
+
+	it("never throws on a transient fetch error (returns a non-terminal snapshot)", async () => {
+		vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
+		const snap = await fetchProvisioningStatus("agt_blip");
+		expect(snap).toEqual({ cloudStatus: null, webUiUrl: null, ready: false, failed: false });
 	});
 });

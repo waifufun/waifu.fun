@@ -35,7 +35,7 @@ import { Erc8004Badge } from "../erc8004-badge";
 import { Panel } from "./_primitives";
 
 function truncateAddress(addr: string): string {
-	if (!addr) return "–";
+	if (!addr) return "no data yet";
 	const clean = addr.startsWith("0x") ? addr : `0x${addr}`;
 	return `${clean.slice(0, 6)}…${clean.slice(-4)}`;
 }

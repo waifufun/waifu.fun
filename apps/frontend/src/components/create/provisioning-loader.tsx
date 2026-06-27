@@ -41,9 +41,15 @@ type Props = {
 	/** Called once all stages plus the success hold complete. */
 	onDone: () => void | Promise<void>;
 	awaitingResponse?: boolean;
+	/**
+	 * Live hosted-runtime status while the wizard polls after a 202 (async
+	 * provisioning). Lowercase, terminal grammar — e.g. "eliza cloud: pending".
+	 * Shown in the "still launching" extension; null hides the line.
+	 */
+	statusLabel?: string | null;
 };
 
-export default memo(function ProvisioningLoader({ onDone, awaitingResponse = false }: Props) {
+export default memo(function ProvisioningLoader({ onDone, awaitingResponse = false, statusLabel = null }: Props) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [allDone, setAllDone] = useState(false);
 
@@ -109,7 +115,9 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">
 						{showingExtension
-							? "still launching on bsc, this can take up to a minute."
+							? statusLabel
+								? "agent launched on bsc. spinning up the hosted runtime, this can take a minute."
+								: "still launching on bsc, this can take up to a minute."
 							: allDone
 								? "taking you home."
 								: "~10-15 seconds."}
@@ -149,7 +157,7 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 							<span className="h-1 w-1 bg-accent" />
 						</span>
 						<span>
-							waiting for the chain response
+							{statusLabel ?? "waiting for the chain response"}
 							<BlinkingDots />
 						</span>
 					</motion.div>
