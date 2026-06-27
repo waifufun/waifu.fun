@@ -46,6 +46,7 @@ import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions"
 import type { HlPnlData, NavHistoryPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
+import SunsetBanner from "./sunset-banner";
 import type { AgentData, AgentTrade } from "./types";
 import { Label, Panel, THEME_TOKENS } from "./wave-t/_primitives";
 import type { ActivityRowInput } from "./wave-t/activity-feed";
@@ -141,6 +142,9 @@ export default function AgentHomeV2({
 	// Hero identity: prefer the short bio when set, fall back to the full
 	// description. The persona endpoint owns both; we never override here.
 	const heroBio = agent.bioShort ?? agent.description;
+	// Sunset agents are wound down: token retired, trading closed. The page
+	// shows a SunsetBanner and suppresses the price-chart + swap surface.
+	const isSunset = agent.status === "sunset";
 	const heroIdentity: HeroIdentity = {
 		name: agent.name,
 		ticker: agent.ticker,
@@ -203,6 +207,12 @@ export default function AgentHomeV2({
 				{/* Optional banner: deposit window open or recently closed. */}
 				<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 
+				{/* Sunset banner: when the agent is wound down, say so plainly and
+				    point at the reconciliation. Presence-driven off status, not
+				    an identity check. When sunset, the price chart + swap row below
+				    is suppressed (trading is closed; the chart is meaningless). */}
+				{isSunset ? <SunsetBanner claimUrl="/reconciliation" /> : null}
+
 				{/* Row 1: Hero (full width). Asymmetric identity + data strip.
 				    Runway lives in the data strip via the shared selector. */}
 				<div className="mt-4">
@@ -231,11 +241,15 @@ export default function AgentHomeV2({
 					</div>
 				) : null}
 
-				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). */}
-				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
-					<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
-					<SwapPanel token={token} />
-				</div>
+				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed).
+				    Suppressed for sunset agents: trading is closed and the chart
+				    no longer reflects anything real. */}
+				{isSunset ? null : (
+					<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
+						<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
+						<SwapPanel token={token} />
+					</div>
+				)}
 
 				{/* Row 3: holdings allocation + active positions. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
