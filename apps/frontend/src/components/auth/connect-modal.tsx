@@ -465,6 +465,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 										disabled={passkeyBusy}
 										className="w-full border border-white/10 bg-transparent px-3 py-2 text-center font-mono text-[18px] tracking-[0.4em] text-[#e4e4e7] placeholder:text-[#3f3f46] focus:border-white/25 focus:outline-none disabled:opacity-50"
 										// eslint-disable-next-line jsx-a11y/no-autofocus -- the code field is the only actionable input in this phase
+										// biome-ignore lint/a11y/noAutofocus: the OTP code field is the only actionable input in this phase; autofocus is intentional UX
 										autoFocus
 									/>
 									<button

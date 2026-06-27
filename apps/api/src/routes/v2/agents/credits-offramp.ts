@@ -31,6 +31,7 @@ import {
 	resolveElizaCloudStewardSecret,
 } from "../../../services/eliza-client.js";
 import { ElizaCryptoNotAutomatableError } from "../../../services/eliza-client.js";
+import { elizaUnavailableBody, isElizaCloudUnavailable } from "../eliza-unavailable.js";
 
 const app = new Hono();
 
@@ -53,6 +54,7 @@ function buildOffRamp(): CreditsOffRamp {
 		platformStewardUserId,
 		platformStewardTenantId,
 		logger: console,
+		resilient: true,
 	});
 	// The off-ramp only needs the crypto methods; the full client implements them.
 	return new CreditsOffRamp(client as unknown as OffRampElizaClient);
@@ -77,6 +79,9 @@ app.get("/:address/credits-offramp/quote", async (c) => {
 		const quote = await buildOffRamp().quoteUsd(usd);
 		return c.json({ ok: true, data: quote });
 	} catch (err) {
+		if (isElizaCloudUnavailable(err)) {
+			return c.json(elizaUnavailableBody("CRYPTO_UNAVAILABLE"), 503);
+		}
 		return c.json(
 			{ ok: false, error: "OFFRAMP_QUOTE_FAILED", detail: err instanceof Error ? err.message : String(err) },
 			502,
@@ -94,7 +99,12 @@ export default app;
 export async function handleOffRampConvert(input: {
 	usd: unknown;
 	transactionHash: unknown;
-}): Promise<{ status: 200; body: unknown } | { status: 400; body: unknown } | { status: 502; body: unknown }> {
+}): Promise<
+	| { status: 200; body: unknown }
+	| { status: 400; body: unknown }
+	| { status: 502; body: unknown }
+	| { status: 503; body: unknown }
+> {
 	const usd = typeof input.usd === "number" && Number.isFinite(input.usd) && input.usd > 0 ? input.usd : null;
 	if (usd === null) {
 		return { status: 400, body: { ok: false, error: "INVALID_USD", message: "usd must be a positive number" } };
@@ -109,12 +119,18 @@ export async function handleOffRampConvert(input: {
 		if (err instanceof ElizaCryptoNotAutomatableError) {
 			// Defensive: convert() normally returns manual instructions instead of
 			// throwing, but surface a clean 200 with manual guidance if it does.
+			// This fallback is independent of the circuit breaker and MUST stay.
 			try {
 				const manual = await offRamp.manualInstructions(usd, err.message);
 				return { status: 200, body: { ok: true, data: manual } };
 			} catch {
 				/* fall through to error */
 			}
+		}
+		// Open circuit: Eliza Cloud crypto routes are down. Surface an honest 503 with
+		// the CRYPTO_UNAVAILABLE code; the remediation points at the manual payout path.
+		if (isElizaCloudUnavailable(err)) {
+			return { status: 503, body: elizaUnavailableBody("CRYPTO_UNAVAILABLE") };
 		}
 		if (err instanceof Error && err.message.includes("transactionHash must be")) {
 			return { status: 400, body: { ok: false, error: "INVALID_TX_HASH", message: err.message } };

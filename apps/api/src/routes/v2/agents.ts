@@ -16,6 +16,7 @@ import {
 	tokens,
 } from "@waifufun/db";
 import type { Database } from "@waifufun/db";
+import type { AgentProvisioningJob } from "@waifufun/queue/jobs";
 import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { isAddress } from "viem";
 
@@ -51,6 +52,7 @@ import {
 	validateProvisionRequest,
 } from "../../services/provision/payload-adapter.js";
 import { handleOffRampConvert } from "./agents/credits-offramp.js";
+import { elizaUnavailableBody, isElizaCloudUnavailable } from "./eliza-unavailable.js";
 
 const app = new Hono<RequireAgentOwnershipBindings>();
 
@@ -102,6 +104,8 @@ function metadataBoolean(metadata: unknown, key: string): boolean {
 
 type LaunchOrchestrator = ReturnType<typeof createOrchestrator>;
 
+type AddAgentProvisioningJob = (payload: AgentProvisioningJob, options: { jobId: string }) => Promise<unknown>;
+
 type AgentsRouteDepsForTest = {
 	db: Database | undefined;
 	createOrchestrator: (() => LaunchOrchestrator) | undefined;
@@ -109,6 +113,8 @@ type AgentsRouteDepsForTest = {
 	elizaCloudClient: Pick<ElizaCloudClient, "provisionWaifuAgent"> | undefined;
 	getAgentByTokenAddress: typeof agentQueries.getAgentByTokenAddress | undefined;
 	emitAgentEvent: typeof emitAgentEvent | undefined;
+	addAgentProvisioningJob: AddAgentProvisioningJob | undefined;
+	resurrectAgent: typeof resurrectAgent | undefined;
 };
 
 const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
@@ -118,6 +124,8 @@ const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
 	elizaCloudClient: undefined,
 	getAgentByTokenAddress: undefined,
 	emitAgentEvent: undefined,
+	addAgentProvisioningJob: undefined,
+	resurrectAgent: undefined,
 };
 
 export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
@@ -127,6 +135,22 @@ export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest
 	agentsRouteDepsForTest.elizaCloudClient = deps.elizaCloudClient;
 	agentsRouteDepsForTest.getAgentByTokenAddress = deps.getAgentByTokenAddress;
 	agentsRouteDepsForTest.emitAgentEvent = deps.emitAgentEvent;
+	agentsRouteDepsForTest.addAgentProvisioningJob = deps.addAgentProvisioningJob;
+	agentsRouteDepsForTest.resurrectAgent = deps.resurrectAgent;
+}
+
+/**
+ * Resolve the BullMQ enqueue function for the agent-provisioning job.
+ *
+ * Mirrors agent-launches.ts:resolveAddAgentProvisioningJob — a lazy dynamic
+ * import keeps the queue (and its Redis connection) out of the module graph for
+ * tests and request paths that never enqueue. Tests inject a stub via
+ * __setAgentsRouteDepsForTest({ addAgentProvisioningJob }).
+ */
+async function resolveAddAgentProvisioningJob(): Promise<AddAgentProvisioningJob> {
+	if (agentsRouteDepsForTest.addAgentProvisioningJob) return agentsRouteDepsForTest.addAgentProvisioningJob;
+	const queue = await import("@waifufun/queue");
+	return queue.addAgentProvisioningJob;
 }
 
 // Control-route event emitter. Best-effort by design: pause/kill/resume commit
@@ -312,6 +336,7 @@ function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifu
 		...(serviceKey ? { serviceKey } : {}),
 		...(apiKey ? { apiKey } : {}),
 		logger: console,
+		resilient: true,
 	});
 }
 
@@ -582,6 +607,98 @@ async function provisionHostedRuntimeAfterLaunch(
 	return cloud;
 }
 
+/**
+ * Seed `metadata.provisioning.status = 'provisioning'` so the GET /v2/agents/:id
+ * detail endpoint (via normalizeAgentDetail) exposes an honest "provisioning"
+ * status the instant the launch commits — before the worker job has even claimed
+ * the persona. Merge-only: never clobbers a cloudAgentId or claim a concurrent
+ * writer may have already set. Best-effort; a failure here must not fail the
+ * launch (the token is minted, the invite is spent) — the worker still
+ * provisions and writes its own status transitions.
+ */
+async function seedAsyncProvisioningStatus(db: Database, agentId: string): Promise<void> {
+	try {
+		const current = await agentPersonaQueries.getAgentPersonaByAgentId(db, agentId).catch(() => null);
+		if (!current) return;
+		const metadata = recordFromUnknown(current.metadata);
+		const provisioning = recordFromUnknown(metadata.provisioning);
+		// If the worker already advanced past enqueue (cloud id present), leave it.
+		if (typeof provisioning.cloudAgentId === "string" && provisioning.cloudAgentId.length > 0) return;
+		await db
+			.update(agentPersonas)
+			.set({
+				runtimeKind: "eliza-cloud",
+				metadata: {
+					...metadata,
+					provisioning: {
+						...provisioning,
+						runtimeKind: "eliza-cloud",
+						provider: "eliza-cloud",
+						status: "provisioning",
+						updatedAt: new Date().toISOString(),
+					},
+				},
+				updatedAt: new Date(),
+			})
+			.where(eq(agentPersonas.agentId, agentId));
+	} catch (err) {
+		console.error(`[agents] failed to seed provisioning status for ${agentId}:`, err);
+	}
+}
+
+/**
+ * Enqueue the existing AgentProvisioningJob (apps/worker) for a freshly-launched
+ * hosted agent instead of provisioning Eliza Cloud inline. The worker job owns
+ * the atomic claim, 409-adoption, and status-poll logic; the wizard never blocks
+ * on Eliza Cloud. Mirrors the payload shape from agent-launches.ts.
+ *
+ * Returns the BullMQ jobId so the 202 response can hand the client a tracking
+ * handle. The frontend polls GET /v2/agents/:id for status transitions.
+ */
+async function enqueueHostedRuntimeProvisioning(
+	db: Database,
+	body: import("../../services/provision/payload-adapter.js").ProvisionRequest,
+	launchInput: AgentLaunchInput,
+	result: {
+		agentId: string;
+		tokenAddress: string;
+		walletAddress?: string | null;
+		treasuryAddress?: string | null;
+		txHash?: string | null;
+	},
+): Promise<string> {
+	await seedAsyncProvisioningStatus(db, result.agentId);
+
+	const chain = body.launchpad?.chain ?? "bsc";
+	const chainId = Number(process.env.FOURMEME_CHAIN_ID ?? process.env.BSC_CHAIN_ID ?? 56);
+	const ticker = launchInput.symbol.toUpperCase();
+	const jobId = `provision:${result.agentId}:agent-provisioning`;
+	const payload: AgentProvisioningJob = {
+		agentId: result.agentId,
+		source: "agent.launched",
+		data: {
+			tokenAddress: result.tokenAddress,
+			tokenContractAddress: result.tokenAddress,
+			chain,
+			chainId: Number.isFinite(chainId) ? chainId : 56,
+			tokenName: launchInput.name,
+			tokenTicker: ticker,
+			symbol: ticker,
+			launchType: "native",
+			...(result.txHash ? { txHash: result.txHash } : {}),
+			...(result.treasuryAddress ? { agentSafeAddress: result.treasuryAddress } : {}),
+			...(result.walletAddress
+				? { agentWalletAddress: result.walletAddress, primaryWalletAddress: result.walletAddress }
+				: {}),
+			adminWallets: body.safe.owners,
+			elizaCloudBaseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://api.elizacloud.ai",
+		},
+	};
+	const enqueue = await resolveAddAgentProvisioningJob();
+	await enqueue(payload, { jobId });
+	return jobId;
+}
+
 export type ResurrectAgentDeps = {
 	db: ReturnType<typeof getDatabase>["db"];
 	elizaClient: Pick<ElizaCloudClient, "resumeAgent" | "topUpCredits"> &
@@ -722,14 +839,27 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 
 	const sessionToken = resolveElizaCloudSessionToken() ?? "";
 	try {
-		const result = await resurrectAgent(agentId, body.creditsAmount, {
+		const result = await (agentsRouteDepsForTest.resurrectAgent ?? resurrectAgent)(agentId, body.creditsAmount, {
 			db,
-			elizaClient: createElizaCloudClient({ baseUrl, apiKey, serviceKey, sessionToken, logger: console }),
+			elizaClient: createElizaCloudClient({
+				baseUrl,
+				apiKey,
+				serviceKey,
+				sessionToken,
+				logger: console,
+				resilient: true,
+			}),
 		});
 		// `ok: true` = the top-up was INITIATED, not that the agent is awake. The
 		// agent stays dormant until the confirmed-payment webhook fires.
 		return c.json({ ok: true, ...result, creditsUnit: "usd_cents" }, 200);
 	} catch (err) {
+		// Open circuit: Eliza Cloud is down. /resurrect is a patron-facing credit
+		// top-up, so surface an honest 503 + CREDITS_UNAVAILABLE instead of a 500
+		// that reads as "we broke" for what is really a transient upstream outage.
+		if (isElizaCloudUnavailable(err)) {
+			return c.json(elizaUnavailableBody("CREDITS_UNAVAILABLE"), 503);
+		}
 		return c.json(
 			{
 				error: "failed to resurrect agent",
@@ -1656,23 +1786,12 @@ app.post("/provision", requirePatron(), async (c) => {
 
 	try {
 		const result = await orchestrator.launch(validated.launchInput);
+		// Invite is confirmed on token-launch SUCCESS, not runtime readiness. From
+		// here the token is minted and the invite is spent; a later async
+		// provisioning failure must NOT un-confirm it (the worker retries + the
+		// patron can recover via the duplicate-recovery path within 5 min).
 		await confirmProvisionInviteCode(db, validated.body.inviteCode as string, patron);
 		inviteConfirmed = true;
-		let cloud: ElizaCloudProvisionResult | null = null;
-		try {
-			cloud = await provisionHostedRuntimeAfterLaunch(db, validated.body, validated.launchInput, result);
-		} catch (err) {
-			return c.json(
-				{
-					error: "eliza cloud provisioning failed",
-					detail: err instanceof Error ? err.message : String(err),
-					agentId: result.agentId,
-					tokenAddress: result.tokenAddress,
-					safeAddress: result.treasuryAddress,
-				},
-				502,
-			);
-		}
 		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, result.agentId);
 		if (validated.pullApiKey) {
 			await db
@@ -1680,6 +1799,40 @@ app.post("/provision", requirePatron(), async (c) => {
 				.set({ runtimeApiKeyHash: hashRuntimeApiKey(validated.pullApiKey), updatedAt: new Date() })
 				.where(eq(agentPersonas.agentId, result.agentId));
 		}
+
+		// Hosted (eliza-cloud) agents provision ASYNC: enqueue the worker job and
+		// return 202 immediately so the wizard never blocks up to 5 min on Eliza
+		// Cloud. Non-hosted runtimes (third-party webhook/pull) have no Eliza Cloud
+		// container to wait on — there is nothing to enqueue, so they return 200 as
+		// before. provisionHostedRuntimeAfterLaunch() was a no-op for those anyway.
+		if (runtimeKindFromProvisionBody(validated.body) === "eliza-cloud") {
+			let provisioningJobId: string | null = null;
+			try {
+				provisioningJobId = await enqueueHostedRuntimeProvisioning(db, validated.body, validated.launchInput, result);
+			} catch (err) {
+				// Enqueue failure (Redis down) is the only thing that can fail here.
+				// The launch already succeeded and the invite is spent, so we do NOT
+				// fail the request — we return 202 with status 'pending'. Recovery paths:
+				// the evm-indexer token-create handler independently enqueues provisioning
+				// for the same persona (worker claim dedupes), and the 5-min duplicate-
+				// recovery window lets the user re-POST for an inline provision.
+				console.error(`[agents] failed to enqueue provisioning for ${result.agentId}:`, err);
+			}
+			return c.json(
+				{
+					agentId: result.agentId,
+					tokenAddress: result.tokenAddress,
+					safeAddress: result.treasuryAddress,
+					pullApiKey: validated.pullApiKey,
+					agentApiKey: key.raw,
+					status: "provisioning",
+					cloudStatus: provisioningJobId ? "provisioning" : "pending",
+					...(provisioningJobId ? { provisioningJobId } : {}),
+				},
+				202,
+			);
+		}
+
 		return c.json(
 			{
 				agentId: result.agentId,
@@ -1687,7 +1840,6 @@ app.post("/provision", requirePatron(), async (c) => {
 				safeAddress: result.treasuryAddress,
 				pullApiKey: validated.pullApiKey,
 				agentApiKey: key.raw,
-				...(cloud ? cloudResponseFields(cloud) : {}),
 			},
 			200,
 		);

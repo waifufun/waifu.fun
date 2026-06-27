@@ -1,26 +1,33 @@
 /**
- * Holdings cockpit (Wave T worker B, multi-wallet redesign 2026-06-02).
+ * Treasury cockpit (Wave T, holdings redesign 2026-06-16).
  *
- * Two surfaces behind one segmented control in the header:
+ * Two surfaces behind one segmented control in the header, sharing a single
+ * NAV hero so the panel reads as deliberate as the active-positions panel
+ * next to it (the established gold standard on this page):
  *
  *   - wallets (default): a role-grouped wallet ledger. one row per real
  *     on-chain wallet, grouped under its role (agent-safe / agent-hot /
- *     patron / venue-bridge), each row carrying a chain badge, a venue
- *     tag when custodied off-chain, a copy-address affordance, a tiny
- *     single-green composition bar, and its usd value + share of nav.
- *     this is the "where is the money + what's it doing" view a degen
- *     scans first. (.impeccable.md: DENSE, hairlines-not-cards, mono nums.)
+ *     patron / venue-bridge). each row leads with the wallet's lead-asset
+ *     logo + label + chain badge + usd value on ONE scannable line, then a
+ *     single-green composition bar, then a quiet meta line (venue tag,
+ *     asset summary, copy-address, share of nav). this is the "where is the
+ *     money + what's it doing" view a degen scans first.
  *
- *   - allocation: the donut. cleaner ring, a real segmented asset/chain/
- *     wallet toggle, and a legend that carries role/chain context. slices
+ *   - allocation: the donut. a clean ring with a real asset/chain/wallet
+ *     segmented toggle and a legend that carries role/chain context. slices
  *     are a single-hue green ramp (brand discipline, no second accent).
  *
  * Live: a pulse dot rides the header (holdings repoll every 10s) and the
- * nav value tickers on change. honest empty states in wave-t grammar.
+ * NAV value tickers green/red on change. honest empty states in wave-t
+ * grammar.
  *
- * Brand discipline: every tinted swatch is a green at decreasing opacity.
- * no sky, amber, violet, pink, red. single accent only. no hex outside
+ * Brand discipline (.impeccable.md): DENSE but readable, hairlines not card
+ * soup, mono tabular nums, single green accent. no sky, amber, violet, pink.
+ * every tinted swatch is a green at decreasing opacity. no hex outside
  * THEME_TOKENS.
+ *
+ * Mobile: the NAV hero stat strip wraps 2-up, the donut + legend stack
+ * vertically below ~420px so nothing overflows at 375px.
  */
 
 "use client";
@@ -35,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { formatCompactUsd } from "@/lib/wave-t/format";
 import type { ChainHolding, HoldingsSnapshot, RoleLine, WalletLine } from "@/lib/wave-t/holdings";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
-import { Hairline, Label, Panel, Pulse, StatPill, TokenIcon } from "./_primitives";
+import { Label, Panel, Pulse, TokenIcon } from "./_primitives";
 
 // Monochrome ramp anchored on --accent. Single-hue brand discipline:
 // every slice is a tinted green at decreasing intensities.
@@ -131,6 +138,9 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 	const flash = useTickFlash(snapshot.navUsd);
 	const reduce = useReducedMotion();
 
+	const walletCount = useMemo(() => roles.reduce((n, r) => n + r.wallets.length, 0), [roles]);
+	const topChainTag = useMemo(() => dominantChainTag(snapshot), [snapshot]);
+
 	return (
 		<Panel className="flex h-full flex-col">
 			<Label
@@ -147,13 +157,17 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 				<span>treasury</span>
 			</Label>
 
-			{/* NAV headline. The single number every viewer wants first. */}
-			<div className="mb-4 flex items-end justify-between gap-3">
-				<div className="flex flex-col gap-0.5">
-					<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">nav</span>
+			{/* NAV hero. A bordered stat strip, cohesive with the account-health
+			    hero in active-positions: NAV is the lead number, then the
+			    structural facts (roles, wallets, top chain) a viewer scans next. */}
+			<div className="mb-4 rounded-md border border-[var(--border-soft)] bg-white/[0.015] p-3.5">
+				<div className="flex flex-col gap-1">
+					<span className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+						net asset value
+					</span>
 					<span
 						className={cn(
-							"font-mono text-[22px] leading-none tabular-nums transition-colors duration-500",
+							"font-mono text-[24px] leading-none tabular-nums transition-colors duration-500",
 							flash === "up"
 								? "text-[var(--positive)]"
 								: flash === "down"
@@ -164,17 +178,15 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 						{formatCompactUsd(snapshot.navUsd)}
 					</span>
 				</div>
+
 				{hasLedger ? (
-					<div className="flex items-center gap-1.5 pb-0.5">
-						<StatPill>
-							{roles.length} {roles.length === 1 ? "role" : "roles"}
-						</StatPill>
-						<StatPill>{roles.reduce((n, r) => n + r.wallets.length, 0)} wallets</StatPill>
+					<div className="mt-3.5 grid grid-cols-3 gap-x-3 border-t border-[var(--border-soft)] pt-3">
+						<HeroStat label="roles" value={`${roles.length}`} />
+						<HeroStat label="wallets" value={`${walletCount}`} />
+						<HeroStat label="top chain" value={topChainTag ?? "·"} />
 					</div>
 				) : null}
 			</div>
-
-			<Hairline className="mb-3" />
 
 			<div className="flex-1">
 				<AnimatePresence initial={false} mode="wait">
@@ -205,11 +217,40 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 	);
 }
 
+// Most-valuable chain across priced holdings, as a short CAPS tag for the
+// hero strip. Falls back to null (rendered as a middot) when nothing priced.
+function dominantChainTag(snapshot: HoldingsSnapshot): string | null {
+	const byChain = new Map<string, number>();
+	for (const h of snapshot.holdings) {
+		if (h.valueUsd <= 0) continue;
+		byChain.set(h.chain, (byChain.get(h.chain) ?? 0) + h.valueUsd);
+	}
+	let bestKey: string | null = null;
+	let bestVal = 0;
+	for (const [k, v] of byChain) {
+		if (v > bestVal) {
+			bestVal = v;
+			bestKey = k;
+		}
+	}
+	if (!bestKey) return null;
+	return CHAIN_BADGE[bestKey] ?? bestKey.toUpperCase();
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+	return (
+		<div className="flex flex-col gap-1">
+			<span className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{label}</span>
+			<span className="font-mono text-[14px] leading-none tabular-nums text-[var(--text-primary)]">{value}</span>
+		</div>
+	);
+}
+
 // ── wallet ledger ──────────────────────────────────────────────
 
 function WalletLedger({ roles, navUsd }: { roles: RoleLine[]; navUsd: number }) {
 	return (
-		<ul className="flex flex-col gap-3">
+		<ul className="flex flex-col gap-4">
 			{roles.map((role) => (
 				<RoleGroup key={role.role} role={role} navUsd={navUsd} />
 			))}
@@ -223,28 +264,28 @@ function RoleGroup({ role, navUsd }: { role: RoleLine; navUsd: number }) {
 	return (
 		<li>
 			{/* Role header: name + what-it's-for hint on the left, total + share
-			    on the right. A hairline ties the wallets visually beneath it. */}
-			<div className="flex items-baseline justify-between gap-2 pb-2">
+			    on the right. The wallets nest beneath in a bordered group. */}
+			<div className="mb-2 flex items-baseline justify-between gap-2">
 				<div className="flex min-w-0 items-baseline gap-2">
-					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+					<span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">
 						{roleLabelOf(role.role)}
 					</span>
 					{hint ? (
-						<span className="truncate font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]/70">
+						<span className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
 							{hint}
 						</span>
 					) : null}
 				</div>
 				<div className="flex shrink-0 items-baseline gap-2">
-					<span className="font-mono text-[11px] tabular-nums text-[var(--text-primary)]">
+					<span className="font-mono text-[12px] tabular-nums text-[var(--text-primary)]">
 						{formatCompactUsd(role.valueUsd)}
 					</span>
-					<span className="w-10 text-right font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
+					<span className="w-11 text-right font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
 						{sharePct.toFixed(1)}%
 					</span>
 				</div>
 			</div>
-			<div className="rounded-md border border-[var(--border-soft)] bg-white/[0.012]">
+			<div className="overflow-hidden rounded-md border border-[var(--border-soft)] bg-white/[0.012]">
 				{role.wallets.map((w, i) => (
 					<WalletRow
 						key={`${role.role}-${w.address || w.label}-${i}`}
@@ -275,22 +316,24 @@ function WalletRow({
 	return (
 		<div
 			className={cn(
-				"flex flex-col gap-2 px-3 py-2.5 transition-colors hover:bg-white/[0.015]",
+				"flex flex-col gap-2.5 px-3 py-3 transition-colors hover:bg-white/[0.02]",
 				showTopBorder ? "border-t border-[var(--border-soft)]" : "",
 			)}
 		>
+			{/* Primary line: lead-asset logo + label + chain badge on the left,
+			    the wallet's usd value on the right. The single line a viewer
+			    reads to place the wallet (WAIFU-heavy safe vs BNB hot). */}
 			<div className="flex items-center justify-between gap-2">
 				<div className="flex min-w-0 items-center gap-2">
-					{/* Lead asset icon so a wallet reads at a glance (WAIFU-heavy
-					    safe vs BNB hot vs USDC bridge). */}
 					{top ? (
-						<TokenIcon address="" chain={topChain} size={16} symbol={top.asset} />
+						<TokenIcon address="" chain={topChain} size={18} symbol={top.asset} />
 					) : (
-						<span className="inline-block h-4 w-4 shrink-0 rounded-full bg-white/[0.04]" />
+						<span className="inline-block h-[18px] w-[18px] shrink-0 rounded-full bg-white/[0.04]" />
 					)}
-					<span className="truncate font-mono text-[11px] text-[var(--text-primary)]">{wallet.label}</span>
+					<span className="truncate font-mono text-[12px] text-[var(--text-primary)]">{wallet.label}</span>
+					<ChainBadge tag={chainTag} />
 				</div>
-				<span className="shrink-0 font-mono text-[12px] tabular-nums text-[var(--text-primary)]">
+				<span className="shrink-0 font-mono text-[13px] tabular-nums text-[var(--text-primary)]">
 					{formatCompactUsd(wallet.valueUsd)}
 				</span>
 			</div>
@@ -299,19 +342,21 @@ function WalletRow({
 			    its assets. Pure brand-hue, no second color. */}
 			<CompositionBar assets={wallet.assets} />
 
+			{/* Meta line: venue tag + asset summary on the left, copy-address +
+			    share-of-nav on the right. Quiet, tertiary, never competes with
+			    the value above. */}
 			<div className="flex items-center justify-between gap-2">
 				<div className="flex min-w-0 items-center gap-1.5">
-					<ChainBadge tag={chainTag} />
 					{wallet.venue ? (
-						<span className="rounded-sm border border-[var(--accent)]/25 bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[var(--accent)]">
+						<span className="rounded-sm border border-[var(--accent)]/25 bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--accent)]">
 							{wallet.venue.toLowerCase()}
 						</span>
 					) : null}
 					<AssetSummary assets={wallet.assets} />
 				</div>
-				<div className="flex shrink-0 items-center gap-2">
+				<div className="flex shrink-0 items-center gap-2.5">
 					{wallet.address ? <CopyAddress address={wallet.address} /> : null}
-					<span className="w-9 text-right font-mono text-[9.5px] tabular-nums text-[var(--text-tertiary)]">
+					<span className="w-10 text-right font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
 						{sharePct.toFixed(1)}%
 					</span>
 				</div>
@@ -322,10 +367,10 @@ function WalletRow({
 
 function CompositionBar({ assets }: { assets: WalletLine["assets"] }) {
 	const total = assets.reduce((s, a) => s + Math.max(0, a.valueUsd), 0);
-	if (total <= 0) return <div className="h-1 w-full rounded-full bg-white/[0.05]" />;
+	if (total <= 0) return <div className="h-1.5 w-full rounded-full bg-white/[0.05]" />;
 	const top = assets.slice(0, 5);
 	return (
-		<div className="flex h-1 w-full gap-px overflow-hidden rounded-full bg-white/[0.04]">
+		<div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full bg-white/[0.04]">
 			{top.map((a, i) => {
 				const pct = (a.valueUsd / total) * 100;
 				return (
@@ -346,7 +391,7 @@ function AssetSummary({ assets }: { assets: WalletLine["assets"] }) {
 	const top = assets.slice(0, 2).map((a) => a.asset.toUpperCase());
 	const rest = assets.length - top.length;
 	return (
-		<span className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+		<span className="truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
 			{top.join(" · ")}
 			{rest > 0 ? ` +${rest}` : ""}
 		</span>
@@ -355,7 +400,7 @@ function AssetSummary({ assets }: { assets: WalletLine["assets"] }) {
 
 function ChainBadge({ tag }: { tag: string }) {
 	return (
-		<span className="rounded-sm border border-[var(--border-mid)] bg-white/[0.025] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+		<span className="shrink-0 rounded-sm border border-[var(--border-mid)] bg-white/[0.025] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[var(--text-secondary)]">
 			{tag}
 		</span>
 	);
@@ -381,7 +426,7 @@ function CopyAddress({ address }: { address: string }) {
 			}}
 			title={copied ? "copied" : address}
 			className={cn(
-				"inline-flex items-center gap-1 rounded-sm px-1 py-0.5 font-mono text-[9px] tabular-nums transition-colors",
+				"inline-flex items-center gap-1 rounded-sm px-1 py-0.5 font-mono text-[9.5px] tabular-nums transition-colors",
 				copied ? "text-[var(--accent)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
 			)}
 		>
@@ -586,8 +631,10 @@ function AllocationDonut({ snapshot }: { snapshot: HoldingsSnapshot }) {
 				/>
 			</div>
 
-			<div className="flex items-start gap-4">
-				<div className="relative h-[120px] w-[120px] shrink-0">
+			{/* Donut + legend. Stacks vertically below ~420px (sm) so the 132px
+			    ring + the legend never cramp at 375px; side-by-side on wider. */}
+			<div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-5">
+				<div className="relative h-[132px] w-[132px] shrink-0">
 					<ResponsiveContainer height="100%" width="100%">
 						<PieChart>
 							<Pie
@@ -596,14 +643,14 @@ function AllocationDonut({ snapshot }: { snapshot: HoldingsSnapshot }) {
 								data={chartData}
 								dataKey="value"
 								endAngle={-270}
-								innerRadius={42}
+								innerRadius={46}
 								isAnimationActive={false}
 								onMouseEnter={(_, idx) => {
 									const s = slices[idx];
 									if (s) setActiveKey(s.key);
 								}}
 								onMouseLeave={() => setActiveKey(null)}
-								outerRadius={56}
+								outerRadius={62}
 								paddingAngle={hasData && slices.length > 1 ? 1.5 : 0}
 								shape={SliceShape as never}
 								startAngle={90}
@@ -619,18 +666,18 @@ function AllocationDonut({ snapshot }: { snapshot: HoldingsSnapshot }) {
 						<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
 							{activeSlice ? activeSlice.label.toLowerCase() : mode}
 						</span>
-						<span className="font-mono text-[14px] text-[var(--text-primary)] tabular-nums">
+						<span className="mt-0.5 font-mono text-[16px] leading-none text-[var(--text-primary)] tabular-nums">
 							{activeSlice ? `${activeSlice.pct.toFixed(1)}%` : countForMode(mode, counts)}
 						</span>
 						{!activeSlice ? (
-							<span className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]/70">
+							<span className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]/70">
 								{mode === "asset" ? "assets" : mode === "chain" ? "chains" : "wallets"}
 							</span>
 						) : null}
 					</div>
 				</div>
 
-				<ul className="flex min-w-0 flex-1 flex-col">
+				<ul className="flex w-full min-w-0 flex-1 flex-col">
 					{hasData ? (
 						slices.map((s, i) => (
 							<LegendRow
@@ -643,7 +690,7 @@ function AllocationDonut({ snapshot }: { snapshot: HoldingsSnapshot }) {
 							/>
 						))
 					) : (
-						<li className="flex flex-col gap-1">
+						<li className="flex flex-col gap-1.5">
 							<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 								no priced assets yet
 							</span>
@@ -743,7 +790,7 @@ function LegendRow({
 	return (
 		<li
 			className={cn(
-				"flex items-center justify-between gap-2 py-1.5 font-mono text-[11px] transition-colors",
+				"-mx-1 flex items-center justify-between gap-2 rounded-sm px-1 py-2 font-mono text-[11px] transition-colors",
 				showTopBorder ? "border-t border-[var(--border-soft)]" : "",
 			)}
 			onMouseEnter={onEnter}
@@ -753,18 +800,18 @@ function LegendRow({
 			<span className="flex min-w-0 items-center gap-2">
 				<span
 					aria-hidden
-					className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+					className="inline-block h-2 w-2 shrink-0 rounded-full"
 					style={{ backgroundColor: slice.fill }}
 				/>
-				<TokenIcon address={slice.sources[0]?.contract ?? ""} chain={slice.chain} size={13} symbol={slice.label} />
-				<span className="truncate text-[var(--text-primary)]">{slice.label}</span>
-				<span className="truncate text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">{slice.sub}</span>
+				<TokenIcon address={slice.sources[0]?.contract ?? ""} chain={slice.chain} size={15} symbol={slice.label} />
+				<span className="truncate text-[12px] text-[var(--text-primary)]">{slice.label}</span>
+				<span className="truncate text-[9px] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">{slice.sub}</span>
 			</span>
-			<span className="flex items-center gap-2">
+			<span className="flex shrink-0 items-center gap-3">
 				<span className="font-mono text-[10px] tabular-nums text-[var(--text-tertiary)]">
 					{formatCompactUsd(slice.valueUsd)}
 				</span>
-				<span className="w-10 text-right font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
+				<span className="w-11 text-right font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
 					{slice.pct.toFixed(1)}%
 				</span>
 			</span>

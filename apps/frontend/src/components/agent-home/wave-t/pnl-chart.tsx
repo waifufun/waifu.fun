@@ -1,5 +1,5 @@
 /**
- * P&L chart panel (Wave T) — Hyperliquid trading PnL, rebuilt.
+ * P&L chart panel (Wave T). Hyperliquid trading PnL, rebuilt.
  *
  * This panel renders the agent's REAL trading pnl, sourced from the api's
  * /v2/agents/:address/hyperliquid/pnl route via `fetchHyperliquidPnl`.
@@ -288,7 +288,7 @@ export function PnlChart({ hlPnl, series, baselineNav }: PnlChartProps) {
 					<div className="flex flex-col gap-0.5">
 						<span className="text-[8px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">win / loss</span>
 						<span className="text-[var(--text-secondary)]">
-							{winLoss ? `${winLoss.wins}w / ${winLoss.losses}l` : "—"}
+							{winLoss ? `${winLoss.wins}w / ${winLoss.losses}l` : "no data yet"}
 						</span>
 					</div>
 				</div>

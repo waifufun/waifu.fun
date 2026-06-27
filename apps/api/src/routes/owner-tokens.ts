@@ -16,6 +16,7 @@ import {
 	createElizaCloudClient,
 	resolveElizaCloudApiKey,
 } from "../services/eliza-client.js";
+import { elizaUnavailableBody, isElizaCloudUnavailable } from "./v2/eliza-unavailable.js";
 
 const app = new Hono<RequirePatronBindings>();
 
@@ -353,6 +354,7 @@ function getElizaClient() {
 		...(serviceKey ? { serviceKey } : {}),
 		...(apiKey ? { apiKey } : {}),
 		logger: console,
+		resilient: true,
 	});
 }
 
@@ -499,6 +501,20 @@ function appendChatAccessToken(chatUrl: string, token: string): string {
 }
 
 app.use("/tokens/*", requirePatron());
+
+/**
+ * Translate an open-circuit Eliza Cloud failure (from any runtime-activation or
+ * credit handler below — activate / suspend / resume / restart / billing top-up)
+ * into an honest 503 with the CREDITS_UNAVAILABLE code. Every other error is
+ * rethrown unchanged so existing 4xx/409/500 behaviour (incl. the handlers' own
+ * RUNTIME_NOT_FOUND 409 guards) is untouched.
+ */
+app.onError((err, c) => {
+	if (isElizaCloudUnavailable(err)) {
+		return c.json(elizaUnavailableBody("CREDITS_UNAVAILABLE"), 503);
+	}
+	throw err;
+});
 
 app.post("/tokens/:chain/:chainId/:contractAddress/claim", async (c) => {
 	const resolved = await requireOwnedToken(c);

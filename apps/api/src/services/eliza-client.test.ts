@@ -1,12 +1,23 @@
 import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+import test, { beforeEach, mock } from "node:test";
 
+import { __resetElizaResilienceBreakersForTest } from "./eliza-client-resilient.js";
 import {
 	ElizaCloudError,
 	ElizaCloudNotConfiguredError,
 	createElizaCloudClient,
 	resolveElizaCloudApiKey,
 } from "./eliza-client.js";
+
+/**
+ * These tests build the RAW client (createElizaCloudClient defaults to resilient:false),
+ * so today they never touch the shared per-base-URL breaker registry. The reset is
+ * defensive: the moment a test in this file opts into `resilient:true` against the
+ * same base URL, an un-reset breaker could carry open state across tests and poison
+ * later cases with ElizaCloudUnavailableError. Resetting per-test keeps this suite
+ * deterministic under --test-isolation=none and any future in-process sharing.
+ */
+beforeEach(() => __resetElizaResilienceBreakersForTest());
 
 test("resolveElizaCloudApiKey accepts official ElizaOS Cloud env aliases", () => {
 	const previous = {

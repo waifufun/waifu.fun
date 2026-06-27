@@ -18,6 +18,7 @@ import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/hol
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchHyperliquidPnl, fetchNavHistory } from "@/lib/wave-t/pnl";
 import { fetchPositions } from "@/lib/wave-t/positions";
+import { isSunsetAgent } from "@/lib/wave-t/sunset-agents";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
@@ -123,8 +124,13 @@ function mapAgentDetail(raw: unknown): AgentData | null {
 	const name = typeof r.name === "string" ? r.name : "unknown";
 	const ticker = typeof r.ticker === "string" ? r.ticker : typeof r.symbol === "string" ? r.symbol : "";
 	const rawStatus = r.status;
-	const status: AgentData["status"] =
-		rawStatus === "graduated" ? "graduated" : rawStatus === "pending" || rawStatus === "failed" ? "pending" : "active";
+	const status: AgentData["status"] = isSunsetAgent(tokenAddress)
+		? "sunset"
+		: rawStatus === "graduated"
+			? "graduated"
+			: rawStatus === "pending" || rawStatus === "failed"
+				? "pending"
+				: "active";
 
 	const shaped: AgentData = {
 		tokenAddress,
@@ -244,7 +250,11 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 			tokenAddress,
 			name: typeof token.name === "string" ? token.name : "unknown",
 			ticker: typeof token.ticker === "string" ? token.ticker : typeof token.symbol === "string" ? token.symbol : "",
-			status: token.status === "migrated" || token.status === "locked" ? "graduated" : "active",
+			status: isSunsetAgent(tokenAddress)
+				? "sunset"
+				: token.status === "migrated" || token.status === "locked"
+					? "graduated"
+					: "active",
 			raisedToken: "BNB",
 			tradeUrl: `https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`,
 		};

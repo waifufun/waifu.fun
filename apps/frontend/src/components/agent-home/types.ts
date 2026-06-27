@@ -48,7 +48,7 @@ export interface AgentData {
 	ticker: string;
 	image?: string;
 	description?: string;
-	status: "active" | "graduated" | "pending";
+	status: "active" | "graduated" | "pending" | "sunset";
 	preset?: string;
 	traits?: string[];
 	systemPrompt?: string;

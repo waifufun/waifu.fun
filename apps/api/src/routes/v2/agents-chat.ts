@@ -7,10 +7,12 @@ import { requireAgentOwnership, requirePatron } from "../../middleware/patron-au
 import type { RequireAgentOwnershipBindings } from "../../middleware/patron-auth.js";
 import {
 	type ElizaAgentMessageResult,
+	ElizaApiError,
 	type ElizaCloudClient,
 	createElizaCloudClient,
 	resolveElizaCloudApiKey,
 } from "../../services/eliza-client.js";
+import { elizaUnavailableBody, isElizaCloudUnavailable } from "./eliza-unavailable.js";
 
 const app = new Hono<RequireAgentOwnershipBindings>();
 
@@ -46,6 +48,7 @@ function getElizaClient(): Pick<ElizaCloudClient, "sendAgentMessage"> | null {
 		...(serviceKey ? { serviceKey } : {}),
 		...(apiKey ? { apiKey } : {}),
 		logger: console,
+		resilient: true,
 	});
 }
 
@@ -237,6 +240,12 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 			senderId: `patron:${patron.id}`,
 		});
 	} catch (err) {
+		if (isElizaCloudUnavailable(err)) {
+			return c.json(elizaUnavailableBody("ELIZA_CLOUD_UNAVAILABLE"), 503);
+		}
+		// ElizaApiError carries the upstream status; preserve 409 (e.g. killed/conflict)
+		// as 409 rather than masking it as a transport failure. Everything else → 502.
+		const status = err instanceof ElizaApiError && err.status === 409 ? 409 : 502;
 		return c.json(
 			{
 				ok: false,
@@ -244,7 +253,7 @@ app.post("/:id/chat", requirePatron(), requireAgentOwnership("id"), async (c) =>
 				code: "CHAT_FAILED",
 				message: err instanceof Error ? err.message : String(err),
 			},
-			502,
+			status,
 		);
 	}
 

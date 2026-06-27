@@ -78,7 +78,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 	const { isConnected } = useAccount();
 
 	const baseSymbol = "BNB";
-	const quoteSymbol = token.symbol || "–";
+	const quoteSymbol = token.symbol || "TOKEN";
 	const fromSymbol = reversed ? quoteSymbol : baseSymbol;
 	const toSymbol = reversed ? baseSymbol : quoteSymbol;
 	const fromBalance = 0;
@@ -247,7 +247,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 				<div className="flex justify-between">
 					<dt>minimum received</dt>
 					<dd className="tabular-nums text-[var(--text-secondary)]">
-						{minReceived > 0 ? `${fmtBalance(minReceived, minReceived > 1 ? 2 : 6)} ${toSymbol}` : "–"}
+						{minReceived > 0 ? `${fmtBalance(minReceived, minReceived > 1 ? 2 : 6)} ${toSymbol}` : "·"}
 					</dd>
 				</div>
 			</dl>

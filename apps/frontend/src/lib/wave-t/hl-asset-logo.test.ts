@@ -96,7 +96,10 @@ describe("resolveHlAssetLogo", () => {
 	it("returns null (monogram fallback) for an equity when no logo.dev token is set", async () => {
 		delete process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN;
 		const fetchSpy = vi.spyOn(globalThis, "fetch");
-		await expect(resolveHlAssetLogo("xyz:SPCX")).resolves.toBeNull();
+		// TSLA has no local manifest SVG, so it falls through to the logo.dev
+		// branch — which returns null without a token. (SPCX now ships a hand
+		// vector in token-logos.json, so it would resolve via the manifest.)
+		await expect(resolveHlAssetLogo("xyz:TSLA")).resolves.toBeNull();
 		// no token => no logo.dev request at all (it would 401), just monogram
 		expect(fetchSpy).not.toHaveBeenCalled();
 	});

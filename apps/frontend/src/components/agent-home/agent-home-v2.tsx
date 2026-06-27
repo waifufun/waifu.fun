@@ -46,8 +46,9 @@ import type { HyperliquidPosition } from "@/lib/hooks/use-hyperliquid-positions"
 import type { HlPnlData, NavHistoryPoint } from "@/lib/wave-t/pnl";
 import LiveLaunchBanner from "./live-launch-banner";
 import { ProvenancePanel } from "./provenance-panel";
+import SunsetBanner from "./sunset-banner";
 import type { AgentData, AgentTrade } from "./types";
-import { THEME_TOKENS } from "./wave-t/_primitives";
+import { Label, Panel, THEME_TOKENS } from "./wave-t/_primitives";
 import type { ActivityRowInput } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
 import { BurnRatePanel } from "./wave-t/burn-rate-panel";
@@ -141,6 +142,9 @@ export default function AgentHomeV2({
 	// Hero identity: prefer the short bio when set, fall back to the full
 	// description. The persona endpoint owns both; we never override here.
 	const heroBio = agent.bioShort ?? agent.description;
+	// Sunset agents are wound down: token retired, trading closed. The page
+	// shows a SunsetBanner and suppresses the price-chart + swap surface.
+	const isSunset = agent.status === "sunset";
 	const heroIdentity: HeroIdentity = {
 		name: agent.name,
 		ticker: agent.ticker,
@@ -203,6 +207,12 @@ export default function AgentHomeV2({
 				{/* Optional banner: deposit window open or recently closed. */}
 				<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 
+				{/* Sunset banner: when the agent is wound down, say so plainly and
+				    point at the reconciliation. Presence-driven off status, not
+				    an identity check. When sunset, the price chart + swap row below
+				    is suppressed (trading is closed; the chart is meaningless). */}
+				{isSunset ? <SunsetBanner claimUrl="/reconciliation" /> : null}
+
 				{/* Row 1: Hero (full width). Asymmetric identity + data strip.
 				    Runway lives in the data strip via the shared selector. */}
 				<div className="mt-4">
@@ -231,11 +241,15 @@ export default function AgentHomeV2({
 					</div>
 				) : null}
 
-				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). */}
-				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
-					<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
-					<SwapPanel token={token} />
-				</div>
+				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed).
+				    Suppressed for sunset agents: trading is closed and the chart
+				    no longer reflects anything real. */}
+				{isSunset ? null : (
+					<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
+						<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
+						<SwapPanel token={token} />
+					</div>
+				)}
 
 				{/* Row 3: holdings allocation + active positions. */}
 				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
@@ -344,10 +358,14 @@ export default function AgentHomeV2({
 					</div>
 				) : null}
 
-				{/* Patron top-up widget. */}
-				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="topup">
-					<div className="hidden lg:block" aria-hidden />
-					<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
+				{/* Patron top-up widget. Full width on mobile (where funding from a
+				    phone is the common path); on lg it sits as a constrained card on
+				    the right rail, aligned to the 360px column the rest of the page
+				    uses, without an empty spacer cell. */}
+				<div className="mt-4 flex justify-end" id="topup">
+					<div className="w-full lg:max-w-[360px]">
+						<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
+					</div>
 				</div>
 
 				<footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -404,12 +422,13 @@ function TopBar() {
 }
 
 function EmptyAside({ copy }: { copy: string }) {
+	// Reuse the shared Panel + Label primitives so the empty aside matches
+	// every other panel's chrome byte-for-byte (border, radius, header
+	// tracking) instead of hand-rolling a near-but-not-quite header.
 	return (
-		<aside className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel)] p-4 md:p-5">
-			<div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)] mb-3">
-				top apps
-			</div>
+		<Panel>
+			<Label>top apps by revenue 7d</Label>
 			<div className="py-4 font-mono text-[11px] text-[var(--text-tertiary)]">{copy}</div>
-		</aside>
+		</Panel>
 	);
 }
