@@ -62,6 +62,7 @@ const TIER_TREASURY_TICK_LOWERS: Record<LaunchTierString, [number, number, numbe
 	"90": [53600, 62800, 76600, 92000],
 	"95": [53600, 62800, 76600, 92000],
 	"98": [53600, 62800, 76600, 92000],
+	test: [53600, 62800, 76600, 92000],
 };
 function defaultTreasuryTickLowers(tier: LaunchTierString): [number, number, number, number] {
 	return TIER_TREASURY_TICK_LOWERS[tier] ?? TIER_TREASURY_TICK_LOWERS["95"];
@@ -320,7 +321,7 @@ export class LaunchService {
 	 *
 	 * `claimable` reflects the on-chain claimable amount (TGE + linear vesting);
 	 * `vestingProgress` is a 0..1 fraction relative to the configured vesting
-	 * window (24h linear). Pre-launch this is always 0.
+	 * window (30d linear). Pre-launch this is always 0.
 	 */
 	async readDepositorPosition(
 		vaultAddress: Address,
@@ -365,7 +366,7 @@ export class LaunchService {
 		const totalAllocation = total === 0n ? 0n : (presale * deposited) / total;
 
 		const launchSeconds = Number(launchTs as unknown as bigint);
-		const vestingWindow = 86_400; // matches LaunchVault.VESTING_WINDOW
+		const vestingWindow = 30 * 24 * 60 * 60; // matches LaunchVault.VESTING_WINDOW
 		const vestingProgress = launchSeconds === 0 ? 0 : Math.min(1, Math.max(0, (now - launchSeconds) / vestingWindow));
 
 		return {

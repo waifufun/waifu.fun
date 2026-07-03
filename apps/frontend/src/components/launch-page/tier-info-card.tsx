@@ -20,7 +20,7 @@ export function TierInfoCard({ tier, vestingEnabled, launchTimestamp, allocation
 	const vestingActive = vestingEnabled ?? tier.vestingEnabled;
 	const graduates = tier.v2BuyBnb > 0;
 	const pathCopy = graduates
-		? "presale → pcs v2 lp · 50/10/20 supply split · 24h vesting"
+		? "presale → pcs v2 lp · 50/10/20 supply split · 30d vesting"
 		: "presale → pcs curve · no v2 lp graduation";
 
 	return (

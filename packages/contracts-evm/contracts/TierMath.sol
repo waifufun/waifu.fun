@@ -54,8 +54,11 @@ library TierMath {
         else if (tier == 2) presaleCapBnb = 64 ether;
         else if (tier == 3) presaleCapBnb = 160 ether;
         else if (tier == 4) {
-            // TIER_TEST: 16.84 quoteAmt + 0.5 V2 buy, no vesting
-            return (17.34 ether, 16.84 ether, 0.5 ether, false);
+            // TIER_TEST: 2.4 BNB smoke cap, curve-only, no vesting. Fork probes
+            // showed 0.01 BNB is too small for BundleRouter's fixed
+            // 20% vault + 10% agentSafe token split; 2.4 BNB returns just
+            // over 300M curve tokens on Portal v5.14.3.
+            return (2.4 ether, 2.4 ether, 0, false);
         }
         else presaleCapBnb = 160 ether;
         vestingEnabled = true;

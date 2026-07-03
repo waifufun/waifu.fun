@@ -27,7 +27,7 @@ const COPY: Record<LaunchDisplayState, { title: string; body: string }> = {
 	},
 	launched: {
 		title: "launched. claim available",
-		body: "trading is live on pcs. claim your tokens below. vesting (if any) drips over the first 24h.",
+		body: "trading is live on pcs. claim your tokens below. vesting (if any) drips over the first 30d.",
 	},
 	refunding: {
 		title: "refunds open",

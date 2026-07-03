@@ -223,12 +223,12 @@ slither warns whenever `block.timestamp` is used in a comparison. wave h has
 12 such comparisons; all are intentional and bounded:
 
 - presale window enforcement: `block.timestamp > closeTimestamp`, `< closeTimestamp`
-- vesting: `elapsed >= VESTING_WINDOW` (where window = 24h)
+- vesting: `elapsed >= VESTING_WINDOW` (where window = 30d)
 - bundle deadline: `block.timestamp > p.deadline`
 - launchTimestamp ordering: `block.timestamp < launchTimestamp`
 - constructor sanity: `_closeTimestamp <= block.timestamp` (reject past)
 
-miner-manipulation of `block.timestamp` is bounded to ~12s on BSC. for a 24h
+miner-manipulation of `block.timestamp` is bounded to ~12s on BSC. for a 30d
 vesting window or a presale window measured in hours/days, this is negligible.
 the bundle deadline is operator-set with a margin (typical: now + 60s).
 

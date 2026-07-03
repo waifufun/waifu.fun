@@ -76,14 +76,14 @@ export function shortAddress(addr: string | null | undefined): string {
 }
 
 /**
- * Compute vested pct + remaining seconds for the 50/50/24h vesting policy
+ * Compute vested pct + remaining seconds for the 50/50/30d vesting policy
  * baked into LaunchVault. `nowSeconds` is injectable for tests.
  */
 export function vestingProgress(
 	launchTimestamp: number,
 	nowSeconds: number,
 	tgeBps = 5000,
-	windowSecs = 24 * 60 * 60,
+	windowSecs = 30 * 24 * 60 * 60,
 ): { pct: number; remainingSecs: number } {
 	const elapsed = Math.max(0, nowSeconds - launchTimestamp);
 	if (elapsed >= windowSecs) return { pct: 100, remainingSecs: 0 };

@@ -11,7 +11,7 @@
  *
  * Numbers mirror W30v3 bundle launch burn edition math.
  */
-export type TierVesting = "none" | "50/50/24h";
+export type TierVesting = "none" | "50/50/30d";
 
 export type TierId = 80 | 90 | 95 | 98;
 
@@ -50,7 +50,7 @@ export const TIERS: readonly TierPreset[] = [
 		presaler: 2.0,
 		burn: 60,
 		circulatingSupplyM: 400,
-		vesting: "50/50/24h",
+		vesting: "50/50/30d",
 	},
 	{
 		id: 95,
@@ -61,7 +61,7 @@ export const TIERS: readonly TierPreset[] = [
 		presaler: 4.0,
 		burn: 65,
 		circulatingSupplyM: 350,
-		vesting: "50/50/24h",
+		vesting: "50/50/30d",
 	},
 	{
 		id: 98,
@@ -72,7 +72,7 @@ export const TIERS: readonly TierPreset[] = [
 		presaler: 10.0,
 		burn: 68,
 		circulatingSupplyM: 320,
-		vesting: "50/50/24h",
+		vesting: "50/50/30d",
 	},
 ] as const;
 

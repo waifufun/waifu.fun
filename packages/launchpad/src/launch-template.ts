@@ -1,4 +1,4 @@
-export type WaifuLaunchTier = "80" | "90" | "95" | "98";
+export type WaifuLaunchTier = "80" | "90" | "95" | "98" | "test";
 
 export interface WaifuLaunchMechanismSnapshot {
 	tier: WaifuLaunchTier;
@@ -28,6 +28,17 @@ function calibratedCurveFillWei(buyTaxBps: number): bigint {
 
 export function getWaifuLaunchMechanismSnapshot(tier: WaifuLaunchTier, buyTaxBps = 300): WaifuLaunchMechanismSnapshot {
 	const supplyBps = { presale: 4000, lp: 2000, treasuryReserve: 1000, burn: 3000 } as const;
+	if (tier === "test") {
+		return {
+			tier,
+			presaleCapWei: "2400000000000000000",
+			curveFillWei: "2400000000000000000",
+			postGraduationLpWei: "0",
+			vestingEnabled: false,
+			supplyBps,
+		};
+	}
+
 	if (tier === "80") {
 		return {
 			tier,

@@ -264,7 +264,7 @@ sequenceDiagram
 | B-E5 | withdraw during OPEN with `penaltyBps=0` → no bonus | `wave-h-bundle-flow.test.js:707` | n/a | FE conditional copy on penaltyBps | indexer same as B-E4 | clean |
 | B-E6 | withdraw after closeTimestamp → revert `WindowClosed` | `wave-h-bundle-flow.test.js:291` (via close gate) + vault guard | n/a | FE hides withdraw form when not OPEN | n/a | clean |
 | B-E7 | claim before distribute → revert `InvalidState` | `wave-h-bundle-flow.test.js:756` + `wave-h-adversarial.test.js:189` | n/a | FE only renders `ClaimWidget` post-launch | n/a | clean |
-| B-E8 | claim during vesting (tier 90/95/98, 50%/24h) | `wave-h-bundle-flow.test.js:622` + real-fork `:375,538` | n/a | `ClaimWidget` + `VestingTimeline` use same constants | n/a | clean |
+| B-E8 | claim during vesting (tier 90/95/98, 50%/30d) | `wave-h-bundle-flow.test.js:622` + real-fork `:375,538` | n/a | `ClaimWidget` + `VestingTimeline` use same constants | n/a | clean |
 | B-E9 | double claim → `NothingToClaim` | `wave-h-adversarial.test.js:198` | n/a | FE refreshes balance after claim | indexer logs each `Claimed` | clean |
 | B-E10 | claim after full vest → exact balance | `wave-h-bundle-flow.test.js:622-660` (advances time + asserts 100%) | n/a | FE displays vested 100% | n/a | clean |
 

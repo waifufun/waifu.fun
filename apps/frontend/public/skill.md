@@ -33,9 +33,9 @@ you only choose the **tier**. the presale cap is fixed per tier; the quoteAmt (B
 | tier (display) | api `tier` field | presale cap (BNB) | approx quoteAmt (BNB) | approx V2 buy (BNB) | vesting | use when |
 |---|---|---|---|---|---|---|
 | `SMOL` | `"80"` | 16 | 16 | 0 | none, instant claim | smallest launch, curve-only, no PCS LP yet |
-| `BASED` | `"90"` | 32 | ~16.8 | ~15.2 | 50% TGE + 24h linear | moderate launch, graduates to PCS V2 |
-| `WAGMI` | `"95"` | 64 | ~16.8 | ~47.2 | 50% TGE + 24h linear | larger launch with deeper LP |
-| `GIGACHAD` | `"98"` | 160 | ~16.8 | ~143.2 | 50% TGE + 24h linear | maximum launch size with biggest LP |
+| `BASED` | `"90"` | 32 | ~16.8 | ~15.2 | 50% TGE + 30d linear | moderate launch, graduates to PCS V2 |
+| `WAGMI` | `"95"` | 64 | ~16.8 | ~47.2 | 50% TGE + 30d linear | larger launch with deeper LP |
+| `GIGACHAD` | `"98"` | 160 | ~16.8 | ~143.2 | 50% TGE + 30d linear | maximum launch size with biggest LP |
 
 the display names (`SMOL` / `BASED` / `WAGMI` / `GIGACHAD`) are what humans see in the UI. the api `tier` field takes the machine ids as strings (`"80"`, `"90"`, `"95"`, `"98"`). the quoteAmt/V2-buy figures above are illustrative at the default 3% buy tax; the api computes the exact split at create time.
 

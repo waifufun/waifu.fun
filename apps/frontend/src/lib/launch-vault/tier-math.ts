@@ -19,6 +19,7 @@ const TIER_PRESALE_CAP_WEI: Record<string, bigint> = {
 	TIER_90: 32n * 10n ** 18n,
 	TIER_95: 64n * 10n ** 18n,
 	TIER_98: 160n * 10n ** 18n,
+	TIER_TEST: 24n * 10n ** 17n,
 };
 
 /**
@@ -53,6 +54,14 @@ export function tierBudget(tier: string, buyTaxBps: number): TierBudget {
 	const presaleCapWei = TIER_PRESALE_CAP_WEI[tier];
 	if (presaleCapWei === undefined) {
 		throw new Error(`unknown tier ${tier}`);
+	}
+	if (tier === "TIER_TEST") {
+		return {
+			presaleCapWei,
+			quoteAmtWei: presaleCapWei,
+			v2BuyBnbWei: 0n,
+			vestingEnabled: false,
+		};
 	}
 	if (tier === "TIER_80") {
 		return {

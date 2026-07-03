@@ -50,9 +50,9 @@ const TIER_95 = 2;
 const TIER_98 = 3;
 const TIER_TEST = 4;
 
-// TIER_95 cap is 64 BNB; TIER_TEST cap is 17.34 BNB
+// TIER_95 cap is 64 BNB; TIER_TEST cap is 2.4 BNB
 const TIER_95_CAP = ethers.parseEther("64");
-const TIER_TEST_CAP = ethers.parseEther("17.34");
+const TIER_TEST_CAP = ethers.parseEther("2.4");
 
 const TOKEN_ABI = [
 	"function balanceOf(address) view returns (uint256)",
@@ -482,7 +482,7 @@ describeFn("Launch-day fork :: treasury -> AgentSafe (post-#672)", function () {
 			agentSafeOwners: [shadowHot.address],
 			agentSafeThreshold: 1, // gummy: simple 1/1
 			noBurn: true,
-			// TIER_TEST uses smaller ticks for fast verification
+			// TIER_TEST uses smoke-test ticks for fast verification
 			treasuryTickLowers: [2000, 6000, 10000, 14000],
 			treasuryTickUppers: [887200, 887200, 887200, 887200],
 		});
@@ -491,11 +491,11 @@ describeFn("Launch-day fork :: treasury -> AgentSafe (post-#672)", function () {
 		const gummyAddrs = await factory.launches(mined.predicted);
 		const gummyVault = await ethers.getContractAt("LaunchVault", gummyAddrs.vault);
 
-		// User deposits 0.01 BNB
-		await gummyVault.connect(depositor2).deposit({ value: ethers.parseEther("0.01") });
+		// User deposits 2.4 BNB
+		await gummyVault.connect(depositor2).deposit({ value: ethers.parseEther("2.4") });
 		const depositorBalanceBefore = await ethers.provider.getBalance(depositor2.address);
 		const depositedAmount = await gummyVault.deposited(depositor2.address);
-		expect(depositedAmount).to.equal(ethers.parseEther("0.01"));
+		expect(depositedAmount).to.equal(ethers.parseEther("2.4"));
 		console.log(`    [gummy] depositor deposited ${ethers.formatEther(depositedAmount)} BNB`);
 
 		// Vault is OPEN, tier is TEST. Factory owner can call instantAdminRefund.
@@ -513,7 +513,7 @@ describeFn("Launch-day fork :: treasury -> AgentSafe (post-#672)", function () {
 		const gasUsed = refundReceipt.gasUsed * refundReceipt.gasPrice;
 		const depositorBalanceAfter = await ethers.provider.getBalance(depositor2.address);
 		const netReceived = depositorBalanceAfter - depositorBalanceBefore + gasUsed;
-		expect(netReceived).to.equal(ethers.parseEther("0.01"));
+		expect(netReceived).to.equal(ethers.parseEther("2.4"));
 		console.log(`    ✅ depositor recovered ${ethers.formatEther(netReceived)} BNB (full deposit) via refund()`);
 	});
 

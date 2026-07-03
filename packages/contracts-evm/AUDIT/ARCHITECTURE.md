@@ -143,7 +143,7 @@ sequenceDiagram
   loop after launch
     D->>V: claim()
     V->>V: _claimableOf(user) = _vestedOf - claimed
-    V-->>D: safeTransfer token (50pct TGE + 50pct linear over 24h if vesting on)
+    V-->>D: safeTransfer token (50pct TGE + 50pct linear over 30d if vesting on)
   end
 ```
 

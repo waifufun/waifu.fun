@@ -1,23 +1,23 @@
 ---
 title: "vesting explained"
-description: "the 50/50/24h vesting schedule on graduating tiers"
+description: "the 50/50/30d vesting schedule on graduating tiers"
 ---
 
 BASED, WAGMI, and GIGACHAD (TIER_90 / TIER_95 / TIER_98) have vesting enabled. SMOL (TIER_80)
-does not. when vesting is on, your tokens unlock over 24 hours starting from
+does not. when vesting is on, your tokens unlock over 30 days starting from
 the launch block.
 
 ## the schedule
 
 - **50% at TGE.** as soon as the launch transitions to `LAUNCHED`, half of
   your allocation is claimable.
-- **50% linear over 24 hours.** the remaining half unlocks proportionally
-  over the next 86400 seconds (24 hours) after launch.
+- **50% linear over 30 days.** the remaining half unlocks proportionally
+  over the next 2,592,000 seconds (30 days) after launch.
 
 ## the math
 
 ```solidity
-uint256 constant VESTING_WINDOW    = 86_400;   // 24 hours
+uint256 constant VESTING_WINDOW    = 30 days; // 2,592,000 seconds
 uint256 constant VESTING_TGE_BPS   = 5_000;    // 50% TGE
 uint256 constant VESTING_LINEAR_BPS = 5_000;   // 50% linear
 
@@ -44,11 +44,12 @@ claimable = _vestedOf(alloc) - alreadyClaimed
 say your allocation is 1,000,000 tokens and the launch happens at timestamp T:
 
 - **T + 0 seconds:** 500,000 claimable (TGE half)
-- **T + 1 hour:** 500,000 TGE + (500,000 * 1 / 24) = ~520,833 claimable
-- **T + 6 hours:** 500,000 + 125,000 = 625,000 claimable
-- **T + 12 hours:** 500,000 + 250,000 = 750,000 claimable
-- **T + 24 hours:** 1,000,000 claimable (fully vested)
-- **T + 25 hours:** 1,000,000 claimable (capped, no extra unlock)
+- **T + 1 hour:** 500,000 TGE + (500,000 * 1 / 720) = ~500,694 claimable
+- **T + 6 hours:** 500,000 + 4,167 = ~504,167 claimable
+- **T + 12 hours:** 500,000 + 8,333 = ~508,333 claimable
+- **T + 15 days:** 750,000 claimable
+- **T + 30 days:** 1,000,000 claimable (fully vested)
+- **T + 31 days:** 1,000,000 claimable (capped, no extra unlock)
 
 you can call `claim()` any number of times. each call only transfers the
 delta between vested and claimed. no penalty for claiming early or often,
@@ -58,10 +59,10 @@ except gas.
 
 the presaler allocation is large (a flat 200M tokens, 20% of total supply).
 releasing all of that at once produces immediate sell pressure that crashes
-the freshly-deployed PCS pair. spreading it over 24 hours dampens this and
+the freshly-deployed PCS pair. spreading it over 30 days dampens this and
 gives the token a chance at organic price discovery.
 
-it does not prevent dumping. it just spreads the dump curve over a day. read
+it does not prevent dumping. it just spreads the dump curve over a month. read
 [risks](/presalers/risks) for what this means for you.
 
 ## SMOL has no vesting

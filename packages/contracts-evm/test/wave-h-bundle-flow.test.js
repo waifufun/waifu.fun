@@ -32,7 +32,7 @@ describe("Wave H bundle flow e2e", () => {
 		[TIER_90]: ethers.parseEther("32"),
 		[TIER_95]: ethers.parseEther("64"),
 		[TIER_98]: ethers.parseEther("160"),
-		[TIER_TEST]: ethers.parseEther("17.34"),
+		[TIER_TEST]: ethers.parseEther("2.4"),
 	};
 	// Real tier math (per LaunchFactory.tierBudget + TierMath.calibratedQuoteAmt):
 	// - quoteAmt = 16 BNB for TIER_80 (curve only, no graduation).
@@ -47,7 +47,7 @@ describe("Wave H bundle flow e2e", () => {
 		[TIER_90]: ethers.parseEther("32") - QUOTE_AMT_TAX300,
 		[TIER_95]: ethers.parseEther("64") - QUOTE_AMT_TAX300,
 		[TIER_98]: ethers.parseEther("160") - QUOTE_AMT_TAX300,
-		[TIER_TEST]: ethers.parseEther("0.5"),
+		[TIER_TEST]: 0n,
 	};
 
 	function computeInitCodeHash(creationCode, name, symbol) {
@@ -374,10 +374,10 @@ describe("Wave H bundle flow e2e", () => {
 				// 100% TGE — full allocation claimable immediately.
 				expect(aliceGot).to.equal(aliceAlloc);
 			} else {
-				// Vesting: 50% TGE + linear over 24h. A few seconds will have
+				// Vesting: 50% TGE + linear over 30d. A few seconds will have
 				// elapsed between launch and the claim mine; allow a small
 				// tolerance vs the pure-TGE half. Hard upper bound: TGE+1m.
-				const tolerance = aliceAlloc / 86400n; // ~1 second worth of vesting
+				const tolerance = aliceAlloc / (30n * 86400n); // ~1 second worth of vesting
 				expect(aliceGot).to.be.closeTo(aliceAlloc / 2n, tolerance * 10n);
 			}
 
@@ -389,7 +389,7 @@ describe("Wave H bundle flow e2e", () => {
 			if (!vestingEnabled) {
 				expect(bobGot).to.equal(bobAlloc);
 			} else {
-				const tolerance = bobAlloc / 86400n;
+				const tolerance = bobAlloc / (30n * 86400n);
 				expect(bobGot).to.be.closeTo(bobAlloc / 2n, tolerance * 10n);
 			}
 
@@ -408,12 +408,12 @@ describe("Wave H bundle flow e2e", () => {
 		});
 	}
 
-	it("TIER_TEST budget returns (17.34, 16.84, 0.5, false)", async () => {
+	it("TIER_TEST budget returns (2.4, 2.4, 0, false)", async () => {
 		const ctx = await deployStack();
 		const budget = await ctx.factory.tierBudget(TIER_TEST, 300);
-		expect(budget[0]).to.equal(ethers.parseEther("17.34"));
-		expect(budget[1]).to.equal(ethers.parseEther("16.84"));
-		expect(budget[2]).to.equal(ethers.parseEther("0.5"));
+		expect(budget[0]).to.equal(ethers.parseEther("2.4"));
+		expect(budget[1]).to.equal(ethers.parseEther("2.4"));
+		expect(budget[2]).to.equal(0n);
 		expect(budget[3]).to.equal(false);
 	});
 
@@ -970,7 +970,7 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await token.balanceOf(alice.address)).to.equal(expectedNet(firstGrossClaimed));
 
 		const launchTs = await vault.launchTimestamp();
-		await advanceTo(launchTs + 24n * 3600n + 1n);
+		await advanceTo(launchTs + 30n * 86400n + 1n);
 		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
 		const totalGrossClaimed = (await vault.depositors(alice.address)).claimed;
 		const secondGrossClaimed = totalGrossClaimed - firstGrossClaimed;
@@ -1009,7 +1009,7 @@ describe("Wave H bundle flow e2e", () => {
 	// vesting timeline
 	// =========================================================================
 
-	it("tier-90 vesting: TGE = 50%, linear over 24h reaches 100%", async () => {
+	it("tier-90 vesting: TGE = 50%, linear over 30d reaches 100%", async () => {
 		const ctx = await deployStack();
 		const { alice, bob, bundleBot } = ctx;
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
@@ -1029,22 +1029,22 @@ describe("Wave H bundle flow e2e", () => {
 		// TGE: ~50% (a few seconds may have elapsed between launch and this claim;
 		// allow a small tolerance equal to ~10 seconds of linear vesting).
 		await vault.connect(alice).claim();
-		const tgeTolerance = (aliceAlloc / 2n / 86400n) * 10n;
+		const tgeTolerance = (aliceAlloc / 2n / (30n * 86400n)) * 10n;
 		expect(await token.balanceOf(alice.address)).to.be.closeTo(aliceAlloc / 2n, tgeTolerance);
 
-		// Advance 12 hours: ~75%
+		// Advance 15 days: 75% (50% TGE + half of the 50% linear tranche).
 		const launchTs = await vault.launchTimestamp();
-		await advanceTo(launchTs + 12n * 3600n);
+		await advanceTo(launchTs + 15n * 86400n);
 		await vault.connect(alice).claim();
 		const half = aliceAlloc / 2n;
 		const quarter = aliceAlloc / 4n;
-		const got12h = await token.balanceOf(alice.address);
+		const got15d = await token.balanceOf(alice.address);
 		// Allow tolerance for the 1-2 seconds drift between block timestamp
-		// and the exact 12h mark.
-		expect(got12h).to.be.closeTo(half + quarter, tgeTolerance);
+		// and the exact 15d mark.
+		expect(got15d).to.be.closeTo(half + quarter, tgeTolerance);
 
-		// Advance to 24h end: 100%
-		await advanceTo(launchTs + 24n * 3600n + 1n);
+		// Advance to 30d end: 100%
+		await advanceTo(launchTs + 30n * 86400n + 1n);
 		await vault.connect(alice).claim();
 		expect(await token.balanceOf(alice.address)).to.equal(aliceAlloc);
 	});

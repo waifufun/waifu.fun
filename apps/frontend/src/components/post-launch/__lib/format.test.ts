@@ -86,20 +86,20 @@ describe("vestingProgress", () => {
 	it("returns the 50% tge baseline at t=0", () => {
 		const out = vestingProgress(1000, 1000);
 		expect(out.pct).toBe(50);
-		expect(out.remainingSecs).toBe(24 * 60 * 60);
+		expect(out.remainingSecs).toBe(30 * 24 * 60 * 60);
 	});
 
-	it("interpolates linearly to 100% over the 24h window", () => {
+	it("interpolates linearly to 100% over the 30d window", () => {
 		const launch = 1_000_000;
-		const half = launch + 12 * 60 * 60;
+		const half = launch + 15 * 24 * 60 * 60;
 		const out = vestingProgress(launch, half);
 		expect(out.pct).toBeGreaterThan(74.9);
 		expect(out.pct).toBeLessThan(75.1);
-		expect(out.remainingSecs).toBe(12 * 60 * 60);
+		expect(out.remainingSecs).toBe(15 * 24 * 60 * 60);
 	});
 
 	it("clamps at 100% after the window", () => {
-		const out = vestingProgress(0, 24 * 60 * 60 + 1);
+		const out = vestingProgress(0, 30 * 24 * 60 * 60 + 1);
 		expect(out.pct).toBe(100);
 		expect(out.remainingSecs).toBe(0);
 	});
