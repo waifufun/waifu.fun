@@ -32,7 +32,7 @@ describe("Wave H bundle flow e2e", () => {
 		[TIER_90]: ethers.parseEther("32"),
 		[TIER_95]: ethers.parseEther("64"),
 		[TIER_98]: ethers.parseEther("160"),
-		[TIER_TEST]: ethers.parseEther("17.34"),
+		[TIER_TEST]: ethers.parseEther("0.1"),
 	};
 	// Real tier math (per LaunchFactory.tierBudget + TierMath.calibratedQuoteAmt):
 	// - quoteAmt = 16 BNB for TIER_80 (curve only, no graduation).
@@ -47,7 +47,7 @@ describe("Wave H bundle flow e2e", () => {
 		[TIER_90]: ethers.parseEther("32") - QUOTE_AMT_TAX300,
 		[TIER_95]: ethers.parseEther("64") - QUOTE_AMT_TAX300,
 		[TIER_98]: ethers.parseEther("160") - QUOTE_AMT_TAX300,
-		[TIER_TEST]: ethers.parseEther("0.5"),
+		[TIER_TEST]: 0n,
 	};
 
 	function computeInitCodeHash(creationCode, name, symbol) {
@@ -351,13 +351,12 @@ describe("Wave H bundle flow e2e", () => {
 			const ainFee = v2In * 9975n;
 			const expectedV2Tokens = v2In === 0n ? 0n : (ainFee * lpTokenReserve) / (lpBnbReserve * 10000n + ainFee);
 			const expectedY = ethers.parseEther("800000000") + expectedV2Tokens;
-			// Flat allocation: vault = 20% of total supply (200M), agentSafe = 10% (100M).
-			// Burn absorbs everything else (~50% of supply for tier 80, plus the V2 follow-up
-			// buy tokens for graduating tiers). Remaining 20% of supply is locked in the
-			// flap-created PCS V2 LP at migration.
+			// Production tiers use fixed allocation: vault = 20% of total supply (200M),
+			// agentSafe = 10% (100M). TIER_TEST scales the same router-share ratios
+			// to the actual curve tokens received so a 0.1 BNB smoke launch can bond.
 			const TOTAL_SUPPLY = ethers.parseEther("1000000000");
-			const expectedVault = TOTAL_SUPPLY / 5n;
-			const expectedAgentSafe = TOTAL_SUPPLY / 10n;
+			const expectedVault = tier === TIER_TEST ? expectedY / 4n : TOTAL_SUPPLY / 5n;
+			const expectedAgentSafe = tier === TIER_TEST ? expectedY / 8n : TOTAL_SUPPLY / 10n;
 			expect(vaultBal).to.equal(expectedVault);
 			expect(agentSafeBal).to.equal(expectedAgentSafe);
 			expect(deadBal).to.equal(expectedY - expectedVault - expectedAgentSafe);
@@ -408,13 +407,34 @@ describe("Wave H bundle flow e2e", () => {
 		});
 	}
 
-	it("TIER_TEST budget returns (17.34, 16.84, 0.5, false)", async () => {
+	it("TIER_TEST budget returns (0.1, 0.1, 0, false)", async () => {
 		const ctx = await deployStack();
 		const budget = await ctx.factory.tierBudget(TIER_TEST, 300);
-		expect(budget[0]).to.equal(ethers.parseEther("17.34"));
-		expect(budget[1]).to.equal(ethers.parseEther("16.84"));
-		expect(budget[2]).to.equal(ethers.parseEther("0.5"));
+		expect(budget[0]).to.equal(ethers.parseEther("0.1"));
+		expect(budget[1]).to.equal(ethers.parseEther("0.1"));
+		expect(budget[2]).to.equal(0n);
 		expect(budget[3]).to.equal(false);
+	});
+
+	it("TIER_TEST proportional splits scale down when curve returns fewer tokens", async () => {
+		const ctx = await deployStack();
+		const { alice, bob, bundleBot, creator, portal } = ctx;
+		await portal.setCurveTokens(ethers.parseEther("40000000"));
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_TEST, { noBurn: true });
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+
+		await depositFullCap(vault, TIER_TEST, alice, bob);
+		await closeSubscribedVault(vault, creator);
+
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
+		params.vanitySalt = rawSalt;
+		await router.connect(bundleBot).executeBundle(params);
+
+		const token = await ethers.getContractAt("BundleFlowToken", predicted);
+		expect(await token.balanceOf(addrs.vault)).to.equal(ethers.parseEther("10000000"));
+		expect(await token.balanceOf(addrs.agentSafe)).to.equal(ethers.parseEther("5000000"));
+		expect(await token.balanceOf(creator.address)).to.equal(ethers.parseEther("25000000"));
 	});
 
 	it("noBurn=true sends burn portion to creator, not DEAD", async () => {

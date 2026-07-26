@@ -10,6 +10,17 @@ const TIER_80_SNAPSHOT = {
 	vestingEnabled: false,
 };
 
+test("getLaunchTierConfigSnapshot returns cheap curve-only test tier regardless of buy tax", () => {
+	const snapshot = {
+		presaleCap: "100000000000000000",
+		quoteAmt: "100000000000000000",
+		v2BuyBnb: "0",
+		vestingEnabled: false,
+	};
+	assert.deepEqual(getLaunchTierConfigSnapshot("test"), snapshot);
+	assert.deepEqual(getLaunchTierConfigSnapshot("test", 1000), snapshot);
+});
+
 test("getLaunchTierConfigSnapshot returns curve-only tier 80 regardless of buy tax", () => {
 	assert.deepEqual(getLaunchTierConfigSnapshot("80"), TIER_80_SNAPSHOT);
 	assert.deepEqual(getLaunchTierConfigSnapshot("80", 0), TIER_80_SNAPSHOT);

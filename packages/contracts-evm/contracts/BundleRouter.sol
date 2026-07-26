@@ -35,10 +35,10 @@ import {IPancakeRouter02} from "./uniswap/IPancakeRouter02.sol";
 ///           4. confirm V2 pair exists (Flap auto-graduates inside newTokenV6)
 ///           5. optional V2 follow-up buy of v2BuyBnb against the new pair
 ///           6. dynamic split of router's token balance: 62.5/12.5/25
-///              burn / treasuryLp / vault. those router-share ratios resolve
-///              to 50/10/20 of TOTAL supply because the curve hands the router
-///              80% of supply; the remaining 20% lives in the flap-created
-///              PCS V2 LP (locked).
+///              burn / treasuryLp / vault. production tiers use fixed total-
+///              supply splits; TIER_TEST scales those same router-share ratios
+///              against the actual curve tokens received so tiny smoke-test
+///              caps can launch without a 300M-token funding floor.
 ///           7. vault.distribute(token, vaultAmt) so vault transitions to
 ///              LAUNCHED + records presaler share
 ///           8. sweep any BNB dust to DEAD (never refunds router state)
@@ -81,6 +81,7 @@ contract BundleRouter {
     address public immutable predictedToken; // 0x..7777, must match CREATE2
     address public immutable creator;
     bool public immutable noBurn;
+    bool public immutable proportionalSplits;
     uint256 public immutable presaleCap;
     uint256 public immutable quoteAmt; // BNB to Portal (16e18 for Tier 80 curve-only, 17e18 for graduating tiers on Portal v5.14.3)
     uint256 public immutable v2BuyBnb; // BNB for V2 follow-up
@@ -147,6 +148,7 @@ contract BundleRouter {
         address predictedToken;
         address creator;
         bool noBurn;
+        bool proportionalSplits;
         uint256 presaleCap;
         uint256 quoteAmt;
         uint256 v2BuyBnb;
@@ -178,6 +180,7 @@ contract BundleRouter {
         predictedToken = a.predictedToken;
         creator = a.creator;
         noBurn = a.noBurn;
+        proportionalSplits = a.proportionalSplits;
         presaleCap = a.presaleCap;
         quoteAmt = a.quoteAmt;
         v2BuyBnb = a.v2BuyBnb;
@@ -235,7 +238,8 @@ contract BundleRouter {
             _v2FollowUpBuy(token, minOut, p.deadline);
         }
 
-        // 5. token splits , FLAT amounts pegged to total supply.
+        // 5. token splits.
+        // Production tiers keep FLAT amounts pegged to total supply.
         //   vault    = 20% of supply (200M of 1B)
         //   treasury = 10% of supply (100M of 1B)
         //   burn     = router balance minus vault minus treasury
@@ -243,10 +247,15 @@ contract BundleRouter {
         //              follow-up buy tokens for graduating tiers so
         //              presalers always receive exactly 20% of supply)
         // remaining 20% of supply lives in the flap-created PCS V2 LP.
+        //
+        // TIER_TEST only: scale the same 25% vault / 12.5% treasury router-
+        // share ratios against the actual token balance returned by the curve.
+        // This preserves production economics while removing the fixed 300M-
+        // token floor that makes cheap smoke-test launches revert.
         uint256 totalY = IERC20(token).balanceOf(address(this));
         uint256 supply = IERC20(token).totalSupply();
-        uint256 vaultAmt = supply / 5; // 20% of supply
-        uint256 treasuryAmt = supply / 10; // 10% of supply
+        uint256 vaultAmt = proportionalSplits ? totalY / 4 : supply / 5; // 25% of router Y or 20% of supply
+        uint256 treasuryAmt = proportionalSplits ? totalY / 8 : supply / 10; // 12.5% of router Y or 10% of supply
         if (vaultAmt + treasuryAmt > totalY) revert InsufficientFunding();
         uint256 burnAmt = totalY - vaultAmt - treasuryAmt;
 

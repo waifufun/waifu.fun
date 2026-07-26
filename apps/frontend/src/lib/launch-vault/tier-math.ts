@@ -19,6 +19,7 @@ const TIER_PRESALE_CAP_WEI: Record<string, bigint> = {
 	TIER_90: 32n * 10n ** 18n,
 	TIER_95: 64n * 10n ** 18n,
 	TIER_98: 160n * 10n ** 18n,
+	TIER_TEST: 100_000_000_000_000_000n,
 };
 
 /**
@@ -50,9 +51,20 @@ export type TierBudget = {
  * (presaleCap - calibratedQuoteAmt) into v2BuyBnb.
  */
 export function tierBudget(tier: string, buyTaxBps: number): TierBudget {
+	if (BigInt(buyTaxBps) > MAX_BUY_TAX_BPS) {
+		throw new Error(`buyTaxBps=${buyTaxBps} exceeds FLAP cap of 1000`);
+	}
 	const presaleCapWei = TIER_PRESALE_CAP_WEI[tier];
 	if (presaleCapWei === undefined) {
 		throw new Error(`unknown tier ${tier}`);
+	}
+	if (tier === "TIER_TEST") {
+		return {
+			presaleCapWei,
+			quoteAmtWei: presaleCapWei,
+			v2BuyBnbWei: 0n,
+			vestingEnabled: false,
+		};
 	}
 	if (tier === "TIER_80") {
 		return {

@@ -58,7 +58,7 @@ const SAFE_SINGLETON = "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762";
 const SAFE_PROXY_FACTORY = "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67";
 
 // Tier enum values (mirrors LaunchFactory.LaunchTier).
-const TIER_TEST = 4;
+const TIER_90 = 1;
 
 // EIP-1167 minimal proxy init code template (Portal clones TOKEN_TAXED_V3 here).
 function cloneInitCode(impl) {
@@ -149,10 +149,10 @@ const SAFE_ABI = [
 	"function VERSION() view returns (string)",
 ];
 
-// Tier TEST cap = 17.34 BNB. 60% wallet cap = 10.404 BNB.
-const TIER_TEST_CAP = ethers.parseEther("17.34");
-const TIER_TEST_DEPOSIT_A = ethers.parseEther("10.4"); // under wallet cap
-const TIER_TEST_DEPOSIT_B = TIER_TEST_CAP - TIER_TEST_DEPOSIT_A; // 6.94
+// Tier 90 cap = 32 BNB. 60% wallet cap = 19.2 BNB.
+const TIER_90_CAP = ethers.parseEther("32");
+const TIER_90_DEPOSIT_A = ethers.parseEther("19.2"); // at wallet cap
+const TIER_90_DEPOSIT_B = TIER_90_CAP - TIER_90_DEPOSIT_A; // 12.8
 
 async function deployFactory(platformReceiver) {
 	const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
@@ -197,7 +197,7 @@ function buildConfig(args) {
 		metaCid: args.metaCid,
 		creator: args.creator,
 		bundleBot: args.bundleBot,
-		tier: TIER_TEST,
+		tier: TIER_90,
 		buyTaxBps: 300,
 		sellTaxBps: 300,
 		taxDuration: 31_536_000,
@@ -219,9 +219,9 @@ function buildConfig(args) {
 }
 
 async function fundVaultToCap(vault, creator, depositor2) {
-	await vault.connect(creator).deposit({ value: TIER_TEST_DEPOSIT_A });
-	await vault.connect(depositor2).deposit({ value: TIER_TEST_DEPOSIT_B });
-	expect(await vault.totalDeposited()).to.equal(TIER_TEST_CAP);
+	await vault.connect(creator).deposit({ value: TIER_90_DEPOSIT_A });
+	await vault.connect(depositor2).deposit({ value: TIER_90_DEPOSIT_B });
+	expect(await vault.totalDeposited()).to.equal(TIER_90_CAP);
 }
 
 async function executeBundle(router, bundleBot, cfg, taxSplitter) {
@@ -385,7 +385,7 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 	// -----------------------------------------------------------------
 	// Scenario 1: default split (10/25/65), 1/1 agentSafe, full flow
 	// -----------------------------------------------------------------
-	it("[scenario 1] TIER_TEST default 10/25/65 split + 1/1 agentSafe end-to-end", async () => {
+	it("[scenario 1] TIER_90 default 10/25/65 split + 1/1 agentSafe end-to-end", async () => {
 		const creator = creatorS1;
 		const platformReceiver = owner.address;
 		const { factory } = await deployFactory(platformReceiver);

@@ -285,6 +285,7 @@ contract LaunchFactory is ReentrancyGuard {
                         predictedToken: predicted,
                         creator: config.creator,
                         noBurn: config.noBurn,
+                        proportionalSplits: config.tier == LaunchTier.TIER_TEST,
                         presaleCap: presaleCap,
                         quoteAmt: quoteAmt,
                         v2BuyBnb: v2BuyBnb,

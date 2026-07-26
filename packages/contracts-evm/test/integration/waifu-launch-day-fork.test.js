@@ -50,9 +50,9 @@ const TIER_95 = 2;
 const TIER_98 = 3;
 const TIER_TEST = 4;
 
-// TIER_95 cap is 64 BNB; TIER_TEST cap is 17.34 BNB
+// TIER_95 cap is 64 BNB; TIER_TEST cap is 0.1 BNB
 const TIER_95_CAP = ethers.parseEther("64");
-const TIER_TEST_CAP = ethers.parseEther("17.34");
+const TIER_TEST_CAP = ethers.parseEther("0.1");
 
 const TOKEN_ABI = [
 	"function balanceOf(address) view returns (uint256)",
