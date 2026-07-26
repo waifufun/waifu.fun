@@ -24,7 +24,7 @@ import {TierMath} from "./TierMath.sol";
 import {LaunchTier} from "./LaunchTier.sol";
 import {RouterDeployer} from "./RouterDeployer.sol";
 import {TaxSplitter} from "./TaxSplitter.sol";
-import {AgentSafeDeployer} from "./AgentSafeDeployer.sol";
+import {AgentSafeZodiacDeployer} from "./AgentSafeZodiacDeployer.sol";
 import {TreasuryLP5Deployer} from "./TreasuryLP5Deployer.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -61,6 +61,9 @@ contract LaunchFactory is ReentrancyGuard {
         uint256 agentSafeThreshold; // 1..agentSafeOwners.length
         uint16 platformBps; // 1000..5000 (10%..50%)
         uint16 patronBps; // share routed to patron via TaxSplitter; agent gets the remainder
+        // --- Zodiac AgentSafe additions ---
+        address agentEoa; // Steward/agent-hot EOA assigned in roleConfigCalls; zero means pending/no role assignment yet
+        bytes[] roleConfigCalls; // raw Zodiac Roles v2 config from @waifufun/agent-actions/zodiac
         // --- wave N additions ---
         int24[4] treasuryTickLowers; // V3 tick lower per LP tier, must be multiple of v3 tickSpacing
         int24[4] treasuryTickUppers; // V3 tick upper per LP tier, must be > tickLower, multiple of spacing
@@ -97,7 +100,7 @@ contract LaunchFactory is ReentrancyGuard {
     address public immutable TOKEN_IMPL_TAXED_V3;
     address public immutable TIP_RECEIVER;
     RouterDeployer public immutable ROUTER_DEPLOYER;
-    AgentSafeDeployer public immutable AGENT_SAFE_DEPLOYER;
+    AgentSafeZodiacDeployer public immutable AGENT_SAFE_DEPLOYER;
     TreasuryLP5Deployer public immutable TREASURY_LP5_DEPLOYER;
     address public immutable PCS_V3_NPM;
     address public immutable PCS_V3_FACTORY;
@@ -188,7 +191,7 @@ contract LaunchFactory is ReentrancyGuard {
                 || _pcsV3Factory == address(0)
         ) revert ZeroAddress();
         ROUTER_DEPLOYER = RouterDeployer(_routerDeployer);
-        AGENT_SAFE_DEPLOYER = AgentSafeDeployer(_agentSafeDeployer);
+        AGENT_SAFE_DEPLOYER = AgentSafeZodiacDeployer(_agentSafeDeployer);
         TREASURY_LP5_DEPLOYER = TreasuryLP5Deployer(_treasuryLp5Deployer);
 
         WBNB = _wbnb;
@@ -252,11 +255,18 @@ contract LaunchFactory is ReentrancyGuard {
             config.tier
         );
 
-        // deploy AgentSafe via the external deployer (deterministic CREATE2 inside Safe ProxyFactory)
+        // deploy AgentSafe via the Zodiac deployer (deterministic CREATE2 inside Safe ProxyFactory)
+        // and attach the Roles module atomically. `roleConfigCalls` is produced
+        // off-chain by @waifufun/agent-actions/zodiac and included in the signed
+        // createLaunch calldata. If `agentEoa` is zero, the Steward agent key is
+        // still pending: deploy the Safe with the Roles module enabled but no
+        // default member assigned yet.
         uint256 saltNonce =
             uint256(keccak256(abi.encode("AGENT_SAFE", config.creator, config.vanitySalt)));
-        address agentSafe = AGENT_SAFE_DEPLOYER.deployAgentSafe(
-            config.agentSafeOwners, config.agentSafeThreshold, saltNonce
+        uint256 rolesSaltNonce =
+            uint256(keccak256(abi.encode("AGENT_SAFE_ROLES", config.creator, config.vanitySalt)));
+        (address agentSafe, ) = AGENT_SAFE_DEPLOYER.deployAgentSafeWithRoles(
+            config.agentSafeOwners, config.agentSafeThreshold, saltNonce, rolesSaltNonce, config.roleConfigCalls
         );
 
         // deploy TaxSplitter (immutable 3-way: platform / patron / agent)
@@ -421,6 +431,11 @@ contract LaunchFactory is ReentrancyGuard {
         uint256 nOwners = config.agentSafeOwners.length;
         if (nOwners == 0) revert InvalidAgentSafeConfig();
         if (config.agentSafeThreshold == 0 || config.agentSafeThreshold > nOwners) {
+            revert InvalidAgentSafeConfig();
+        }
+        if (config.agentEoa == address(0)) {
+            if (config.roleConfigCalls.length != 0) revert InvalidAgentSafeConfig();
+        } else if (config.roleConfigCalls.length == 0) {
             revert InvalidAgentSafeConfig();
         }
 

@@ -44,7 +44,7 @@ if (!SOL_PK) {
 
 // LaunchFactory ABI (only the bits we need)
 const FACTORY_ABI = [
-	"function createLaunch((string name,string symbol,string metaCid,address creator,address bundleBot,uint8 tier,uint16 buyTaxBps,uint16 sellTaxBps,uint64 taxDuration,uint64 antiFarmerDuration,uint256 closeTimestamp,bytes32 vanitySalt,address predictedTokenAddress,bool noBurn,address platformReceiver,address patron,address[] agentSafeOwners,uint256 agentSafeThreshold,uint16 platformBps,uint16 patronBps,int24[4] treasuryTickLowers,int24[4] treasuryTickUppers)) returns ((address vault,address router,address treasuryLp,address predictedTokenAddress,address taxSplitter,address agentSafe))",
+	"function createLaunch((string name,string symbol,string metaCid,address creator,address bundleBot,uint8 tier,uint16 buyTaxBps,uint16 sellTaxBps,uint64 taxDuration,uint64 antiFarmerDuration,uint256 closeTimestamp,bytes32 vanitySalt,address predictedTokenAddress,bool noBurn,address platformReceiver,address patron,address[] agentSafeOwners,uint256 agentSafeThreshold,uint16 platformBps,uint16 patronBps,address agentEoa,bytes[] roleConfigCalls,int24[4] treasuryTickLowers,int24[4] treasuryTickUppers)) returns ((address vault,address router,address treasuryLp,address predictedTokenAddress,address taxSplitter,address agentSafe))",
 	"function owner() view returns (address)",
 	"function effectiveSalt(address creator, bytes32 rawSalt) pure returns (bytes32)",
 	"event LaunchCreated(address indexed predictedToken, address indexed creator, address vault, address router, address treasuryLp, address taxSplitter, address agentSafe, uint8 tier, uint256 presaleCap, uint256 v2BuyBnb, uint256 closeTimestamp)",
@@ -88,6 +88,8 @@ async function main() {
 		patron: SHADOW_HOT,
 		agentSafeOwners: [SHADOW_HOT, PLATFORM_SAFE, SOL_BURNER],
 		agentSafeThreshold: 2, // 2-of-3
+		agentEoa: ethers.ZeroAddress,
+		roleConfigCalls: [],
 		platformBps: 1000, // 10%
 		patronBps: 2500, // 25%
 		treasuryTickLowers: TREASURY_TICK_LOWERS,

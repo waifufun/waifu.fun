@@ -22,7 +22,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { execSync } = require("node:child_process");
-const { network } = require("hardhat");
+const { ethers, network } = require("hardhat");
+
+const DEFAULT_ZODIAC_ROLES_FACTORY = "0x000000000000aDdB49795b0f9bA5BC298cDda236";
+const DEFAULT_ZODIAC_ROLES_MASTERCOPY = "0x9646fDAD06d3e24444381f44362a3B0eB343D337";
 
 function loadArtifact(netName) {
 	if (process.env.DEPLOYMENT_FILE) {
@@ -78,7 +81,7 @@ async function main() {
 	console.log("Loaded deployment artifact:", artPath);
 	console.log("  factory     :", art.contracts.LaunchFactory);
 	console.log("  router dep  :", art.contracts.RouterDeployer);
-	console.log("  agentsafe   :", art.contracts.AgentSafeDeployer);
+	console.log("  agentsafe   :", art.contracts.AgentSafeZodiacDeployer);
 	console.log("  treasury    :", art.contracts.TreasuryLP5Deployer);
 	console.log("");
 
@@ -91,12 +94,31 @@ async function main() {
 		ok: runVerify([...netFlag, art.contracts.RouterDeployer], "RouterDeployer"),
 	});
 
-	// 2. AgentSafeDeployer (singleton, proxyFactory)
+	const rolesFactory = art.safeAddressBook.rolesFactory || DEFAULT_ZODIAC_ROLES_FACTORY;
+	const rolesMastercopy = art.safeAddressBook.rolesMastercopy || DEFAULT_ZODIAC_ROLES_MASTERCOPY;
+	for (const [label, value] of [
+		["contracts.AgentSafeZodiacDeployer", art.contracts.AgentSafeZodiacDeployer],
+		["safeAddressBook.singleton", art.safeAddressBook.singleton],
+		["safeAddressBook.proxyFactory", art.safeAddressBook.proxyFactory],
+		["safeAddressBook.rolesFactory", rolesFactory],
+		["safeAddressBook.rolesMastercopy", rolesMastercopy],
+	]) {
+		if (!ethers.isAddress(value) || value === ethers.ZeroAddress) throw new Error(`Invalid ${label}: ${value}`);
+	}
+
+	// 2. AgentSafeZodiacDeployer (safe singleton, proxy factory, Roles module factory, Roles v2 mastercopy)
 	results.push({
-		name: "AgentSafeDeployer",
+		name: "AgentSafeZodiacDeployer",
 		ok: runVerify(
-			[...netFlag, art.contracts.AgentSafeDeployer, art.safeAddressBook.singleton, art.safeAddressBook.proxyFactory],
-			"AgentSafeDeployer",
+			[
+				...netFlag,
+				art.contracts.AgentSafeZodiacDeployer,
+				art.safeAddressBook.singleton,
+				art.safeAddressBook.proxyFactory,
+				rolesFactory,
+				rolesMastercopy,
+			],
+			"AgentSafeZodiacDeployer",
 		),
 	});
 

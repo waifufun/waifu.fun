@@ -218,6 +218,8 @@ async function main() {
 		patron: patron.address,
 		agentSafeOwners: [creator.address],
 		agentSafeThreshold: 1,
+		agentEoa: ethers.ZeroAddress,
+		roleConfigCalls: [],
 		platformBps: 1000,
 		patronBps: 2500,
 		treasuryTickLowers: tickLowers,

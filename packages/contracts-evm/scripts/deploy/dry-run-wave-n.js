@@ -54,10 +54,12 @@ async function main() {
 	const RouterDeployer = await ethers.getContractFactory("RouterDeployer");
 	const { addr: routerAddr } = await deployAndTrack("RouterDeployer", RouterDeployer, []);
 
-	const AgentSafeDeployer = await ethers.getContractFactory("AgentSafeDeployer");
-	const { addr: agentAddr } = await deployAndTrack("AgentSafeDeployer", AgentSafeDeployer, [
+	const AgentSafeZodiacDeployer = await ethers.getContractFactory("AgentSafeZodiacDeployer");
+	const { addr: agentAddr } = await deployAndTrack("AgentSafeZodiacDeployer", AgentSafeZodiacDeployer, [
 		book.SAFE_SINGLETON,
 		book.SAFE_PROXY_FACTORY,
+		book.ZODIAC_ROLES_FACTORY,
+		book.ZODIAC_ROLES_MASTERCOPY,
 	]);
 
 	const TreasuryDeployer = await ethers.getContractFactory("TreasuryLP5Deployer");

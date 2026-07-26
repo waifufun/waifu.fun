@@ -194,6 +194,8 @@ export class LaunchService {
 			agentSafeThreshold: BigInt(input.agentSafeThreshold),
 			platformBps: input.platformBps,
 			patronBps: input.patronBps,
+			agentEoa: input.agentEoa,
+			roleConfigCalls: input.roleConfigCalls,
 			treasuryTickLowers: input.treasuryTickLowers ?? defaultTreasuryTickLowers(input.tier),
 			treasuryTickUppers: input.treasuryTickUppers ?? defaultTreasuryTickUppers(),
 		} as const;

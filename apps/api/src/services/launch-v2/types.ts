@@ -44,6 +44,8 @@ export interface CreateLaunchInput {
 	agentSafeThreshold: number;
 	platformBps: number;
 	patronBps: number;
+	agentEoa: `0x${string}`;
+	roleConfigCalls: `0x${string}`[];
 	tier: LaunchTierString;
 	buyTaxBps: number;
 	sellTaxBps: number;
