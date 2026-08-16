@@ -90,6 +90,13 @@
 			]
 		},
 		{
+			"group": "tokenomics",
+			"pages": [
+				"tokenomics/launch-journey",
+				"tokenomics/tokenomics-explained"
+			]
+		},
+		{
 			"group": "agents",
 			"pages": [
 				"agents/sol",
