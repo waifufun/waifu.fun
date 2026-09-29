@@ -41,19 +41,23 @@ contract MockSafeProxy {
 ///         declares `address singleton` first).
 contract MockSafeSingleton {
     address private _slot0Singleton; // do not touch; reserved for proxy
+    mapping(address => address) internal modules;
     address[] internal owners;
     uint256 internal threshold;
     bool internal initialized;
 
+    address internal constant SENTINEL_MODULES = address(0x1);
+
     error AlreadyInitialized();
     error BadOwners();
     error BadThreshold();
+    error SetupCallFailed();
 
     function setup(
         address[] memory _owners,
         uint256 _threshold,
-        address, // to (setup module call target; ignored)
-        bytes memory, // data (setup module call data; ignored)
+        address to,
+        bytes memory data,
         address, // fallbackHandler (ignored)
         address, // paymentToken (ignored)
         uint256, // payment (ignored)
@@ -65,6 +69,12 @@ contract MockSafeSingleton {
         owners = _owners;
         threshold = _threshold;
         initialized = true;
+        modules[SENTINEL_MODULES] = SENTINEL_MODULES;
+
+        if (to != address(0)) {
+            (bool ok, ) = to.delegatecall(data);
+            if (!ok) revert SetupCallFailed();
+        }
     }
 
     function getOwners() public view returns (address[] memory) {
@@ -81,6 +91,32 @@ contract MockSafeSingleton {
             if (owners[i] == candidate) return true;
         }
         return false;
+    }
+
+    function isModuleEnabled(address module) public view returns (bool) {
+        return module != address(0) && module != SENTINEL_MODULES && modules[module] != address(0);
+    }
+
+    function getModulesPaginated(address start, uint256 pageSize)
+        public
+        view
+        returns (address[] memory array, address next)
+    {
+        if (start == address(0)) start = SENTINEL_MODULES;
+        array = new address[](pageSize);
+        uint256 count = 0;
+        address current = modules[start];
+        while (current != address(0) && current != SENTINEL_MODULES && count < pageSize) {
+            array[count] = current;
+            current = modules[current];
+            unchecked {
+                ++count;
+            }
+        }
+
+        address[] memory trimmed = new address[](count);
+        for (uint256 i = 0; i < count; ++i) trimmed[i] = array[i];
+        return (trimmed, current == address(0) ? SENTINEL_MODULES : current);
     }
 }
 
