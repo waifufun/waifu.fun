@@ -16,6 +16,9 @@ const allowedFiles = new Set([
 	// connectors (which are configured showQrModal: false in
 	// EvmProvider so RainbowKit renders the QR / deeplink UI).
 	"src/components/auth/wallet-panel.tsx",
+	// Wind-down registration signs ownership of the snapshot EOA without
+	// creating or linking a patron login session.
+	"src/app/reconciliation/page.tsx",
 ]);
 
 const importPattern =
@@ -56,7 +59,7 @@ for (const filePath of files) {
 }
 
 if (violations.length > 0) {
-	console.error("RainbowKit imports are only allowed in the linked EOA flow:");
+	console.error("RainbowKit imports are only allowed in approved external-wallet flows:");
 	for (const file of allowedFiles) {
 		console.error(`  - ${file}`);
 	}
