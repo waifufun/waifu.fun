@@ -68,10 +68,12 @@ export class WaifuService extends Container<Env> {
 const INACTIVITY_MS = 30 * 60 * 1000;
 
 export class WaifuBackgroundService extends DurableObject<Env> {
+	private observing = false;
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
 		if (ctx.container?.running) {
 			ctx.blockConcurrencyWhile(() => ctx.container!.setInactivityTimeout(INACTIVITY_MS));
+			this.observeExit();
 		}
 	}
 
@@ -82,13 +84,24 @@ export class WaifuBackgroundService extends DurableObject<Env> {
 		if (this.env.SERVICE_NAME === "api") throw new TypeError("API requires the HTTP container host");
 		if (!container.running) {
 			container.start({ env: settings, enableInternet: true });
-			this.ctx.waitUntil(
-				container.monitor().catch((error: unknown) => {
-					console.error("Background container failed", error);
-				}),
-			);
 		}
+		this.observeExit();
 		await container.setInactivityTimeout(INACTIVITY_MS);
+	}
+
+	private observeExit(): void {
+		if (this.observing || !this.ctx.container) return;
+		this.observing = true;
+		this.ctx.waitUntil(
+			this.ctx.container
+				.monitor()
+				.catch((error: unknown) => {
+					console.error("Background container failed", { service: this.env.SERVICE_NAME, error });
+				})
+				.finally(() => {
+					this.observing = false;
+				}),
+		);
 	}
 
 	async stop(): Promise<void> {
