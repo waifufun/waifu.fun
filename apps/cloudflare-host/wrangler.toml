@@ -1,0 +1,181 @@
+name = "waifu-service"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = false
+
+[observability]
+enabled = true
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["WaifuService", "WaifuBackgroundService"]
+
+[env.worker]
+name = "waifu-worker-production"
+
+[env.worker.vars]
+SERVICE_NAME = "worker"
+SERVICE_ENABLED = "false"
+
+[env.worker.triggers]
+crons = ["* * * * *"]
+
+[[env.worker.containers]]
+class_name = "WaifuBackgroundService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.worker.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-worker@sha256:1be87437244e1aaddc940375787bf14622c7b117f4c7590f847f941852db7875"
+
+[[env.worker.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuBackgroundService"
+
+[env.nav-snapshotter]
+name = "waifu-nav-snapshotter-production"
+
+[env.nav-snapshotter.vars]
+SERVICE_NAME = "nav-snapshotter"
+SERVICE_ENABLED = "false"
+
+[env.nav-snapshotter.triggers]
+crons = ["* * * * *"]
+
+[[env.nav-snapshotter.containers]]
+class_name = "WaifuBackgroundService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.nav-snapshotter.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-nav-snapshotter@sha256:8f877e451832321f226f8e53a25db47753a05326145509c253df2b4c75e0b5e4"
+
+[[env.nav-snapshotter.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuBackgroundService"
+
+[env.launch-indexer]
+name = "waifu-launch-indexer-production"
+
+[env.launch-indexer.vars]
+SERVICE_NAME = "launch-indexer"
+SERVICE_ENABLED = "false"
+
+[env.launch-indexer.triggers]
+crons = ["* * * * *"]
+
+[[env.launch-indexer.containers]]
+class_name = "WaifuBackgroundService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.launch-indexer.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-launch-indexer@sha256:5d55dd99f76f66f3afa2a0a1731e8fd4672c23e8823da1bf3dabcf7605c83934"
+
+[[env.launch-indexer.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuBackgroundService"
+
+[env.bundle-bot]
+name = "waifu-bundle-bot-production"
+
+[env.bundle-bot.vars]
+SERVICE_NAME = "bundle-bot"
+SERVICE_ENABLED = "false"
+
+[env.bundle-bot.triggers]
+crons = ["* * * * *"]
+
+[[env.bundle-bot.containers]]
+class_name = "WaifuBackgroundService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.bundle-bot.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-bundle-bot@sha256:b312055ec15c1c5ea4954142111262557038b1d7901684ec8770151e6d2eda2d"
+
+[[env.bundle-bot.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuBackgroundService"
+
+[env.tier-cron]
+name = "waifu-tier-cron-production"
+
+[env.tier-cron.vars]
+SERVICE_NAME = "tier-cron"
+SERVICE_ENABLED = "false"
+
+[env.tier-cron.triggers]
+crons = ["* * * * *"]
+
+[[env.tier-cron.containers]]
+class_name = "WaifuBackgroundService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.tier-cron.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-tier-cron@sha256:892c4025d569e7459dbaa7f69339e18bfbe7181cc55f960ccdc552a6a5094c58"
+
+[[env.tier-cron.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuBackgroundService"
+
+[env.evm-indexer]
+name = "waifu-evm-indexer-production"
+
+[env.evm-indexer.vars]
+SERVICE_NAME = "evm-indexer"
+SERVICE_ENABLED = "false"
+
+[env.evm-indexer.triggers]
+crons = ["* * * * *"]
+
+[[env.evm-indexer.containers]]
+class_name = "WaifuBackgroundService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.evm-indexer.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-indexer@sha256:065cd200592c65c9e7a2758706526be06660b601eea026e247829acb06c977a3"
+
+[[env.evm-indexer.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuBackgroundService"
+
+[env.api]
+name = "waifu-api-production"
+
+[env.api.vars]
+SERVICE_NAME = "api"
+SERVICE_ENABLED = "false"
+
+[env.api.triggers]
+crons = ["* * * * *"]
+
+[[env.api.containers]]
+class_name = "WaifuService"
+image = "Dockerfile"
+image_build_context = "."
+max_instances = 1
+instance_type = "standard-1"
+
+[env.api.containers.image_vars]
+RUNTIME_IMAGE = "ghcr.io/waifufun/waifu.fun-api@sha256:26997e4c2b9abe77f1e00dbb4f0060728dcfadeffd3da0c7592e79a4ab80e64b"
+
+[[env.api.durable_objects.bindings]]
+name = "SERVICE"
+class_name = "WaifuService"
